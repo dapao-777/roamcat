@@ -1,0 +1,104 @@
+RoamCat
+Copyright 2026 fenghua
+
+RoamCat's original source code is licensed under the Mozilla Public License
+2.0 (MPL-2.0). See LICENSE.
+
+This distribution also contains third-party material under the licenses listed
+below. Those materials remain under their respective licenses and are not
+relicensed under MPL-2.0. Detailed notices and license texts or links are kept
+next to the corresponding assets in the extension directory.
+
+1. English frequency data — CC BY-SA 4.0
+------------------------------------------------
+extension/frequency/english-frequency.js incorporates the English 50,000-word
+frequency list from FrequencyWords by Hermit Dave:
+
+  Source: https://github.com/hermitdave/FrequencyWords
+  Source file: content/2018/en/en_50k.txt
+  Revision: 525f9b560de45753a5ea01069454e72e9aa541c6
+  License: Creative Commons Attribution-ShareAlike 4.0 International
+  License URL: https://creativecommons.org/licenses/by-sa/4.0/
+
+The generated list filters punctuation, numbers, markup fragments and other
+non-English lexical forms, removes duplicate case-folded tokens, preserves the
+remaining order, and encodes the result as an ECMAScript module. The generated
+asset is distributed under CC BY-SA 4.0. FrequencyWords identifies
+OpenSubtitles2018 as its corpus source:
+
+  https://opus.nlpl.eu/OpenSubtitles2018.php
+
+Full attribution: extension/frequency/THIRD_PARTY_NOTICES.txt
+
+2. Local inference model and runtime
+------------------------------------
+@huggingface/transformers 3.7.3
+  Copyright 2023 Hugging Face, Inc.
+  License: Apache License 2.0
+  Source: https://github.com/huggingface/transformers.js
+
+Xenova/all-MiniLM-L6-v2
+  Revision: 751bff37182d3f1213fa05d7196b954e230abad9
+  Derived from sentence-transformers/all-MiniLM-L6-v2
+  License: Apache License 2.0
+  Source: https://huggingface.co/Xenova/all-MiniLM-L6-v2
+
+ONNX Runtime Web 1.22.0-dev.20250409-89f8206ba4
+  Copyright (c) Microsoft Corporation.
+  License: MIT License
+  Source: https://github.com/microsoft/onnxruntime
+
+Notices and license texts:
+  extension/local-inference/third-party/NOTICES.txt
+  extension/local-inference/third-party/APACHE-2.0.txt
+  extension/local-inference/third-party/ONNXRUNTIME-MIT.txt
+
+3. YouTube caption interoperability code — MIT
+------------------------------------------------
+yt-dual-subs
+  Copyright (c) 2026 Gythiro
+  Revision: 5657c8a18ca30c84b5d4662bca58e3e9214ffdff
+  Source: https://github.com/Gythiro/yt-dual-subs
+  Adapted portions: passive Resource Timing capture and video-path handling.
+  License text: extension/vendor/LICENSE.yt-dual-subs.txt
+
+youtube-caption-extractor 1.10.2
+  Copyright (c) 2024 Himanshu Gupta
+  Revision: f1ee7c25ae84fb9fcdd9c7b0b9dfb90d8ce626b6
+  Source: https://github.com/devhims/youtube-caption-extractor
+  Vendored portion: JSON3 caption-event parsing.
+  License text: extension/vendor/LICENSE.youtube-caption-extractor.txt
+
+4. Lit UI library — BSD 3-Clause
+----------------------------------
+lit 3.3.3 (includes lit-html; bundled into extension page apps and the
+content-ui.js in-page UI layer)
+  Copyright (c) 2017 Google LLC. All rights reserved.
+  License: BSD 3-Clause
+  Source: https://github.com/lit/lit
+
+5. Provider icons and names
+---------------------------
+Provider icons sourced from the LobeHub icon collection are distributed under
+the MIT License:
+
+  Package: @lobehub/icons-static-svg@1.95.0
+  Copyright (c) 2023 LobeHub
+  Source: https://github.com/lobehub/lobe-icons
+
+The exact local-to-upstream asset mapping and MIT license text are in:
+  extension/icons/providers/NOTICE.txt
+
+Neutral symbols used for custom or otherwise unbranded provider entries are
+RoamCat project artwork. Provider names and trademarks remain the property of
+their respective owners. Their inclusion identifies compatible services and
+does not imply endorsement. Trademark and logo rights are not granted by the
+MPL-2.0 license for RoamCat.
+
+6. RoamCat trademarks
+---------------------
+"RoamCat", the "随心阅" wordmark, and the scanline-cat artwork are project
+identifiers of the RoamCat authors. The MPL-2.0 license covering the source
+code does not grant rights to use these marks in a way that suggests
+endorsement or an official distribution; modified forks should ship under
+their own branding.

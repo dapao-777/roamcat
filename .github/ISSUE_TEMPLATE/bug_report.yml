@@ -1,0 +1,54 @@
+name: 缺陷报告
+description: 扩展行为异常、报错或崩溃
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢报告。**请勿在 Issue 中粘贴 API Key、正文摘录或诊断导出中的敏感字段**——诊断 JSON 已脱敏，但请再自查一遍。
+  - type: input
+    id: version
+    attributes:
+      label: 扩展版本
+      description: chrome://extensions 中 RoamCat 显示的版本号
+      placeholder: 0.0.1
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: 浏览器与版本
+      placeholder: Chrome 141 / Edge 141
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: 复现步骤
+      description: 最小可复现步骤；如涉及特定网站请给出公开 URL
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期行为
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: 诊断导出（可选）
+      description: 设置页「数据与隐私 → 导出诊断」的 JSON，请先自查无敏感内容
+      render: json
+  - type: textarea
+    id: console
+    attributes:
+      label: 控制台报错（可选）
+      description: chrome://extensions → RoamCat → Service Worker 检查视图的报错
+      render: text

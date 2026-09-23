@@ -1,0 +1,42 @@
+{
+  "name": "roamcat",
+  "version": "0.0.1",
+  "private": true,
+  "description": "RoamCat · 随心阅 — Chrome/Edge MV3 双模式英文阅读扩展：本页双语翻译（主模式）+ 阅读辅助（副模式），本地优先。",
+  "scripts": {
+    "build": "vite build --config vite.content-ui.config.mjs --mode development && vite build --mode development",
+    "build:release": "vite build --config vite.content-ui.config.mjs && vite build",
+    "build:watch": "vite build --config vite.content-ui.config.mjs --mode development && vite build --mode development --watch",
+    "verify:build": "node tools/verify-build.cjs",
+    "verify": "node tools/verify-module-graph.cjs",
+    "test": "node --test",
+    "gen:tokens": "node build/gen-design-tokens.mjs"
+  },
+  "keywords": [
+    "chrome-extension",
+    "manifest-v3",
+    "reading",
+    "english-learning"
+  ],
+  "author": "fenghua",
+  "license": "MPL-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dapao-777/roamcat.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dapao-777/roamcat/issues"
+  },
+  "homepage": "https://github.com/dapao-777/roamcat",
+  "engines": {
+    "node": ">=20.11"
+  },
+  "type": "module",
+  "devDependencies": {
+    "playwright-core": "^1.63.0",
+    "vite": "^8.3.0"
+  },
+  "dependencies": {
+    "lit": "^3.3.3"
+  }
+}

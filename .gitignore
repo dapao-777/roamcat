@@ -1,0 +1,48 @@
+# Local agent / task metadata
+.workbuddy/
+
+# Local audit artifacts (screenshots, JSON reports, temp browser profiles)
+preview/
+
+# Secrets & credentials — never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Extension packaging output
+*.crx
+
+# OS / editor
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+$RECYCLE.BIN/
+*.lnk
+*.bak
+*~
+
+# IDE
+.idea/
+.vscode/
+
+# Node
+node_modules/
+*.log
+
+# Test / coverage output
+coverage/
+.nyc_output/
+
+# Temp verification copies
+*.tmp
+.cache/
+.tmp-*
+.probe-*
+
+# Build output
+dist/

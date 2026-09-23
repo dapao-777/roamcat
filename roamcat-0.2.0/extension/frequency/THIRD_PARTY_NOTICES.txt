@@ -1,0 +1,27 @@
+English frequency ranks
+=======================
+
+The generated english-frequency.js asset incorporates the English 50,000-word
+frequency list from FrequencyWords by Hermit Dave:
+
+  https://github.com/hermitdave/FrequencyWords
+  Source file: content/2018/en/en_50k.txt
+  Revision: 525f9b560de45753a5ea01069454e72e9aa541c6
+  Source SHA-256: 5351ff405b1126ef555791dd4d9798a48e3e9a501a9fc481a9da957752cfb458
+
+FrequencyWords states that its generated content is licensed under the
+Creative Commons Attribution-ShareAlike 4.0 International license (CC BY-SA
+4.0):
+
+  https://creativecommons.org/licenses/by-sa/4.0/
+  https://creativecommons.org/licenses/by-sa/4.0/legalcode
+
+Changes: tokens containing punctuation, numbers, markup fragments, and other
+non-English lexical forms were removed; duplicate case-folded tokens were
+removed; the remaining order was preserved and encoded as an ECMAScript
+module. The generated asset is distributed under CC BY-SA 4.0.
+
+FrequencyWords derives the 2018 lists from OpenSubtitles2018. Its project
+README identifies the corpus source as:
+
+  https://opus.nlpl.eu/OpenSubtitles2018.php

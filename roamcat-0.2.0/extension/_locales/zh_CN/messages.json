@@ -1,0 +1,22 @@
+{
+  "extName": {
+    "message": "RoamCat · 随心阅",
+    "description": "Extension display name."
+  },
+  "extShortName": {
+    "message": "RoamCat",
+    "description": "Short name for limited-space UI."
+  },
+  "extDescription": {
+    "message": "像猫一样漫游英文世界：双语对照随读随译，阅读辅助保留原文、只给稀疏提示与按需说明。本地优先。",
+    "description": "Store listing / chrome://extensions description."
+  },
+  "cmdToggleReading": {
+    "message": "开启或暂停当前网页的阅读辅助",
+    "description": "Command description for toggling reading assistance."
+  },
+  "cmdBilingualPage": {
+    "message": "开始本页双语翻译",
+    "description": "Command description for starting the bilingual page."
+  }
+}

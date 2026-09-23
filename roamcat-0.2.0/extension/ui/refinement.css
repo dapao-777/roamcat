@@ -1,0 +1,384 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+
+/* RoamCat: paper, ink, and quiet pixel details. Shared by the three surfaces. */
+:root {
+  --font-sans: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-serif: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', 'SimSun', Georgia, serif;
+}
+body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+button, input, select, textarea { font-family: var(--font-sans); }
+.options-body :is(.hero-title,.sec-heading,.stamp-dialog-title),
+.welcome-body :is(h1,h2,h3) { font-family: var(--font-serif); }
+.options-body .hero-title { font-size: 30px; line-height: 1.35; font-weight: 600; letter-spacing: .025em; margin: 14px 0 10px; }
+.options-body .hero-desc { line-height: 1.8; max-width: 46em; }
+.options-body :is(.sec-desc,.choice-card-desc,.field-help) { line-height: 1.8; font-size: 13px; }
+.options-body .sec-heading { font-size: 18px; font-weight: 600; letter-spacing: .015em; }
+.options-body .choice-card-title { font-family: var(--font-sans); font-size: 14px; font-weight: 600; }
+.options-body .sec-subheading { font-size: 10px; letter-spacing: .05em; color: var(--color-text-muted); }
+.options-body :is(.nav-group-header,.nav-group-tag,.brand-subtitle,.breadcrumb-category,.breadcrumb-current) { letter-spacing: .04em; }
+.options-body .nav-group-header { color: var(--color-text-muted); }
+.options-body .sidebar-top-section { padding: 20px 14px; }
+.options-body .sidebar-brand-lockup { gap: 6px; }
+.options-body .sidebar-brand-left { gap: 8px; }
+.options-body .brand-title-row { gap: 5px; }
+.options-body .brand-title { font-size: 13.5px; letter-spacing: .01em; }
+.options-body .brand-pro-tag { font: 9px/1.1 var(--font-mono); padding: 1px 4px; }
+.options-body .sidebar-collapse-btn { width: 24px; height: 24px; }
+.options-body .brand-live-dot { box-shadow: none; width: 5px; height: 5px; }
+.options-body .main-canvas-content { max-width: 1500px; margin: 0 auto; padding: 32px 40px 64px; }
+.options-body .compact-hero-banner { position: relative; padding: 27px 30px; border-radius: 4px; box-shadow: none; gap: 32px; }
+.options-body .hero-pill-badge { border: 0; padding: 0; background: none; font: 10px var(--font-display); letter-spacing: .05em; }
+.options-body .hero-stage-chip { background: none; border: 0; border-left: 1px solid var(--color-border-card); border-radius: 0; color: var(--color-text-muted); font-size: 11px; font-weight: 400; }
+.options-body .hero-tag-row { flex-wrap: wrap; }
+.options-body .reading-readout { width: 280px; display: block; padding: 18px 20px; border: 1px solid var(--color-border-subtle); border-radius: 10px; color: var(--color-text-primary); background: var(--color-card-inset); }
+.readout-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; font: 12px var(--font-sans); font-weight: 600; }
+.readout-edit { display: inline-flex; align-items: center; gap: 5px; color: var(--color-text-secondary); text-decoration: none; font-size: 11px; font-weight: 400; padding: 3px 0 3px 6px; }
+.readout-edit:hover { color: var(--color-text-primary); text-decoration: underline; text-underline-offset: 3px; }
+.readout-main { display: flex; gap: 14px; align-items: center; margin: 17px 0 18px; }
+.readout-key { display: grid; place-items: center; flex-shrink: 0; width: 44px; height: 46px; padding: 0; font: 25px/1 var(--font-mono); color: var(--color-text-primary); background: var(--color-card-bg); border: 1px solid var(--color-border-card); border-bottom-width: 3px; border-radius: 8px; box-shadow: 0 2px 3px rgba(0,0,0,.03); }
+.readout-action { display: block; font-size: 13px; font-weight: 500; margin-bottom: 5px; }
+.readout-caption { display: block; font-size: 11px; color: var(--color-text-secondary); line-height: 1.6; }
+.readout-footer { display: grid; grid-template-columns: 1.3fr 1fr; gap: 14px; margin: 0; border-top: 1px solid var(--color-border-card); padding-top: 13px; }
+.readout-footer > div { min-width: 0; }
+.readout-footer > div + div { border-left: 1px solid var(--color-border-card); padding-left: 14px; }
+.readout-footer dt { font-size: 10px; line-height: 1.5; color: var(--color-text-secondary); margin: 0 0 5px; }
+.readout-footer dd { margin: 0; font-size: 12px; line-height: 1.5; font-weight: 500; }
+.options-body .settings-cards-stack { gap: 20px; }
+.options-body :is(.swiss-card,.paper-card) { border-radius: 5px; box-shadow: none; }
+.options-body .swiss-card { padding: 24px; }
+.options-body .sec-code-badge { background: none; border: 0; padding: 0; color: var(--color-text-muted); font: 11px var(--font-display); }
+.options-body .sec-code-badge::before,.options-body .sec-code-badge::after { content: '+'; opacity: .6; }
+.options-body .sec-label-row { gap: 12px; flex-wrap: wrap; }
+.options-body :is(.rec-badge,.phase-badge) { background: none; border: 1px solid var(--color-border-card); color: var(--color-text-muted); border-radius: 2px; font: 9px var(--font-mono); letter-spacing: .04em; box-shadow: none; }
+.options-body .choice-card-item { position: relative; border: 1px solid var(--color-border-card); border-radius: 4px; padding: 18px; box-shadow: none; gap: 13px; align-items: flex-start; transition: background .15s,border-color .15s; }
+.options-body .choice-card-item.is-selected { border-color: var(--color-text-primary); background: var(--choice-selected-bg); box-shadow: inset 0 0 0 1px var(--color-text-primary); }
+.options-body .choice-card-item:hover { border-color: var(--color-text-muted); transform: none; }
+.options-body .choice-card-item:focus-within { outline: 2px solid var(--color-amber); outline-offset: 3px; }
+.options-body .choice-card-item input[type=radio] { margin-top: 2px; accent-color: var(--color-text-primary); }
+.choice-illustration { display: block; width: 100%; height: 58px; margin-bottom: 14px; position: relative; overflow: hidden; color: var(--color-text-primary); }
+.choice-illustration i { position: absolute; left: 0; top: 10px; height: 3px; width: 80%; background: currentColor; opacity: .12; }
+.choice-illustration i:nth-child(2) { top: 23px; width: 93%; }
+.choice-illustration i:nth-child(3) { top: 36px; width: 74%; }
+.choice-illustration i:nth-child(4) { top: 49px; width: 87%; }
+.choice-illustration i:nth-child(5) { left: 27%; top: 8px; height: 7px; width: 15%; opacity: .6; }
+.choice-illustration i:nth-child(6) { left: 55%; top: 34px; height: 7px; width: 19%; opacity: .35; }
+.art-demand i:nth-child(n+5) { display: none; }
+.art-demand b { position: absolute; right: 25%; top: 20px; width: 13px; height: 17px; border-left: 2px solid currentColor; border-top: 2px solid currentColor; transform: rotate(-25deg) skewY(30deg); opacity: .7; }
+.art-card b { position: absolute; left: 23%; top: 5px; width: 96px; height: 44px; border: 1px solid var(--color-text-muted); background: var(--color-card-bg); border-radius: 3px; }
+.art-card b::before,.art-card b::after { content: ''; position: absolute; height: 3px; left: 10px; top: 12px; width: 40px; background: currentColor; opacity: .6; }
+.art-card b::after { top: 24px; width: 65px; opacity: .2; }
+.art-annotation b { position: absolute; left: 27%; top: 0; width: 15%; height: 3px; background: var(--color-amber); }
+.options-body :is(.choice-card-badge,.choice-tag-pill) { font: 9px var(--font-mono); color: var(--color-text-muted); border-color: var(--color-border-card); background: none; border-radius: 2px; }
+.options-body .choice-card-desc { margin-bottom: 0; color: var(--color-text-secondary); }
+.options-body .choice-card-header { gap: 12px; }
+.options-body .swiss-select { font-size: 13px; }
+.options-body .threshold-stat-display .stat-number { font: 40px/1 var(--font-display); color: var(--color-text-primary); }
+.options-body .threshold-stat-display .stat-unit { color: var(--color-text-muted); font-size: 11px; }
+.options-body .matrix-step-gradient-bar { gap: 4px; height: 23px; }
+.options-body .matrix-step-cell { border-radius: 0; background: var(--color-border-card); mask: repeating-linear-gradient(to bottom,#000 0 5px,transparent 5px 8px); }
+.options-body .matrix-step-cell.active { background: var(--color-text-primary); }
+.options-body .matrix-step-cell.current { background: var(--color-amber); box-shadow: none; }
+.options-body input.swiss-range-input { display: block; background: var(--color-border-card); height: 3px; min-height: 0; padding: 0; border: 0; margin: 12px 0; border-radius: 0; }
+.options-body .swiss-range-input::-webkit-slider-thumb { width: 15px; height: 19px; border-radius: 2px; border: 2px solid var(--color-card-bg); background: var(--color-text-primary); box-shadow: none; }
+.options-body .swiss-range-input:focus-visible { outline: 2px solid var(--color-amber); outline-offset: 6px; }
+.options-body .matrix-scale-legend { gap: 12px; flex-wrap: wrap; }
+.options-body .history-metrics { gap: 12px; }
+.options-body .history-metrics > div { position: relative; border-radius: 4px; padding: 20px; box-shadow: none; }
+.options-body .history-metrics strong { font-family: var(--font-display),var(--font-sans); font-size: 26px; font-weight: 400; letter-spacing: -.03em; }
+.options-body .history-metrics > div::after { content: '+'; position: absolute; top: 12px; right: 13px; color: var(--color-text-muted); font: 12px var(--font-mono); }
+.options-body .history-chart { gap: 5px; background: repeating-linear-gradient(to top,transparent 0 31px,var(--color-border-subtle) 31px 32px); }
+.options-body .history-bar { background: var(--color-text-primary); border-radius: 0; mask: repeating-linear-gradient(to top,#000 0 5px,transparent 5px 8px); }
+.options-body .history-bar:last-child { background: var(--color-amber); }
+.options-body .history-chart-card { padding: 24px; }
+.options-body .stamp-tree-svg.stamp-cat-svg { width: 100%; height: 100%; color: var(--color-text-primary); }
+.welcome-body .welcome-hero-art > svg { width: min(100%,340px); height: auto; }
+.welcome-body .welcome-hero-title { font-weight: 600; }
+.welcome-body .welcome-hero-desc { line-height: 1.9; }
+.options-body :is(.swiss-cards-grid-2,.choice-card-grid) > * { min-width: 0; }
+@media (max-width:1100px) {
+  .options-body .toolbar-engine-badge { display: none; }
+  .options-body .toolbar-left { min-width: 0; }
+  .options-body .toolbar-sync-state { display: none; }
+  .options-body .main-canvas-content { padding: 26px 24px 48px; }
+  .options-body .compact-hero-banner { gap: 20px; padding: 22px; }
+  .options-body .reading-readout { width: 250px; padding: 16px; }
+  .options-body .hero-title { font-size: 26px; }
+  .options-body .sec-subheading { display: none; }
+}
+@media (max-width:800px) {
+  .options-body .main-panel { padding: 0; }
+  .options-body .settings-toolbar { padding: 12px 20px; min-height: 60px; height: auto; }
+  .options-body .toolbar-left { display: none; }
+  .options-body .compact-hero-banner { flex-direction: column; align-items: stretch; }
+  .options-body .reading-readout { box-sizing: border-box; width: 100%; }
+  .readout-main { margin: 10px 0; }
+  .options-body .choice-card-grid.two-col,.options-body .swiss-cards-grid-2 { grid-template-columns: 1fr; }
+  .options-body .hero-stage-chip { display: none; }
+  .options-body .swiss-card { padding: 18px; }
+}
+@media (max-width:600px) {
+  .options-body .sidebar { width: 60px; min-width: 60px; max-width: 60px; box-sizing: border-box; padding: 0; }
+  .options-body .sidebar-top-section { padding: 16px 8px; gap: 20px; }
+  .options-body .sidebar :is(.brand-info-wrap,.sidebar-header-actions,.nav-group-header,.nav-text,.cyber-nav-badge,.nav-active-pill-dot,.sidebar-user-card-wrap) { display: none; }
+  .options-body .sidebar nav { display: flex; flex-direction: column; overflow: visible; gap: 18px; }
+  .options-body .sidebar nav svg { display: block; }
+  .options-body .sidebar nav a { flex: initial; border-radius: 4px; padding: 12px; }
+  .options-body .sidebar-brand-lockup { padding: 0; justify-content: center; }
+  .options-body .cyber-nav-item { justify-content: center; padding: 12px 8px; }
+  .options-body .main-canvas-content { padding: 20px 12px 36px; }
+  .options-body .settings-toolbar { padding: 10px 12px; gap: 8px; flex-wrap: wrap; height: auto; }
+  .options-body .toolbar-left { display: none; }
+  .options-body .toolbar-right { gap: 8px; flex-wrap: wrap; }
+  .options-body .sync-status { display: none; }
+  .options-body .preview-hud-btn { padding: 8px; }
+  .options-body .hero-title { font-size: 24px; }
+  .options-body .compact-hero-banner { padding: 18px; }
+  .options-body .choice-card-item { padding: 14px; }
+  .options-body .swiss-card-header { flex-wrap: wrap; gap: 16px; }
+  .options-body .hotkey-card-body { gap: 16px; flex-wrap: wrap; }
+  .options-body .history-metrics { grid-template-columns: 1fr 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .options-body *, .welcome-body * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+
+/* Chinese settings labels use readable text; pixel typography stays on numbers. */
+.options-body .brand-title { font-family: var(--font-serif); font-size: 13.5px; font-weight: 600; letter-spacing: .01em; white-space: nowrap; }
+.options-body :is(.brand-subtitle,.nav-group-header,.toolbar-breadcrumb,.hero-pill-badge,.readout-heading,.rec-badge,.phase-badge,.choice-card-badge,.choice-tag-pill,.stamp-meta-sub,.telemetry-bar) { font-family: var(--font-sans); letter-spacing: .02em; }
+.options-body .nav-group-header { font-size: 11px; }
+.options-body .hero-pill-badge { font-size: 11px; }
+.options-body .readout-heading { font-size: 12px; }
+.options-body :is(.rec-badge,.phase-badge,.choice-card-badge,.choice-tag-pill) { font-size: 11px; }
+.options-body .stamp-hero-num { font-family: var(--font-serif); font-size: 23px; letter-spacing: .04em; }
+
+/* A quiet, single-surface brand card in the sidebar. */
+.options-body .sidebar-user-card-wrap { padding: 14px 16px 16px; border-top: 0; }
+.options-body .stamp-group-header { padding-left: 2px; margin-bottom: 2px; }
+.options-body .matrix-stamp-card { align-items: center; gap: 12px; padding: 13px 12px; min-height: 96px; border: 1px solid var(--color-border-subtle); border-radius: 10px; background: var(--color-card-bg); box-shadow: none; }
+.options-body .matrix-stamp-card:hover { background: var(--color-card-inset); border-color: var(--color-border-card); transform: none; box-shadow: none; }
+.options-body .matrix-stamp-card .stamp-art-box { width: 46px; min-width: 46px; height: 62px; padding: 0 10px 0 0; background: none; border: 0; border-right: 1px dashed var(--color-border-subtle); overflow: hidden; }
+.options-body .matrix-stamp-card .stamp-art-box::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 15px; background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--color-emerald) 32%, transparent) 55%, transparent); opacity: 0; transform: translateY(-100%); pointer-events: none; }
+.options-body .matrix-stamp-card:hover .stamp-art-box::after { opacity: 1; animation: stamp-scanline 1.4s var(--rc-ease-standard, ease) infinite; }
+.options-body .matrix-stamp-card:hover .stamp-tree-svg { color: var(--color-text-secondary); }
+@keyframes stamp-scanline { from { transform: translateY(-110%); } to { transform: translateY(440%); } }
+.options-body .matrix-stamp-card .stamp-content-wrap { padding: 0; gap: 4px; overflow: visible; }
+.options-body .matrix-stamp-card .stamp-eyebrow { font-family: var(--font-mono); font-size: 8.5px; letter-spacing: .22em; text-transform: uppercase; color: var(--color-text-muted); line-height: 1; white-space: nowrap; }
+.options-body .matrix-stamp-card .stamp-hero-num { font-size: 19px; font-weight: 600; line-height: 1.25; margin: 0; letter-spacing: .035em; }
+.options-body .matrix-stamp-card .stamp-meta-info { margin: 0; }
+.options-body .matrix-stamp-card .stamp-meta-title { font-size: 11px; font-weight: 400; line-height: 1.5; color: var(--color-text-secondary); }
+.options-body .stamp-pet-status { display: inline-flex; align-items: center; gap: 5px; margin-top: 3px; font-family: var(--font-mono); font-size: 9px; letter-spacing: .06em; color: var(--color-text-muted); line-height: 1; }
+.options-body .stamp-status-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--color-text-muted); flex-shrink: 0; transition: background-color .2s ease, box-shadow .2s ease; }
+.options-body .stamp-pet-status.is-on { color: var(--color-text-secondary); }
+.options-body .stamp-pet-status.is-on .stamp-status-dot { background: var(--color-emerald); box-shadow: 0 0 5px color-mix(in srgb, var(--color-emerald) 70%, transparent); animation: stamp-status-pulse 2.6s ease-in-out infinite; }
+@keyframes stamp-status-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+.options-body .matrix-stamp-card .stamp-seal-badge { right: 4px; top: 50%; bottom: auto; width: 46px; height: 46px; transform: translateY(-50%) rotate(-12deg); opacity: .5; }
+.options-body .matrix-stamp-card:hover .stamp-seal-badge { transform: translateY(-50%) rotate(-3deg) scale(1.06); opacity: .95; }
+.options-body.sidebar-collapsed .sidebar-user-card-wrap { padding: 10px; }
+.options-body.sidebar-collapsed .stamp-group-header { display: none; }
+.options-body.sidebar-collapsed .matrix-stamp-card { min-height: 52px; padding: 5px; gap: 0; justify-content: center; }
+.options-body.sidebar-collapsed .matrix-stamp-card .stamp-art-box { min-width: 0; width: 34px; height: 40px; padding: 0; border-right: 0; }
+.options-body.sidebar-collapsed .matrix-stamp-card .stamp-seal-badge { display: none; }
+.options-body.sidebar-collapsed .matrix-stamp-card::after { display: none; }
+
+/* RoamCat Floating Pet Card in Options */
+.options-body .pet-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 18px;
+  border-top: 1px solid var(--color-border-card);
+}
+.options-body .pet-control-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.options-body .pet-control-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.options-body .pet-control-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+.options-body .pet-control-caption {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+.options-body .pet-feature-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.options-body .pet-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-family: var(--font-mono, monospace);
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: var(--color-card-inset, rgba(0,0,0,0.03));
+  border: 1px solid var(--color-border-subtle, rgba(0,0,0,0.08));
+  color: var(--color-text-secondary);
+}
+.options-body .pet-tag-icon {
+  font-size: 12px;
+}
+.options-body .pet-footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--color-border-subtle);
+}
+.options-body .pet-hint-text {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.options-body .pet-reset-btn {
+  padding: 5px 12px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* Keep the companion controls usable in narrow settings windows. */
+.options-body .pet-control-info { min-width: 0; }
+.options-body .pet-control-row .switch { flex-shrink: 0; }
+@media (max-width:600px) {
+  .options-body .sec-label-row { flex-wrap: wrap; }
+  .options-body .pet-footer-row { flex-wrap: wrap; }
+}
+
+/* 布局优化：各分栏历史遗留单行提示框清理，提升首屏 70px 黄金视野 */
+.options-body .section-intro {
+  display: contents;
+}
+.options-body .section-intro p {
+  display: none !important;
+}
+
+/* 顶部阅读预设胶囊状态 */
+.options-body .readout-status-pill {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  background: var(--color-card-bg);
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border-card);
+}
+.options-body .readout-live-tag {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+/* API Key 密码输入框小眼睛切换 */
+.options-body .password-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+.options-body .password-input-wrap input {
+  width: 100%;
+  padding-right: 38px !important;
+}
+.options-body .toggle-password-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: color .15s, background .15s;
+}
+.options-body .toggle-password-btn:hover {
+  color: var(--color-text-primary);
+  background: var(--color-card-inset);
+}
+.options-body .toggle-password-btn:focus-visible {
+  outline: 2px solid var(--color-amber, #f59e0b);
+  outline-offset: 2px;
+}
+
+/* 伴读猫直达聚焦聚光灯动效 */
+@keyframes petCardFlash {
+  0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+  50% { box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.4); }
+  100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+}
+.options-body .pet-card-highlight {
+  animation: petCardFlash 1.4s cubic-bezier(0.16, 1, 0.3, 1) 2;
+}
+
+/* -------------------------------------------------------------
+ * 全局设置页排版系统深度调优
+ * ----------------------------------------------------------- */
+
+/* 1. 消除编程式聚焦产生的黑框突兀焦点环，保留键盘 Tab 无障碍导航的高亮 */
+.options-body .hero-title:focus {
+  outline: none;
+}
+.options-body .hero-title:focus-visible {
+  outline: 2px solid var(--color-amber, #f59e0b);
+  outline-offset: 4px;
+}
+
+/* 2. 消除未填充内容的动态卡片占位空白框（如未分析时的状态卡片等） */
+.options-body :is(.personalization-status, .personalization-pending, .known-word-list, .rule-list, .version-list):empty,
+.options-body .paper-card:empty {
+  display: none !important;
+}
+
+/* 3. 领域识别 6 大模式规整为对称 3x2 网格，避免单行 4 项导致的底部单列拉伸 */
+.options-body .recognition-choices {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 14px;
+}
+@media (max-width: 960px) {
+  .options-body .recognition-choices {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+@media (max-width: 580px) {
+  .options-body .recognition-choices {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* 4. 头部 Banner 在无右侧伴读卡片时自适应视觉重心 */
+.options-body .compact-hero-banner:has(.reading-readout[hidden]) .hero-left {
+  max-width: 56em;
+}
+
+/* 5. 术语表单与输入行微调：统一对齐基线与交互边框 */
+.options-body #term-form.inline-form {
+  gap: 16px 20px;
+}
+.options-body #term-form .primary-action {
+  height: 42px;
+  align-self: end;
+}
+
+/* 6. 卡片与按钮全局交互柔和感提升 */
+.options-body .swiss-card,
+.options-body .paper-card {
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+
+

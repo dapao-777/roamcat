@@ -1,0 +1,76 @@
+/**
+ * @file src/pages/options/options.css
+ * 文件职责：设置页动效层——分区切换 view transition、侧栏折叠过渡、
+ *   卡片入场与交互微动效；布局与配色仍由 ui.css/refinement.css 提供。
+ * 主要内容：roamcat-options 宿主 display:contents（body flex 布局不被打断）；
+ *   view-transition 旧新快照交错淡入；reduced-motion 由 motion.css 统一兜底。
+ * 模块边界：仅 options 页面引用。
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+ */
+
+roamcat-options { display: contents; }
+
+/* 分区切换：整页快照交叉淡化（startViewTransition 由 options-app 触发） */
+::view-transition-old(root) {
+  animation: rc-vt-fade-out var(--rc-dur-med) var(--rc-ease-in) both;
+}
+::view-transition-new(root) {
+  animation: rc-vt-fade-in var(--rc-dur-slow) var(--rc-ease-out) both;
+}
+@keyframes rc-vt-fade-out { to { opacity: 0; } }
+@keyframes rc-vt-fade-in { from { opacity: 0; translate: 0 var(--rc-space-3); } }
+
+/* 侧栏折叠/展开宽度过渡 */
+.sidebar {
+  transition: width var(--rc-dur-med) var(--rc-ease-standard),
+    padding var(--rc-dur-med) var(--rc-ease-standard);
+}
+.sidebar .nav-text, .sidebar .brand-info-wrap, .sidebar .nav-group-header span,
+.sidebar .stamp-content-wrap, .sidebar .toolbar-brand-text {
+  transition: opacity var(--rc-dur-fast) var(--rc-ease-standard);
+}
+.main-panel {
+  transition: margin var(--rc-dur-med) var(--rc-ease-standard);
+}
+
+/* 导航项与卡片交互 */
+.cyber-nav-item { transition: all var(--rc-dur-fast) var(--rc-ease-standard); }
+.cyber-nav-item:active { scale: 0.98; }
+.swiss-card, .paper-card {
+  transition: border-color var(--rc-dur-fast) var(--rc-ease-standard),
+    box-shadow var(--rc-dur-fast) var(--rc-ease-standard),
+    translate var(--rc-dur-fast) var(--rc-ease-standard);
+}
+.choice-card-item { transition: all var(--rc-dur-fast) var(--rc-ease-standard); }
+.choice-card-item:active { scale: 0.985; }
+
+/* 宣言弹层进出动画（allow-discrete 驱动 display/overlay 过渡） */
+dialog.stamp-manifesto-dialog {
+  transition: opacity var(--rc-dur-med) var(--rc-ease-out),
+    scale var(--rc-dur-med) var(--rc-spring-soft),
+    overlay var(--rc-dur-med) allow-discrete,
+    display var(--rc-dur-med) allow-discrete;
+  scale: 1;
+  opacity: 1;
+}
+dialog.stamp-manifesto-dialog:not([open]) {
+  opacity: 0;
+  scale: 0.96;
+}
+@starting-style {
+  dialog.stamp-manifesto-dialog[open] {
+    opacity: 0;
+    scale: 0.96;
+  }
+}
+
+/* 印章卡按压 */
+.matrix-stamp-card {
+  transition: translate var(--rc-dur-fast) var(--rc-spring-pop),
+    box-shadow var(--rc-dur-fast) var(--rc-ease-standard);
+}
+.matrix-stamp-card:active { translate: 0 1px; }

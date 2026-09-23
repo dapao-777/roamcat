@@ -1,0 +1,59 @@
+Provider logos identify their corresponding services. Brand names and trademarks remain the property of their respective owners; inclusion does not imply endorsement.
+
+LobeHub icon collection
+Package: @lobehub/icons-static-svg@1.95.0
+Source base: https://cdn.jsdelivr.net/npm/@lobehub/icons-static-svg@1.95.0/icons/
+License source: https://raw.githubusercontent.com/lobehub/lobe-icons/master/LICENSE
+Local file -> upstream file:
+  openai.svg -> openai.svg
+  deepseek.svg -> deepseek-color.svg
+  google.svg -> gemini-color.svg
+  anthropic.svg -> anthropic.svg
+  xai.svg -> grok.svg
+  openrouter.svg -> openrouter-color.svg
+  minimax.svg -> minimax-color.svg
+  siliconflow.svg -> siliconcloud-color.svg
+  azure.svg -> azureai-color.svg
+  bedrock.svg -> bedrock-color.svg
+  groq.svg -> groq.svg
+  deepinfra.svg -> deepinfra-color.svg
+  mistral.svg -> mistral-color.svg
+  togetherai.svg -> together-color.svg
+  cohere.svg -> cohere-color.svg
+  fireworks.svg -> fireworks-color.svg
+  cerebras.svg -> cerebras-color.svg
+  ollama.svg -> ollama.svg
+  volcengine.svg -> volcengine-color.svg
+  alibaba.svg -> alibabacloud-color.svg
+  moonshotai.svg -> moonshot.svg
+  huggingface.svg -> huggingface-color.svg
+Monochrome currentColor values are fixed to #111827 for standalone image rendering.
+
+MIT License
+
+Copyright (c) 2023 LobeHub
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+Project-owned neutral icon
+
+custom-api.svg:
+  RoamCat's original neutral API plug symbol, adapted from ui/options.html.
+  Covered by the project's MPL-2.0 license. Used for the custom protocol entries
+  and providers without a dedicated brand icon; it does not represent a provider brand.

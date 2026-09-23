@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Module graph + unit tests (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['20', '22', '24']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      # 静态门禁与单测均为零依赖，不需要 npm ci（playwright-core 仅本机浏览器回归用）。
+      - name: Module graph gate
+        run: node tools/verify-module-graph.cjs
+      - name: Unit tests
+        run: npm test

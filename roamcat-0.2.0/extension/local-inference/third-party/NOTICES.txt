@@ -1,0 +1,13 @@
+RoamCat local inference third-party notices
+
+@huggingface/transformers 3.7.3 — Apache License 2.0
+Copyright 2023 Hugging Face, Inc.
+https://github.com/huggingface/transformers.js
+
+ONNX Runtime Web 1.22.0-dev.20250409-89f8206ba4 — MIT License
+Copyright (c) Microsoft Corporation.
+https://github.com/microsoft/onnxruntime
+
+Xenova/all-MiniLM-L6-v2 revision 751bff37182d3f1213fa05d7196b954e230abad9
+Apache License 2.0; derived from sentence-transformers/all-MiniLM-L6-v2.
+https://huggingface.co/Xenova/all-MiniLM-L6-v2

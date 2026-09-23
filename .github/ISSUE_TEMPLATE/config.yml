@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 安全漏洞（私下报告）
+    url: https://github.com/dapao-777/roamcat/security/advisories/new
+    about: 涉及凭据、信任边界、连接器或隐私数据的问题请勿开公开 Issue，见 SECURITY.md
+  - name: 使用问题与讨论
+    url: https://github.com/dapao-777/roamcat/discussions
+    about: 安装、配置、用法相关问题请走 Discussions

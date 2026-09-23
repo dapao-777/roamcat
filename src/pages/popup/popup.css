@@ -1,0 +1,63 @@
+/**
+ * @file src/pages/popup/popup.css
+ * 文件职责：弹窗动效与 Lit 宿主修正——卡片交错入场、开关弹簧、进度条缓动、
+ *   按钮按压反馈；视觉色值仍由 ui.css 提供，本文件只叠加运动层。
+ * 主要内容：roamcat-popup 宿主 display:contents（light DOM 渲染的版面穿透）；
+ *   选择器与 ui.css 同优先级、靠加载顺序覆盖时长/缓动。
+ * 模块边界：仅 popup 页面引用；reduced-motion 兜底在 motion.css 统一处理。
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+ */
+
+roamcat-popup { display: contents; }
+
+/* 条件卡片（服务告警 / 按需建议）出现时的弹性入场 */
+.popup-alert-card:not([hidden]),
+.suggestion-panel:not([hidden]) {
+  animation: rc-enter-pop var(--rc-dur-med) var(--rc-spring-soft) both;
+}
+
+/* 开关旋钮：弹簧曲线替代匀速 ease */
+.popup-card .switch input + span {
+  transition: background var(--rc-dur-fast) var(--rc-ease-standard),
+    border-color var(--rc-dur-fast) var(--rc-ease-standard);
+}
+.popup-card .switch input + span::after {
+  transition: transform var(--rc-dur-med) var(--rc-spring-pop),
+    background var(--rc-dur-fast) var(--rc-ease-standard),
+    left var(--rc-dur-med) var(--rc-spring-pop), top var(--rc-dur-med) var(--rc-spring-pop),
+    width var(--rc-dur-med) var(--rc-spring-pop), height var(--rc-dur-med) var(--rc-spring-pop);
+}
+
+/* 双语翻译进度条：缓出填充 + 翻译中微光 */
+.emergency-progress-fill {
+  transition: width var(--rc-dur-med) var(--rc-ease-out);
+}
+.emergency-panel:has(#emergency-stop:not([hidden])) .emergency-progress-fill {
+  background: linear-gradient(90deg, var(--rc-ink) 0%, var(--rc-ink) 60%, var(--rc-ink-tertiary) 60%, var(--rc-ink) 100%);
+  background-size: 200% 100%;
+  animation: rc-shimmer 1.6s var(--rc-ease-standard) infinite;
+}
+
+/* 按钮按压反馈：独立 scale 属性，与 transform 位移共存 */
+.primary-action:where(:enabled):active,
+.secondary-button:where(:enabled):active,
+.icon-text-button:where(:enabled):active,
+.popup-btn-warning:where(:enabled):active {
+  scale: 0.97;
+  transition: scale var(--rc-dur-instant) var(--rc-ease-standard);
+}
+.primary-action:where(:enabled),
+.secondary-button:where(:enabled),
+.icon-text-button:where(:enabled),
+.popup-btn-warning:where(:enabled) {
+  transition: scale var(--rc-dur-fast) var(--rc-ease-standard);
+}
+
+/* 状态徽章轻脉冲 */
+.status-chip.active {
+  animation: rc-enter-pop var(--rc-dur-fast) var(--rc-ease-out);
+}

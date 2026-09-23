@@ -1,0 +1,45 @@
+/**
+ * @file src/styles/base.css
+ * 文件职责：Lit 页面共享基线——cascade layer 下的 reset/排版/焦点/滚动条基线，
+ *   只消费 --rc-* canonical token。
+ * 主要内容：@layer reset/base；box-sizing、字体栈、focus-visible 环、选区、
+ *   细滚动条；不含任何 --color-* 旧名引用。
+ * 模块边界：仅扩展页使用（页面内 UI 在 Shadow DOM 内自带样式，不引用本文件）。
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+ */
+
+@layer reset, base;
+
+@layer reset {
+  *, *::before, *::after { box-sizing: border-box; }
+  * { margin: 0; }
+  img, svg, video { display: block; max-width: 100%; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  [hidden] { display: none !important; }
+}
+
+@layer base {
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: var(--rc-sans);
+    font-size: var(--rc-type-body);
+    line-height: var(--rc-leading-body);
+    color: var(--rc-ink);
+    background: var(--rc-canvas);
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--rc-accent-soft); color: var(--rc-ink); }
+  :focus-visible {
+    outline: var(--rc-focus-ring);
+    outline-offset: var(--rc-focus-offset);
+  }
+  :focus:not(:focus-visible) { outline: none; }
+  kbd, code, pre { font-family: var(--rc-mono); }
+  .rc-font-display { font-family: var(--rc-display); }
+  * { scrollbar-width: thin; scrollbar-color: var(--rc-line-dark) transparent; }
+}

@@ -1,0 +1,3 @@
+Silkscreen font (regular & bold) - Copyright (c) 2001 K-Type, Keith Bates
+Licensed under the SIL Open Font License, Version 1.1
+https://openfontlicense.org - Downloaded from Google Fonts (fonts.gstatic.com)

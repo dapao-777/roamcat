@@ -1,0 +1,18 @@
+# Line endings: LF in the index, platform-native in the working tree.
+* text=auto eol=lf
+
+# Binary assets
+*.png binary
+*.woff2 binary
+*.wasm binary
+*.zip binary
+
+# Vendored / generated assets — keep GitHub language stats honest.
+roamcat-0.2.0/extension/local-inference/runtime/** linguist-vendored
+roamcat-0.2.0/extension/local-inference/models/** linguist-vendored
+roamcat-0.2.0/extension/local-inference/third-party/** linguist-vendored
+roamcat-0.2.0/extension/vendor/** linguist-vendored
+roamcat-0.2.0/extension/fonts/** linguist-vendored
+roamcat-0.2.0/extension/icons/** linguist-vendored
+roamcat-0.2.0/extension/frequency/** linguist-generated
+package-lock.json linguist-generated

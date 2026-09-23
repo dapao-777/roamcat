@@ -1,0 +1,22 @@
+{
+  "extName": {
+    "message": "RoamCat",
+    "description": "Extension display name."
+  },
+  "extShortName": {
+    "message": "RoamCat",
+    "description": "Short name for limited-space UI."
+  },
+  "extDescription": {
+    "message": "Roam the English web like a cat: bilingual page translation plus reading aids with sparse hints. Local-first.",
+    "description": "Store listing / chrome://extensions description."
+  },
+  "cmdToggleReading": {
+    "message": "Toggle reading assistance on this page",
+    "description": "Command description for toggling reading assistance."
+  },
+  "cmdBilingualPage": {
+    "message": "Start bilingual translation for this page",
+    "description": "Command description for starting the bilingual page."
+  }
+}

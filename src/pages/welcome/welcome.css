@@ -1,0 +1,67 @@
+/**
+ * @file src/pages/welcome/welcome.css
+ * 文件职责：欢迎页动效层——步骤卡片滚动入场（view() 时间线）、按键触感、
+ *   主题切换过渡、toast 弹性入场；视觉色值仍由 welcome.css/ui.css 提供。
+ * 主要内容：roamcat-welcome 宿主 display:contents；animation-timeline: view()
+ *   以 @supports 门控（Chrome 125 已支持，保留回退）；reduced-motion 统一兜底。
+ * 模块边界：仅 welcome 页面引用。
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+ */
+
+roamcat-welcome { display: contents; }
+
+/* 步骤卡片滚动入场：进入视口 0–60% 区间内淡入上滑，随后静止 */
+@supports (animation-timeline: view()) {
+  .welcome-step-card {
+    animation: rc-enter-pop linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 55%;
+  }
+}
+
+/* 不支持滚动时间线时一次性入场（Chrome 125 实际命中 @supports 分支） */
+@supports not (animation-timeline: view()) {
+  .welcome-step-card { animation: rc-enter-pop var(--rc-dur-med) var(--rc-ease-out) both; }
+}
+
+/* 按键盒：弹簧按压触感（替代 120ms 瞬时位移） */
+.welcome-keycap-box {
+  transition: translate var(--rc-dur-fast) var(--rc-spring-pop);
+}
+.welcome-keycap-box.keycap-pressed { translate: 0 2px; }
+
+/* 沙盒 HUD 卡片与译文展开 */
+.sandbox-hud-card:not([hidden]) {
+  animation: rc-enter-pop var(--rc-dur-med) var(--rc-spring-soft) both;
+}
+.hud-sentence-translation:not([hidden]) {
+  animation: rc-enter-pop var(--rc-dur-fast) var(--rc-ease-out) both;
+}
+.sb-token {
+  transition: background var(--rc-dur-fast) var(--rc-ease-standard),
+    box-shadow var(--rc-dur-fast) var(--rc-ease-standard);
+}
+.hud-audio-btn:where(:enabled):active {
+  scale: 0.88;
+  transition: scale var(--rc-dur-instant) var(--rc-ease-standard);
+}
+
+/* 形态切换按钮与选择卡 */
+.sandbox-mode-btn { transition: all var(--rc-dur-fast) var(--rc-ease-standard); }
+.welcome-choice-card {
+  transition: border-color var(--rc-dur-fast) var(--rc-ease-standard),
+    background var(--rc-dur-fast) var(--rc-ease-standard),
+    translate var(--rc-dur-fast) var(--rc-spring-pop);
+}
+.welcome-choice-card:active { translate: 0 1px; }
+.hotkey-choice-btn { transition: all var(--rc-dur-fast) var(--rc-ease-standard); }
+.hotkey-choice-btn:active { scale: 0.96; }
+
+/* toast 弹性入场 */
+.launch-toast:not([hidden]) {
+  animation: rc-enter-pop var(--rc-dur-med) var(--rc-spring-soft) both;
+}

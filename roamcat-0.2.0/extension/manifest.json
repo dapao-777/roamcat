@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "__MSG_extName__",
+  "short_name": "__MSG_extShortName__",
+  "version": "0.0.1",
+  "description": "__MSG_extDescription__",
+  "default_locale": "zh_CN",
+  "homepage_url": "https://github.com/dapao-777/roamcat",
+  "minimum_chrome_version": "125",
+  "icons": {"16":"icons/icon-16.png","32":"icons/icon-32.png","48":"icons/icon-48.png","128":"icons/icon-128.png"},
+  "permissions": ["activeTab", "scripting", "storage", "nativeMessaging", "offscreen", "contextMenus", "tts", "webNavigation"],
+  "host_permissions": ["https://*/*", "http://*/*"],
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["design.js", "reading-style.js", "content-ui.js", "content.js"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+  "web_accessible_resources": [{"resources":["icons/roamcat.svg"],"matches":["http://*/*","https://*/*"],"use_dynamic_url":true}],
+  "background": {"service_worker": "background.js", "type": "module"},
+  "action": {"default_popup": "ui/popup.html", "default_title": "__MSG_extName__", "default_icon": {"16":"icons/icon-16.png","32":"icons/icon-32.png","48":"icons/icon-48.png"}},
+  "options_page": "ui/options.html",
+  "commands": {
+    "toggle-reading": {"suggested_key": {"default": "Alt+Shift+S", "mac": "Alt+Shift+S"}, "description": "__MSG_cmdToggleReading__"},
+    "open-bilingual-page": {"suggested_key": {"default": "Alt+Shift+T", "mac": "Alt+Shift+T"}, "description": "__MSG_cmdBilingualPage__"}
+  },
+  "content_security_policy": {"extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'none'; base-uri 'none'"}
+}

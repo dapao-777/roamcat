@@ -1,0 +1,82 @@
+/**
+ * @file src/styles/motion.css
+ * 文件职责：Lit 页面共享动效层——基于 --rc-dur-* 与 --rc-spring-* token 的通用
+ *   进入/退出/微交互动画与 reduced-motion 兜底。
+ * 主要内容：@layer motion；enter/exit/pulse/shimmer 关键帧与工具类；顶层弹层
+ *   （dialog/popover）的 allow-discrete + @starting-style 协议；全局
+ *   prefers-reduced-motion 兜底收缩到 80ms 淡入。
+ * 模块边界：仅扩展页使用；页面内 Shadow DOM 组件把对应协议内联进各自 css。
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+ */
+
+@layer motion {
+  @keyframes rc-enter-pop {
+    from { opacity: 0; scale: 0.96; translate: 0 4px; }
+    to { opacity: 1; scale: 1; translate: 0 0; }
+  }
+  @keyframes rc-exit-fade {
+    to { opacity: 0; scale: 0.98; }
+  }
+  @keyframes rc-shimmer {
+    from { background-position: 200% 0; }
+    to { background-position: -200% 0; }
+  }
+  @keyframes rc-stamp-in {
+    from { opacity: 0; scale: 0.72; rotate: -6deg; }
+    to { opacity: 1; scale: 1; rotate: 0deg; }
+  }
+
+  .rc-enter { animation: rc-enter-pop var(--rc-dur-med) var(--rc-spring-soft) both; }
+  .rc-stagger > * { animation: rc-enter-pop var(--rc-dur-med) var(--rc-spring-soft) both; }
+  .rc-stagger > *:nth-child(2) { animation-delay: var(--rc-stagger-step); }
+  .rc-stagger > *:nth-child(3) { animation-delay: calc(var(--rc-stagger-step) * 2); }
+  .rc-stagger > *:nth-child(4) { animation-delay: calc(var(--rc-stagger-step) * 3); }
+  .rc-stagger > *:nth-child(n+5) { animation-delay: calc(var(--rc-stagger-step) * 4); }
+
+  .rc-skeleton {
+    background: linear-gradient(90deg, var(--rc-surface-subtle) 25%, var(--rc-surface-hover) 50%, var(--rc-surface-subtle) 75%);
+    background-size: 200% 100%;
+    animation: rc-shimmer 1.2s var(--rc-ease-standard) infinite;
+    border-radius: var(--rc-radius-2);
+  }
+
+  /* 顶层弹层进出协议：dialog/popover 统一 allow-discrete + @starting-style。 */
+  dialog, [popover] {
+    transition: display var(--rc-dur-fast) allow-discrete, overlay var(--rc-dur-fast) allow-discrete,
+      opacity var(--rc-dur-fast) var(--rc-ease-out), scale var(--rc-dur-fast) var(--rc-spring-pop);
+    opacity: 1;
+    scale: 1;
+  }
+  dialog:not([open]), [popover]:not(:popover-open) { opacity: 0; scale: 0.97; }
+  @starting-style {
+    dialog[open], [popover]:popover-open { opacity: 0; scale: 0.97; }
+  }
+  dialog::backdrop {
+    background: color-mix(in srgb, var(--rc-ink) 38%, transparent);
+    transition: display var(--rc-dur-fast) allow-discrete, overlay var(--rc-dur-fast) allow-discrete,
+      opacity var(--rc-dur-fast) var(--rc-ease-out);
+    opacity: 1;
+  }
+  dialog:not([open])::backdrop { opacity: 0; }
+  @starting-style {
+    dialog[open]::backdrop { opacity: 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+    /* 顶层弹层保留 80ms 淡入，避免瞬间闪现 */
+    dialog, [popover], dialog::backdrop {
+      transition-duration: var(--rc-dur-instant) !important;
+      transition-property: display, overlay, opacity !important;
+    }
+  }
+}
