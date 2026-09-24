@@ -12,6 +12,7 @@
 <p align="center">
   <a href="https://img.shields.io/badge/license-MPL--2.0-blue"><img alt="License: MPL-2.0" src="https://img.shields.io/badge/license-MPL--2.0-blue"></a>
   <a href="https://github.com/dapao-777/roamcat/releases"><img alt="Version" src="https://img.shields.io/badge/version-0.0.1%20prerelease-orange"></a>
+  <a href="https://github.com/dapao-777/roamcat/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/dapao-777/roamcat/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="Chrome / Edge" src="https://img.shields.io/badge/Chrome%20%2F%20Edge-125%2B-green">
   <img alt="Manifest V3" src="https://img.shields.io/badge/manifest-V3-blueviolet">
 </p>

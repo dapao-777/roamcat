@@ -166,8 +166,8 @@ Chinese (Simplified)
 ## Privacy Policy
 
 **Privacy Policy URL** [REQUIRED]
-⬜ 待托管。建议：`https://dapao-777.github.io/roamcat/privacy`（GitHub Pages）。
-政策正文已备好：仓库根目录 `PRIVACY.md`，将其发布到上述 URL 后回填此处。
+`https://github.com/dapao-777/roamcat/blob/main/roamcat-0.2.0/PRIVACY.md`
+政策正文在 `roamcat-0.2.0/PRIVACY.md`，仓库公开后上述 blob URL 即可直接引用；若改托管到 GitHub Pages（`https://dapao-777.github.io/roamcat/privacy`）再回填。
 **提交前必须访问该 URL 确认可访问且内容完整（404 = 自动拒绝）。**
 
 ---
