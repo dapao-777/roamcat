@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="roamcat-0.2.0/extension/icons/roamcat.svg" alt="RoamCat Logo" width="96" height="96">
+  <img src="roamcat-0.0.1/extension/icons/roamcat.svg" alt="RoamCat Logo" width="96" height="96">
 </p>
 
 <h1 align="center">RoamCat · 随心阅</h1>
@@ -20,8 +20,8 @@
 <p align="center">
   <a href="https://github.com/dapao-777/roamcat/releases">下载预发版</a> ·
   <a href="#快速开始">安装指南</a> ·
-  <a href="roamcat-0.2.0/README.md">产品文档</a> ·
-  <a href="roamcat-0.2.0/SPEC.md">工程规范</a>
+  <a href="roamcat-0.0.1/README.md">产品文档</a> ·
+  <a href="roamcat-0.0.1/SPEC.md">工程规范</a>
 </p>
 
 > 当前为 0.0.1 预发布版：开发者模式加载，未上架商店。
@@ -80,14 +80,14 @@ npm run build    # → dist/extension（dev 构建，manifest 注入固定 key�
 
 ### 方式 C：直接加载源目录（免构建）
 
-选择 **`roamcat-0.2.0/extension`** 加载。注意：未打包扩展的 ID 与目录路径绑定，移动目录会改变 ID 并使本机连接器失效。
+选择 **`roamcat-0.0.1/extension`** 加载。注意：未打包扩展的 ID 与目录路径绑定，移动目录会改变 ID 并使本机连接器失效。
 
 ### 可选：订阅连接器
 
 让扩展调用本机已登录的 ChatGPT / Grok / Antigravity CLI：
 
 ```sh
-node roamcat-0.2.0/connector/install.mjs --extension-id <扩展ID> --backend grok
+node roamcat-0.0.1/connector/install.mjs --extension-id <扩展ID> --backend grok
 ```
 
 ## 架构
@@ -118,7 +118,7 @@ node roamcat-0.2.0/connector/install.mjs --extension-id <扩展ID> --backend gro
 - **信任边界**：扩展页（受信）→ 内容脚本（33 种白名单消息）→ 模型输出（结构化校验后才进 UI）→ 网页 DOM（以数据身份进提示词，`SOURCE_DATA_INSTRUCTIONS`）。
 - **消息协议唯一事实源**：`extension/message-protocol.js` 登记全部 71 种消息与载荷解析器，注册表与处理器一一对应，有源码契约测试强制。
 - **Service Worker 无内存态假设**：跨调用状态落在 `chrome.storage.local/session` 与 IndexedDB；写操作串行化，长操作带看门狗。
-- 完整规范见 [`roamcat-0.2.0/SPEC.md`](roamcat-0.2.0/SPEC.md)。
+- 完整规范见 [`roamcat-0.0.1/SPEC.md`](roamcat-0.0.1/SPEC.md)。
 
 ## 路线图
 
@@ -127,7 +127,7 @@ node roamcat-0.2.0/connector/install.mjs --extension-id <扩展ID> --backend gro
 - 主 / 副模式在阅读中的一键切换交互。
 - 阅读辅助覆盖更多载体（副模式方向）：PDF、电子阅读器。
 - `host_permissions` 由全站改为 `optional_host_permissions` 按需申请。
-- Chrome Web Store / Microsoft Edge Add-ons 上架（文案与权限理由已备于 [`CHROMEWEBSTORE.md`](roamcat-0.2.0/CHROMEWEBSTORE.md)）。
+- Chrome Web Store / Microsoft Edge Add-ons 上架（文案与权限理由已备于 [`CHROMEWEBSTORE.md`](roamcat-0.0.1/CHROMEWEBSTORE.md)）。
 
 ## 开发
 
@@ -156,16 +156,16 @@ node tools/verify-ui.cjs          # UI 布局与明暗主题
 
 | 路径 | 内容 |
 |------|------|
-| [`roamcat-0.2.0/extension/`](roamcat-0.2.0/extension/) | Manifest V3 扩展源层：background、内容脚本、领域模块、本地推理、icons/fonts/_locales，及 Lit 应用共用的 `ui/` 模块与样式（经典页面源由构建产物替代）。 |
-| [`roamcat-0.2.0/connector/`](roamcat-0.2.0/connector/) | Native Messaging 宿主 + Codex / Grok / Antigravity 三个订阅 CLI 适配。 |
+| [`roamcat-0.0.1/extension/`](roamcat-0.0.1/extension/) | Manifest V3 扩展源层：background、内容脚本、领域模块、本地推理、icons/fonts/_locales，及 Lit 应用共用的 `ui/` 模块与样式（经典页面源由构建产物替代）。 |
+| [`roamcat-0.0.1/connector/`](roamcat-0.0.1/connector/) | Native Messaging 宿主 + Codex / Grok / Antigravity 三个订阅 CLI 适配。 |
 | [`src/`](src/) | Vite + Lit 页面应用与共享组件；`src/content-ui` 为页内 UI lit-html 渲染层；`@ext` 别名指向扩展源目录。 |
 | [`build/`](build/) | 构建期脚本：扩展拷贝/manifest 变换插件、design tokens 生成、dev 扩展 key；`vite.content-ui.config.mjs` 为 content-ui IIFE 构建。 |
 | `dist/extension/` | 构建产物（不入库）= 源层拷贝 − `REPLACED_BY_BUILD` + Vite 页面产物 + 变换后的 manifest。 |
-| [`roamcat-0.2.0/README.md`](roamcat-0.2.0/README.md) | 产品说明：功能、安装、模型服务配置与隐私。 |
-| [`roamcat-0.2.0/SPEC.md`](roamcat-0.2.0/SPEC.md) | 工程规范：消息协议、存储、安全边界、测试门禁。 |
-| [`roamcat-0.2.0/docs/`](roamcat-0.2.0/docs/) | 设计系统等专项文档。 |
-| [`roamcat-0.2.0/PRIVACY.md`](roamcat-0.2.0/PRIVACY.md) | 隐私政策正文。 |
-| [`roamcat-0.2.0/CHROMEWEBSTORE.md`](roamcat-0.2.0/CHROMEWEBSTORE.md) | 上架文案、逐权限理由、隐私披露检查单。 |
+| [`roamcat-0.0.1/README.md`](roamcat-0.0.1/README.md) | 产品说明：功能、安装、模型服务配置与隐私。 |
+| [`roamcat-0.0.1/SPEC.md`](roamcat-0.0.1/SPEC.md) | 工程规范：消息协议、存储、安全边界、测试门禁。 |
+| [`roamcat-0.0.1/docs/`](roamcat-0.0.1/docs/) | 设计系统等专项文档。 |
+| [`roamcat-0.0.1/PRIVACY.md`](roamcat-0.0.1/PRIVACY.md) | 隐私政策正文。 |
+| [`roamcat-0.0.1/CHROMEWEBSTORE.md`](roamcat-0.0.1/CHROMEWEBSTORE.md) | 上架文案、逐权限理由、隐私披露检查单。 |
 | [`tools/`](tools/) | 模块图门禁、单元测试、构建产物门禁、本机浏览器回归脚本。 |
 
 </details>
@@ -178,4 +178,4 @@ RoamCat 基于 [RelyLess](https://github.com/rockythink/relyless) 重构而来�
 
 ## 许可
 
-自有代码采用 [MPL-2.0](LICENSE)。词频数据（CC BY-SA 4.0）、模型与运行时（Apache-2.0 / MIT）、图标（MIT）等第三方资产保留各自许可，见 [NOTICE.txt](roamcat-0.2.0/NOTICE.txt)。
+自有代码采用 [MPL-2.0](LICENSE)。词频数据（CC BY-SA 4.0）、模型与运行时（Apache-2.0 / MIT）、图标（MIT）等第三方资产保留各自许可，见 [NOTICE.txt](roamcat-0.0.1/NOTICE.txt)。

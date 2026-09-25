@@ -69,7 +69,7 @@ const welcomeContext = (tabId, windowId, suffix = '') => ({
 
 const {chrome, state, local} = createChromeMock();
 globalThis.chrome = chrome;
-const shared = await import('../../roamcat-0.2.0/extension/shared.js');
+const shared = await import('../../roamcat-0.0.1/extension/shared.js');
 
 const reset = () => {
   state.created.length = 0;

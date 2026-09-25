@@ -23,7 +23,7 @@ import {
   supportState,
   encounter,
   interact,
-} from '../../roamcat-0.2.0/extension/reading.js';
+} from '../../roamcat-0.0.1/extension/reading.js';
 
 const DAY = 86_400_000;
 const NOW = 1_700_000_000_000;

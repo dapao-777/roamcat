@@ -16,9 +16,9 @@
  */
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {OPERATIONS, RENDERED} from '../../roamcat-0.2.0/extension/diagnostic-service.js';
-import {DIAGNOSTIC_OPERATIONS} from '../../roamcat-0.2.0/extension/diagnostics.mjs';
-import {MESSAGE_TYPES} from '../../roamcat-0.2.0/extension/message-protocol.js';
+import {OPERATIONS, RENDERED} from '../../roamcat-0.0.1/extension/diagnostic-service.js';
+import {DIAGNOSTIC_OPERATIONS} from '../../roamcat-0.0.1/extension/diagnostics.mjs';
+import {MESSAGE_TYPES} from '../../roamcat-0.0.1/extension/message-protocol.js';
 
 test('OPERATIONS 全部可被诊断存储层接受', () => {
   for (const operation of OPERATIONS) {

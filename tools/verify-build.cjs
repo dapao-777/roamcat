@@ -14,7 +14,7 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),assert=require('node:assert/strict'),{execFileSync}=require('node:child_process');
 function loadPlaywright(){try{return require('playwright-core');}catch(first){const override=process.env.PLAYWRIGHT_CORE_PATH;if(override){try{return require(override);}catch{}}throw new Error(`找不到 playwright-core（${first?.message || first}）。请在项目根运行 npm i -D playwright-core，或设置 PLAYWRIGHT_CORE_PATH 指向可用副本。`);}}
-const repoRoot=path.resolve(__dirname,'..'),source=path.join(repoRoot,'roamcat-0.2.0','extension'),dist=path.join(repoRoot,'dist','extension'),out=path.join(repoRoot,'preview');fs.mkdirSync(out,{recursive:true});
+const repoRoot=path.resolve(__dirname,'..'),source=path.join(repoRoot,'roamcat-0.0.1','extension'),dist=path.join(repoRoot,'dist','extension'),out=path.join(repoRoot,'preview');fs.mkdirSync(out,{recursive:true});
 const report={checks:[],failures:[],pageErrors:[],byteDrift:[]};
 async function check(name,fn){try{const detail=await fn();report.checks.push({name,...(detail?{detail}:{})});console.log('PASS '+name);}catch(e){report.failures.push({name,error:e.message});console.log('FAIL '+name+': '+e.message);}}
 function* walkFiles(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:true})){const child=path.join(dir,entry.name);if(entry.isDirectory())yield* walkFiles(child);else if(entry.isFile())yield child;}}

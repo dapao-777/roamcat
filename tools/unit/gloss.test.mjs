@@ -41,7 +41,7 @@ import {
   normalizeAssistanceResult,
   normalizePageSummaryResult,
   assistanceSchema,
-} from '../../roamcat-0.2.0/extension/gloss.mjs';
+} from '../../roamcat-0.0.1/extension/gloss.mjs';
 
 const SENTENCE = 'The database uses an index to find records quickly.';
 const INDEX_START = SENTENCE.indexOf('index');

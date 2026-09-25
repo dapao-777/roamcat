@@ -22,8 +22,8 @@ import {PassThrough} from 'node:stream';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import {GrokClient} from '../../roamcat-0.2.0/connector/grok.mjs';
-import {CodexClient} from '../../roamcat-0.2.0/connector/codex.mjs';
+import {GrokClient} from '../../roamcat-0.0.1/connector/grok.mjs';
+import {CodexClient} from '../../roamcat-0.0.1/connector/codex.mjs';
 
 function tempDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'roamcat-connector-'));

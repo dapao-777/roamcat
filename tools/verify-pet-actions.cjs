@@ -20,7 +20,7 @@ function loadPlaywright() {
 }
 
 const { chromium } = loadPlaywright();
-const source = path.resolve(process.env.EXTENSION_DIR || path.join(__dirname, '../roamcat-0.2.0/extension'));
+const source = path.resolve(process.env.EXTENSION_DIR || path.join(__dirname, '../roamcat-0.0.1/extension'));
 const extension = fs.mkdtempSync(path.join(os.tmpdir(), 'roamcat-pet-ext-'));
 const out = path.resolve(__dirname, '../preview/pet');
 fs.mkdirSync(out, { recursive: true });

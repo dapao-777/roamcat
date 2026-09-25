@@ -23,7 +23,7 @@ import {
   sitePattern,
   validateAutomation,
   validateVideo,
-} from '../../roamcat-0.2.0/extension/activation.js';
+} from '../../roamcat-0.0.1/extension/activation.js';
 
 test('常量导出保持稳定', () => {
   assert.equal(AUTO_SCRIPT_ID, 'ss-auto-start');

@@ -9,7 +9,7 @@
  */
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {normalizeTranslationProgress, translationProgress} from '../../roamcat-0.2.0/extension/assistance-stream.mjs';
+import {normalizeTranslationProgress, translationProgress} from '../../roamcat-0.0.1/extension/assistance-stream.mjs';
 
 const pageItems = [
   {id: 'one', text: 'The database uses an index.', context: {title: '', heading: '', before: '', after: ''}},

@@ -2,7 +2,7 @@
  * @file build/extension-plugin.mjs
  * 文件职责：Vite 插件——把未迁移的扩展源码层整体拷贝进 dist，并用构建期 manifest
  *   覆盖源 manifest，使 dist/extension 成为完整可加载产物。
- * 主要内容：closeBundle 中递归拷贝 roamcat-0.2.0/extension（排除 manifest.json 与
+ * 主要内容：closeBundle 中递归拷贝 roamcat-0.0.1/extension（排除 manifest.json 与
  *   REPLACED_BY_BUILD 清单中已由 Vite 产物替代的文件），随后写入 transform 后的
  *   manifest；dev 模式注入固定 key。
  * 模块边界：构建期插件，只写 dist；不触碰源树。REPLACED_BY_BUILD 随迁移进度增长。
@@ -18,7 +18,7 @@ import {fileURLToPath} from 'node:url';
 import {transformManifest} from './manifest.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const EXTENSION_SOURCE = path.join(repoRoot, 'roamcat-0.2.0', 'extension');
+const EXTENSION_SOURCE = path.join(repoRoot, 'roamcat-0.0.1', 'extension');
 const KEY_FILE = path.join(repoRoot, 'build', 'extension-key.json');
 
 /**

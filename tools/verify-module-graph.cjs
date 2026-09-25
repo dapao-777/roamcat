@@ -16,8 +16,8 @@
 const {resolve} = require('node:path');
 const {verifyModuleGraph} = require('./lib/module-graph.cjs');
 
-// 未打包发布目录中扩展位于内层 roamcat-0.2.0/；可用首个参数指向其他根。
-const root = resolve(__dirname, '..', process.argv[2] || 'roamcat-0.2.0');
+// 未打包发布目录中扩展位于内层 roamcat-0.0.1/；可用首个参数指向其他根。
+const root = resolve(__dirname, '..', process.argv[2] || 'roamcat-0.0.1');
 
 verifyModuleGraph({root}).then(result => {
   const {failures, stats} = result;

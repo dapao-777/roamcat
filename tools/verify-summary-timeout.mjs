@@ -10,7 +10,7 @@ globalThis.setTimeout=(fn,ms)=>{const id=++timerId;scheduled.set(id,{fn,ms});ret
 globalThis.clearTimeout=id=>scheduled.delete(id);
 globalThis.chrome={runtime:{connectNative:()=>({onDisconnect:{addListener(){}},onMessage:{addListener(fn){listener=fn;}},postMessage(message){lastRequest=message;},disconnect(){}})}};
 try{
- const {summarizeSubscription}=await import('../roamcat-0.2.0/extension/subscription.js');
+ const {summarizeSubscription}=await import('../roamcat-0.0.1/extension/subscription.js');
  const pending=summarizeSubscription({text:'Controlled fixture text.'},undefined,'antigravity');
  assert.equal(lastRequest.type,'summarize');assert.equal([...scheduled.values()][0].ms,120000);
  const result={takeaway:'测试结论',highlights:['测试要点'],keywords:[],domain:'general'};

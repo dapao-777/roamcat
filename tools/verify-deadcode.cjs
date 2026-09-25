@@ -18,7 +18,7 @@ const path = require('node:path');
 // 有意保留的非业务导出：第三方数据溯源与许可归属。
 const INTENTIONAL_EXPORTS = new Set(['FREQUENCY_SOURCE', 'ENGLISH_FREQUENCY_WORD_COUNT']);
 
-const root = path.resolve(__dirname, '..', 'roamcat-0.2.0');
+const root = path.resolve(__dirname, '..', 'roamcat-0.0.1');
 const files = [];
 const walk = (base, relative) => fs.readdirSync(base, {withFileTypes: true}).forEach(e => {
   if (e.name.startsWith('.')) return;

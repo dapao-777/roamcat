@@ -92,7 +92,7 @@ test('迁移后的 background.js 在 mock 浏览器中构造注册表并按信�
   const {chrome, listeners, openedOptions, registeredScripts} = createChromeMock();
   globalThis.chrome = chrome;
   try {
-    await import('../../roamcat-0.2.0/extension/background.js');
+    await import('../../roamcat-0.0.1/extension/background.js');
   } finally {
     console.error = originalError;
   }

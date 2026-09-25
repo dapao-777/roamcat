@@ -1,6 +1,6 @@
 # RoamCat · 随心阅（RoamCat）工程规范 SPEC
 
-> 本文是 `roamcat-0.2.0/` 项目工程文件夹的**权威工程规范**，与 `README.md`（产品说明）互补：
+> 本文是 `roamcat-0.0.1/` 项目工程文件夹的**权威工程规范**，与 `README.md`（产品说明）互补：
 > README 面向用户说明「是什么、怎么用」，本文面向工程实现与维护说明「由什么构成、如何协作、约束是什么」。
 > 代码与本文冲突时，以代码为准并回头修订本文。
 
@@ -353,7 +353,7 @@ MV3 下改代码必须重载扩展：service worker 变更需重载扩展本身�
 ## 13. 构建与发布规范
 - 扩展本体以构建产物为准：`npm run build` → `dist/extension/`（源层拷贝 − `REPLACED_BY_BUILD` + Vite 页面产物 + 变换后的 manifest；dev 模式注入 `build/extension-key.json` 的固定 key，`npm run build:release` 为无 key 的 minify 产物）。产物门禁 `npm run verify:build`：字节比对 + Edge 实际加载冒烟。
 - Release 包只含 `extension/`（构建产物重命名）、`connector/`、`README.md`、`LICENSE`、`NOTICE.txt`（白名单制；本文 SPEC.md 不随包发布）。
-- 发布前要求：干净且已提交的 HEAD；生成 `dist/roamcat-0.2.0.zip` + `SHA256SUMS`。
+- 发布前要求：干净且已提交的 HEAD；生成 `dist/roamcat-0.0.1.zip` + `SHA256SUMS`。
 - 升级约束：保持解压目录不变（未打包扩展 ID 与路径相关；使用 dev 构建时 ID 由 `build/extension-key.json` 固定）；连接器随扩展一起更新并重跑安装程序。
 - 上架准备（尚未提交）：权限理由、隐私政策、1280×800 截图、ZIP 排除开发产物。
 

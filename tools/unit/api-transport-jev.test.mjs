@@ -14,7 +14,7 @@
  */
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {performProviderRequest} from '../../roamcat-0.2.0/extension/api-transport.mjs';
+import {performProviderRequest} from '../../roamcat-0.0.1/extension/api-transport.mjs';
 
 const QUESTIONS = {
   domain: {type: 'choice', instructions: 'Pick a domain.', criteria: {tech: 'Software', data: 'Databases'}},

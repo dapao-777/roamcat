@@ -17,7 +17,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
-import {createMessageRouter} from '../../roamcat-0.2.0/extension/message-router.js';
+import {createMessageRouter} from '../../roamcat-0.0.1/extension/message-router.js';
 import {
   MESSAGE_TYPES,
   CONTENT_ALLOWED_TYPES,
@@ -26,9 +26,9 @@ import {
   parseDomainTest,
   parseFloatingPetPatch,
   parsePopupIntentTake,
-} from '../../roamcat-0.2.0/extension/message-protocol.js';
+} from '../../roamcat-0.0.1/extension/message-protocol.js';
 
-const backgroundSource = readFileSync(fileURLToPath(new URL('../../roamcat-0.2.0/extension/background.js', import.meta.url)), 'utf8');
+const backgroundSource = readFileSync(fileURLToPath(new URL('../../roamcat-0.0.1/extension/background.js', import.meta.url)), 'utf8');
 
 test('createMessageRouter 构造期拒绝重复类型与缺失 handle', () => {
   assert.throws(() => createMessageRouter([

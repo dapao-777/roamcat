@@ -21,7 +21,7 @@ import {
   NativeMessageDecoder,
   encodeNativeMessage,
   validateExtensionOrigin,
-} from '../../roamcat-0.2.0/connector/host.mjs';
+} from '../../roamcat-0.0.1/connector/host.mjs';
 
 const VALID_ORIGIN = `chrome-extension://${'a'.repeat(32)}`;
 

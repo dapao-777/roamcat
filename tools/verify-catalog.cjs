@@ -22,7 +22,7 @@ function loadPlaywright() {
 }
 
 const { chromium } = loadPlaywright();
-const root = path.resolve(process.env.EXTENSION_DIR || path.join(__dirname, '../roamcat-0.2.0/extension'));
+const root = path.resolve(process.env.EXTENSION_DIR || path.join(__dirname, '../roamcat-0.0.1/extension'));
 const out = path.resolve(__dirname, '../preview');
 if (!fs.existsSync(out)) fs.mkdirSync(out, { recursive: true });
 

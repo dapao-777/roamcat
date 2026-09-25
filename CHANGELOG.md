@@ -21,6 +21,6 @@
 
 - 视频字幕辅助代码保留但未启用（`VIDEO_SUPPORT_ENABLED = false`）。
 - `host_permissions` 仍为宽泛的 `http(s)://*/*`，计划改为 `optional_host_permissions` 按需申请。
-- 未上架商店；扩展仅支持开发者模式加载（直接加载 `roamcat-0.2.0/extension` 时 ID 与目录路径绑定；`npm run build` 产物 ID 固定）。
+- 未上架商店；扩展仅支持开发者模式加载（直接加载 `roamcat-0.0.1/extension` 时 ID 与目录路径绑定；`npm run build` 产物 ID 固定）。
 
 [0.0.1]: https://github.com/dapao-777/roamcat

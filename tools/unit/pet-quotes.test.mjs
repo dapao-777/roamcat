@@ -20,7 +20,7 @@ import vm from 'node:vm';
 import {fileURLToPath} from 'node:url';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const source = readFileSync(path.join(repoRoot, 'roamcat-0.2.0', 'extension', 'pet-quotes.js'), 'utf8');
+const source = readFileSync(path.join(repoRoot, 'roamcat-0.0.1', 'extension', 'pet-quotes.js'), 'utf8');
 const sandbox = {};
 vm.createContext(sandbox);
 vm.runInContext(source, sandbox);

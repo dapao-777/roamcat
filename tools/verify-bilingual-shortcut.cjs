@@ -16,7 +16,7 @@ function loadPlaywright() {
   }
 }
 const { chromium } = loadPlaywright();
-const source = path.resolve(process.env.EXTENSION_DIR || path.join(__dirname, '../roamcat-0.2.0/extension'));
+const source = path.resolve(process.env.EXTENSION_DIR || path.join(__dirname, '../roamcat-0.0.1/extension'));
 const extension = fs.mkdtempSync(path.join(os.tmpdir(), 'roamcat-shortcut-'));
 fs.cpSync(source, extension, { recursive: true });
 const manifestPath = path.join(extension, 'manifest.json');

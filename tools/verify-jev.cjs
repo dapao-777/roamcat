@@ -22,7 +22,7 @@ function loadPlaywright() {
 }
 
 const { chromium } = loadPlaywright();
-const source = path.resolve(process.env.EXTENSION_DIR || path.join(__dirname, '../roamcat-0.2.0/extension'));
+const source = path.resolve(process.env.EXTENSION_DIR || path.join(__dirname, '../roamcat-0.0.1/extension'));
 const tempExt = fs.mkdtempSync(path.join(os.tmpdir(), 'jev-test-ext-'));
 fs.cpSync(source, tempExt, { recursive: true });
 

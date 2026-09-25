@@ -15,7 +15,7 @@
  */
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {parseAssistRequest, parsePassageRequestRef, onDemandSuggestionDecision} from '../../roamcat-0.2.0/extension/message-protocol.js';
+import {parseAssistRequest, parsePassageRequestRef, onDemandSuggestionDecision} from '../../roamcat-0.0.1/extension/message-protocol.js';
 
 const DAY = 86_400_000;
 const NOW = Date.UTC(2026, 8, 22, 12, 0, 0); // 2026-09-22T12:00:00Z，固定时间保证确定性

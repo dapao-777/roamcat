@@ -19,7 +19,7 @@ import {defineConfig} from 'vite';
 import {roamcatExtension} from './build/extension-plugin.mjs';
 
 const repoRoot = path.dirname(fileURLToPath(import.meta.url));
-const extensionSource = path.join(repoRoot, 'roamcat-0.2.0', 'extension');
+const extensionSource = path.join(repoRoot, 'roamcat-0.0.1', 'extension');
 const minimumChrome = JSON.parse(readFileSync(path.join(extensionSource, 'manifest.json'), 'utf8')).minimum_chrome_version;
 
 export default defineConfig(({mode}) => ({

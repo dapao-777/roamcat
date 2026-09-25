@@ -96,7 +96,7 @@ Chinese (Simplified)
 
 | Asset | Dimensions | Status | Filename |
 |-------|-----------|--------|----------|
-| Store Icon [REQUIRED] | 128×128 PNG | ✅ Ready | `roamcat-0.2.0/extension/icons/icon-128.png`（实测 128×128，4.0KB） |
+| Store Icon [REQUIRED] | 128×128 PNG | ✅ Ready | `roamcat-0.0.1/extension/icons/icon-128.png`（实测 128×128，4.0KB） |
 | Screenshot 1 [REQUIRED] | 1280×800 | 🟡 需裁剪 | `preview/audit/real-lookup-card.png`（1440×1000） |
 | Screenshot 2 [RECOMMENDED] | 1280×800 | 🟡 需裁剪 | `preview/audit/real-page-translation.png`（1440×1000） |
 | Screenshot 3 [RECOMMENDED] | 1280×800 | 🟡 需裁剪 | `preview/audit/real-sentence-structure.png`（1440×1000） |
@@ -166,8 +166,8 @@ Chinese (Simplified)
 ## Privacy Policy
 
 **Privacy Policy URL** [REQUIRED]
-`https://github.com/dapao-777/roamcat/blob/main/roamcat-0.2.0/PRIVACY.md`
-政策正文在 `roamcat-0.2.0/PRIVACY.md`，仓库公开后上述 blob URL 即可直接引用；若改托管到 GitHub Pages（`https://dapao-777.github.io/roamcat/privacy`）再回填。
+`https://github.com/dapao-777/roamcat/blob/main/roamcat-0.0.1/PRIVACY.md`
+政策正文在 `roamcat-0.0.1/PRIVACY.md`，仓库公开后上述 blob URL 即可直接引用；若改托管到 GitHub Pages（`https://dapao-777.github.io/roamcat/privacy`）再回填。
 **提交前必须访问该 URL 确认可访问且内容完整（404 = 自动拒绝）。**
 
 ---

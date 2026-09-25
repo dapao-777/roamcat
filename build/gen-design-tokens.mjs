@@ -129,7 +129,7 @@ ${dark}
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
   const tokensCss = readFileSync(path.join(repoRoot, 'src', 'styles', 'tokens.css'), 'utf8');
-  const target = path.join(repoRoot, 'roamcat-0.2.0', 'extension', 'design.js');
+  const target = path.join(repoRoot, 'roamcat-0.0.1', 'extension', 'design.js');
   writeFileSync(target, buildDesignJs(tokensCss));
-  console.log('已生成 roamcat-0.2.0/extension/design.js');
+  console.log('已生成 roamcat-0.0.1/extension/design.js');
 }

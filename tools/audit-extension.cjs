@@ -6,7 +6,7 @@ const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),
 const {verifyModuleGraph}=require('./lib/module-graph.cjs');
 function loadPlaywright(){try{return require('playwright-core');}catch(first){const override=process.env.PLAYWRIGHT_CORE_PATH;if(override){try{return require(override);}catch{}}throw new Error(`找不到 playwright-core（${first?.message || first}）。请在项目根运行 npm i -D playwright-core，或设置 PLAYWRIGHT_CORE_PATH 指向可用副本。`);}}
 const {chromium}=loadPlaywright();
-const source=path.resolve(process.env.EXTENSION_DIR||path.join(__dirname,'../roamcat-0.2.0/extension')),extension=fs.mkdtempSync(path.join(os.tmpdir(),'roamcat-fixture-extension-')),out=path.resolve(__dirname,'../preview/audit');fs.mkdirSync(out,{recursive:true});
+const source=path.resolve(process.env.EXTENSION_DIR||path.join(__dirname,'../roamcat-0.0.1/extension')),extension=fs.mkdtempSync(path.join(os.tmpdir(),'roamcat-fixture-extension-')),out=path.resolve(__dirname,'../preview/audit');fs.mkdirSync(out,{recursive:true});
 fs.cpSync(source,extension,{recursive:true});const manifestPath=path.join(extension,'manifest.json'),manifest=JSON.parse(fs.readFileSync(manifestPath));manifest.host_permissions=['http://127.0.0.1/*'];fs.writeFileSync(manifestPath,JSON.stringify(manifest));
 const report={checks:[],failures:[],pageErrors:[],ui:[],apiCalls:[]};
 const article=`<!doctype html><html lang="en"><head><title>Reading fixture</title></head><body><nav>Home · About</nav><main style="max-width:760px;margin:60px auto;font:20px/1.8 Georgia"><article><h1>How databases reduce latency</h1>${Array.from({length:8},(_,i)=>`<p id="paragraph-${i}">The database uses an index to find records quickly. A cache reduces latency when requests repeat. Careful readers compare the evidence before they reach a conclusion.</p>`).join('')}<input aria-label="Excluded input" value="Do not annotate this input"></article></main></body></html>`;
@@ -15,7 +15,7 @@ const server=http.createServer((req,res)=>{if(req.method==='OPTIONS'){res.writeH
 async function check(name,fn){if(process.env.AUDIT_CONTENT_ONLY&&/Every settings|Custom terminology|Domain rules|Invalid settings|History opt-in|Diagnostics export|All settings|Reset restores/.test(name))return;try{const detail=await fn();report.checks.push({name,...(detail?{detail}:{})});console.log('PASS '+name);}catch(e){report.failures.push({name,error:e.message});console.log('FAIL '+name+': '+e.message);}}
 (async()=>{
  // 浏览器回归前先过静态模块图门禁：加载契约、依赖方向或连接器闭包被破坏时不启动 Edge。
- const graph=await verifyModuleGraph({root:path.resolve(__dirname,'../roamcat-0.2.0')});
+ const graph=await verifyModuleGraph({root:path.resolve(__dirname,'../roamcat-0.0.1')});
  for(const failure of graph.failures)console.error('GRAPH '+failure.rule+': '+failure.message);
  if(graph.failures.length){console.error('模块图检查未通过，已中止浏览器审计。可单独运行：node tools/verify-module-graph.cjs');process.exit(1);}
  console.log('PASS 模块图与加载契约（'+graph.stats.files+' 个文件，'+graph.stats.edges+' 条 import 边）');

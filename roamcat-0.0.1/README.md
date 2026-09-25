@@ -69,8 +69,8 @@ RoamCat 是一个面向英语阅读的 Chrome / Edge 扩展，按双模式组织
 
 要求 Chrome 或 Edge **125 及以上版本**。
 
-1. 从 GitHub Releases 下载 `roamcat-0.2.0.zip`。
-2. 解压后会得到 `roamcat-0.2.0/`，其中包含：
+1. 从 GitHub Releases 下载 `roamcat-0.0.1.zip`。
+2. 解压后会得到 `roamcat-0.0.1/`，其中包含：
    - `extension/`（`npm run build:release` 产物重命名）
    - `connector/`
    - `README.md`
@@ -210,7 +210,7 @@ ChatGPT 订阅是否包含可用 Codex 权益、可选模型和调用额度由 O
 
 ## 从源码开发
 
-仓库根目录包含本目录（产品包 `roamcat-0.2.0/`）、`src/` 页面应用层、`build/` 构建脚本、`tools/` 验证脚本和单元测试，检出体积约 48 MB。`package.json` 保持 `private: true` 是为了防止误发布到 npm，不影响 GitHub 源码公开。
+仓库根目录包含本目录（产品包 `roamcat-0.0.1/`）、`src/` 页面应用层、`build/` 构建脚本、`tools/` 验证脚本和单元测试，检出体积约 48 MB。`package.json` 保持 `private: true` 是为了防止误发布到 npm，不影响 GitHub 源码公开。
 
 要求 Node.js **20.11 或更新版本**（Node 24 已验证）。静态检查与单元测试均为零依赖；浏览器加载请先构建：
 
@@ -224,19 +224,19 @@ npm test              # 单元测试（node --test tools/unit/**/*.test.mjs）
 npm run verify:build  # 构建产物门禁 + Edge 实际加载冒烟
 ```
 
-开发时在 `chrome://extensions` 加载 **`dist/extension`**；也可以免构建直接加载 `roamcat-0.2.0/extension`（页面为被构建替代前的经典实现，ID 随目录路径变化）。
+开发时在 `chrome://extensions` 加载 **`dist/extension`**；也可以免构建直接加载 `roamcat-0.0.1/extension`（页面为被构建替代前的经典实现，ID 随目录路径变化）。
 
 本机浏览器回归脚本（Playwright + 本机 Edge）在 `tools/` 下，需先 `npm ci` 安装 `playwright-core`（或设置 `PLAYWRIGHT_CORE_PATH`）；截图与 JSON 报告输出到 `preview/`（不入库）。
 
 目录概览：
 
-- `roamcat-0.2.0/extension/`：Manifest V3 扩展源层、本地模型与运行时资源、Lit 应用共用的 `ui/` 模块与样式。
-- `roamcat-0.2.0/connector/`：ChatGPT / Grok / Antigravity 订阅 Native Messaging 连接器。
+- `roamcat-0.0.1/extension/`：Manifest V3 扩展源层、本地模型与运行时资源、Lit 应用共用的 `ui/` 模块与样式。
+- `roamcat-0.0.1/connector/`：ChatGPT / Grok / Antigravity 订阅 Native Messaging 连接器。
 - `src/`：Vite + Lit 页面应用与共享组件；设计 token 唯一事实源 `src/tokens.css`。
 - `build/`：构建期脚本与 dev 扩展 key。
 - `tools/`：模块图门禁、单元测试、构建产物门禁、浏览器回归脚本。
 
-词频数据与本地模型的生成脚本、Release 打包工具目前在维护者的源码工作区中，尚未纳入本仓库；Release ZIP 与 `roamcat-0.2.0/` 内容对应（`extension/` 为 `npm run build:release` 产物，另含 `connector/` 与说明/许可文件）。
+词频数据与本地模型的生成脚本、Release 打包工具目前在维护者的源码工作区中，尚未纳入本仓库；Release ZIP 与 `roamcat-0.0.1/` 内容对应（`extension/` 为 `npm run build:release` 产物，另含 `connector/` 与说明/许可文件）。
 
 ## 许可与第三方材料
 

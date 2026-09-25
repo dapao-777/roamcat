@@ -25,9 +25,9 @@ import {
   parseHistoryRuleSet,
   parseHistoryRecordRef,
   parseHistorySummaryEdit,
-} from '../../roamcat-0.2.0/extension/message-protocol.js';
-import {normalizeSettings} from '../../roamcat-0.2.0/extension/shared.js';
-import {SUBSCRIPTION_KINDS} from '../../roamcat-0.2.0/extension/subscription.js';
+} from '../../roamcat-0.0.1/extension/message-protocol.js';
+import {normalizeSettings} from '../../roamcat-0.0.1/extension/shared.js';
+import {SUBSCRIPTION_KINDS} from '../../roamcat-0.0.1/extension/subscription.js';
 
 const currentSettings = normalizeSettings();
 
