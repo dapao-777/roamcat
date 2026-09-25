@@ -16,6 +16,7 @@ import {LitElement, html, svg} from 'lit';
 import {classMap} from 'lit/directives/class-map.js';
 import {request, closeWelcomeGuide} from '@ext/shared.js';
 import {heroArt} from '../../components/hero-art.js';
+import {icon} from '../../components/icons.js';
 
 const SANDBOX_WORDS = {
   compare: {word: 'compare', pos: 'v.', phonetic: '/kəmˈpeər/', def: '对比；对照衡量。在两件事物之间权衡异同以判别优劣。', context: '在下结论前比对各项客观依据与线索', rubyHint: '比对'},
@@ -23,6 +24,8 @@ const SANDBOX_WORDS = {
   latency: {word: 'latency', pos: 'n. 计算机网络', phonetic: '/ˈleɪtnsi/', def: '延迟；响应时延。指数据在网络传输或系统处理中的往返时间差。', context: 'The cache reduces latency... (缓存机制用于降低系统耗时)', rubyHint: '延迟'},
   congestion: {word: 'congestion', pos: 'n.', phonetic: '/kənˈdʒestʃən/', def: '拥堵；拥塞。网络中报文传输量超过通道处理能力的瓶颈状态。', context: '当网络流量突增引发拥堵时', rubyHint: '拥堵'},
 };
+
+const SAVED_BUTTON_TEXT = '偏好已保存！开启沉浸阅读';
 
 const THEMES = ['auto', 'dark', 'light'];
 const THEME_LABELS = {auto: '跟随系统', dark: '深色模式', light: '浅色模式'};
@@ -151,7 +154,7 @@ class RoamcatWelcome extends LitElement {
       }
       this.#toastMessage = `偏好配置已保存 (触发键: ${this.#key} · 模式: ${this.#assistanceMode === 'ambient' ? 'Cloze' : '静默'})！`;
       this.#toastVisible = true;
-      this.#saveButtonText = '✓ 偏好已保存！开启沉浸阅读';
+      this.#saveButtonText = SAVED_BUTTON_TEXT;
       setTimeout(() => { this.#saving = false; this.requestUpdate(); }, 1200);
     } catch (error) {
       console.error('保存失败:', error);
@@ -266,15 +269,15 @@ class RoamcatWelcome extends LitElement {
         </div>
         <div class="welcome-feature-pills">
           <div class="feature-pill">
-            <span class="pill-icon">⚡</span>
+            <span class="pill-icon">${icon('zap', {size: 18})}</span>
             <div class="pill-text"><strong>瞬时查词</strong><span>按住快捷键 + 单击即查</span></div>
           </div>
           <div class="feature-pill">
-            <span class="pill-icon">🐾</span>
+            <span class="pill-icon">${icon('paw', {size: 18})}</span>
             <div class="pill-text"><strong>随心漫步</strong><span>不替换整段，保护语言心流</span></div>
           </div>
           <div class="feature-pill">
-            <span class="pill-icon">🛡️</span>
+            <span class="pill-icon">${icon('shield', {size: 18})}</span>
             <div class="pill-text"><strong>本地优先</strong><span>词汇与阅读记录保存在本机</span></div>
           </div>
         </div>
@@ -350,7 +353,7 @@ class RoamcatWelcome extends LitElement {
                 <button type="button" class=${classMap({'hud-action-btn': true, 'known-active': this.#known})} id="hud-known-btn"
                   @click=${() => { this.#known = !this.#known; this.requestUpdate(); }}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="20 6 9 17 4 12"/></svg>
-                  <span id="hud-known-text">${this.#known ? '已标记为已掌握 ✓' : '我已认识此词'}</span>
+                  <span id="hud-known-text">${this.#known ? '已标记为已掌握' : '我已认识此词'}</span>
                 </button>
                 <button type="button" class="hud-action-btn" id="hud-sentence-btn"
                   @click=${() => { this.#sentenceTransOpen = !this.#sentenceTransOpen; this.requestUpdate(); }}>${this.#sentenceTransOpen ? '收起本句译文' : '展开本句译文'}</button>
@@ -365,7 +368,7 @@ class RoamcatWelcome extends LitElement {
 
         <div class="sandbox-footer-tip">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-          <span>💡 网页实战技巧：按住查词快捷键（默认为 <kbd class="inline-kbd" data-lookup-key>${this.#key}</kbd>）并单击任意单词，即可在真实网页中秒级唤出上方卡片！</span>
+          <span>网页实战技巧：按住查词快捷键（默认为 <kbd class="inline-kbd" data-lookup-key>${this.#key}</kbd>）并单击任意单词，即可在真实网页中秒级唤出上方卡片！</span>
         </div>
       </div>
     </section>
@@ -513,7 +516,7 @@ class RoamcatWelcome extends LitElement {
 
         <div class="launch-actions-wrap">
           <button type="button" id="save-and-launch-btn" class="launch-primary-btn" .disabled=${this.#saving} @click=${() => void this.#savePreferences()}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="20 6 9 17 4 12"/></svg>
+            ${icon('check', {size: 18})}
             <span id="save-btn-text">${this.#saveButtonText || '保存偏好并开启体验 (Save & Launch)'}</span>
           </button>
           <button type="button" id="finish-welcome-btn" class="launch-secondary-btn" @click=${() => this.#closeWelcome()}>完成并关闭</button>
@@ -524,7 +527,7 @@ class RoamcatWelcome extends LitElement {
         </div>
 
         <div id="save-status-toast" class="launch-toast" ?hidden=${!this.#toastVisible} role="status" aria-live="polite">
-          <span class="toast-check">✓</span>
+          <span class="toast-check">${icon('check', {size: 14})}</span>
           <span id="toast-message">${this.#toastMessage}</span>
         </div>
       </div>

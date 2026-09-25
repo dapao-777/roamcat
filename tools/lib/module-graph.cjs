@@ -5,7 +5,7 @@
  *   循环依赖、连接器共享闭包纯净性与领域层依赖方向。
  * 主要内容：扫描 extension/（排除 local-inference、vendor、fonts、icons）与 connector/ 下的
  *   .js/.mjs；解析相对 import 规格并建图；随后执行六条规则：
- *   R1 manifest content script 三件套契约（顺序、存在、非 ESM）+ 动态注册脚本同约束；
+ *   R1 manifest content script 固定清单契约（顺序、存在、非 ESM）+ 动态注册脚本同约束；
  *   R2 相对 import 必须能解析到真实文件；
  *   R3 全图无循环依赖；
  *   R4 连接器 import 闭包内的 extension 文件必须属于共享协议集且自身可在 Node 中安全 import
@@ -59,10 +59,11 @@ const DOMAIN_ASSETS = Object.freeze([
 ]);
 
 const EXCLUDED_DIRECTORIES = new Set(['local-inference', 'vendor', 'fonts', 'icons']);
-const CONTENT_SCRIPT_ORDER = Object.freeze(['design.js', 'reading-style.js', 'content-ui.js', 'content.js']);
+const CONTENT_SCRIPT_ORDER = Object.freeze(['design.js', 'reading-style.js', 'content-ui.js', 'pet-quotes.js', 'content.js']);
 // 不经 manifest 静态声明、但始终以 classic 方式注入的页面脚本：伴读猫经
-// chrome.scripting 按 floatingPet.enabled 动态注册，auto-start.js 按站点规则注册。
-const CLASSIC_DYNAMIC_SCRIPTS = Object.freeze(['floating-pet.js', 'auto-start.js']);
+// chrome.scripting 按 floatingPet.enabled 动态注册（pet-quotes.js 作为其语录库先行注入），
+// auto-start.js 按站点规则注册。
+const CLASSIC_DYNAMIC_SCRIPTS = Object.freeze(['pet-quotes.js', 'floating-pet.js', 'auto-start.js']);
 const ESM_PATTERN = /^[ \t]*(?:import|export)[\s({'"]/m;
 const IMPORT_PATTERNS = [
   /import\s+[\s\S]*?\s+from\s*['"]([^'"]+)['"]/g,

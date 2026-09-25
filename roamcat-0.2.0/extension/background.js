@@ -180,7 +180,7 @@ function publicState(state,trusted) {
     helpLanguage:source.helpLanguage,lookupKey:source.lookupKey,lookupDisplay:source.lookupDisplay,
     readingStyle:globalThis.RoamCatReadingStyle.normalize(source.readingStyle),domain:source.domain,
     video:{fontSize:source.video.fontSize,theme:source.video.theme},
-    floatingPet:{enabled:source.floatingPet?.enabled!==false,position:{right:Number.isFinite(source.floatingPet?.position?.right)?source.floatingPet.position.right:24,bottom:Number.isFinite(source.floatingPet?.position?.bottom)?source.floatingPet.position.bottom:84},themeMode:['auto','dark','light'].includes(source.floatingPet?.themeMode)?source.floatingPet.themeMode:'auto'},
+    floatingPet:{enabled:source.floatingPet?.enabled!==false,position:{right:Number.isFinite(source.floatingPet?.position?.right)?source.floatingPet.position.right:24,bottom:Number.isFinite(source.floatingPet?.position?.bottom)?source.floatingPet.position.bottom:84},themeMode:['auto','dark','light'].includes(source.floatingPet?.themeMode)?source.floatingPet.themeMode:'auto',scale:[0.8,1,1.2,1.4,1.6].includes(source.floatingPet?.scale)?source.floatingPet.scale:1,quotes:{enabled:source.floatingPet?.quotes?.enabled!==false,intervalMin:[15,30,60].includes(source.floatingPet?.quotes?.intervalMin)?source.floatingPet.quotes.intervalMin:15}},
     readingHistory:readingHistory.publicConfig(),
   };
   return {settings,providerConfigured,providerError,...(trusted ? {subscription:isSubscriptionKind(source.providerKind)?subscriptionStatus(nativeKind(source)):subscriptionStatus('chatgpt'),dataProblem} : {})};
@@ -1113,7 +1113,10 @@ async function reconcileAutoScript(settings) {
   if (obsolete.length) await chrome.scripting.unregisterContentScripts({ids:obsolete});
   const wanted = [];
   if (matches.length) wanted.push({id:AUTO_SCRIPT_ID,matches,js:['auto-start.js'],runAt:'document_start',allFrames:false,persistAcrossSessions:true});
-  if (petMatches.length) wanted.push({id:PET_SCRIPT_ID,matches:petMatches,js:['floating-pet.js'],runAt:'document_idle',allFrames:false,persistAcrossSessions:true});
+  // floating-pet 挂载即调 RoamCatContentUI.petWidget（design.js 为可选 token 源）：
+  // 同 run_at 下动态注册与静态 content_scripts 的顺序不受保证，必须在同一注册项内
+  // 显式声明依赖顺序，否则伴读猫可能先于渲染层执行而 TypeError。
+  if (petMatches.length) wanted.push({id:PET_SCRIPT_ID,matches:petMatches,js:['design.js','pet-quotes.js','content-ui.js','floating-pet.js'],runAt:'document_idle',allFrames:false,persistAcrossSessions:true});
   if (wanted.length) await chrome.scripting.registerContentScripts(wanted);
 }
 
@@ -1133,7 +1136,7 @@ async function injectPageUI(tabId, includeVideo = false, petWanted) {
   const filesToInject = [];
   // 伴读猫和阅读脚本必须分开判断：猫已挂上不能当成内容脚本已就绪；伴读猫未启用时不注入。
   if (!status?.contentAlive) filesToInject.push('design.js','reading-style.js','content-ui.js');
-  if (petWanted && !status?.petAlive) filesToInject.push('floating-pet.js');
+  if (petWanted && !status?.petAlive) filesToInject.push('pet-quotes.js','floating-pet.js');
   if (!status?.contentAlive) filesToInject.push('content.js');
   if (includeVideo && VIDEO_SUPPORT_ENABLED && !status?.videoAlive) {
     filesToInject.push(...VIDEO_UI_FILES);

@@ -284,6 +284,70 @@ const server = http.createServer((req, res) => {
     assert.equal(undockCheck.edgeTabHidden, true);
     console.log('✓ Successfully undocked');
 
+    // 9. Click cat → quick dock opens; click again → closes
+    console.log('Testing click-to-toggle quick dock...');
+    const avatarBox = await execInPet(`() => {
+      const b = document.querySelector('#roamcat-pet-host').shadowRoot.querySelector('.roamcat-avatar-wrap').getBoundingClientRect();
+      return { x: b.x + b.width / 2, y: b.y + b.height / 2 };
+    }`);
+    await tabPage.mouse.click(avatarBox.x, avatarBox.y);
+    await tabPage.waitForTimeout(450);
+    const dockOpenCheck = await execInPet(`() => {
+      const root = document.querySelector('#roamcat-pet-host').shadowRoot;
+      const widget = root.querySelector('.roamcat-pet-widget');
+      const avatar = root.querySelector('.roamcat-avatar-wrap');
+      return {
+        dockOpen: widget.classList.contains('dock-open'),
+        ariaExpanded: avatar.getAttribute('aria-expanded'),
+        dockVisible: getComputedStyle(root.querySelector('.roamcat-quick-dock')).visibility,
+        zoomInert: root.querySelector('#roamcat-zoom-controls').hasAttribute('inert'),
+        zoomVisible: getComputedStyle(root.querySelector('#roamcat-zoom-controls')).visibility
+      };
+    }`);
+    assert.equal(dockOpenCheck.dockOpen, true, 'click should open quick dock');
+    assert.equal(dockOpenCheck.ariaExpanded, 'true');
+    assert.equal(dockOpenCheck.dockVisible, 'visible', 'dock must be visible when open');
+    assert.equal(dockOpenCheck.zoomInert, false, 'zoom controls inert must be lifted when open');
+    assert.equal(dockOpenCheck.zoomVisible, 'visible');
+    await tabPage.screenshot({ path: path.join(out, '11-quick-dock-open.png') });
+    console.log('✓ Captured 11-quick-dock-open.png');
+
+    await tabPage.mouse.click(avatarBox.x, avatarBox.y);
+    // 点击后指针仍悬在猫上：悬停探出会保持按钮排可见。移开指针越过 360ms 收起延迟再断言隐藏。
+    await tabPage.mouse.move(40, 40);
+    await tabPage.waitForTimeout(900);
+    const dockClosedCheck = await execInPet(`() => {
+      const root = document.querySelector('#roamcat-pet-host').shadowRoot;
+      return {
+        dockOpen: root.querySelector('.roamcat-pet-widget').classList.contains('dock-open'),
+        ariaExpanded: root.querySelector('.roamcat-avatar-wrap').getAttribute('aria-expanded'),
+        dockVisible: getComputedStyle(root.querySelector('.roamcat-quick-dock')).visibility
+      };
+    }`);
+    assert.equal(dockClosedCheck.dockOpen, false, 'second click should close quick dock');
+    assert.equal(dockClosedCheck.ariaExpanded, 'false');
+    assert.equal(dockClosedCheck.dockVisible, 'hidden', 'closed dock must be non-interactive via visibility');
+    console.log('✓ Quick dock toggles on cat click');
+
+    // 10. driveIn() sports-car mid-animation capture
+    console.log('Testing driveIn() sports car...');
+    await execInPet(`() => { globalThis.RoamCatPet.driveIn(); }`);
+    await tabPage.waitForTimeout(800);
+    const carCheck = await execInPet(`() => {
+      const root = document.querySelector('#roamcat-pet-host').shadowRoot;
+      const car = root.querySelector('.pet-car');
+      return { hasCar: Boolean(car), wheels: root.querySelectorAll('.car-wheel').length, speedLines: root.querySelectorAll('.speed-line').length };
+    }`);
+    assert.equal(carCheck.hasCar, true, 'pet-car element should exist mid-driveIn');
+    assert.equal(carCheck.wheels, 2);
+    assert.equal(carCheck.speedLines, 3);
+    await tabPage.screenshot({ path: path.join(out, '12-drive-in-car.png') });
+    console.log('✓ Captured 12-drive-in-car.png');
+    await tabPage.waitForTimeout(2200);
+    const carGone = await execInPet(`() => !document.querySelector('#roamcat-pet-host').shadowRoot.querySelector('.pet-car')`);
+    assert.equal(carGone, true, 'pet-car element should be removed after driveIn');
+    console.log('✓ driveIn completed and car removed');
+
     console.log('\n========================================');
     console.log('ALL ROAMCAT PET ACTION & DOCKING CHECKS PASSED!');
     console.log('Screenshots generated in preview/pet/');

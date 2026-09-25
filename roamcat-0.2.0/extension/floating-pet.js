@@ -35,8 +35,10 @@
   let startX = 0, startY = 0;
   let initialRight = 24, initialBottom = 84;
   let currentRight = 24, currentBottom = 84;
-  let isMenuOpen = false;
+  let isDockOpen = false;
   let isSummaryOpen = false;
+  let petScale = 1;
+  const PET_SCALE_STEPS = [0.8, 1, 1.2, 1.4, 1.6];
   let isDocked = false;
   let petState = 'idle'; // 'idle' | 'thinking' | 'success' | 'error'
   let cachedSummary = null;
@@ -56,19 +58,6 @@
       design: '设计与产品'
     };
     return map[key] || '全篇精炼';
-  }
-
-  function domainIcon(key) {
-    const map = {
-      general: '🌐',
-      tech: '💻',
-      data: '📊',
-      finance: '📈',
-      medical: '🩺',
-      legal: '⚖️',
-      design: '🎨'
-    };
-    return map[key] || '✨';
   }
 
   // escapeHtml/formatHighlight 已由 content-ui 渲染层的文本绑定与 highlightParts 取代。
@@ -239,8 +228,8 @@
       :host {
         display: block !important;
         position: fixed !important;
-        width: 64px !important;
-        height: 68px !important;
+        width: calc(64px * var(--pet-scale, 1)) !important;
+        height: calc(68px * var(--pet-scale, 1)) !important;
         overflow: visible !important;
         z-index: 2147483647 !important;
         pointer-events: none !important;
@@ -271,6 +260,24 @@
         --pet-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
         --pet-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.04);
         --pet-shadow-lg: 0 16px 36px rgba(0, 0, 0, 0.16), 0 4px 12px rgba(0, 0, 0, 0.06);
+        /* 拟物材质：左上光源的象牙瓷扣。face=受光面渐变；rim=外圈刻线；
+           inset=顶部棱线高光+底部接触阴影+内圈提亮；cast=接触影+环境影；
+           press=按下时内陷阴影；emboss=字形压印。 */
+        --pet-btn-face: radial-gradient(135% 135% at 30% 18%, #fffdf7 0%, rgba(255, 253, 247, 0) 52%), linear-gradient(180deg, #fbf7ec 0%, #f1e9d6 58%, #e7dbbf 100%);
+        --pet-btn-rim: rgba(96, 74, 38, 0.34);
+        --pet-btn-inset: inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 -1.5px 2.5px rgba(122, 95, 49, 0.32), inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+        --pet-btn-cast: 0 1px 1.5px rgba(64, 48, 21, 0.26), 0 4px 10px rgba(64, 48, 21, 0.14);
+        --pet-btn-press: inset 0 2px 4px rgba(88, 64, 26, 0.42), inset 0 -1px 0 rgba(255, 255, 255, 0.55);
+        --pet-btn-glow: inset 0 0 7px rgba(217, 119, 6, 0.28);
+        --pet-btn-active-face: radial-gradient(135% 135% at 30% 18%, #ffe9bd 0%, rgba(255, 233, 189, 0) 55%), linear-gradient(180deg, #f8cd7c 0%, #eda93a 60%, #d9932a 100%);
+        --pet-btn-active-ink: #5d3d0c;
+        --pet-glyph: #463b28;
+        --pet-glyph-emboss: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.72));
+        --pet-coin-edge: repeating-conic-gradient(from 0deg, #e2bc6d 0deg 9deg, #a37d2e 9deg 18deg);
+        --pet-coin-face: radial-gradient(circle at 32% 26%, #fff8e1 0%, #f6dd9f 40%, #e0b459 76%, #bf9134 100%);
+        --pet-coin-face-back: radial-gradient(circle at 32% 26%, #ffe3a6 0%, #f0bd55 45%, #d9a02e 80%, #b07f22 100%);
+        --pet-coin-inset: inset 0 1px 1px rgba(255, 255, 255, 0.75), inset 0 -1px 2px rgba(119, 84, 23, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+        --pet-coin-emboss: 0 1px 0 rgba(255, 255, 255, 0.55);
       }
 
       :host([data-theme="dark"]) {
@@ -294,6 +301,22 @@
         --pet-shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.5);
         --pet-shadow-md: 0 12px 36px rgba(0, 0, 0, 0.6);
         --pet-shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.7);
+        /* 暗色拟物：胡桃木烤漆扣。棱线高光减弱、接触影加深、字形改凹版压印。 */
+        --pet-btn-face: radial-gradient(135% 135% at 30% 18%, #57524a 0%, rgba(87, 82, 74, 0) 55%), linear-gradient(180deg, #403a32 0%, #322d27 58%, #241f1a 100%);
+        --pet-btn-rim: rgba(0, 0, 0, 0.62);
+        --pet-btn-inset: inset 0 1px 0 rgba(255, 248, 232, 0.16), inset 0 -1.5px 2.5px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(255, 248, 232, 0.06);
+        --pet-btn-cast: 0 1px 1.5px rgba(0, 0, 0, 0.6), 0 5px 12px rgba(0, 0, 0, 0.45);
+        --pet-btn-press: inset 0 2px 5px rgba(0, 0, 0, 0.65), inset 0 -1px 0 rgba(255, 248, 232, 0.08);
+        --pet-btn-glow: inset 0 0 8px rgba(245, 158, 11, 0.35);
+        --pet-btn-active-face: radial-gradient(135% 135% at 30% 18%, #f2b84e 0%, rgba(242, 184, 78, 0) 55%), linear-gradient(180deg, #d99a26 0%, #b57708 62%, #93600a 100%);
+        --pet-btn-active-ink: #241703;
+        --pet-glyph: #ede3cd;
+        --pet-glyph-emboss: drop-shadow(0 -1px 1px rgba(0, 0, 0, 0.75));
+        --pet-coin-edge: repeating-conic-gradient(from 0deg, #8a6a24 0deg 9deg, #54400f 9deg 18deg);
+        --pet-coin-face: radial-gradient(circle at 32% 26%, #6e5c33 0%, #54431f 45%, #3a2f15 80%, #2b2210 100%);
+        --pet-coin-face-back: radial-gradient(circle at 32% 26%, #c99622 0%, #a97c15 45%, #7d5a0b 82%, #5f430a 100%);
+        --pet-coin-inset: inset 0 1px 1px rgba(255, 244, 214, 0.22), inset 0 -1px 2px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(255, 244, 214, 0.08);
+        --pet-coin-emboss: 0 -1px 1px rgba(0, 0, 0, 0.6);
       }
 
       @media (prefers-color-scheme: dark) {
@@ -318,6 +341,21 @@
           --pet-shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.5);
           --pet-shadow-md: 0 12px 36px rgba(0, 0, 0, 0.6);
           --pet-shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.7);
+          --pet-btn-face: radial-gradient(135% 135% at 30% 18%, #57524a 0%, rgba(87, 82, 74, 0) 55%), linear-gradient(180deg, #403a32 0%, #322d27 58%, #241f1a 100%);
+          --pet-btn-rim: rgba(0, 0, 0, 0.62);
+          --pet-btn-inset: inset 0 1px 0 rgba(255, 248, 232, 0.16), inset 0 -1.5px 2.5px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(255, 248, 232, 0.06);
+          --pet-btn-cast: 0 1px 1.5px rgba(0, 0, 0, 0.6), 0 5px 12px rgba(0, 0, 0, 0.45);
+          --pet-btn-press: inset 0 2px 5px rgba(0, 0, 0, 0.65), inset 0 -1px 0 rgba(255, 248, 232, 0.08);
+          --pet-btn-glow: inset 0 0 8px rgba(245, 158, 11, 0.35);
+          --pet-btn-active-face: radial-gradient(135% 135% at 30% 18%, #f2b84e 0%, rgba(242, 184, 78, 0) 55%), linear-gradient(180deg, #d99a26 0%, #b57708 62%, #93600a 100%);
+          --pet-btn-active-ink: #241703;
+          --pet-glyph: #ede3cd;
+          --pet-glyph-emboss: drop-shadow(0 -1px 1px rgba(0, 0, 0, 0.75));
+          --pet-coin-edge: repeating-conic-gradient(from 0deg, #8a6a24 0deg 9deg, #54400f 9deg 18deg);
+          --pet-coin-face: radial-gradient(circle at 32% 26%, #6e5c33 0%, #54431f 45%, #3a2f15 80%, #2b2210 100%);
+          --pet-coin-face-back: radial-gradient(circle at 32% 26%, #c99622 0%, #a97c15 45%, #7d5a0b 82%, #5f430a 100%);
+          --pet-coin-inset: inset 0 1px 1px rgba(255, 244, 214, 0.22), inset 0 -1px 2px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(255, 244, 214, 0.08);
+          --pet-coin-emboss: 0 -1px 1px rgba(0, 0, 0, 0.6);
         }
       }
 
@@ -332,8 +370,12 @@
 
       .roamcat-pet-widget {
         position: relative;
-        width: 64px;
-        height: 68px;
+        width: calc(64px * var(--pet-scale, 1));
+        height: calc(68px * var(--pet-scale, 1));
+        /* 猫身锚定在（放大后的）widget 底部中央 */
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
         z-index: 2147483640;
         pointer-events: auto;
         user-select: none;
@@ -347,31 +389,29 @@
 
       /* Edge Docking - Dedicated Peeking Mascot Mode (贴边探头姿态) */
       .roamcat-pet-widget.docked {
-        transform: translateX(18px);
+        transform: translateX(calc(18px * var(--pet-scale, 1)));
       }
 
       .roamcat-pet-widget.docked:hover,
       .roamcat-pet-widget.docked.peek-out,
       .roamcat-pet-widget.docked.has-speech,
-      .roamcat-pet-widget.docked:has(.cat-speech-bubble.speaking),
-      .roamcat-pet-widget.docked:has(.roamcat-bubble-menu.open) {
-        transform: translateX(-22px) !important;
+      .roamcat-pet-widget.docked:has(.cat-speech-bubble.speaking) {
+        transform: translateX(calc(-22px * var(--pet-scale, 1))) !important;
       }
 
       .roamcat-pet-widget.is-left.docked {
-        transform: translateX(-18px);
+        transform: translateX(calc(-18px * var(--pet-scale, 1)));
       }
 
       .roamcat-pet-widget.is-left .cat-mode-peeking {
-        transform: scaleX(-1);
+        transform: scaleX(-1) scale(var(--pet-scale, 1));
       }
 
       .roamcat-pet-widget.is-left.docked:hover,
       .roamcat-pet-widget.is-left.docked.peek-out,
       .roamcat-pet-widget.is-left.docked.has-speech,
-      .roamcat-pet-widget.is-left.docked:has(.cat-speech-bubble.speaking),
-      .roamcat-pet-widget.is-left.docked:has(.roamcat-bubble-menu.open) {
-        transform: translateX(22px) !important;
+      .roamcat-pet-widget.is-left.docked:has(.cat-speech-bubble.speaking) {
+        transform: translateX(calc(22px * var(--pet-scale, 1))) !important;
       }
 
 
@@ -426,8 +466,7 @@
       .roamcat-pet-widget.docked:hover .roamcat-edge-tab,
       .roamcat-pet-widget.docked.peek-out .roamcat-edge-tab,
       .roamcat-pet-widget.docked.has-speech .roamcat-edge-tab,
-      .roamcat-pet-widget.docked:has(.cat-speech-bubble.speaking) .roamcat-edge-tab,
-      .roamcat-pet-widget.docked:has(.roamcat-bubble-menu.open) .roamcat-edge-tab {
+      .roamcat-pet-widget.docked:has(.cat-speech-bubble.speaking) .roamcat-edge-tab {
         opacity: 0 !important;
         pointer-events: none !important;
       }
@@ -442,10 +481,14 @@
       }
 
       .edge-tab-paw {
-        font-size: 11px;
         line-height: 1;
         color: var(--pet-primary, #f59e0b);
         filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.12));
+        display: inline-flex;
+        align-items: center;
+      }
+      .edge-tab-paw svg {
+        display: block;
       }
 
       .edge-tab-dot {
@@ -473,9 +516,10 @@
         width: 32px;
         height: 32px;
         border-radius: 50%;
-        background: var(--pet-surface-elevated, #ffffff);
-        border: 1px solid var(--pet-line, #e2ded4);
-        box-shadow: var(--pet-shadow-sm);
+        /* 黄铜铣边币：repeating-conic 齿纹缘，币面内缩 2.5px 露出轮圈 */
+        background: var(--pet-coin-edge, var(--pet-surface-elevated, #ffffff));
+        border: 1px solid var(--pet-btn-rim, var(--pet-line, #e2ded4));
+        box-shadow: var(--pet-btn-inset, none), var(--pet-btn-cast, var(--pet-shadow-sm));
         cursor: pointer;
         display: flex;
         align-items: center;
@@ -491,13 +535,11 @@
                     opacity 0.2s ease;
         user-select: none;
         perspective: 600px;
-        backdrop-filter: blur(14px);
-        -webkit-backdrop-filter: blur(14px);
       }
 
       .roamcat-flip-btn:hover {
         transform: scale(1.08) translateY(-1px);
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.16), 0 0 0 1px var(--pet-primary, #f59e0b);
+        box-shadow: var(--pet-btn-inset, none), var(--pet-btn-glow, none), var(--pet-btn-cast, none), 0 0 0 1px var(--pet-primary, #f59e0b);
         border-color: var(--pet-primary, #f59e0b);
       }
 
@@ -506,8 +548,10 @@
         outline-offset: 2px;
       }
 
+      /* 按下=物理按压：内陷阴影取代投影，位移下沉 */
       .roamcat-flip-btn:active {
         transform: scale(0.94) translateY(1px);
+        box-shadow: var(--pet-btn-press, none);
       }
 
       /* 3D Coin/Card Container */
@@ -522,17 +566,19 @@
         justify-content: center;
       }
 
-      /* Coin Faces */
+      /* Coin Faces：币面内缩露出铣边轮圈，径向渐变做凸面受光 */
       .coin-face {
         position: absolute;
-        width: 100%;
-        height: 100%;
+        inset: 2.5px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         backface-visibility: hidden;
         -webkit-backface-visibility: hidden;
+        background: var(--pet-coin-face, var(--pet-surface-elevated, #ffffff));
+        box-shadow: var(--pet-coin-inset, none);
+        text-shadow: var(--pet-coin-emboss, none);
       }
 
       .coin-face-front {
@@ -566,16 +612,12 @@
 
       .glyph-sub {
         font-size: 9px;
-        color: var(--pet-ink, #161511);
+        color: var(--pet-glyph, var(--pet-ink, #161511));
       }
 
       .coin-face-back {
         transform: rotateY(180deg);
-        background: var(--pet-primary-soft, rgba(245, 158, 11, 0.14));
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        background: var(--pet-coin-face-back, var(--pet-primary-soft, rgba(245, 158, 11, 0.14)));
       }
 
       .coin-glyph-active-box {
@@ -699,8 +741,7 @@
         transform: translateY(-50%) translateX(0);
       }
 
-      .roamcat-pet-widget.dragging .flip-tooltip,
-      .roamcat-pet-widget.menu-open .flip-tooltip {
+      .roamcat-pet-widget.dragging .flip-tooltip {
         opacity: 0 !important;
         visibility: hidden;
       }
@@ -720,46 +761,235 @@
         align-items: center;
         gap: 6px;
         z-index: 11;
-        transition: opacity 0.2s ease;
+        visibility: hidden;
+        /* 容器在收起过渡结束后才隐藏（visibility 延迟衔接子按钮 160ms 收拢动画） */
+        transition: visibility 0s 0.36s;
       }
 
-      /* Pet 贴左屏时按钮行翻到右侧（始终朝向页面中心，避免超出视口）；
-         row-reverse 让旋旋翻保持离猫最近，整排顺序镜像一致 */
-      .roamcat-pet-widget.is-left .roamcat-quick-dock {
-        left: auto;
-        right: -8px;
-        transform: translateX(100%);
-        flex-direction: row-reverse;
-      }
-
-      /* 隐形悬停桥：盖住按钮排与猫身之间的 8px 缝隙，指针移向按钮时不掉 hover。
-         按钮排隐藏时 pointer-events 继承为 none，不会拦截页面点击。 */
+      /* 悬停桥：盖住按钮排与猫身之间的 8px 缝（上下再放 14px 余量接住斜移），
+         指针从猫移向按钮时不掉 :hover。收起态随容器 visibility:hidden 失效。 */
       .roamcat-quick-dock::before {
-        content: "";
+        content: '';
         position: absolute;
-        top: -10px;
-        bottom: -10px;
-        right: -14px;
-        width: 14px;
+        top: -14px;
+        right: -16px;
+        bottom: -14px;
+        width: 16px;
       }
 
       .roamcat-pet-widget.is-left .roamcat-quick-dock::before {
         right: auto;
-        left: -14px;
+        left: -16px;
       }
 
-      /* 贴边时隐藏，悬停或探出时恢复；收起带 140ms 延迟（visibility 过渡保留
-         延迟窗内的可点击性），快速滑过不闪断 */
-      .roamcat-pet-widget.docked .roamcat-quick-dock {
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.18s ease 0.14s, visibility 0s 0.14s;
+      /* Pet 贴左屏时按钮行翻到右侧（始终朝向页面中心，避免超出视口）。
+         两侧 DOM 顺序一致：旋旋翻在最左，贴边折叠按钮离猫最近的一侧依 --i 决定。 */
+      .roamcat-pet-widget.is-left .roamcat-quick-dock {
+        left: auto;
+        right: -8px;
+        transform: translateX(100%);
       }
-      .roamcat-pet-widget.docked:hover .roamcat-quick-dock,
-      .roamcat-pet-widget.docked.peek-out .roamcat-quick-dock {
-        opacity: 1;
+
+      /* 显隐两条路：点猫头 dock-open 常驻展开；悬停 widget（含贴边探出）临时展开，
+         移开后经 360ms visibility 延迟收起——窗口内按钮仍可命中，微抖动不闪断。 */
+      .roamcat-pet-widget:is(.dock-open, :hover) .roamcat-quick-dock,
+      .roamcat-pet-widget.dock-open .roamcat-zoom-controls {
         visibility: visible;
         transition-delay: 0s;
+      }
+
+      /* 子按钮逐个收放：opacity/translate/scale 三个独立属性动画
+         （transform 留给 hover/active 等交互态，避免互相覆盖）。
+         --i 为"离猫距离"序号：贴右边时 #quick-dock 最近（--i:0），
+         贴左边时 #roamcat-flip-btn 最近。 */
+      .roamcat-quick-dock > :nth-child(1) { --i: 4; }
+      .roamcat-quick-dock > :nth-child(2) { --i: 3; }
+      .roamcat-quick-dock > :nth-child(3) { --i: 2; }
+      .roamcat-quick-dock > :nth-child(4) { --i: 1; }
+      .roamcat-quick-dock > :nth-child(5) { --i: 0; }
+      .roamcat-pet-widget.is-left .roamcat-quick-dock > :nth-child(1) { --i: 0; }
+      .roamcat-pet-widget.is-left .roamcat-quick-dock > :nth-child(2) { --i: 1; }
+      .roamcat-pet-widget.is-left .roamcat-quick-dock > :nth-child(3) { --i: 2; }
+      .roamcat-pet-widget.is-left .roamcat-quick-dock > :nth-child(4) { --i: 3; }
+      .roamcat-pet-widget.is-left .roamcat-quick-dock > :nth-child(5) { --i: 4; }
+
+      .roamcat-pet-widget .roamcat-quick-dock > * {
+        opacity: 0;
+        translate: 14px 0;
+        scale: 0.6;
+        pointer-events: none;
+        /* 在此统一接管过渡列表（前 5 项为交互态，后 3 项为显隐动画），
+           保证 opacity/translate/scale 的错峰延迟不被按钮自身 transition 重置。
+           收起：160ms 收拢，最远端先动（反向错峰）。 */
+        transition:
+          transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+          box-shadow 0.2s ease,
+          border-color 0.2s ease,
+          background-color 0.2s ease,
+          color 0.2s ease,
+          opacity 0.16s ease-in calc((4 - var(--i, 0)) * 35ms),
+          translate 0.16s ease-in calc((4 - var(--i, 0)) * 35ms),
+          scale 0.16s ease-in calc((4 - var(--i, 0)) * 35ms);
+      }
+      .roamcat-pet-widget.is-left .roamcat-quick-dock > * {
+        translate: -14px 0;
+      }
+      .roamcat-pet-widget:is(.dock-open, :hover) .roamcat-quick-dock > * {
+        opacity: 1;
+        translate: 0 0;
+        scale: 1;
+        pointer-events: auto;
+        /* 展开：translate/scale 320ms 回弹曲线，opacity 180ms，近猫端先动 */
+        transition:
+          transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+          box-shadow 0.2s ease,
+          border-color 0.2s ease,
+          background-color 0.2s ease,
+          color 0.2s ease,
+          opacity 0.18s ease calc(var(--i, 0) * 35ms),
+          translate 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--i, 0) * 35ms),
+          scale 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--i, 0) * 35ms);
+      }
+
+      /* 快捷坞展开时气泡抬高，避开缩放胶囊 */
+      .roamcat-pet-widget.dock-open {
+        --zoom-offset: 34px;
+      }
+
+      /* 缩放控制胶囊：悬于猫头上方，与快捷坞同显同隐 */
+      .roamcat-zoom-controls {
+        position: absolute;
+        top: -32px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        padding: 2px;
+        border-radius: 999px;
+        background: var(--pet-btn-face, var(--pet-surface-elevated, #ffffff));
+        border: 1px solid var(--pet-btn-rim, var(--pet-line, #e2ded4));
+        box-shadow: var(--pet-btn-inset, none), var(--pet-btn-cast, var(--pet-shadow-sm));
+        z-index: 12;
+        visibility: hidden;
+        opacity: 0;
+        translate: 0 6px;
+        scale: 0.8;
+        transition:
+          opacity 0.16s ease-in,
+          translate 0.16s ease-in,
+          scale 0.16s ease-in,
+          visibility 0s 0.36s;
+      }
+      .roamcat-pet-widget.dock-open .roamcat-zoom-controls {
+        opacity: 1;
+        translate: 0 0;
+        scale: 1;
+        transition:
+          opacity 0.18s ease,
+          translate 0.32s cubic-bezier(0.34, 1.56, 0.64, 1),
+          scale 0.32s cubic-bezier(0.34, 1.56, 0.64, 1),
+          visibility 0s 0s;
+      }
+      .zoom-btn {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        border: none;
+        background: transparent;
+        color: var(--pet-glyph, var(--pet-muted, #6b7280));
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        line-height: 0;
+        transition: box-shadow 0.15s ease, color 0.15s ease;
+      }
+      .zoom-btn svg { display: block; filter: var(--pet-glyph-emboss, none); }
+      .zoom-btn:hover:not(:disabled) {
+        /* 悬停微凸：胶囊内再浮起一颗小瓷扣 */
+        background: var(--pet-btn-face, var(--pet-tag-bg, rgba(0,0,0,0.05)));
+        box-shadow: var(--pet-btn-inset, none), 0 1px 2px rgba(64, 48, 21, 0.18);
+        color: var(--pet-primary, #f59e0b);
+      }
+      .zoom-btn:active:not(:disabled) {
+        box-shadow: var(--pet-btn-press, none);
+      }
+      .zoom-btn:disabled {
+        opacity: 0.35;
+        cursor: default;
+      }
+      .zoom-btn:focus-visible {
+        outline: 2px solid var(--pet-primary, #f59e0b);
+        outline-offset: 1px;
+      }
+      .zoom-label {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--pet-ink, #161511);
+        min-width: 34px;
+        text-align: center;
+        user-select: none;
+      }
+
+      /* Sports Car Entrance — driveIn() 跑车入场彩蛋。
+         停在猫的脚下、页面内侧一侧；约 1.3× 猫宽，随 --pet-scale 缩放。 */
+      .pet-car {
+        position: absolute;
+        bottom: 0;
+        right: calc(100% + 6px);
+        width: calc(83px * var(--pet-scale, 1));
+        pointer-events: none;
+        z-index: 9;
+        transform-origin: bottom center;
+      }
+      .roamcat-pet-widget.is-left .pet-car {
+        right: auto;
+        left: calc(100% + 6px);
+      }
+      .pet-car svg {
+        display: block;
+        width: 100%;
+        height: auto;
+        overflow: visible;
+      }
+      .roamcat-pet-widget.is-left .pet-car svg {
+        transform: scaleX(-1);
+      }
+      .pet-car .car-wheel {
+        transform-box: fill-box;
+        transform-origin: center;
+        animation: car-wheel-spin 0.3s linear infinite;
+      }
+      @keyframes car-wheel-spin {
+        to { transform: rotate(360deg); }
+      }
+      .pet-car .speed-line {
+        opacity: 0;
+      }
+      .pet-car.car-moving .speed-line {
+        animation: speed-line-flash 0.45s linear infinite;
+      }
+      .pet-car .speed-line:nth-child(2) { animation-delay: 0.08s; }
+      .pet-car .speed-line:nth-child(3) { animation-delay: 0.16s; }
+      @keyframes speed-line-flash {
+        0% { opacity: 0; transform: translateX(6px); }
+        30% { opacity: 0.9; }
+        100% { opacity: 0; transform: translateX(-10px); }
+      }
+      .pet-car .exhaust-puff {
+        transform-box: fill-box;
+        transform-origin: center;
+        opacity: 0;
+      }
+      .pet-car.car-puff .exhaust-puff {
+        animation: exhaust-puff 0.5s ease-out forwards;
+      }
+      @keyframes exhaust-puff {
+        0% { opacity: 0.75; transform: translateX(0) scale(0.4); }
+        100% { opacity: 0; transform: translateX(16px) scale(1.4); }
       }
 
       .roamcat-quick-btn {
@@ -767,9 +997,10 @@
         width: 30px;
         height: 30px;
         border-radius: 50%;
-        background: var(--pet-surface-elevated, #ffffff);
-        border: 1px solid var(--pet-line, #e2ded4);
-        box-shadow: var(--pet-shadow-sm);
+        /* 象牙瓷扣：凸面受光渐变 + 顶棱高光 + 底部接触暗边 + 双层投影 */
+        background: var(--pet-btn-face, var(--pet-surface-elevated, #ffffff));
+        border: 1px solid var(--pet-btn-rim, var(--pet-line, #e2ded4));
+        box-shadow: var(--pet-btn-inset, none), var(--pet-btn-cast, var(--pet-shadow-sm));
         cursor: pointer;
         display: flex;
         align-items: center;
@@ -779,20 +1010,32 @@
         outline: none;
         font-size: 14px;
         line-height: 1;
+        color: var(--pet-glyph, var(--pet-muted, #6b7280));
         transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
                     box-shadow 0.2s ease,
                     border-color 0.2s ease,
                     background-color 0.2s ease,
                     opacity 0.2s ease;
         user-select: none;
-        backdrop-filter: blur(14px);
-        -webkit-backdrop-filter: blur(14px);
       }
 
       .roamcat-quick-btn:hover {
-        transform: scale(1.1);
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16), 0 0 0 1px var(--pet-primary, #f59e0b);
+        transform: scale(1.08) translateY(-1px);
+        /* 悬停=琥珀内辉沿扣面晕开 + 一圈主色环线 */
+        box-shadow: var(--pet-btn-inset, none), var(--pet-btn-glow, none), var(--pet-btn-cast, none), 0 0 0 1px var(--pet-primary, #f59e0b);
         border-color: var(--pet-primary, #f59e0b);
+        color: var(--pet-primary, #f59e0b);
+      }
+
+      .roamcat-quick-btn .quick-glyph {
+        display: grid;
+        place-items: center;
+        line-height: 0;
+      }
+      /* 字形压印：亮色凸版 / 暗色凹版（由 --pet-glyph-emboss 决定） */
+      .roamcat-quick-btn .quick-glyph svg {
+        display: block;
+        filter: var(--pet-glyph-emboss, none);
       }
 
       .roamcat-quick-btn:focus-visible {
@@ -800,14 +1043,22 @@
         outline-offset: 2px;
       }
 
+      /* 物理按压：内陷阴影取代投影 */
       .roamcat-quick-btn:active {
-        transform: scale(0.92);
+        transform: scale(0.94) translateY(1px);
+        box-shadow: var(--pet-btn-press, none);
       }
 
-      /* 开启态：阅读辅助生效时高亮 */
+      /* 开启态：琥珀釉面 */
       .roamcat-quick-btn.is-active {
-        background: var(--pet-primary-soft, #fef3c7);
-        border-color: var(--pet-primary, #f59e0b);
+        background: var(--pet-btn-active-face, var(--pet-primary-soft, #fef3c7));
+        border-color: color-mix(in srgb, var(--pet-primary, #f59e0b) 55%, rgba(0, 0, 0, 0.35));
+        color: var(--pet-btn-active-ink, var(--pet-primary, #f59e0b));
+      }
+
+      /* 贴左屏时翻转"贴边折叠"箭头朝向 */
+      .roamcat-pet-widget.is-left .icon-dock-edge {
+        transform: scaleX(-1);
       }
 
       .roamcat-quick-btn .quick-tooltip {
@@ -844,8 +1095,7 @@
         transform: translateY(-50%) translateX(0);
       }
 
-      .roamcat-pet-widget.dragging .quick-tooltip,
-      .roamcat-pet-widget.menu-open .quick-tooltip {
+      .roamcat-pet-widget.dragging .quick-tooltip {
         opacity: 0 !important;
         visibility: hidden;
       }
@@ -879,9 +1129,9 @@
       /* Speech Bubble (Hover & Speaking Notification) */
       .cat-speech-bubble {
         position: absolute;
-        bottom: calc(100% + 8px);
+        bottom: calc(100% + 8px + var(--zoom-offset, 0px));
         left: 50%;
-        transform: translateX(-50%) translateY(4px);
+        transform: translateX(calc(-50% + var(--bubble-shift-x, 0px))) translateY(4px);
         background: var(--pet-surface-elevated, #ffffff);
         color: var(--pet-ink, #111827);
         border: 1.5px solid var(--pet-line, #e5e7eb);
@@ -902,24 +1152,36 @@
         align-items: center;
         gap: 6px;
         width: max-content;
-        max-width: min(260px, calc(100vw - 36px));
+        max-width: min(260px, calc(100vw - 16px));
+      }
+
+      /* fitSpeechBubble() 通过 --bubble-shift-x 水平收进视口、--bubble-tail-x
+         保持尾巴指向猫；贴顶时加 .below 翻到猫下方、尾巴朝上。 */
+      .cat-speech-bubble.below {
+        bottom: auto;
+        top: calc(100% + 8px);
       }
 
       .cat-speech-bubble::after {
         content: '';
         position: absolute;
         top: 100%;
-        left: 50%;
+        left: var(--bubble-tail-x, 50%);
         transform: translateX(-50%);
         border-width: 5px;
         border-style: solid;
-        border-color: var(--pet-surface-elevated, #ffffff) transparent transparent transparent;
+        border-color: var(--tail-bg, var(--pet-surface-elevated, #ffffff)) transparent transparent transparent;
         transition: border-color 0.2s ease;
+      }
+      .cat-speech-bubble.below::after {
+        top: auto;
+        bottom: 100%;
+        border-color: transparent transparent var(--tail-bg, var(--pet-surface-elevated, #ffffff)) transparent;
       }
 
       .cat-speech-bubble.speaking {
         opacity: 1 !important;
-        transform: translateX(-50%) translateY(0);
+        transform: translateX(calc(-50% + var(--bubble-shift-x, 0px))) translateY(0);
         pointer-events: auto !important;
         visibility: visible !important;
       }
@@ -928,32 +1190,22 @@
       .roamcat-pet-widget:not(.is-left) .cat-speech-bubble {
         left: auto !important;
         right: 0 !important;
-        transform: translateY(4px);
-      }
-      .roamcat-pet-widget:not(.is-left) .cat-speech-bubble::after {
-        left: auto !important;
-        right: 22px !important;
-        transform: none !important;
+        transform: translateX(var(--bubble-shift-x, 0px)) translateY(4px);
       }
       .roamcat-pet-widget:not(.is-left) .cat-speech-bubble.speaking,
       .roamcat-pet-widget:not(.is-left) .roamcat-avatar-wrap:hover .cat-speech-bubble:not(.speaking) {
-        transform: translateY(0) !important;
+        transform: translateX(var(--bubble-shift-x, 0px)) translateY(0) !important;
       }
 
       /* 针对左半屏或贴左边缘的对齐策略：气泡左对齐，向网页内侧展开，100% 避免超出视口！ */
       .roamcat-pet-widget.is-left .cat-speech-bubble {
         left: 0 !important;
         right: auto !important;
-        transform: translateY(4px);
-      }
-      .roamcat-pet-widget.is-left .cat-speech-bubble::after {
-        left: 22px !important;
-        right: auto !important;
-        transform: none !important;
+        transform: translateX(var(--bubble-shift-x, 0px)) translateY(4px);
       }
       .roamcat-pet-widget.is-left .cat-speech-bubble.speaking,
       .roamcat-pet-widget.is-left .roamcat-avatar-wrap:hover .cat-speech-bubble:not(.speaking) {
-        transform: translateY(0) !important;
+        transform: translateX(var(--bubble-shift-x, 0px)) translateY(0) !important;
       }
 
       /* Speaking default state */
@@ -965,8 +1217,8 @@
       .cat-speech-bubble.speaking .speech-text {
         color: var(--pet-ink, #161511) !important;
       }
-      .cat-speech-bubble.speaking::after {
-        border-color: var(--pet-surface-elevated, #ffffff) transparent transparent transparent;
+      .cat-speech-bubble.speaking {
+        --tail-bg: var(--pet-surface-elevated, #ffffff);
       }
 
       /* Busy / Loading status speaking (e.g. 正在解构正文 喵~) - Light default */
@@ -980,8 +1232,8 @@
         color: #78350f !important;
         font-weight: 600 !important;
       }
-      .cat-speech-bubble.speaking.is-busy::after {
-        border-color: #fffbeb transparent transparent transparent !important;
+      .cat-speech-bubble.speaking.is-busy {
+        --tail-bg: #fffbeb;
       }
       .cat-speech-bubble.speaking.is-busy .speech-spinner {
         display: inline-block;
@@ -1007,8 +1259,8 @@
         color: #fef3c7 !important;
         font-weight: 600 !important;
       }
-      :host([data-theme="dark"]) .cat-speech-bubble.speaking.is-busy::after {
-        border-color: #1e2028 transparent transparent transparent !important;
+      :host([data-theme="dark"]) .cat-speech-bubble.speaking.is-busy {
+        --tail-bg: #1e2028;
       }
       :host([data-theme="dark"]) .cat-speech-bubble.speaking.is-busy .speech-spinner {
         border: 2px solid rgba(245, 158, 11, 0.25);
@@ -1033,8 +1285,8 @@
           color: #fef3c7 !important;
           font-weight: 600 !important;
         }
-        :host(:not([data-theme="light"])) .cat-speech-bubble.speaking.is-busy::after {
-          border-color: #1e2028 transparent transparent transparent !important;
+        :host(:not([data-theme="light"])) .cat-speech-bubble.speaking.is-busy {
+          --tail-bg: #1e2028;
         }
         :host(:not([data-theme="light"])) .cat-speech-bubble.speaking.is-busy .speech-spinner {
           border: 2px solid rgba(245, 158, 11, 0.25);
@@ -1060,8 +1312,8 @@
         color: #991b1b !important;
         font-weight: 600 !important;
       }
-      .cat-speech-bubble.speaking.is-error::after {
-        border-color: #fef2f2 transparent transparent transparent !important;
+      .cat-speech-bubble.speaking.is-error {
+        --tail-bg: #fef2f2;
       }
       .cat-speech-bubble.speaking.is-error .speech-close-btn {
         color: #b91c1c;
@@ -1082,8 +1334,8 @@
         color: #fca5a5 !important;
         font-weight: 600 !important;
       }
-      :host([data-theme="dark"]) .cat-speech-bubble.speaking.is-error::after {
-        border-color: #201315 transparent transparent transparent !important;
+      :host([data-theme="dark"]) .cat-speech-bubble.speaking.is-error {
+        --tail-bg: #201315;
       }
 
       @media (prefers-color-scheme: dark) {
@@ -1097,8 +1349,8 @@
           color: #fca5a5 !important;
           font-weight: 600 !important;
         }
-        :host(:not([data-theme="light"])) .cat-speech-bubble.speaking.is-error::after {
-          border-color: #201315 transparent transparent transparent !important;
+        :host(:not([data-theme="light"])) .cat-speech-bubble.speaking.is-error {
+          --tail-bg: #201315;
         }
       }
 
@@ -1124,13 +1376,39 @@
         line-height: 1.35;
       }
 
+      /* 哲学语录气泡（.quote）：多行排版——中文句 + 英文小字 + 署名，关闭按钮对齐首行。 */
+      .cat-speech-bubble.speaking.quote {
+        align-items: flex-start;
+      }
+      .cat-speech-bubble.speaking.quote .speech-text {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+      .cat-speech-bubble .quote-zh {
+        font-weight: 600;
+      }
+      .cat-speech-bubble .quote-en {
+        font-size: 10px;
+        font-weight: 500;
+        line-height: 1.45;
+        color: var(--pet-ink-subtle, var(--pet-muted, #64748b));
+      }
+      .cat-speech-bubble .quote-author {
+        font-size: 10px;
+        font-weight: 500;
+        color: var(--pet-ink-subtle, var(--pet-muted, #64748b));
+      }
+      .cat-speech-bubble.speaking.quote .speech-close-btn {
+        margin-top: 1px;
+      }
+
       .speech-close-btn {
         display: none;
         background: transparent;
         border: none;
         color: var(--pet-muted, #6b7280);
         cursor: pointer;
-        font-size: 10px;
         padding: 0;
         margin-left: 2px;
         width: 14px;
@@ -1138,8 +1416,12 @@
         border-radius: 50%;
         align-items: center;
         justify-content: center;
+        line-height: 0;
         transition: color 0.15s, background-color 0.15s;
         flex-shrink: 0;
+      }
+      .speech-close-btn svg {
+        display: block;
       }
 
       .cat-speech-bubble.speaking .speech-close-btn {
@@ -1153,11 +1435,10 @@
 
       .roamcat-avatar-wrap:hover .cat-speech-bubble:not(.speaking) {
         opacity: 1;
-        transform: translateX(-50%) translateY(0);
+        transform: translateX(calc(-50% + var(--bubble-shift-x, 0px))) translateY(0);
       }
 
-      .roamcat-pet-widget.dragging .cat-speech-bubble,
-      .roamcat-pet-widget.menu-open .cat-speech-bubble {
+      .roamcat-pet-widget.dragging .cat-speech-bubble {
         opacity: 0 !important;
         visibility: hidden !important;
       }
@@ -1347,6 +1628,8 @@
         position: absolute;
         top: -12px;
         right: -6px;
+        scale: var(--pet-scale, 1);
+        transform-origin: bottom center;
         pointer-events: none;
         display: none;
         font-family: -apple-system, BlinkMacSystemFont, "Comic Sans MS", cursive, sans-serif;
@@ -1378,10 +1661,20 @@
         top: 8px;
         left: 50%;
         transform: translateX(-50%);
+        scale: var(--pet-scale, 1);
         pointer-events: none;
-        font-size: 16px;
         z-index: 25;
+        color: var(--pet-primary, #f59e0b);
         animation: particle-rise 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+      .cat-particle svg {
+        display: block;
+      }
+      .cat-particle[data-kind="heart"] {
+        color: #f43f5e;
+      }
+      .cat-particle[data-kind="heart"] svg {
+        fill: currentColor;
       }
       @keyframes particle-rise {
         0% { opacity: 0; transform: translateX(-50%) translateY(0) scale(0.5); }
@@ -1402,11 +1695,20 @@
         display: block;
         width: 100%;
         height: 100%;
+        transform: scale(var(--pet-scale, 1));
+        transform-origin: bottom center;
+        transition: opacity 0.2s ease, transform 0.25s ease;
+      }
+      .roamcat-pet-widget.pet-away .cat-mode-roaming {
+        opacity: 0;
+        transform: scale(calc(var(--pet-scale, 1) * 0.7));
       }
       .cat-mode-peeking {
         display: none;
         width: 100%;
         height: 100%;
+        transform: scale(var(--pet-scale, 1));
+        transform-origin: bottom center;
       }
 
       .roamcat-pet-widget.docked .cat-mode-roaming {
@@ -1542,9 +1844,36 @@
         .roamcat-flip-btn,
         .flip-coin,
         .cat-speech-bubble,
-        .roamcat-bubble-menu,
-        .roamcat-summary-window {
+        .roamcat-summary-window,
+        .cat-mode-roaming,
+        .pet-car,
+        .pet-car * {
           transition: none !important;
+        }
+        /* 快捷坞显隐降级为纯透明度过渡：120ms、无错峰、无位移缩放 */
+        .roamcat-pet-widget .roamcat-quick-dock > *,
+        .roamcat-pet-widget:is(.dock-open, :hover) .roamcat-quick-dock > * {
+          opacity: var(--dock-opacity, 0);
+          translate: none;
+          scale: none;
+          transition: opacity 0.12s ease !important;
+        }
+        .roamcat-pet-widget:is(.dock-open, :hover) .roamcat-quick-dock > * {
+          --dock-opacity: 1;
+        }
+        .roamcat-quick-dock,
+        .roamcat-pet-widget:is(.dock-open, :hover) .roamcat-quick-dock {
+          transition: visibility 0s 0.13s !important;
+        }
+        .roamcat-zoom-controls,
+        .roamcat-pet-widget.dock-open .roamcat-zoom-controls {
+          translate: none;
+          scale: none;
+          transition: opacity 0.12s ease, visibility 0s 0.13s !important;
+        }
+        .pet-car .speed-line,
+        .pet-car .car-wheel {
+          animation: none !important;
         }
       }
 
@@ -1552,78 +1881,12 @@
         to { transform: rotate(360deg); }
       }
 
-      /* Bubble Action Menu */
-      .roamcat-bubble-menu {
-        position: absolute;
-        bottom: calc(100% + 8px);
-        right: 0;
-        left: auto;
-        transform-origin: right bottom;
-        width: 230px;
-        background: var(--pet-surface);
-        border: 1px solid var(--pet-line);
-        border-radius: 16px;
-        box-shadow: var(--pet-shadow-lg);
-        padding: 6px;
-        display: flex;
-        flex-direction: column;
-        gap: 3px;
-        opacity: 0;
-        transform: translateY(10px) scale(0.95);
-        pointer-events: none;
-        transition: opacity 0.18s ease, transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1);
-        backdrop-filter: blur(18px);
-        -webkit-backdrop-filter: blur(18px);
-      }
 
-      /* When Pet is on Left Side of screen, menu opens towards right */
-      .roamcat-pet-widget.is-left .roamcat-bubble-menu {
-        right: auto;
-        left: 0;
-        transform-origin: left bottom;
-      }
-
-      .roamcat-bubble-menu.open {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-        pointer-events: auto;
-      }
-
-      .menu-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 6px 10px 8px;
-        border-bottom: 1px solid var(--pet-line-subtle);
-        margin-bottom: 3px;
-      }
-
-      .menu-title {
-        font-weight: 600;
-        font-size: 13px;
-        color: var(--pet-ink);
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-
-      .menu-pulse-dot {
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: #10b981;
-        box-shadow: 0 0 6px #10b981;
-      }
-
-      .menu-header-right {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-
+      /* 领域徽章基础样式（摘要窗头部 chip 继续使用该类名，HUD 观感由
+         .summary-header .menu-domain-tag 作用域规则提供） */
       .menu-domain-tag {
         font-size: 10.5px;
-        padding: 2px 7px;
+        padding: 3px 8px;
         border-radius: 999px;
         background: var(--pet-primary-soft);
         color: var(--pet-primary);
@@ -1631,175 +1894,17 @@
         border: 1px solid var(--pet-line-subtle);
         display: flex;
         align-items: center;
-        gap: 3px;
-      }
-
-      .menu-theme-btn {
-        width: 22px;
-        height: 22px;
-        border-radius: 6px;
-        border: 1px solid var(--pet-line-subtle);
-        background: var(--pet-tag-bg);
-        color: var(--pet-ink);
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 11.5px;
-        transition: all 0.15s ease;
-        padding: 0;
-      }
-
-      .menu-theme-btn:hover {
-        background: var(--pet-line);
-        color: var(--pet-primary);
-        transform: scale(1.08);
-      }
-
-      .menu-close-btn {
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        border: none;
-        background: transparent;
-        color: var(--pet-muted);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 12px;
-        transition: background 0.15s, color 0.15s;
-      }
-
-      .menu-close-btn:hover {
-        background: var(--pet-line-subtle);
-        color: var(--pet-ink);
-      }
-
-      .menu-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 8px 10px;
-        border-radius: 10px;
-        border: 1px solid transparent;
-        background: transparent;
-        color: var(--pet-ink);
-        font-size: 13px;
-        cursor: pointer;
-        text-align: left;
-        width: 100%;
-        transition: background-color 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
-      }
-
-      .menu-item:hover {
-        background: var(--pet-tag-bg);
-        transform: translateX(2px);
-      }
-
-      .roamcat-pet-widget.is-left .menu-item:hover {
-        transform: translateX(-2px);
-      }
-
-      .menu-item:active {
-        transform: scale(0.98);
-      }
-
-      /* Primary action button styling */
-      .menu-item.primary-action {
-        background: var(--pet-primary-soft);
-        border-color: var(--pet-line-subtle);
-      }
-
-      .menu-item.primary-action:hover {
-        background: var(--pet-primary-soft);
-        border-color: var(--pet-primary);
-      }
-
-      .menu-item-icon {
-        font-size: 16px;
-        width: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        transition: transform 0.15s ease;
-      }
-
-      .menu-item:hover .menu-item-icon {
-        transform: scale(1.15);
-      }
-
-      .menu-item-info {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        min-width: 0;
-      }
-
-      .menu-item-label {
-        font-weight: 500;
-        line-height: 1.25;
-        color: var(--pet-ink);
-      }
-
-      .menu-item.primary-action .menu-item-label {
-        font-weight: 600;
-        color: var(--pet-primary);
-      }
-
-      .menu-item-sub {
-        font-size: 10.5px;
-        color: var(--pet-muted);
-        margin-top: 1px;
+        gap: 4px;
         white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        flex: none;
+        line-height: 1;
+      }
+      .menu-domain-tag svg {
+        display: block;
+        flex: none;
       }
 
-      .menu-item-badge {
-        font-size: 10px;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
-        padding: 2px 6px;
-        border-radius: 4px;
-        background: var(--pet-line-subtle);
-        color: var(--pet-muted);
-        border: 1px solid var(--pet-line);
-        flex-shrink: 0;
-      }
-
-      /* Interactive Switch Component in Menu */
-      .menu-switch {
-        position: relative;
-        width: 32px;
-        height: 18px;
-        border-radius: 999px;
-        background: var(--pet-line);
-        transition: background-color 0.22s ease;
-        flex-shrink: 0;
-      }
-
-      .menu-switch-thumb {
-        position: absolute;
-        top: 2px;
-        left: 2px;
-        width: 14px;
-        height: 14px;
-        border-radius: 50%;
-        background: #ffffff;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.25);
-        transition: transform 0.2s cubic-bezier(0.2, 0.9, 0.3, 1);
-      }
-
-      .menu-switch.active {
-        background: #10b981;
-      }
-
-      .menu-switch.active .menu-switch-thumb {
-        transform: translateX(14px);
-      }
-
-      /* Summary Card Window */
+      /* Summary Card Window — HUD 卡片风格（与查词卡/欢迎页 HUD 同源） */
       .roamcat-summary-window {
         position: fixed;
         width: 460px;
@@ -1807,8 +1912,8 @@
         max-height: calc(100vh - 80px);
         background: var(--pet-surface);
         border: 1px solid var(--pet-line);
-        border-radius: 18px;
-        box-shadow: var(--pet-shadow-lg);
+        border-radius: 12px;
+        box-shadow: var(--pet-shadow-lg), 0 0 0 1px color-mix(in srgb, var(--pet-primary, #f59e0b) 22%, transparent);
         display: flex;
         flex-direction: column;
         overflow: hidden;
@@ -1831,73 +1936,80 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 12px 18px;
-        border-bottom: 1px solid var(--pet-line);
-        background: var(--pet-surface-elevated);
+        gap: 10px;
+        padding: 16px 20px 10px;
       }
 
-      .summary-header-title {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-weight: 600;
-        font-size: 14px;
+      .summary-title {
+        font: 800 16px/1.3 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
         color: var(--pet-ink);
+        min-width: 0;
       }
 
       .summary-header-actions {
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 8px;
+        flex: none;
       }
 
-      .summary-action-btn {
-        width: 28px;
-        height: 28px;
-        border-radius: 6px;
-        border: 1px solid var(--pet-line-subtle);
-        background: transparent;
+      /* 领域徽章 → HUD 标签 chip（仅摘要页头作用域，不影响气泡菜单里的同名类） */
+      .summary-header .menu-domain-tag {
+        font: 700 10px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        padding: 2px 7px;
+        border-radius: 4px;
+        background: var(--pet-tag-bg);
+        border: 1px solid var(--pet-line);
+        color: var(--pet-primary);
+        white-space: nowrap;
+      }
+      .summary-header .menu-domain-tag svg {
+        display: block;
+        flex: none;
+      }
+
+      .summary-action-btn,
+      .summary-close-btn {
+        width: 24px;
+        height: 24px;
+        border-radius: 5px;
+        border: 1px solid var(--pet-line);
+        background: var(--pet-tag-bg);
         color: var(--pet-muted);
         cursor: pointer;
-        display: flex;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 13px;
+        padding: 0;
+        line-height: 0;
+        flex: none;
         transition: all 0.15s ease;
+      }
+      .summary-action-btn svg,
+      .summary-close-btn svg {
+        display: block;
       }
 
       .summary-action-btn:hover {
-        background: var(--pet-tag-bg);
-        color: var(--pet-ink);
-        border-color: var(--pet-line);
+        color: var(--pet-primary);
+        border-color: var(--pet-primary);
       }
 
       .summary-close-btn {
-        width: 28px;
-        height: 28px;
-        border-radius: 6px;
-        border: none;
         background: transparent;
-        color: var(--pet-muted);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 14px;
-        transition: all 0.15s;
       }
-
       .summary-close-btn:hover {
         background: rgba(239, 68, 68, 0.1);
+        border-color: rgba(239, 68, 68, 0.4);
         color: #ef4444;
       }
 
       .summary-body {
-        padding: 18px;
+        padding: 0 20px 14px;
         overflow-y: auto;
         display: flex;
         flex-direction: column;
-        gap: 14px;
+        gap: 12px;
         max-height: 62vh;
       }
 
@@ -1907,57 +2019,45 @@
         align-items: center;
         flex-wrap: wrap;
         gap: 8px;
-        padding: 8px 12px;
-        background: var(--pet-tag-bg);
-        border: 1px solid var(--pet-line-subtle);
-        border-radius: 8px;
-        font-size: 11.5px;
+        font: 400 11.5px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
         color: var(--pet-muted);
       }
 
       .meta-item {
         display: inline-flex;
         align-items: center;
-        gap: 4px;
+        gap: 6px;
+      }
+      .meta-item > span:first-child {
+        display: inline-flex;
+      }
+      .meta-item svg {
+        display: block;
       }
 
       .meta-sep {
         opacity: 0.4;
       }
 
-      .meta-domain-pill {
-        color: var(--pet-primary);
-        font-weight: 600;
-      }
-
-      /* Core Takeaway Box */
+      /* Core Takeaway Box — HUD context box */
       .takeaway-card {
-        padding: 14px 16px;
-        background: var(--pet-primary-soft);
-        border: 1px solid rgba(138, 90, 23, 0.2);
-        border-left: 4px solid var(--pet-primary);
-        border-radius: 12px;
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        box-shadow: var(--pet-shadow-sm);
+        padding: 8px 12px;
+        background: var(--pet-tag-bg);
+        border-radius: 6px;
+        border-left: 3px solid var(--pet-primary);
       }
 
       .takeaway-label {
-        font-size: 11.5px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: var(--pet-primary);
-        display: flex;
-        align-items: center;
-        gap: 5px;
+        font-weight: 700;
+        color: var(--pet-muted);
+        margin-right: 4px;
+        font-size: 12.5px;
       }
 
       .takeaway-text {
-        font-size: 14.5px;
-        font-weight: 600;
-        line-height: 1.6;
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 1.55;
         color: var(--pet-ink);
       }
 
@@ -1965,72 +2065,58 @@
       .highlights-section {
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 8px;
       }
 
       .section-subtitle {
-        font-size: 12px;
-        font-weight: 600;
+        font: 700 10px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
         color: var(--pet-muted);
+        letter-spacing: 0.04em;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
-        display: flex;
-        align-items: center;
-        gap: 6px;
       }
 
       .highlight-list {
         display: flex;
         flex-direction: column;
-        gap: 9px;
         list-style: none;
+        margin: 0;
+        padding: 0;
       }
 
       .highlight-item {
         display: flex;
         gap: 10px;
-        font-size: 13.5px;
+        font-size: 13px;
         line-height: 1.6;
         color: var(--pet-ink);
-        background: var(--pet-surface-elevated);
-        padding: 10px 12px;
-        border-radius: 10px;
-        border: 1px solid var(--pet-line);
-        box-shadow: 0 1px 3px rgba(0,0,0,0.03);
-        transition: border-color 0.15s ease, transform 0.15s ease;
+        padding: 8px 0;
+        border-top: 1px solid var(--pet-line-subtle);
       }
-
-      .highlight-item:hover {
-        border-color: var(--pet-primary);
-        transform: translateY(-1px);
+      .highlight-item:first-child {
+        border-top: none;
+        padding-top: 0;
       }
 
       .highlight-num {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 22px;
-        height: 22px;
-        border-radius: 50%;
-        background: var(--pet-primary-soft);
+        font: 700 11px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
         color: var(--pet-primary);
-        font-size: 11px;
-        font-weight: 700;
-        flex-shrink: 0;
-        margin-top: 1px;
-        border: 1px solid rgba(138, 90, 23, 0.2);
+        flex: none;
       }
 
       .highlight-content {
         flex: 1;
+        min-width: 0;
       }
 
       .highlight-content strong.hl-bold {
-        color: var(--pet-primary);
+        color: var(--pet-ink);
         font-weight: 600;
+        text-decoration: underline;
+        text-decoration-color: var(--pet-primary);
+        text-underline-offset: 3px;
       }
 
-      /* Keywords Pills */
+      /* Keywords Pills — HUD tag chips */
       .keywords-wrap {
         display: flex;
         flex-wrap: wrap;
@@ -2038,13 +2124,12 @@
       }
 
       .keyword-pill {
-        font-size: 11.5px;
-        padding: 4px 10px;
-        border-radius: 999px;
+        font: 400 11px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        padding: 3px 8px;
+        border-radius: 4px;
         background: var(--pet-tag-bg);
-        color: var(--pet-ink);
+        color: var(--pet-primary);
         border: 1px solid var(--pet-line);
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
         cursor: pointer;
         transition: all 0.15s ease;
         user-select: none;
@@ -2052,15 +2137,11 @@
 
       .keyword-pill:hover {
         border-color: var(--pet-primary);
-        color: var(--pet-primary);
-        background: var(--pet-primary-soft);
-        transform: translateY(-1px);
       }
 
       .keyword-pill.copied {
-        background: #10b981 !important;
-        color: #ffffff !important;
-        border-color: #10b981 !important;
+        background: var(--pet-primary-soft);
+        border-color: var(--pet-primary);
       }
 
       /* Summary Loading State */
@@ -2075,8 +2156,11 @@
       }
 
       .loading-cat-paws {
-        font-size: 32px;
+        color: var(--pet-primary, #f59e0b);
         animation: paw-bounce 1s ease-in-out infinite alternate;
+      }
+      .loading-cat-paws svg {
+        display: block;
       }
 
       @keyframes paw-bounce {
@@ -2085,92 +2169,89 @@
       }
 
       .loading-text {
-        font-size: 13.5px;
-        font-weight: 500;
+        font: 400 12.5px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
         color: var(--pet-muted);
         max-width: 320px;
-        line-height: 1.6;
       }
 
-      /* Summary Error State */
+      /* Summary Error State — HUD context box + danger bar */
       .summary-error {
-        padding: 16px 18px;
-        background: #fff3f2;
-        border: 1px solid #fecdd3;
-        border-radius: 12px;
-        color: #b91c1c;
-        font-size: 13.5px;
+        padding: 10px 14px;
+        background: var(--pet-tag-bg);
+        border: 1px solid var(--pet-line);
+        border-left: 3px solid #ef4444;
+        border-radius: 6px;
+        color: var(--pet-muted-strong, var(--pet-ink));
+        font-size: 13px;
         display: flex;
         flex-direction: column;
         gap: 10px;
       }
-
-      @media (prefers-color-scheme: dark) {
-        .summary-error {
-          background: #2a1515;
-          border-color: #5c2020;
-          color: #f87171;
-        }
+      .summary-error strong {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: #ef4444;
+      }
+      .summary-error svg {
+        display: block;
+        flex: none;
       }
 
       .summary-footer {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 12px 18px;
-        border-top: 1px solid var(--pet-line);
-        background: var(--pet-surface-elevated);
+        flex-wrap: wrap;
+        gap: 12px;
+        margin: 0 20px;
+        padding: 12px 0 16px;
+        border-top: 1px solid var(--pet-line-subtle);
       }
 
       .summary-footer-actions {
         display: flex;
         align-items: center;
         gap: 8px;
+        flex-wrap: wrap;
       }
 
       .footer-btn {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        padding: 6px 13px;
-        border-radius: 8px;
+        height: 28px;
+        padding: 0 11px;
+        border-radius: 6px;
         border: 1px solid var(--pet-line);
-        background: var(--pet-surface);
-        color: var(--pet-ink);
-        font-size: 12.5px;
+        background: var(--pet-tag-bg);
+        color: var(--pet-muted-strong, var(--pet-ink));
+        font-size: 12px;
+        font-weight: 600;
         cursor: pointer;
-        font-weight: 500;
         transition: all 0.15s ease;
+      }
+      .footer-btn > span:first-child {
+        display: inline-flex;
+      }
+      .footer-btn svg {
+        display: block;
       }
 
       .footer-btn:hover {
+        color: var(--pet-ink);
+        border-color: var(--pet-muted);
+      }
+
+      .footer-btn.copied {
+        background: var(--pet-primary-soft);
         border-color: var(--pet-primary);
         color: var(--pet-primary);
       }
 
-      .footer-btn.primary {
-        background: var(--pet-primary);
-        color: #ffffff;
-        border-color: var(--pet-primary);
-      }
-
-      .footer-btn.primary:hover {
-        background: var(--pet-primary-hover);
-        border-color: var(--pet-primary-hover);
-      }
-
-      .footer-btn.copied {
-        background: #10b981;
-        color: #fff;
-        border-color: #10b981;
-      }
-
       .summary-source-meta {
-        font-size: 11px;
+        font: 400 10px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
         color: var(--pet-muted);
-        display: flex;
-        align-items: center;
-        gap: 4px;
       }
     `;
   }
@@ -2444,6 +2525,7 @@
       this.bindEvents();
       this.startIdleActions();
       this.startSleepWatchdog();
+      this.startQuoteTicker();
       this._initialized = true;
       if (bootId === globalThis.__ROAMCAT_PET_GENERATION__) globalThis.__ROAMCAT_PET_BOOTING__ = false;
       this.init();
@@ -2462,6 +2544,7 @@
       }
 
       if (currentSettings?.floatingPet?.enabled === false) {
+        this.stopQuoteTicker();
         if (hostEl) {
           hostEl.remove();
           hostEl = null;
@@ -2475,8 +2558,11 @@
       initialBottom = currentSettings?.floatingPet?.position?.bottom ?? currentBottom;
       currentRight = initialRight;
       currentBottom = initialBottom;
+      this.setScale(currentSettings?.floatingPet?.scale ?? 1, { persist: false });
       this.clampPosition();
       this.updateReadingStatus();
+      // 设置就绪后按 quotes.enabled 启停语录定时器（构造时按默认开启先跑起来了）。
+      this.syncQuoteTicker();
     }
 
     createDOM() {
@@ -2487,7 +2573,8 @@
       hostEl = document.createElement('div');
       hostEl.id = 'roamcat-pet-host';
       hostEl.setAttribute('data-theme', detectPageTheme());
-      hostEl.style.cssText = `position:fixed!important;right:${currentRight}px!important;bottom:${currentBottom}px!important;width:64px!important;height:68px!important;border:0!important;padding:0!important;margin:0!important;background:transparent!important;z-index:2147483647!important;pointer-events:none!important;display:block!important;overflow:visible!important;color-scheme:light dark!important;`;
+      hostEl.style.cssText = `position:fixed!important;right:${currentRight}px!important;bottom:${currentBottom}px!important;width:${Math.round(64 * petScale)}px!important;height:${Math.round(68 * petScale)}px!important;border:0!important;padding:0!important;margin:0!important;background:transparent!important;z-index:2147483647!important;pointer-events:none!important;display:block!important;overflow:visible!important;color-scheme:light dark!important;`;
+      hostEl.style.setProperty('--pet-scale', petScale);
       hostEl.pet = this;
       hostEl.__pet = this;
       shadowRoot = hostEl.attachShadow({ mode: 'open' });
@@ -2498,10 +2585,10 @@
 
       // DOM 骨架由 content-ui 渲染层构建（lit-html 模板）；id/类名与原实现一致，
       // 后续状态更新继续经 shadowQuery 命令式驱动。
-      const domainTag = `${domainIcon(detectedDomain)} ${domainName(detectedDomain)}`;
-      const {container, edgeTab, flipBtn, quickDock, avatarWrap, bubbleMenu, summaryWindow} =
+      const {container, edgeTab, flipBtn, quickDock, avatarWrap, zoomControls, summaryWindow} =
         globalThis.RoamCatContentUI.petWidget(shadowRoot, {
-          domainTag,
+          domainKey: detectedDomain,
+          domainName: domainName(detectedDomain),
           catSvg: renderCatSvg(),
           peekingCatSvg: renderPeekingCatSvg(),
           onEdgeTabClick: () => this.undock(),
@@ -2534,8 +2621,9 @@
       this.flipBtn = flipBtn;
       this.quickDock = quickDock;
       this.avatarWrap = avatarWrap;
-      this.bubbleMenu = bubbleMenu;
+      this.zoomControls = zoomControls;
       this.summaryWindow = summaryWindow;
+      this.applyScaleVisuals();
       this.clampPosition();
     }
 
@@ -2559,24 +2647,28 @@
           else if (isActive) speechEl.textContent = '旋旋翻：点击复原纯英文 喵~';
           else speechEl.textContent = '旋旋翻：一键双语对照 喵~';
         }
+        bubble?.classList.remove('quote');
         bubble?.classList.add('speaking');
         this.container?.classList.add('has-speech');
+        this.fitSpeechBubble();
       });
 
       this.flipBtn?.addEventListener('pointerleave', () => {
         const bubble = this.shadowQuery('#cat-speech');
         const speechEl = this.shadowQuery('#cat-speech .speech-text');
-        bubble?.classList.remove('speaking');
+        bubble?.classList.remove('speaking', 'quote');
         this.container?.classList.remove('has-speech');
         if (speechEl) speechEl.textContent = '漫游伴读 喵~';
+        this.fitSpeechBubble();
       });
 
-      // 左侧快捷按钮行：悬停播报 + 点击执行（与旋旋翻一致的反馈模式）
+      // 左侧快捷按钮行：悬停播报 + 点击执行（与旋旋翻一致的反馈模式）。
+      // closeDock 标记的动作执行后收起快捷坞；阅读辅助/双语开关保持展开。
       const quickActions = [
         {id: '#quick-reading', hover: '阅读辅助：点击开合本页提示 喵~', run: () => this.toggleReadingMode()},
-        {id: '#quick-summary', hover: '提炼整篇精华，喂我一下就好 喵~', run: () => this.requestArticleSummary()},
-        {id: '#quick-options', hover: '打开扩展偏好设置 喵~', run: () => chrome.runtime.sendMessage({ type: 'OPEN_OPTIONS' })},
-        {id: '#quick-dock', hover: '贴边折叠，需要时再戳我 喵~', run: () => this.toggleDock()},
+        {id: '#quick-summary', hover: '提炼整篇精华，喂我一下就好 喵~', closeDock: true, run: () => this.requestArticleSummary()},
+        {id: '#quick-options', hover: '打开扩展偏好设置 喵~', closeDock: true, run: () => chrome.runtime.sendMessage({ type: 'OPEN_OPTIONS' })},
+        {id: '#quick-dock', hover: '贴边折叠，需要时再戳我 喵~', closeDock: true, run: () => this.toggleDock()},
       ];
       for (const action of quickActions) {
         const button = this.shadowQuery(action.id);
@@ -2585,23 +2677,37 @@
         button.addEventListener('dragstart', (e) => e.preventDefault());
         button.addEventListener('click', (e) => {
           e.stopPropagation();
+          if (action.closeDock) this.closeQuickDock();
           action.run();
         });
         button.addEventListener('pointerenter', () => {
           const bubble = this.shadowQuery('#cat-speech');
           const speechEl = this.shadowQuery('#cat-speech .speech-text');
           if (speechEl) speechEl.textContent = action.hover;
+          bubble?.classList.remove('quote');
           bubble?.classList.add('speaking');
           this.container?.classList.add('has-speech');
+          this.fitSpeechBubble();
         });
         button.addEventListener('pointerleave', () => {
           const bubble = this.shadowQuery('#cat-speech');
-          bubble?.classList.remove('speaking');
+          bubble?.classList.remove('speaking', 'quote');
           this.container?.classList.remove('has-speech');
           const speechEl = this.shadowQuery('#cat-speech .speech-text');
           if (speechEl) speechEl.textContent = '漫游伴读 喵~';
+          this.fitSpeechBubble();
         });
       }
+
+      // 缩放控制：步进 80%–160%，持久化到设置
+      this.shadowQuery('#zoom-out')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.zoomOut();
+      });
+      this.shadowQuery('#zoom-in')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.zoomIn();
+      });
 
       this.shadowQuery('#speech-close-btn')?.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -2640,7 +2746,7 @@
         this.toggleDock();
       });
 
-      // Single click on cat avatar opens/closes Bubble Menu or undocks
+      // Single click on cat avatar toggles the quick dock (or undocks when docked)
       this.avatarWrap.addEventListener('click', (e) => {
         if (dragMoved) return;
         if (isDocked) {
@@ -2650,27 +2756,16 @@
         }
         e.stopPropagation();
         this.triggerClickReaction();
-        this.toggleMenu();
+        this.toggleQuickDock();
       });
 
-      // Actions in Bubble Menu
-      this.shadowQuery('#btn-menu-close')?.addEventListener('click', (e) => {
+      // 键盘可达：Enter / Space 同样开合快捷坞
+      this.avatarWrap.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
         e.stopPropagation();
-        this.closeMenu();
-      });
-
-      this.shadowQuery('#btn-summarize, #btn-summary')?.addEventListener('click', () => {
-        this.closeMenu();
-        this.requestArticleSummary();
-      });
-
-      this.shadowQuery('#btn-options')?.addEventListener('click', () => {
-        this.closeMenu();
-        chrome.runtime.sendMessage({ type: 'OPEN_OPTIONS' });
-      });
-
-      this.shadowQuery('#btn-dock')?.addEventListener('click', () => {
-        this.toggleDock();
+        this.triggerClickReaction();
+        this.toggleQuickDock();
       });
 
       // Summary Card Actions
@@ -2690,32 +2785,6 @@
         this.copySummaryText();
       });
 
-      // Theme toggle button in Bubble Menu header
-      this.shadowQuery('#btn-theme-toggle')?.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const modes = ['auto', 'dark', 'light'];
-        const current = currentSettings?.floatingPet?.themeMode || 'auto';
-        const next = modes[(modes.indexOf(current) + 1) % modes.length];
-        
-        if (!currentSettings.floatingPet) currentSettings.floatingPet = {};
-        currentSettings.floatingPet.themeMode = next;
-        
-        this.syncTheme();
-        
-        const modeLabels = {
-          auto: '随网页感知',
-          dark: '暗色模式 (深色/黑底)',
-          light: '亮色模式 (浅色/白底)'
-        };
-        this.speakStatus(`显示模式：${modeLabels[next]} 喵~`, { busy: false, duration: 2500 });
-        
-        try {
-          await chrome.runtime.sendMessage({
-            type: 'FLOATING_PET_POSITION_SET',
-            themeMode: next
-          });
-        } catch {}
-      });
       // window / document / chrome.runtime 级监听已移至 bindGlobalEvents，只注册一次。
     }
 
@@ -2734,11 +2803,11 @@
       window.addEventListener('pointercancel', (e) => this.releaseDrag(e), { signal });
       window.addEventListener('blur', () => this.releaseDrag(), { signal });
 
-      // Click outside to dismiss menu
+      // Click outside to dismiss the quick dock
       window.addEventListener('click', (e) => {
-        if (!isMenuOpen) return;
+        if (!isDockOpen) return;
         if (!e.composedPath().includes(this.container)) {
-          this.closeMenu();
+          this.closeQuickDock();
         }
       }, { signal });
 
@@ -2749,8 +2818,8 @@
           if (isSummaryOpen) {
             this.closeSummary();
             e.stopPropagation();
-          } else if (isMenuOpen) {
-            this.closeMenu();
+          } else if (isDockOpen) {
+            this.closeQuickDock();
             e.stopPropagation();
           }
           return;
@@ -2777,6 +2846,7 @@
       window.addEventListener('resize', () => {
         this.clampPosition();
         this.syncTheme();
+        this.fitSpeechBubble();
       }, { signal });
 
       // Keep theme synced with document changes, system switches, or tab reactivation
@@ -2874,12 +2944,6 @@
       if (hostEl.getAttribute('data-theme') !== theme) {
         hostEl.setAttribute('data-theme', theme);
       }
-      const themeBtn = this.shadowQuery('#btn-theme-toggle');
-      if (themeBtn) {
-        const mode = currentSettings?.floatingPet?.themeMode || 'auto';
-        themeBtn.textContent = mode === 'dark' ? '🌙' : (mode === 'light' ? '☀️' : '🌓');
-        themeBtn.title = `显示模式：${mode === 'auto' ? `自动感知 (当前为${theme === 'dark' ? '暗色' : '亮色'})` : (mode === 'dark' ? '已固定暗色' : '已固定亮色')} · 点击切换`;
-      }
     }
 
     shadowQuery(selector) {
@@ -2907,6 +2971,7 @@
       const dy = startY - e.clientY;
 
       if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+        if (!dragMoved) this.closeQuickDock();
         dragMoved = true;
       }
 
@@ -2960,8 +3025,10 @@
     }
 
     clampPosition() {
-      const maxRight = Math.max(0, window.innerWidth - 64);
-      const maxBottom = Math.max(8, window.innerHeight - 76);
+      const petW = Math.round(64 * petScale);
+      const petH = Math.round(68 * petScale);
+      const maxRight = Math.max(0, window.innerWidth - petW);
+      const maxBottom = Math.max(8, window.innerHeight - petH - 8);
 
       const minRight = isDocked ? 0 : 8;
       currentRight = Math.min(Math.max(minRight, currentRight), maxRight);
@@ -2981,12 +3048,13 @@
 
       // Adaptive summary window positioning (keeps it anchored near the pet and fully on-screen)
       if (isSummaryOpen && this.summaryWindow) {
+        const sideGap = petW + 12;
         if (isLeftSide) {
-          const summaryLeft = Math.max(16, Math.min((window.innerWidth - currentRight) + 76, window.innerWidth - 480));
+          const summaryLeft = Math.max(16, Math.min((window.innerWidth - currentRight) + sideGap, window.innerWidth - 480));
           this.summaryWindow.style.left = `${summaryLeft}px`;
           this.summaryWindow.style.right = 'auto';
         } else {
-          const summaryRight = Math.max(16, Math.min(currentRight + 72, window.innerWidth - 480));
+          const summaryRight = Math.max(16, Math.min(currentRight + sideGap, window.innerWidth - 480));
           this.summaryWindow.style.right = `${summaryRight}px`;
           this.summaryWindow.style.left = 'auto';
         }
@@ -2997,50 +3065,185 @@
 
     async savePosition() {
       try {
-        const response = await chrome.runtime.sendMessage({type:'FLOATING_PET_POSITION_SET',position:{right:Math.round(currentRight),bottom:Math.round(currentBottom)}});
+        const response = await chrome.runtime.sendMessage({type:'FLOATING_PET_POSITION_SET',position:{right:Math.round(currentRight),bottom:Math.round(currentBottom)},scale:petScale});
         if(!response?.ok)throw new Error(response?.error||'伴读猫位置保存失败');
       } catch (err) {
         console.warn('Failed to save pet position', err);
       }
     }
 
-    toggleMenu() {
-      if (isMenuOpen) {
-        this.closeMenu();
+    toggleQuickDock() {
+      if (isDockOpen) {
+        this.closeQuickDock();
       } else {
-        this.openMenu();
+        this.openQuickDock();
       }
     }
 
-    openMenu() {
-      this.syncTheme();
-      isMenuOpen = true;
-      this.container.classList.add('menu-open');
-      this.bubbleMenu.classList.add('open');
+    openQuickDock() {
+      if (isDocked || !this.container) return;
+      isDockOpen = true;
+      this.container.classList.add('dock-open');
+      this.zoomControls?.removeAttribute('inert');
+      this.avatarWrap?.setAttribute('aria-expanded', 'true');
       this.updateReadingStatus();
+      this.fitSpeechBubble();
     }
 
-    closeMenu() {
-      isMenuOpen = false;
-      this.container.classList.remove('menu-open');
-      this.bubbleMenu.classList.remove('open');
+    closeQuickDock() {
+      if (!isDockOpen) return;
+      isDockOpen = false;
+      this.container?.classList.remove('dock-open');
+      this.zoomControls?.setAttribute('inert', '');
+      this.avatarWrap?.setAttribute('aria-expanded', 'false');
+      this.fitSpeechBubble();
+    }
+
+    // 语音气泡视口自适配：水平收进 8px 边距、尾巴始终指向猫、贴顶翻转到猫下方。
+    fitSpeechBubble() {
+      const bubble = this.shadowQuery('#cat-speech');
+      if (!bubble || !hostEl) return;
+      const hostRect = hostEl.getBoundingClientRect();
+      bubble.style.setProperty('--bubble-shift-x', '0px');
+      bubble.classList.remove('below');
+      const rect = bubble.getBoundingClientRect();
+      const margin = 8;
+      let shift = 0;
+      if (rect.left < margin) shift = margin - rect.left;
+      else if (rect.right > window.innerWidth - margin) shift = (window.innerWidth - margin) - rect.right;
+      if (shift !== 0) bubble.style.setProperty('--bubble-shift-x', `${Math.round(shift)}px`);
+      // 贴顶（含 dock-open 抬高后的位置）→ 翻到猫下方
+      if (rect.top < margin) {
+        bubble.classList.add('below');
+      }
+      // 尾巴对齐猫身水平中心，钳在气泡内 12px 缓冲区
+      const catCenterX = hostRect.left + hostRect.width / 2;
+      const tailX = Math.max(12, Math.min(rect.width - 12, catCenterX - rect.left - shift));
+      bubble.style.setProperty('--bubble-tail-x', `${Math.round(tailX)}px`);
+    }
+
+    // 伴读猫缩放：仅缩放猫的视觉（漫游/探头/粒子/Zzz/跑车），UI 控件不缩放。
+    setScale(scale, { persist = true } = {}) {
+      const next = PET_SCALE_STEPS.includes(scale) ? scale : 1;
+      petScale = next;
+      if (currentSettings?.floatingPet) currentSettings.floatingPet.scale = next;
+      this.applyScaleVisuals();
+      this.clampPosition();
+      this.fitSpeechBubble();
+      if (persist) this.savePosition();
+    }
+
+    applyScaleVisuals() {
+      // :host 规则以 var(--pet-scale) 计算宽高；只需更新自定义属性即可整体缩放。
+      if (hostEl) {
+        hostEl.style.setProperty('--pet-scale', petScale);
+      }
+      this.container?.style.setProperty('--pet-scale', petScale);
+      const label = this.shadowQuery('#zoom-label');
+      if (label) label.textContent = `${Math.round(petScale * 100)}%`;
+      const outBtn = this.shadowQuery('#zoom-out');
+      const inBtn = this.shadowQuery('#zoom-in');
+      if (outBtn) outBtn.disabled = petScale <= PET_SCALE_STEPS[0];
+      if (inBtn) inBtn.disabled = petScale >= PET_SCALE_STEPS[PET_SCALE_STEPS.length - 1];
+    }
+
+    zoomIn() {
+      const idx = PET_SCALE_STEPS.indexOf(petScale);
+      if (idx >= 0 && idx < PET_SCALE_STEPS.length - 1) this.setScale(PET_SCALE_STEPS[idx + 1]);
+    }
+
+    zoomOut() {
+      const idx = PET_SCALE_STEPS.indexOf(petScale);
+      if (idx > 0) this.setScale(PET_SCALE_STEPS[idx - 1]);
+    }
+
+    // 跑车入场彩蛋（约 2.6s）：猫身淡出 → 跑车从页面内侧驶入（速度线+转轮）
+    // → 刹车压扁+小弹跳+尾气 → 停顿 → 猫果冻弹回、车驶离并移除。
+    async driveIn() {
+      if (this._disposed || this._driving || !this.container || isDocked) return;
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      this._driving = true;
+      try {
+        const car = document.createElement('div');
+        car.className = 'pet-car car-moving';
+        car.innerHTML = `
+          <svg viewBox="0 0 100 44" aria-hidden="true">
+            <g class="speed-lines" stroke="var(--pet-primary)" stroke-width="2" stroke-linecap="round">
+              <line class="speed-line" x1="86" y1="14" x2="98" y2="14"/>
+              <line class="speed-line" x1="88" y1="22" x2="99" y2="22"/>
+              <line class="speed-line" x1="86" y1="30" x2="97" y2="30"/>
+            </g>
+            <ellipse class="exhaust-puff" cx="94" cy="36" rx="4" ry="3" fill="var(--pet-muted)"/>
+            <path d="M6 34 C6 26 14 22 26 20 L34 12 C36 10 40 9 46 9 L60 9 C68 9 74 12 80 18 L88 24 C92 26 94 29 94 33 L94 36 L6 36 Z"
+                  fill="var(--pet-primary)"/>
+            <path d="M36 13 L44 11 L58 11 C64 11 69 13 74 17 L38 19 Z"
+                  fill="var(--pet-surface-elevated)"/>
+            <g class="car-driver">
+              <circle cx="50" cy="14" r="4.2" fill="var(--pet-cat-color)"/>
+              <path d="M46.5 11 L47.5 7.5 L50 10 Z" fill="var(--pet-cat-color)"/>
+              <path d="M53.5 11 L52.5 7.5 L50 10 Z" fill="var(--pet-cat-color)"/>
+            </g>
+            <g class="car-wheel">
+              <circle cx="24" cy="36" r="6" fill="#1f2937"/>
+              <circle cx="24" cy="36" r="2.2" fill="#e5e7eb"/>
+            </g>
+            <g class="car-wheel">
+              <circle cx="76" cy="36" r="6" fill="#1f2937"/>
+              <circle cx="76" cy="36" r="2.2" fill="#e5e7eb"/>
+            </g>
+          </svg>`;
+        this.container.appendChild(car);
+        this.container.classList.add('pet-away');
+        await new Promise(r => setTimeout(r, 200));
+        if (this._disposed) { car.remove(); return; }
+
+        const isLeft = this.container.classList.contains('is-left');
+        // is-left 时 svg 已水平镜像，驶入方向随之反转
+        const enterFrom = isLeft ? 140 : -140;
+        await car.animate(
+          [{ translate: `${enterFrom}% 0`, opacity: 0 }, { translate: '0 0', opacity: 1 }],
+          { duration: 550, easing: 'cubic-bezier(0.16, 1, 0.3, 1)', fill: 'forwards' }
+        ).finished;
+        if (this._disposed) { car.remove(); return; }
+
+        car.classList.remove('car-moving');
+        await car.animate(
+          [{ transform: 'scaleY(1)' }, { transform: 'scaleY(0.92)' }, { transform: 'scaleY(1.03) translateY(-2px)' }, { transform: 'scaleY(1)' }],
+          { duration: 260, easing: 'ease-out' }
+        ).finished;
+        car.classList.add('car-puff');
+        await new Promise(r => setTimeout(r, 400));
+        if (this._disposed) { car.remove(); return; }
+
+        this.container.classList.remove('pet-away');
+        this.avatarWrap?.classList.add('action-jelly');
+        setTimeout(() => this.avatarWrap?.classList.remove('action-jelly'), 550);
+        await car.animate(
+          [{ translate: '0 0', opacity: 1 }, { translate: `${-enterFrom}% 0`, opacity: 0 }],
+          { duration: 600, easing: 'cubic-bezier(0.5, 0, 0.75, 0)', fill: 'forwards' }
+        ).finished;
+        car.remove();
+      } finally {
+        this._driving = false;
+      }
     }
 
     dock(side = 'right') {
       isDocked = true;
-      this.closeMenu();
+      this.closeQuickDock();
       this.container?.classList.add('docked');
       if (side === 'left') {
-        currentRight = Math.max(0, window.innerWidth - 64);
+        currentRight = Math.max(0, window.innerWidth - Math.round(64 * petScale));
         this.container?.classList.add('is-left');
       } else {
         currentRight = 0;
         this.container?.classList.remove('is-left');
       }
       if (this.avatarWrap) {
-        this.avatarWrap.title = '伴读猫正在贴边守护（悬停探出，点击唤醒）';
+        this.avatarWrap.title = '伴读猫正在贴边守护（点击唤醒）';
       }
       this.clampPosition();
+      this.fitSpeechBubble();
     }
 
     undock() {
@@ -3048,15 +3251,16 @@
       isDocked = false;
       this.container?.classList.remove('docked');
       if (this.avatarWrap) {
-        this.avatarWrap.title = 'RoamCat 随心阅伴读猫（点击展开快捷菜单，双击贴边收起，按住自由拖拽）';
+        this.avatarWrap.title = 'RoamCat 随心阅伴读猫（点击展开/收起快捷按钮，双击贴边收起，按住自由拖拽）';
       }
       const isLeftSide = currentRight > (window.innerWidth / 2);
       if (isLeftSide) {
-        currentRight = Math.max(24, Math.min(currentRight, window.innerWidth - 88));
+        currentRight = Math.max(24, Math.min(currentRight, window.innerWidth - Math.round(64 * petScale) - 24));
       } else {
         currentRight = Math.max(24, currentRight);
       }
       this.clampPosition();
+      this.fitSpeechBubble();
       this.triggerClickReaction();
     }
 
@@ -3084,7 +3288,7 @@
         if (this._disposed) return;
         const delay = 10000 + Math.random() * 12000; // 10~22s
         this._idleTimer = setTimeout(() => {
-          if (!this._disposed && !isDragging && !isMenuOpen && !isSummaryOpen && !isDocked && petState === 'idle' && !this._isSleeping) {
+          if (!this._disposed && !isDragging && !isDockOpen && !isSummaryOpen && !isDocked && petState === 'idle' && !this._isSleeping) {
             const actions = ['action-stretch', 'action-tilt', 'action-knead'];
             const chosen = actions[Math.floor(Math.random() * actions.length)];
             this.avatarWrap?.classList.add(chosen);
@@ -3096,6 +3300,25 @@
         }, delay);
       };
       scheduleNext();
+
+      // 跑车彩蛋：独立调度，冷却随机 8–15 分钟，且加载满 3 分钟后才可能首次触发；
+      // prefers-reduced-motion 下整体跳过（driveIn 内部同样有守卫）。
+      this._petBornAt = this._petBornAt || Date.now();
+      const scheduleDrive = () => {
+        if (this._disposed) return;
+        const cooldown = 480000 + Math.random() * 420000;
+        this._driveTimer = setTimeout(() => {
+          const eligible = !this._disposed && !isDragging && !isDockOpen && !isSummaryOpen && !isDocked
+            && petState === 'idle' && !this._isSleeping && !this._driving
+            && document.visibilityState === 'visible'
+            && Date.now() - this._petBornAt >= 180000
+            && !matchMedia('(prefers-reduced-motion: reduce)').matches
+            && !this.shadowQuery('#cat-speech')?.classList.contains('speaking');
+          if (eligible) this.driveIn();
+          scheduleDrive();
+        }, cooldown);
+      };
+      scheduleDrive();
     }
 
     startSleepWatchdog() {
@@ -3119,7 +3342,7 @@
       this._sleepWatchdogInterval = setInterval(() => {
         if (this._disposed) return;
         const idleFor = Date.now() - this._lastActivityTime;
-        if (idleFor > 35000 && !this._isSleeping && petState === 'idle' && !isDragging && !isMenuOpen && !isSummaryOpen && !isDocked) {
+        if (idleFor > 35000 && !this._isSleeping && petState === 'idle' && !isDragging && !isDockOpen && !isSummaryOpen && !isDocked) {
           this.fallAsleep();
         }
       }, 5000);
@@ -3148,11 +3371,12 @@
       setTimeout(() => this.avatarWrap?.classList.remove('action-jelly'), 550);
 
       // Spawn floating particle (heart or paw or sparkle)
-      const particles = ['❤️', '🐾', '✨', '💖'];
-      const pText = particles[Math.floor(Math.random() * particles.length)];
+      const particles = ['heart', 'paw', 'sparkles', 'heart'];
+      const kind = particles[Math.floor(Math.random() * particles.length)];
       const p = document.createElement('div');
       p.className = 'cat-particle';
-      p.textContent = pText;
+      p.dataset.kind = kind;
+      globalThis.RoamCatContentUI.renderPetParticle(p, kind);
       this.avatarWrap.appendChild(p);
       setTimeout(() => p.remove(), 850);
     }
@@ -3160,13 +3384,9 @@
     setDomain(domain) {
       if (!domain) return;
       detectedDomain = domain;
-      const tag = this.shadowQuery('#menu-domain');
-      if (tag) {
-        tag.textContent = `${domainIcon(domain)} ${domainName(domain)}`;
-      }
       const badge = this.shadowQuery('#summary-domain-badge');
       if (badge) {
-        badge.textContent = `${domainIcon(domain)} ${domainName(domain)}`;
+        globalThis.RoamCatContentUI.renderPetDomainTag(badge, {domainKey: domain, domainName: domainName(domain)});
       }
     }
 
@@ -3322,11 +3542,12 @@
       textEl.textContent = formatted;
       textEl.title = text;
 
-      bubble.classList.remove('is-busy', 'is-error');
+      bubble.classList.remove('is-busy', 'is-error', 'quote');
       if (busy) bubble.classList.add('is-busy');
       if (error) bubble.classList.add('is-error');
       bubble.classList.add('speaking');
       this.container?.classList.add('has-speech');
+      this.fitSpeechBubble();
 
       // Update avatar facial/thinking pulse state
       if (busy) {
@@ -3357,7 +3578,7 @@
 
       // If was busy and finishing successfully, give a brief cheerful feedback
       if (bubble.classList.contains('is-busy')) {
-        bubble.classList.remove('is-busy');
+        bubble.classList.remove('is-busy', 'quote');
         if (textEl) textEl.textContent = '准备好啦 喵~';
         this.setPetState('success');
         this._speechTimer = setTimeout(() => {
@@ -3368,9 +3589,137 @@
         return;
       }
 
-      bubble.classList.remove('speaking', 'is-busy', 'is-error');
+      bubble.classList.remove('speaking', 'is-busy', 'is-error', 'quote');
       if (textEl) textEl.textContent = '漫游伴读 喵~';
       if (petState !== 'idle') this.setPetState('idle');
+    }
+
+    // —— 哲学语录 ——
+    // 伴读猫每 intervalMin 分钟冒泡一句 RoamCatPetQuotes 里的哲学短句。
+    // 定时器 30s 一跳，只在页面可见时累计 quoteVisibleMs；到点先过 maybeShowQuote 的
+    // 现场守卫（正在说话/菜单开着/拖拽/贴边/打盹/输入框聚焦等一律跳过），再过
+    // chrome.storage.local 的 petQuoteState 跨标签页节流，最后经 speakQuote 复用气泡展示。
+
+    quoteSettings() {
+      const quotes = currentSettings?.floatingPet?.quotes;
+      return {
+        enabled: quotes?.enabled !== false,
+        intervalMin: [15, 30, 60].includes(quotes?.intervalMin) ? quotes.intervalMin : 15
+      };
+    }
+
+    startQuoteTicker() {
+      clearInterval(this._quoteTimer);
+      this._quoteVisibleMs = 0;
+      this._quotePending = false;
+      this._quoteTimer = setInterval(() => {
+        if (this._disposed) return;
+        const {enabled, intervalMin} = this.quoteSettings();
+        if (!enabled) {
+          this.stopQuoteTicker();
+          return;
+        }
+        if (document.visibilityState === 'visible') this._quoteVisibleMs += 30000;
+        if (this._quoteVisibleMs < intervalMin * 60000 || this._quotePending) return;
+        this._quotePending = true;
+        Promise.resolve(this.maybeShowQuote())
+          .catch(() => false)
+          .then(done => {
+            this._quotePending = false;
+            // 被现场守卫挡住时不清零：保持“已到期”，下一个 tick 继续尝试。
+            if (done) this._quoteVisibleMs = 0;
+          });
+      }, 30000);
+    }
+
+    stopQuoteTicker() {
+      clearInterval(this._quoteTimer);
+      this._quoteTimer = 0;
+      this._quoteVisibleMs = 0;
+      this._quotePending = false;
+    }
+
+    // quotes.enabled/intervalMin 变化后调用：开着就（重）置累计并确保定时器在跑，关了就整体停掉。
+    syncQuoteTicker() {
+      if (this.quoteSettings().enabled && !this._disposed) this.startQuoteTicker();
+      else this.stopQuoteTicker();
+    }
+
+    async maybeShowQuote() {
+      if (this._disposed) return false;
+      const {enabled, intervalMin} = this.quoteSettings();
+      if (!enabled) return false;
+      const api = globalThis.RoamCatPetQuotes;
+      if (!api?.next || !Array.isArray(api.list) || !api.list.length) return false;
+      const bubble = this.shadowQuery('#cat-speech');
+      if (!bubble || bubble.classList.contains('speaking')) return false;
+      if (isDockOpen || isSummaryOpen || isDragging || isDocked || this._isSleeping) return false;
+      if (petState !== 'idle') return false;
+      if (document.visibilityState !== 'visible') return false;
+      const active = document.activeElement;
+      if (active && (active.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName || ''))) return false;
+
+      const intervalMs = intervalMin * 60000;
+      try {
+        // petQuoteState 全扩展共享：别的前台标签页刚说过，本页就退回重计一轮。
+        const stored = await chrome.storage.local.get('petQuoteState');
+        if (this._disposed) return false;
+        const state = stored?.petQuoteState || {};
+        if (Number.isFinite(state.lastQuoteAt) && Date.now() - state.lastQuoteAt < intervalMs - 30000) return true;
+        const picked = api.next(state);
+        if (!picked?.quote) return false;
+        await chrome.storage.local.set({petQuoteState: {lastQuoteAt: Date.now(), order: picked.order, cursor: picked.cursor}});
+        this.speakQuote(picked.quote);
+        return true;
+      } catch {
+        // 扩展上下文失效/存储不可用时静默降级到本页内顺序，绝不让定时器抛错。
+        const picked = api.next(this._quoteBook || {});
+        if (!picked?.quote) return false;
+        this._quoteBook = {order: picked.order, cursor: picked.cursor};
+        this.speakQuote(picked.quote);
+        return true;
+      }
+    }
+
+    // 复用语音气泡展示语录：quote 类切换多行排版，12s 后自动收起。
+    // 公开在 RoamCatPet 上供探针/测试调用；省略 quote 时按本页内顺序取一句。
+    speakQuote(quote) {
+      if (!quote) {
+        const api = globalThis.RoamCatPetQuotes;
+        if (!api?.next) return;
+        const picked = api.next(this._quoteBook || {});
+        if (!picked?.quote) return;
+        this._quoteBook = {order: picked.order, cursor: picked.cursor};
+        quote = picked.quote;
+      }
+      if (!quote?.zh) return;
+      this.syncTheme();
+      const bubble = this.shadowQuery('#cat-speech');
+      const textEl = this.shadowQuery('#speech-text');
+      if (!bubble || !textEl) return;
+
+      // 只用 textContent 填充，不做 innerHTML 注入。
+      const zhLine = document.createElement('div');
+      zhLine.className = 'quote-zh';
+      zhLine.textContent = quote.zh;
+      const enLine = document.createElement('div');
+      enLine.className = 'quote-en';
+      enLine.textContent = quote.en || '';
+      const authorLine = document.createElement('div');
+      authorLine.className = 'quote-author';
+      authorLine.textContent = `— ${quote.author || ''}`;
+      textEl.replaceChildren(zhLine, enLine, authorLine);
+      textEl.title = [quote.zh, quote.en].filter(Boolean).join(' ');
+
+      bubble.classList.remove('is-busy', 'is-error');
+      bubble.classList.add('speaking', 'quote');
+      this.container?.classList.add('has-speech');
+      this.fitSpeechBubble();
+
+      clearTimeout(this._speechTimer);
+      this._speechTimer = setTimeout(() => {
+        this.clearStatusSpeech();
+      }, 12000);
     }
 
     isMounted() {
@@ -3386,6 +3735,7 @@
       this.releaseDrag();
       clearTimeout(this._idleTimer);
       clearInterval(this._sleepWatchdogInterval);
+      this.stopQuoteTicker();
       try { this._abort?.abort(); } catch {}
       this._abort = null;
       this._watchdog?.disconnect();
@@ -3408,11 +3758,14 @@
       this.edgeTab = null;
       this.flipBtn = null;
       this.avatarWrap = null;
-      this.bubbleMenu = null;
+      this.quickDock = null;
+      this.zoomControls = null;
       this.summaryWindow = null;
       this._initialized = false;
+      this._driving = false;
+      clearTimeout(this._driveTimer);
       isDragging = false;
-      isMenuOpen = false;
+      isDockOpen = false;
       isSummaryOpen = false;
       if (globalThis.RoamCatPet === this) globalThis.RoamCatPet = null;
     }
@@ -3550,7 +3903,7 @@
       const domainKey = data.domain || detectedDomain || 'general';
 
       globalThis.RoamCatContentUI.renderPetSummaryContent(container, {
-        meta: {words, minutes, domainIcon: domainIcon(domainKey), domainName: domainName(domainKey)},
+        meta: {words, minutes, domainKey, domainName: domainName(domainKey)},
         takeaway: data.takeaway,
         highlights: data.highlights || [],
         keywords: data.keywords || [],
@@ -3600,8 +3953,10 @@
     }
 
     updateSettings(newSettings) {
+      const prevQuotes = currentSettings?.floatingPet?.quotes;
       currentSettings = newSettings || {};
       if (currentSettings.floatingPet?.enabled === false) {
+        this.stopQuoteTicker();
         if (hostEl) {
           hostEl.remove();
           hostEl = null;
@@ -3613,9 +3968,20 @@
           this.bindEvents();
           this.startIdleActions();
           this.startSleepWatchdog();
+          this.syncQuoteTicker();
           this.updateReadingStatus();
         }
+        // 语录开关/间隔经 STATE_PATCH 下发：变化时重置累计并按需启停定时器。
+        const nextQuotes = currentSettings.floatingPet?.quotes;
+        const quoteConfigChanged =
+          (prevQuotes?.enabled !== false) !== (nextQuotes?.enabled !== false)
+          || (prevQuotes?.intervalMin ?? 15) !== (nextQuotes?.intervalMin ?? 15);
+        if (quoteConfigChanged) this.syncQuoteTicker();
         if (hostEl) hostEl.style.display = '';
+        const scale = currentSettings.floatingPet?.scale;
+        if (typeof scale === 'number' && scale !== petScale) {
+          this.setScale(scale, { persist: false });
+        }
         if (currentSettings.floatingPet?.position) {
           currentRight = currentSettings.floatingPet.position.right ?? currentRight;
           currentBottom = currentSettings.floatingPet.position.bottom ?? currentBottom;

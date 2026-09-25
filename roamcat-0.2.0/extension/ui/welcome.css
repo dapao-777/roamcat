@@ -308,7 +308,9 @@ button.welcome-options-link {
 }
 
 .pill-icon {
-  font-size: 17px;
+  display: inline-flex;
+  flex: none;
+  color: var(--color-amber);
 }
 
 .pill-text {
@@ -1338,7 +1340,9 @@ button.welcome-options-link {
 }
 
 .toast-check {
-  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Global Footer */

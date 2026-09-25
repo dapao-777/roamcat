@@ -807,16 +807,16 @@
   function cardButton(parent,label,action) {const button=document.createElement('button');button.type='button';button.textContent=label;button.onclick=action;parent.append(button);return button;}
   function stopCardSpeech(view){
     const speech=view.speech;if(!speech)return;
-    view.speech=null;speech.button.textContent='朗读';speech.button.setAttribute('aria-label',speech.label);speech.port.disconnect();view.speechNotice.textContent='';
+    view.speech=null;contentUI.renderListenIcon(speech.button,false);speech.button.setAttribute('aria-label',speech.label);speech.port.disconnect();view.speechNotice.textContent='';
   }
   function speechButton(view,parent,text,label){
-    const button=cardButton(parent,'朗读',()=>{
+    const button=cardButton(parent,'',()=>{
       if(state.card!==view)return;
       if(view.speech?.button===button){stopCardSpeech(view);positionCard(view);return;}
       stopCardSpeech(view);
       try{
         const port=runtime.connect({name:'roamcat-speech'}),speech={port,button,label};view.speech=speech;
-        button.textContent='停止';button.setAttribute('aria-label','停止'+label);view.speechNotice.textContent='正在准备英文语音…';positionCard(view);
+        contentUI.renderListenIcon(button,true);button.setAttribute('aria-label','停止'+label);view.speechNotice.textContent='正在准备英文语音…';positionCard(view);
         port.onMessage.addListener(message=>{
           if(view.speech!==speech||state.card!==view)return;
           if(message.type==='start')view.speechNotice.textContent='正在'+label+'…';
@@ -831,11 +831,11 @@
         port.postMessage({text});
       }catch(error){stopCardSpeech(view);view.speechNotice.textContent=error.message||'无法连接系统语音。';positionCard(view);}
     });
-    button.className='listen';button.setAttribute('aria-label',label);button.title=label;return button;
+    button.className='listen';button.setAttribute('aria-label',label);button.title=label;contentUI.renderListenIcon(button,false);return button;
   }
   function positionCard(view) {
     if(!view?.host)return;
-    const margin=12,gap=10,width=Math.min(300,innerWidth-margin*2);
+    const margin=12,gap=10,width=Math.min(360,innerWidth-margin*2);
     view.host.style.width=width+'px';
     const place=()=>{
       if(state.card!==view||!view.host.isConnected)return;
@@ -862,7 +862,7 @@
     view.sentenceLine.textContent=compact;view.sentenceLine.hidden=false;
   }
   function renderHelpCard(target,error='') {
-    closeCard();const host=document.createElement('div');host.setAttribute(OWN,'card');host.style.cssText='position:fixed;z-index:2147483647;width:min(300px,calc(100vw - 24px));';
+    closeCard();const host=document.createElement('div');host.setAttribute(OWN,'card');host.style.cssText='position:fixed;z-index:2147483647;width:min(360px,calc(100vw - 24px));';
     state.assistRequestId='';
     if(target.sourceKey)host.style.setProperty('--type-body',(state.settings.video?.fontSize || 20)+'px');
     const shadow=host.attachShadow({mode:'closed'});
@@ -895,7 +895,7 @@
     return view;
   }
   function showDetails(view,details,definition=view.answer.textContent) {
-    view.explanation.replaceChildren();if(view.target.kind==='passage')return;
+    contentUI.clearRendered(view.explanation);if(view.target.kind==='passage')return;
     const language=view.level==='rescue'?'zh-CN':'en';
     const meaning=details?.meaning?.[view.level==='rescue'?'zh':'en']||'尚未获取当前语境解释。';
     contentUI.renderMeaningRows(view.explanation,[{label:'当前语境',text:meaning,lang:language,word:view.target.text,definition}]);
@@ -919,7 +919,7 @@
     for(const key of ['definition','meaning','sentenceTranslation'])if(typeof progress[key]==='string'&&progress[key].trim())view.progressFields[key]=progress[key];
     if(!view.progressFields.definition&&!view.progressFields.meaning&&!view.progressFields.sentenceTranslation)return;
     if(!view.progressBackup)view.progressBackup={answer:view.answer.textContent,nodes:[...view.explanation.childNodes].map(node=>node.cloneNode(true)),sentenceNodes:[...view.sentenceTranslation.childNodes].map(node=>node.cloneNode(true)),sentenceLine:view.sentenceLine?.textContent||'',note:view.note.textContent,error:view.answer.classList.contains('error'),confirmed:view.confirmedDisplayed,reference:view.referenceDisplayed};
-    view.answer.classList.remove('error');view.explanation.replaceChildren();
+    view.answer.classList.remove('error');contentUI.clearRendered(view.explanation);
     if(view.progressFields.definition)view.answer.textContent=view.progressFields.definition;
     if(view.progressFields.meaning)contentUI.renderMeaningRows(view.explanation,[{label:'当前语境',text:view.progressFields.meaning,lang:view.level==='rescue'?'zh-CN':'en',word:view.target.text,definition:view.progressFields.definition}]);
     if(view.progressFields.sentenceTranslation){contentUI.renderExplanationText(view.sentenceTranslation,view.progressFields.sentenceTranslation,view.target.text,view.progressFields.definition);setSentenceLine(view,view.progressFields.sentenceTranslation);}
@@ -927,7 +927,7 @@
   }
   function restoreProgressBackup(view){
     const backup=view.progressBackup;if(!backup)return;
-    view.answer.textContent=backup.answer;view.answer.classList.toggle('error',backup.error);view.explanation.replaceChildren(...backup.nodes.map(node=>node.cloneNode(true)));view.sentenceTranslation.replaceChildren(...backup.sentenceNodes.map(node=>node.cloneNode(true)));setSentenceLine(view,backup.sentenceLine);view.note.textContent=backup.note;view.confirmedDisplayed=backup.confirmed;view.referenceDisplayed=backup.reference;view.progressBackup=null;view.hasUnconfirmedProgress=false;
+    view.answer.textContent=backup.answer;view.answer.classList.toggle('error',backup.error);contentUI.renderNodes(view.explanation,backup.nodes.map(node=>node.cloneNode(true)));view.sentenceTranslation.replaceChildren(...backup.sentenceNodes.map(node=>node.cloneNode(true)));setSentenceLine(view,backup.sentenceLine);view.note.textContent=backup.note;view.confirmedDisplayed=backup.confirmed;view.referenceDisplayed=backup.reference;view.progressBackup=null;view.hasUnconfirmedProgress=false;
   }
   async function resolveTargetDomain(target,current){
     if(typeof target.domain==='string'&&target.domain)return target.domain;
@@ -959,7 +959,11 @@
       if(lookupBusy())await waitForLookupIdle();
       if(!current()){reportResult(result,'cancelled');return;}
       const answer=result[field];if(typeof answer!=='string'||!answer.trim())throw new Error('上下文不足，请选择包含该词的句子。');
-      if(result.source==='local-reference'||!result.sense?.trim())throw new Error('仅有旧参考义，尚未确认当前语境；请使用解释卡片查看。');
+      if(result.source==='local-reference'||!result.sense?.trim()){
+        // 词注只落已确认义项；参考义或未确认结果回落解释卡片展示
+        reportResult(result,'ok');if(lookup.inlineRequestId===requestId)setPageStatus('lookup',null);
+        const view=renderHelpCard(target);void assist(view,level);return;
+      }
       record.target[field]=answer;record.language=level==='rescue'?'zh':'en';record.stage='hint';attachRecordHint(record);target.anchor=record.range.cloneRange();syncRecordPresentation(record);
       record.hint.setAttribute('aria-hidden','false');record.hint.setAttribute('role','note');
       if(!current()){reportResult(result,'cancelled');return;}reportResult(result,'ok');
@@ -976,7 +980,7 @@
   async function assist(view,level,bypassCache=false,detail='brief'){
     if(state.card!==view||!validTarget(view.target))return;
     const requestId=crypto.randomUUID();state.assistRequestId=requestId;
-    detail=view.target.kind==='passage'?'full':detail;view.requestId=requestId;view.level=level;view.detail=detail;view.rescue.textContent=level==='rescue'?'查看英文线索':'用中文说明';view.support=null;view.less.disabled=true;view.retry.hidden=true;view.explanation.replaceChildren();view.progressBackup=null;view.progressFields={};view.hasUnconfirmedProgress=false;view.confirmedDisplayed=false;view.referenceDisplayed=false;view.assistFinished=false;
+    detail=view.target.kind==='passage'?'full':detail;view.requestId=requestId;view.level=level;view.detail=detail;view.rescue.textContent=level==='rescue'?'查看英文线索':'用中文说明';view.support=null;view.less.disabled=true;view.retry.hidden=true;contentUI.clearRendered(view.explanation);view.progressBackup=null;view.progressFields={};view.hasUnconfirmedProgress=false;view.confirmedDisplayed=false;view.referenceDisplayed=false;view.assistFinished=false;
     stopCardSpeech(view);if(detail==='full')view.sentenceTranslation.textContent='正在获取本句翻译…';else if(!view.fullDetails)view.sentenceTranslation.textContent='展开后获取本句翻译。';
     view.wrong.disabled=view.retries>=2;view.answer.classList.remove('error');view.answer.textContent=detail==='full'?'正在请求详细解释…':'正在请求简释…';view.note.textContent='';view.repair.hidden=true;
     const record=view.target.requestedRecord,prior=view.target.support;
@@ -990,7 +994,7 @@
     let fullFinished=false;
     if(cardCurrent()){
       if(cachedAnswer?.trim()&&!cachedReference&&detail==='full'){showDetails(view,cached.details,cachedAnswer);view.confirmedDisplayed=true;view.fullDetails=cached.details;view.note.textContent=cached.referenceNotice||'';positionCard(view);}
-      else if(cachedAnswer?.trim()){view.explanation.replaceChildren();view.answer.textContent=cachedAnswer;view.note.textContent=cachedReference?(cached.referenceNotice||'旧参考义，未经当前语境确认。'):'';view.referenceDisplayed=cachedReference;positionCard(view);}
+      else if(cachedAnswer?.trim()){contentUI.clearRendered(view.explanation);view.answer.textContent=cachedAnswer;view.note.textContent=cachedReference?(cached.referenceNotice||'旧参考义，未经当前语境确认。'):'';view.referenceDisplayed=cachedReference;positionCard(view);}
       else view.answer.textContent=prepared?'正在读取已准备的帮助…':detail==='full'?'正在请求详细解释…':'正在请求简释…';
     }
     if(prior?.senseKey){state.assisted.add(identity(prior));if(record){attachRecordHint(record);record.stage='hint';if(state.card!==view)view.target.anchor=record.range.cloneRange();}}
@@ -1003,14 +1007,14 @@
         if(lookupBusy()||fullFinished||manualCached||view.hasUnconfirmedProgress||!cardCurrent()||!preview||!['saved-reference','local-reference'].includes(preview.source)||preview.level!==level)return;
         const answer=level==='rescue'?preview.translation:preview.hint;
         if(typeof answer!=='string'||!answer.trim())return;
-        view.explanation.replaceChildren();view.answer.textContent=answer;view.note.textContent=preview.referenceNotice||'旧参考义，未经当前语境确认。';view.referenceDisplayed=true;positionCard(view);
+        contentUI.clearRendered(view.explanation);view.answer.textContent=answer;view.note.textContent=preview.referenceNotice||'旧参考义，未经当前语境确认。';view.referenceDisplayed=true;positionCard(view);
       });
       const result=await resultPromise;receivedResult=result;fullFinished=true;
       if(lookupBusy())await waitForLookupIdle();
       if(!current()){reportResult(result,'cancelled');return;}view.assistFinished=true;const answer=level==='rescue'?result.translation:result.hint;
       if(answer===null){
         view.sentenceTranslation.textContent='上下文不足，未能获取本句翻译。';
-        if(cardCurrent()){view.progressBackup=null;view.hasUnconfirmedProgress=false;view.confirmedDisplayed=false;view.explanation.replaceChildren();view.answer.textContent='上下文不足，请选择包含该表达的句子';view.note.textContent=result.referenceNotice||'';reportResult(result,'ok');}
+        if(cardCurrent()){view.progressBackup=null;view.hasUnconfirmedProgress=false;view.confirmedDisplayed=false;contentUI.clearRendered(view.explanation);view.answer.textContent='上下文不足，请选择包含该表达的句子';view.note.textContent=result.referenceNotice||'';reportResult(result,'ok');}
         else reportResult(result,'cancelled');
         return;
       }
@@ -1024,8 +1028,8 @@
       }
       if(!current()){reportResult(result,'cancelled');return;}
       if(cardCurrent()&&confirmed&&detail==='full'){view.progressBackup=null;view.hasUnconfirmedProgress=false;view.answer.textContent=answer;view.fullDetails=result.details||(prepared?cached.details:null);view.fullResult=result;showDetails(view,view.fullDetails,answer);view.confirmedDisplayed=true;view.note.textContent=result.referenceNotice||'';positionCard(view);}
-      else if(cardCurrent()&&confirmed){view.progressBackup=null;view.hasUnconfirmedProgress=false;view.explanation.replaceChildren();view.answer.textContent=answer;view.sentenceTranslation.textContent=view.fullDetails?.sentenceTranslation||'展开后获取本句翻译。';setSentenceLine(view,view.fullDetails?.sentenceTranslation);if(view.sentence.open&&view.fullDetails)showDetails(view,view.fullDetails,answer);view.confirmedDisplayed=true;view.note.textContent=result.referenceNotice||'';positionCard(view);}
-      else if(cardCurrent()){view.progressBackup=null;view.hasUnconfirmedProgress=false;view.explanation.replaceChildren();view.answer.textContent=answer;view.sentenceTranslation.textContent='旧参考义，尚未按当前句完整确认。';view.note.textContent=result.referenceNotice||'旧参考义，未经当前语境确认。';view.referenceDisplayed=true;positionCard(view);}
+      else if(cardCurrent()&&confirmed){view.progressBackup=null;view.hasUnconfirmedProgress=false;contentUI.clearRendered(view.explanation);view.answer.textContent=answer;view.sentenceTranslation.textContent=view.fullDetails?.sentenceTranslation||'展开后获取本句翻译。';setSentenceLine(view,view.fullDetails?.sentenceTranslation);if(view.sentence.open&&view.fullDetails)showDetails(view,view.fullDetails,answer);view.confirmedDisplayed=true;view.note.textContent=result.referenceNotice||'';positionCard(view);}
+      else if(cardCurrent()){view.progressBackup=null;view.hasUnconfirmedProgress=false;contentUI.clearRendered(view.explanation);view.answer.textContent=answer;view.sentenceTranslation.textContent='旧参考义，尚未按当前句完整确认。';view.note.textContent=result.referenceNotice||'旧参考义，未经当前语境确认。';view.referenceDisplayed=true;positionCard(view);}
       else if(!record?.hint?.isConnected){reportResult(result,'cancelled');return;}
       reportResult(result,'ok');
       if(detail==='brief'&&confirmed&&result.source==='prepared'&&!result.support)void request('HISTORY_COMMIT',{requestId}).catch(()=>{});
@@ -1034,7 +1038,7 @@
       if(record&&view.support){Object.assign(record.target,view.support);syncRecordPresentation(record);}
       if(cardCurrent()&&view.knownWordId())view.known.hidden=false;
       if(detail==='brief'&&confirmed&&prepared){if(cardCurrent())view.refreshPreparedOnClose=true;else void refreshPreparedNow().catch(()=>{});}if(detail==='brief'&&view.pendingDetails&&cardCurrent()&&view.sentence.open)void expandDetails(view);
-    }catch(error){reportResult(receivedResult,'error');fullFinished=true;if(cardCurrent()){view.assistFinished=true;if(view.hasUnconfirmedProgress)restoreProgressBackup(view);if(!view.confirmedDisplayed)view.sentenceTranslation.textContent='未能获取本句翻译，请重试。';if(view.confirmedDisplayed||view.referenceDisplayed)view.note.textContent=[view.note.textContent,error.message,view.confirmedDisplayed?'已确认内容保留；可重新请求解释。':'旧参考义保留，尚未按当前语境确认。'].filter(Boolean).join(' ');else{view.explanation.replaceChildren();view.answer.textContent=error.message;view.answer.classList.add('error');}view.retry.textContent=prepared?'重新请求解释':'重试';view.retry.hidden=view.retries>=2;view.repair.hidden=false;positionCard(view);}}
+    }catch(error){reportResult(receivedResult,'error');fullFinished=true;if(cardCurrent()){view.assistFinished=true;if(view.hasUnconfirmedProgress)restoreProgressBackup(view);if(!view.confirmedDisplayed)view.sentenceTranslation.textContent='未能获取本句翻译，请重试。';if(view.confirmedDisplayed||view.referenceDisplayed)view.note.textContent=[view.note.textContent,error.message,view.confirmedDisplayed?'已确认内容保留；可重新请求解释。':'旧参考义保留，尚未按当前语境确认。'].filter(Boolean).join(' ');else{contentUI.clearRendered(view.explanation);view.answer.textContent=error.message;view.answer.classList.add('error');}view.retry.textContent=prepared?'重新请求解释':'重试';view.retry.hidden=view.retries>=2;view.repair.hidden=false;positionCard(view);}}
   }
   function markRequestedTarget(target){
       if(target.sourceKey||target.kind==='passage')return;
@@ -1638,7 +1642,7 @@
     scheduleSentenceRender();scheduleSentenceScan(0);return status();
   }
   function onPageNavigation(){if(!adoptCurrentPage())return;resetLookup();void request('AUTO_BOOTSTRAP_CHECK',{sameDocument:true}).catch(()=>{});}
-  function status(){return {enabled:state.enabled,paused:state.paused,domain:state.domain,assistanceMode:state.settings.assistanceMode,providerConfigured:state.providerConfigured,pageSynced:sameArticle(state.page,location.href),count:state.records.filter(record=>record.stage!=='quiet').length,emergency:emergencyStatus(),sentenceGroups:{enabled:sentenceGroups.enabled,density:sentenceGroups.density,lineStyle:sentenceGroups.lineStyle,status:sentenceGroups.status,error:sentenceGroups.error,processed:sentenceGroups.entries.size}};}
+  function status(){return {enabled:state.enabled,paused:state.paused,domain:state.domain,assistanceMode:state.settings.assistanceMode,providerConfigured:state.providerConfigured,pageSynced:sameArticle(state.page,location.href),count:state.records.filter(record=>record.stage!=='quiet').length,noReadingRoot:state.noReadingRoot,failed:state.failed,automaticReady:state.automaticReady,emergency:emergencyStatus(),sentenceGroups:{enabled:sentenceGroups.enabled,density:sentenceGroups.density,lineStyle:sentenceGroups.lineStyle,status:sentenceGroups.status,error:sentenceGroups.error,processed:sentenceGroups.entries.size}};}
   function onRuntimeMessage(message,_sender,respond){
    if(message?.type==='SS_PAGE_TRANSLATION_PROGRESS'){
      if(_sender.id===runtime.id)for(const pending of emergencyFlights)if(pending.token===message.token&&pending.seq===message.requestSeq)paintEmergencyProgress(pending,message.items);

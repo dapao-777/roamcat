@@ -20,13 +20,13 @@ button, input, select, textarea { font-family: var(--font-sans); }
 .options-body :is(.nav-group-header,.nav-group-tag,.brand-subtitle,.breadcrumb-category,.breadcrumb-current) { letter-spacing: .04em; }
 .options-body .nav-group-header { color: var(--color-text-muted); }
 .options-body .sidebar-top-section { padding: 20px 14px; }
-.options-body .sidebar-brand-lockup { gap: 6px; }
-.options-body .sidebar-brand-left { gap: 8px; }
-.options-body .brand-title-row { gap: 5px; }
+.options-body .sidebar-brand-lockup { gap: 8px; }
+.options-body .sidebar-brand-left { gap: 10px; }
+.options-body .brand-title-row { gap: 8px; }
 .options-body .brand-title { font-size: 13.5px; letter-spacing: .01em; }
-.options-body .brand-pro-tag { font: 9px/1.1 var(--font-mono); padding: 1px 4px; }
+.options-body .brand-pro-tag { font: 9px/1.1 var(--font-display); padding: 1px 5px; }
 .options-body .sidebar-collapse-btn { width: 24px; height: 24px; }
-.options-body .brand-live-dot { box-shadow: none; width: 5px; height: 5px; }
+.options-body .brand-live-dot { width: 7px; height: 7px; border-width: 1.5px; box-shadow: none; }
 .options-body .main-canvas-content { max-width: 1500px; margin: 0 auto; padding: 32px 40px 64px; }
 .options-body .compact-hero-banner { position: relative; padding: 27px 30px; border-radius: 4px; box-shadow: none; gap: 32px; }
 .options-body .hero-pill-badge { border: 0; padding: 0; background: none; font: 10px var(--font-display); letter-spacing: .05em; }
@@ -37,7 +37,7 @@ button, input, select, textarea { font-family: var(--font-sans); }
 .readout-edit { display: inline-flex; align-items: center; gap: 5px; color: var(--color-text-secondary); text-decoration: none; font-size: 11px; font-weight: 400; padding: 3px 0 3px 6px; }
 .readout-edit:hover { color: var(--color-text-primary); text-decoration: underline; text-underline-offset: 3px; }
 .readout-main { display: flex; gap: 14px; align-items: center; margin: 17px 0 18px; }
-.readout-key { display: grid; place-items: center; flex-shrink: 0; width: 44px; height: 46px; padding: 0; font: 25px/1 var(--font-mono); color: var(--color-text-primary); background: var(--color-card-bg); border: 1px solid var(--color-border-card); border-bottom-width: 3px; border-radius: 8px; box-shadow: 0 2px 3px rgba(0,0,0,.03); }
+.readout-key { display: grid; place-items: center; flex-shrink: 0; width: 44px; height: 46px; padding: 0; font: 22px/1 var(--font-display); color: var(--color-text-primary); background: var(--color-card-bg); border: 1px solid var(--color-border-card); border-bottom-width: 3px; border-radius: 8px; box-shadow: 0 2px 3px rgba(0,0,0,.03); }
 .readout-action { display: block; font-size: 13px; font-weight: 500; margin-bottom: 5px; }
 .readout-caption { display: block; font-size: 11px; color: var(--color-text-secondary); line-height: 1.6; }
 .readout-footer { display: grid; grid-template-columns: 1.3fr 1fr; gap: 14px; margin: 0; border-top: 1px solid var(--color-border-card); padding-top: 13px; }
@@ -229,7 +229,9 @@ button, input, select, textarea { font-family: var(--font-sans); }
   color: var(--color-text-secondary);
 }
 .options-body .pet-tag-icon {
-  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-amber, #f59e0b);
 }
 .options-body .pet-footer-row {
   display: flex;
@@ -252,6 +254,13 @@ button, input, select, textarea { font-family: var(--font-sans); }
 /* Keep the companion controls usable in narrow settings windows. */
 .options-body .pet-control-info { min-width: 0; }
 .options-body .pet-control-row .switch { flex-shrink: 0; }
+.options-body .pet-quote-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.options-body .pet-quote-controls .swiss-select { min-width: 96px; }
 @media (max-width:600px) {
   .options-body .sec-label-row { flex-wrap: wrap; }
   .options-body .pet-footer-row { flex-wrap: wrap; }

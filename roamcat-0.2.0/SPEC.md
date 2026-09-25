@@ -39,12 +39,13 @@
 
 ```
 ┌────────────────────────── 浏览器 ──────────────────────────┐
-│ content scripts（manifest 静态四件套，document_idle）         │
-│   design.js → reading-style.js → content-ui.js → content.js   │
+│ content scripts（manifest 静态五件套，document_idle）         │
+│   design.js → reading-style.js → content-ui.js → pet-quotes.js → content.js │
 │   · content-ui.js：lit-html 页内 UI 渲染层（构建产物入库）      │
+│   · pet-quotes.js：伴读猫哲学语录库（RoamCatPetQuotes）        │
 │   · content.js：阅读区识别/标注/查词卡片/解构/整页翻译          │
 │ 动态注册（chrome.scripting，按需注入）                         │
-│   · floating-pet.js：伴读猫挂件（Shadow DOM）+ 文章摘要        │
+│   · pet-quotes.js + floating-pet.js：伴读猫挂件（Shadow DOM）+ 文章摘要 │
 │   · auto-start.js：按站规则自动开启                           │
 ├────────────────────────────────────────────────────────────┤
 │ Service Worker（background.js，ES module）                   │
@@ -80,7 +81,7 @@
 ### 3.1 字段规范
 - `manifest_version: 3`；`background.service_worker = background.js`，`type: module`。
 - `minimum_chrome_version: "125"`；`content_security_policy.extension_pages = "script-src 'self' 'wasm-unsafe-eval'; object-src 'none'; base-uri 'none'"`（wasm 供本地 ONNX 推理）。
-- 内容脚本固定四件套 `design.js, reading-style.js, content-ui.js, content.js`（`content-ui.js` 为 `src/content-ui` 经 `vite.content-ui.config.mjs` 构建的 IIFE 产物，入库、不手改），`run_at: document_idle`，`all_frames: false`；`floating-pet.js` 与 `auto-start.js` 改为 `chrome.scripting` 按需动态注册（同为 classic 形态，受模块图 R1 同约束）。
+- 内容脚本固定五件套 `design.js, reading-style.js, content-ui.js, pet-quotes.js, content.js`（`content-ui.js` 为 `src/content-ui` 经 `vite.content-ui.config.mjs` 构建的 IIFE 产物，入库、不手改），`run_at: document_idle`，`all_frames: false`；`floating-pet.js`（连同其语录库 `pet-quotes.js`）与 `auto-start.js` 改为 `chrome.scripting` 按需动态注册（同为 classic 形态，受模块图 R1 同约束）。
 - `web_accessible_resources` 仅 `icons/roamcat.svg`（`use_dynamic_url: true`）——页面内品牌图标所需，最小暴露面。
 
 ### 3.2 权限与用途（上架时可直接引用的理由）
@@ -326,7 +327,7 @@
 
 | 规则 | 内容 |
 |---|---|
-| R1 | manifest content script 四件套顺序固定、文件存在、且不得包含 ESM 语法；动态注册的 classic 脚本（`floating-pet.js`、`auto-start.js`）同约束 |
+| R1 | manifest content script 五件套顺序固定、文件存在、且不得包含 ESM 语法；动态注册的 classic 脚本（`pet-quotes.js`、`floating-pet.js`、`auto-start.js`）同约束 |
 | R2 | 全部相对 import 必须解析到真实文件 |
 | R3 | extension 与 connector 全图无循环依赖 |
 | R4 | connector 的 import 闭包内的 extension 文件必须属于 §4.1 共享协议清单，且能在 Node 中安全 import（顶层不触碰浏览器 API） |

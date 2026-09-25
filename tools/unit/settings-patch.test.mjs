@@ -111,21 +111,40 @@ test('validatePatch 校验术语表与伴读猫设置', () => {
   assert.throws(() => validatePatch({customTerms: Array.from({length: 1001}, () => term)}, currentSettings), /术语表最多保存 1000 条/u);
 
   assert.deepEqual(validatePatch({floatingPet: {enabled: false}}, currentSettings).floatingPet, {
-    enabled: false, position: {right: 24, bottom: 84}, themeMode: 'auto',
+    enabled: false, position: {right: 24, bottom: 84}, themeMode: 'auto', scale: 1,
+    quotes: {enabled: true, intervalMin: 15},
   });
   assert.deepEqual(validatePatch({floatingPet: {position: {right: 10, bottom: 20}, themeMode: 'dark'}}, currentSettings).floatingPet, {
-    enabled: true, position: {right: 10, bottom: 20}, themeMode: 'dark',
+    enabled: true, position: {right: 10, bottom: 20}, themeMode: 'dark', scale: 1,
+    quotes: {enabled: true, intervalMin: 15},
   });
+  // scale 档位校验：合法档位通过，非法值拒绝。
+  assert.deepEqual(validatePatch({floatingPet: {scale: 1.4}}, currentSettings).floatingPet.scale, 1.4);
+  assert.deepEqual(validatePatch({floatingPet: {scale: 0.8}}, currentSettings).floatingPet.scale, 0.8);
+  assert.deepEqual(validatePatch({floatingPet: {scale: 1.6}}, currentSettings).floatingPet.scale, 1.6);
+  assert.throws(() => validatePatch({floatingPet: {scale: 2}}, currentSettings), /伴读猫缩放无效。/u);
+  assert.throws(() => validatePatch({floatingPet: {scale: 0.5}}, currentSettings), /伴读猫缩放无效。/u);
+  assert.throws(() => validatePatch({floatingPet: {scale: '1.2'}}, currentSettings), /伴读猫缩放无效。/u);
   assert.throws(() => validatePatch({floatingPet: {position: {right: -1, bottom: 20}}}, currentSettings), /伴读猫位置无效。/u);
   assert.throws(() => validatePatch({floatingPet: {position: {right: 20000, bottom: 20}}}, currentSettings), /伴读猫位置无效。/u);
   assert.throws(() => validatePatch({floatingPet: {enabled: 'yes'}}, currentSettings), /无效的伴读猫开关。/u);
   assert.throws(() => validatePatch({floatingPet: []}, currentSettings), /无效的伴读猫设置。/u);
   // 缺失键回退到当前设置。
   const dark = normalizeSettings();
-  dark.floatingPet = {enabled: true, position: {right: 5, bottom: 6}, themeMode: 'dark'};
+  dark.floatingPet = {enabled: true, position: {right: 5, bottom: 6}, themeMode: 'dark', scale: 1.2};
   assert.deepEqual(validatePatch({floatingPet: {position: {right: 30, bottom: 40}}}, dark).floatingPet, {
-    enabled: true, position: {right: 30, bottom: 40}, themeMode: 'dark',
+    enabled: true, position: {right: 30, bottom: 40}, themeMode: 'dark', scale: 1.2,
+    quotes: {enabled: true, intervalMin: 15},
   });
+  // 伴读猫语录：enabled 必须是布尔值、intervalMin 只收 15/30/60，缺省键回退到当前设置。
+  assert.deepEqual(validatePatch({floatingPet: {quotes: {enabled: false}}}, currentSettings).floatingPet.quotes, {enabled: false, intervalMin: 15});
+  assert.deepEqual(validatePatch({floatingPet: {quotes: {intervalMin: 30}}}, currentSettings).floatingPet.quotes, {enabled: true, intervalMin: 30});
+  assert.throws(() => validatePatch({floatingPet: {quotes: {enabled: 'yes'}}}, currentSettings), /无效的伴读猫语录开关。/u);
+  assert.throws(() => validatePatch({floatingPet: {quotes: {intervalMin: 20}}}, currentSettings), /无效的伴读猫语录间隔。/u);
+  assert.throws(() => validatePatch({floatingPet: {quotes: []}}, currentSettings), /无效的伴读猫语录设置。/u);
+  const quoted = normalizeSettings();
+  quoted.floatingPet.quotes = {enabled: false, intervalMin: 60};
+  assert.deepEqual(validatePatch({floatingPet: {enabled: true}}, quoted).floatingPet.quotes, {enabled: false, intervalMin: 60});
 });
 
 test('settingsPatchEffects 推导合并设置与四类变更信号', () => {

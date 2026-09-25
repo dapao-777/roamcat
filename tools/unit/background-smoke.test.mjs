@@ -21,6 +21,7 @@ import assert from 'node:assert/strict';
 function createChromeMock() {
   const areas = {local: new Map(), session: new Map()};
   const openedOptions = {count: 0};
+  const registeredScripts = [];
   const listeners = {};
   const runtime = {
     id: 'testextensionid1234567890abcdef',
@@ -64,17 +65,21 @@ function createChromeMock() {
     scripting: {
       executeScript: async () => [],
       getRegisteredContentScripts: async () => [],
-      registerContentScripts: async () => [],
+      registerContentScripts: async list => { registeredScripts.push(...list); return []; },
       unregisterContentScripts: async () => {},
     },
     contextMenus: {removeAll: async () => {}, create: () => {}, onClicked: {addListener() {}}},
     commands: {onCommand: {addListener() {}}},
-    permissions: {contains: async () => false, remove: async () => false, onAdded: {addListener() {}}, onRemoved: {addListener() {}}},
+    // 只对全网主机模式放行：足以驱动伴读猫动态注册，又不影响站点级未授权断言。
+    permissions: {
+      contains: async perms => Boolean(perms?.origins?.some(o => o === 'http://*/*' || o === 'https://*/*')),
+      remove: async () => false, onAdded: {addListener() {}}, onRemoved: {addListener() {}},
+    },
     tts: {},
     offscreen: {hasDocument: async () => false, createDocument: async () => {}},
     webNavigation: {getFrame: async () => null, onHistoryStateUpdated: {addListener() {}}},
   };
-  return {chrome, listeners, openedOptions};
+  return {chrome, listeners, openedOptions, registeredScripts};
 }
 
 const trustedPopup = chrome => ({id: chrome.runtime.id, url: chrome.runtime.getURL('ui/popup.html'), tab: {id: 1, url: 'https://example.com/'}});
@@ -84,7 +89,7 @@ test('迁移后的 background.js 在 mock 浏览器中构造注册表并按信�
   const warnings = [];
   const originalError = console.error;
   console.error = (...args) => warnings.push(args.join(' '));
-  const {chrome, listeners, openedOptions} = createChromeMock();
+  const {chrome, listeners, openedOptions, registeredScripts} = createChromeMock();
   globalThis.chrome = chrome;
   try {
     await import('../../roamcat-0.2.0/extension/background.js');
@@ -136,6 +141,15 @@ test('迁移后的 background.js 在 mock 浏览器中构造注册表并按信�
     const goodPet = await send({type: 'FLOATING_PET_POSITION_SET', position: {right: 40, bottom: 120}}, contentPage(chrome));
     assert.equal(goodPet.ok, true, goodPet.error);
     assert.deepEqual(goodPet.data.floatingPet.position, {right: 40, bottom: 120});
+    // scale 单独成补丁：合法档位落库，非法档位拒绝。
+    const scaledPet = await send({type: 'FLOATING_PET_POSITION_SET', scale: 1.4}, contentPage(chrome));
+    assert.equal(scaledPet.ok, true, scaledPet.error);
+    assert.equal(scaledPet.data.floatingPet.scale, 1.4);
+    const badScale = await send({type: 'FLOATING_PET_POSITION_SET', scale: 2}, contentPage(chrome));
+    assert.equal(badScale.ok, false);
+    assert.match(badScale.error, /伴读猫缩放无效。/u);
+    const emptyPet = await send({type: 'FLOATING_PET_POSITION_SET'}, contentPage(chrome));
+    assert.equal(emptyPet.ok, false);
   });
 
   await t.test('API_MODELS_LIST 仅允许 options 页', async () => {
@@ -148,5 +162,23 @@ test('迁移后的 background.js 在 mock 浏览器中构造注册表并按信�
     const opened = await send({type: 'OPEN_OPTIONS'}, trustedPopup(chrome));
     assert.equal(opened.ok, true, opened.error);
     assert.equal(openedOptions.count, 1);
+  });
+
+  await t.test('伴读猫动态注册显式声明渲染层依赖顺序', async () => {
+    // 导入期 init 会触发 reconcileAutomation → reconcileAutoScript；轮询等待注册落地。
+    let pet;
+    for (let i = 0; i < 50 && !pet; i++) {
+      pet = registeredScripts.find(item => item.id === 'ss-floating-pet');
+      if (!pet) await new Promise(resolve => setTimeout(resolve, 20));
+    }
+    assert.ok(pet, 'floatingPet 默认开启且全网放行时必须注册 ss-floating-pet');
+    // floating-pet 挂载即调 RoamCatContentUI.petWidget 并读 RoamCatDesign token；
+    // 同 run_at 下注册顺序不受保证，必须在同一注册项内把依赖排在 floating-pet 之前。
+    const js = pet.js;
+    assert.equal(js.at(-1), 'floating-pet.js', 'floating-pet.js 必须最后加载');
+    for (const dep of ['design.js', 'pet-quotes.js', 'content-ui.js']) {
+      assert.ok(js.includes(dep), `注册项缺少依赖 ${dep}`);
+      assert.ok(js.indexOf(dep) < js.indexOf('floating-pet.js'), `${dep} 必须先于 floating-pet.js`);
+    }
   });
 });

@@ -139,17 +139,20 @@ function* walkFiles(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:tr
        const status=probe(shadow=>globalThis.RoamCatContentUI.taskStatus(shadow,{brandIconUrl:'x',onClose(){}}));
        const detail=probe(shadow=>globalThis.RoamCatContentUI.sentenceDetail(shadow,{brandIconUrl:'x',onClose(){}}));
        const toast=probe(shadow=>globalThis.RoamCatContentUI.knownFeedback(shadow,{brandIconUrl:'x',term:'t',onUndo(){}}));
-       const pet=probe(shadow=>globalThis.RoamCatContentUI.petWidget(shadow,{domainTag:'🌐 通用阅读',catSvg:'<svg></svg>',peekingCatSvg:'<svg></svg>',onEdgeTabClick(){}}));
-       const petIds=['roamcat-edge-tab','roamcat-flip-btn','quick-reading','quick-summary','quick-options','quick-dock','cat-speech','cat-mode-roaming','cat-mode-peeking','btn-theme-toggle','menu-domain','btn-menu-close','btn-summary','btn-options','btn-dock','summary-domain-badge','summary-header-refresh','summary-close','summary-content','summary-meta','summary-footer-refresh','summary-copy-btn','copy-btn-text'].every(id=>pet.container.getRootNode().getElementById?.(id)||pet.summaryWindow.querySelector('#'+id));
+       const pet=probe(shadow=>globalThis.RoamCatContentUI.petWidget(shadow,{domainKey:'general',domainName:'通用阅读',catSvg:'<svg></svg>',peekingCatSvg:'<svg></svg>',onEdgeTabClick(){}}));
+       const petIds=['roamcat-edge-tab','roamcat-flip-btn','quick-reading','quick-summary','quick-options','quick-dock','cat-speech','cat-mode-roaming','cat-mode-peeking','roamcat-zoom-controls','zoom-out','zoom-label','zoom-in','summary-domain-badge','summary-header-refresh','summary-close','summary-content','summary-meta','summary-footer-refresh','summary-copy-btn','copy-btn-text'].every(id=>pet.container.getRootNode().getElementById?.(id)||pet.summaryWindow.querySelector('#'+id));
+      const menuDomainSvg=Boolean(pet.container.getRootNode().getElementById?.('summary-domain-badge')?.querySelector('svg'));
+       const dd=document.createElement('dd');dd.textContent='old';globalThis.RoamCatContentUI.renderExplanationText(dd,'new text','x');const firstOk=dd.textContent==='new text';dd.textContent='again';globalThis.RoamCatContentUI.renderExplanationText(dd,'second','x');const secondOk=dd.textContent==='second';
        return {
-         card:Boolean(card.card&&card.answer&&card.explanation&&card.sentenceLine&&card.more&&card.less&&card.repair&&card.known&&card.rescue&&card.retry&&card.wrong&&card.note&&card.speechNotice&&card.sentenceTranslation&&card.sourceHeader&&card.original&&card.originalLabel),
+         rerender:firstOk&&secondOk,
+         card:Boolean(card.card&&card.answer&&card.explanation&&card.sentenceLine&&card.more&&card.less&&card.repair&&card.known&&card.rescue&&card.retry&&card.wrong&&card.note&&card.speechNotice&&card.sentenceTranslation&&card.sentenceToggle&&card.sourceHeader&&card.original&&card.originalLabel),
          status:Boolean(status.panel&&status.indicator&&status.label&&status.count&&status.more&&status.detail&&status.collapse&&status.close),
          detail:Boolean(detail.panel&&detail.tree&&detail.close),
          toast:Boolean(toast.panel&&toast.message&&toast.undo),
-         pet:Boolean(pet.container&&pet.edgeTab&&pet.flipBtn&&pet.quickDock&&pet.avatarWrap&&pet.bubbleMenu&&pet.summaryWindow&&petIds),
+         pet:Boolean(pet.container&&pet.edgeTab&&pet.flipBtn&&pet.quickDock&&pet.avatarWrap&&pet.zoomControls&&pet.summaryWindow&&petIds&&menuDomainSvg),
        };
      });
-     assert.deepEqual(probes,{card:true,status:true,detail:true,toast:true,pet:true},'content-ui 工厂返回引用不完整');
+     assert.deepEqual(probes,{rerender:true,card:true,status:true,detail:true,toast:true,pet:true},'content-ui 工厂返回引用不完整');
    });
 
    await check('No page errors in built popup',()=>{assert.equal(report.pageErrors.length,0,report.pageErrors.join('；'));});

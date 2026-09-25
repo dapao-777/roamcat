@@ -139,8 +139,10 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
     await check('Flip button toggles bilingual translation', async () => {
       await inPage(() => globalThis.RoamCatPet.closeSummary());
+      await inPage(() => globalThis.RoamCatPet.openQuickDock());
       await tabPage.locator('#roamcat-flip-btn').click();
       await tabPage.locator('[data-roamcat-ui="emergency-translation"]').first().waitFor({ state: 'visible', timeout: 20000 });
+      await inPage(() => globalThis.RoamCatPet.openQuickDock());
       await tabPage.locator('#roamcat-flip-btn').click();
       await sleep(800);
       assert.equal(await translations(), 0, '再次点击旋旋翻没有返回英文');

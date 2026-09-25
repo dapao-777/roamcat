@@ -13,6 +13,7 @@
  */
 import {html} from 'lit';
 import {heroArt} from '../../components/hero-art.js';
+import {icon} from '../../components/icons.js';
 
 export const shellTop = html`
   <!-- Left Minimalist Swiss Sidebar -->
@@ -22,12 +23,13 @@ export const shellTop = html`
         <div class="sidebar-brand-lockup" data-purpose="brand-header">
           <div class="sidebar-brand-left">
             <div class="sidebar-brand-icon" id="sidebar-brand-logo" title="RoamCat · 随心阅">
-              <img src="../icons/roamcat.svg" width="30" height="30" alt="RoamCat · 随心阅" style="display:block;border-radius:5px;">
+              <img src="../icons/roamcat.svg" width="26" height="26" alt="RoamCat · 随心阅" style="display:block;border-radius:4px;">
+              <span class="brand-live-dot" aria-hidden="true"></span>
             </div>
             <div class="brand-info-wrap">
               <div class="brand-title-row">
-                <span class="brand-title">RoamCat · 随心阅</span>
-                <span class="brand-pro-tag">0.2</span>
+                <span class="brand-title">RoamCat<span class="brand-title-cn"> · 随心阅</span></span>
+                <span class="brand-pro-tag">v0.2</span>
               </div>
               <p class="brand-subtitle">随心漫游 · 自在阅读</p>
             </div>
@@ -233,7 +235,7 @@ export const shellTop = html`
               <defs><path id="stamp-seal-ring" d="M28 28 m -18.5 0 a 18.5 18.5 0 1 1 37 0 a 18.5 18.5 0 1 1 -37 0"/></defs>
               <circle cx="28" cy="28" r="26" stroke="currentColor" stroke-width="1.4"/>
               <circle cx="28" cy="28" r="13.5" stroke="currentColor" stroke-width="0.7" stroke-dasharray="1.2 2.2"/>
-              <text font-size="5.6" letter-spacing="1.7" fill="currentColor" font-family="var(--font-mono, monospace)"><textPath href="#stamp-seal-ring">ROAMCAT · FREE ROAM · 随心阅 ·</textPath></text>
+              <text font-size="5.6" letter-spacing="1.7" fill="currentColor" font-family="var(--font-display, monospace)"><textPath href="#stamp-seal-ring">ROAMCAT · FREE ROAM · 随心阅 ·</textPath></text>
               <path d="M28 21.5 l1.6 4.9 4.9 1.6 -4.9 1.6 -1.6 4.9 -1.6 -4.9 -4.9 -1.6 4.9 -1.6 z" fill="currentColor"/>
             </svg>
           </span>
@@ -362,7 +364,7 @@ export const shellDialog = html`
         </div>
         <div class="stamp-dialog-footer">
           <button type="button" id="stamp-modal-goto-pet" class="secondary-button" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:6px 14px;border-radius:4px;cursor:pointer;">
-            <span>前往伴读猫设置 🐾</span>
+            ${icon('paw', {size: 14})}<span>前往伴读猫设置</span>
           </button>
           <button type="button" class="js-open-welcome stamp-dialog-link">
             <span>打开新手引导沙盒</span>

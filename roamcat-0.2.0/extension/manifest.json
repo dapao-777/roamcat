@@ -13,7 +13,7 @@
   "content_scripts": [
     {
       "matches": ["http://*/*", "https://*/*"],
-      "js": ["design.js", "reading-style.js", "content-ui.js", "content.js"],
+      "js": ["design.js", "reading-style.js", "content-ui.js", "pet-quotes.js", "content.js"],
       "run_at": "document_idle",
       "all_frames": false
     }

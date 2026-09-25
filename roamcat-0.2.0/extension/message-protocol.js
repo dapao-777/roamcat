@@ -80,14 +80,18 @@ export function parseDomainTest(message) {
   };
 }
 
+/** 伴读猫缩放档位（与 floating-pet.js PET_SCALE_STEPS 保持一致）。 */
+export const PET_SCALE_STEPS = [0.8, 1, 1.2, 1.4, 1.6];
+
 /**
- * FLOATING_PET_POSITION_SET 载荷：位置与主题可单独出现，但至少出现一项；
- * 位置必须是只含 right/bottom 两个有限非负坐标键的对象。
+ * FLOATING_PET_POSITION_SET 载荷：位置、主题、缩放可单独出现，但至少出现一项；
+ * 位置必须是只含 right/bottom 两个有限非负坐标键的对象，缩放必须落在档位内。
  */
 export function parseFloatingPetPatch(message) {
   const hasPosition = Boolean(message?.position);
   const hasTheme = typeof message?.themeMode === 'string';
-  if (!hasPosition && !hasTheme) throw new Error('伴读猫位置无效。');
+  const hasScale = message?.scale !== undefined;
+  if (!hasPosition && !hasTheme && !hasScale) throw new Error('伴读猫位置无效。');
   const floatingPet = {};
   if (hasPosition) {
     const position = message.position;
@@ -97,6 +101,10 @@ export function parseFloatingPetPatch(message) {
     floatingPet.position = position;
   }
   if (hasTheme) floatingPet.themeMode = message.themeMode;
+  if (hasScale) {
+    if (!PET_SCALE_STEPS.includes(message.scale)) throw new Error('伴读猫缩放无效。');
+    floatingPet.scale = message.scale;
+  }
   return floatingPet;
 }
 
@@ -179,7 +187,17 @@ export function validatePatch(patch, currentSettings) {
     const right = position.right ?? 24, bottom = position.bottom ?? 84;
     for (const value of [right, bottom]) if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > 10000) throw new Error('伴读猫位置无效。');
     const themeMode = ['auto', 'dark', 'light'].includes(fp.themeMode) ? fp.themeMode : (currentSettings.floatingPet?.themeMode || 'auto');
-    result.floatingPet = {enabled: fp.enabled ?? currentSettings.floatingPet?.enabled ?? true, position: {right: Math.round(right), bottom: Math.round(bottom)}, themeMode};
+    if (fp.scale !== undefined && !PET_SCALE_STEPS.includes(fp.scale)) throw new Error('伴读猫缩放无效。');
+    const scale = fp.scale ?? currentSettings.floatingPet?.scale ?? 1;
+    if (fp.quotes !== undefined) {
+      const quotes = fp.quotes;
+      if (!quotes || typeof quotes !== 'object' || Array.isArray(quotes)) throw new Error('无效的伴读猫语录设置。');
+      if (quotes.enabled !== undefined && typeof quotes.enabled !== 'boolean') throw new Error('无效的伴读猫语录开关。');
+      if (quotes.intervalMin !== undefined && ![15, 30, 60].includes(quotes.intervalMin)) throw new Error('无效的伴读猫语录间隔。');
+    }
+    const currentQuotes = currentSettings.floatingPet?.quotes ?? {enabled: true, intervalMin: 15};
+    const quotes = {enabled: fp.quotes?.enabled ?? currentQuotes.enabled ?? true, intervalMin: fp.quotes?.intervalMin ?? currentQuotes.intervalMin ?? 15};
+    result.floatingPet = {enabled: fp.enabled ?? currentSettings.floatingPet?.enabled ?? true, position: {right: Math.round(right), bottom: Math.round(bottom)}, themeMode, scale, quotes};
   }
   return result;
 }

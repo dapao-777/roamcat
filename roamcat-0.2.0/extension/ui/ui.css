@@ -211,9 +211,11 @@ legend { padding: 0; margin-bottom: var(--space-3); font-size: var(--type-contro
 }
 
 .popup-alert-icon {
-  font-size: 14px;
   flex-shrink: 0;
   margin-top: 1px;
+  display: grid;
+  place-items: center;
+  color: var(--danger);
 }
 
 .popup-alert-info {
@@ -410,10 +412,12 @@ legend { padding: 0; margin-bottom: var(--space-3); font-size: var(--type-contro
 }
 
 .feature-icon-badge {
-  font-size: 14px;
   line-height: 1;
   flex-shrink: 0;
   margin-top: 1px;
+  display: grid;
+  place-items: center;
+  color: var(--accent);
 }
 
 .sentence-groups-panel h2, .emergency-panel h2 {
@@ -878,29 +882,79 @@ html.options-document, body.options-body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 16px;
+  padding-bottom: 18px;
   border-bottom: 1px solid var(--color-border-subtle);
   gap: 8px;
+  position: relative;
+}
+
+/* 点阵漫游轨迹：分隔线上的琥珀虚点，呼应扫描线猫/点阵的品牌隐喻 */
+.sidebar-brand-lockup::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background-image: radial-gradient(circle at 1px 1px, var(--color-amber) 0.9px, transparent 1.3px);
+  background-size: 7px 2px;
+  background-repeat: repeat-x;
+  background-position: left center;
+  opacity: 0.32;
+  pointer-events: none;
 }
 
 .sidebar-brand-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   min-width: 0;
 }
 
 .sidebar-brand-icon {
-  width: 30px;
-  height: 30px;
-  background: transparent;
-  border-radius: 7px;
+  position: relative;
+  width: 34px;
+  height: 34px;
+  background: var(--color-card-inset);
+  border: 1px solid var(--color-border-card);
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: 0 2px 8px var(--color-brand-glow);
   flex-shrink: 0;
   cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.15s ease;
+}
+
+.sidebar-brand-icon:hover {
+  transform: translateY(-1px);
+  border-color: var(--color-border-mid);
+  box-shadow: 0 4px 14px var(--color-brand-glow);
+}
+
+/* 图标右上角的琥珀在线角标：沿用欢迎页 status dot 语言，贴边呼吸 */
+.brand-live-dot {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--color-amber);
+  border: 2px solid var(--color-sidebar-bg);
+  box-shadow: 0 0 5px var(--color-amber);
+  flex-shrink: 0;
+  animation: brand-live-pulse 2.6s ease-in-out infinite;
+}
+
+@keyframes brand-live-pulse {
+  0%, 100% { box-shadow: 0 0 3px var(--color-amber); }
+  50% { box-shadow: 0 0 10px var(--color-amber); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-live-dot { animation: none; }
 }
 
 .brand-info-wrap {
@@ -912,7 +966,7 @@ html.options-document, body.options-body {
 .brand-title-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .brand-title {
@@ -924,39 +978,52 @@ html.options-document, body.options-body {
   white-space: nowrap;
 }
 
+/* 中英混排：英文点阵体 + 中文衬线，编辑感层次 */
+.brand-title-cn {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 0.92em;
+  letter-spacing: 0.06em;
+}
+
 .brand-pro-tag {
   font-size: 9px;
-  font-family: var(--font-mono);
+  font-family: var(--font-display);
   font-weight: 700;
   padding: 1px 5px;
-  border-radius: 4px;
-  background: var(--color-brand-green-soft);
-  color: var(--color-brand-green);
-  border: 1px solid var(--color-brand-green-border);
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--color-text-dim);
+  border: 1px solid var(--color-border-mid);
+  letter-spacing: 0.04em;
 }
 
 .brand-subtitle {
+  display: flex;
+  align-items: center;
   font-size: 10px;
   font-family: var(--font-mono);
   color: var(--color-text-muted);
   letter-spacing: 0.5px;
-  margin-top: 2px;
+  margin-top: 5px;
   white-space: nowrap;
+}
+
+/* 副标题前的三粒点阵足迹 */
+.brand-subtitle::before {
+  content: "";
+  width: 3px;
+  height: 3px;
+  background: var(--color-amber);
+  box-shadow: 5px 0 0 var(--color-amber-soft), 10px 0 0 var(--color-amber-soft);
+  margin-right: 16px;
+  flex-shrink: 0;
 }
 
 .sidebar-header-actions {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-shrink: 0;
-}
-
-.brand-live-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--color-amber);
-  box-shadow: 0 0 0 4px var(--color-amber-soft), 0 0 8px var(--color-amber);
   flex-shrink: 0;
 }
 
@@ -1328,10 +1395,6 @@ html.options-document, body.options-body {
 }
 
 .sidebar-collapsed .brand-info-wrap {
-  display: none !important;
-}
-
-.sidebar-collapsed .brand-live-dot {
   display: none !important;
 }
 
@@ -1855,13 +1918,14 @@ html.options-document, body.options-body {
 }
 
 .sec-code-badge {
-  font-size: 11px;
-  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-family: var(--font-display);
   font-weight: 700;
+  letter-spacing: 0.08em;
   color: var(--color-brand-green);
   background: var(--badge-bg);
   border: 1px solid var(--badge-border);
-  padding: 1px 7px;
+  padding: 2px 7px 1px;
   border-radius: 4px;
 }
 
@@ -1873,9 +1937,10 @@ html.options-document, body.options-body {
 }
 
 .sec-subheading {
-  font-size: 11px;
-  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-family: var(--font-display);
   font-weight: 600;
+  letter-spacing: 0.08em;
   color: var(--color-text-muted);
   text-transform: uppercase;
 }
@@ -2102,7 +2167,7 @@ html.options-document, body.options-body {
   border: 1.5px solid var(--keycap-border);
   border-bottom: 3.5px solid var(--keycap-border-bottom);
   border-radius: 8px;
-  font-family: var(--font-mono);
+  font-family: var(--font-display);
   font-size: 16px;
   font-weight: 700;
   color: var(--keycap-color);
@@ -2520,7 +2585,7 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: var(--space-3); b
 .guide-structure > .guide-eyebrow { color: var(--teal); }
 .guide-structure .guide-demo { background: var(--teal-soft); border-color: var(--teal-line); }
 .guide-section p, .guide-section li, .guide-section dd { line-height: var(--leading-body); overflow-wrap: anywhere; }
-.guide-section kbd { padding: 1px 6px; border: 1px solid var(--line-dark); border-radius: var(--radius-control); background: var(--paper); font: inherit; }
+.guide-section kbd { padding: 1px 6px; border: 1px solid var(--line-dark); border-radius: var(--radius-control); background: var(--paper); font-family: var(--font-display); font-size: 0.88em; letter-spacing: 0.04em; }
 .guide-list { margin: 0; padding-left: 1.5em; }
 .guide-list li + li { margin-top: var(--space-3); }
 .guide-demo { display: grid; gap: var(--space-3); min-width: 0; margin: 0; padding: var(--space-4); border: 1px solid var(--line); border-radius: var(--radius-control); background: var(--paper); }
@@ -2989,7 +3054,10 @@ details.history-event { padding: 0; }
 }
 
 .telemetry-brand {
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  font-size: 10.5px;
   color: var(--color-text-primary);
 }
 

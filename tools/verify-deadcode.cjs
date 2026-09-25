@@ -35,6 +35,20 @@ walk(path.join(root, 'extension'), 'extension');
 walk(path.join(root, 'connector'), 'connector');
 const sources = files.map(f => ({f: f.relative, src: fs.readFileSync(f.absolute, 'utf8')}));
 
+// src/（Vite/Lit 层）经 @ext 别名消费扩展层导出：只计入引用方，不参与导出/绑定检查——
+// 其入口产物经 IIFE globalThis 与 customElements 暴露，正则看不出这条消费链。
+const srcFiles = [];
+const walkSrc = (base, relative) => fs.readdirSync(base, {withFileTypes: true}).forEach(e => {
+  if (e.name.startsWith('.')) return;
+  const absolute = path.join(base, e.name);
+  const childRelative = relative ? `${relative}/${e.name}` : e.name;
+  if (e.isDirectory()) { walkSrc(absolute, childRelative); return; }
+  if (/\.(js|mjs)$/.test(e.name)) srcFiles.push({absolute, relative: childRelative});
+});
+const srcDir = path.resolve(__dirname, '..', 'src');
+if (fs.existsSync(srcDir)) walkSrc(srcDir, 'src');
+const referencers = sources.concat(srcFiles.map(f => ({f: f.relative, src: fs.readFileSync(f.absolute, 'utf8')})));
+
 // 1. 未被任何其他文件引用的导出
 const unusedExports = [];
 for (const {f, src} of sources) {
@@ -42,7 +56,7 @@ for (const {f, src} of sources) {
     const name = m[1];
     const pattern = new RegExp('\\b' + name.replace(/\$/g, '\\$') + '\\b', 'g');
     let uses = 0;
-    for (const other of sources) uses += (other.src.match(pattern) || []).length;
+    for (const other of referencers) uses += (other.src.match(pattern) || []).length;
     // 同文件里 export 声明本身算 1 次；uses===1 表示只有声明、无人使用
     if (uses <= 1 && !INTENTIONAL_EXPORTS.has(name) && !/^(WELCOME_GUIDE|focus|close|settle)/.test(name)) unusedExports.push(`${f}: ${name}`);
   }

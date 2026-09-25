@@ -12,6 +12,7 @@
 
  */
 import {html} from 'lit';
+import {icon} from '../../../components/icons.js';
 
 export const assistanceSection = html`
         <section id="assistance" class="settings-section" aria-labelledby="section-title">
@@ -245,11 +246,29 @@ export const assistanceSection = html`
                     <option value="light">固定亮色（曜黑黑晶石猫）</option>
                   </select>
                 </div>
+                <div class="pet-control-row">
+                  <div class="pet-control-info">
+                    <strong class="pet-control-label">哲学语录</strong>
+                    <span class="pet-control-caption">伴读猫在你阅读时偶尔冒泡一句哲学思考（可关闭或调间隔）。</span>
+                  </div>
+                  <div class="pet-quote-controls">
+                    <label class="switch" title="开启或关闭伴读猫哲学语录">
+                      <input id="floating-pet-quotes-enabled" type="checkbox" checked>
+                      <span aria-hidden="true"></span>
+                      <span class="sr-only">伴读猫哲学语录开关</span>
+                    </label>
+                    <select id="floating-pet-quotes-interval" class="swiss-select" title="哲学语录间隔">
+                      <option value="15">15 分钟</option>
+                      <option value="30">30 分钟</option>
+                      <option value="60">60 分钟</option>
+                    </select>
+                  </div>
+                </div>
                 <div class="pet-feature-tags">
-                  <span class="pet-tag"><span class="pet-tag-icon">🐾</span> 贴边探头姿态</span>
-                  <span class="pet-tag"><span class="pet-tag-icon">🌪️</span> 双击旋旋翻双语</span>
-                  <span class="pet-tag"><span class="pet-tag-icon">📝</span> 一键全篇精粹</span>
-                  <span class="pet-tag"><span class="pet-tag-icon">⌨️</span> 快捷键 Alt+Shift+M</span>
+                  <span class="pet-tag"><span class="pet-tag-icon">${icon('paw', {size: 13})}</span> 贴边探头姿态</span>
+                  <span class="pet-tag"><span class="pet-tag-icon">${icon('languages', {size: 13})}</span> 双击旋旋翻双语</span>
+                  <span class="pet-tag"><span class="pet-tag-icon">${icon('file-text', {size: 13})}</span> 一键全篇精粹</span>
+                  <span class="pet-tag"><span class="pet-tag-icon">${icon('keyboard', {size: 13})}</span> 快捷键 Alt+Shift+M</span>
                 </div>
                 <div class="pet-footer-row">
                   <span class="pet-hint-text">如果伴读猫被网页遮挡或拖离可视区，可一键复位：</span>

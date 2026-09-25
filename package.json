@@ -9,7 +9,7 @@
     "build:watch": "vite build --config vite.content-ui.config.mjs --mode development && vite build --mode development --watch",
     "verify:build": "node tools/verify-build.cjs",
     "verify": "node tools/verify-module-graph.cjs",
-    "test": "node --test",
+    "test": "node --test \"tools/unit/*.test.mjs\"",
     "gen:tokens": "node build/gen-design-tokens.mjs"
   },
   "keywords": [

@@ -15,6 +15,7 @@ import {LitElement, html} from 'lit';
 import {classMap} from 'lit/directives/class-map.js';
 import {styleMap} from 'lit/directives/style-map.js';
 import {request} from '@ext/shared.js';
+import {icon} from '../../components/icons.js';
 import '../../components/rc-switch.js';
 
 const EMERGENCY_PHASES = new Set(['off', 'translating', 'waiting', 'complete', 'partial', 'stopped', 'error']);
@@ -40,6 +41,7 @@ class RoamcatPopup extends LitElement {
   #automation = null;
   #tab = null;
   #enabled = false;
+  #page = null;
   #sentenceGroups = {enabled: false, density: 'medium', status: 'off', error: '', processed: 0};
   #sentenceGroupsLoaded = false;
   #busy = false;
@@ -113,7 +115,7 @@ class RoamcatPopup extends LitElement {
 
   async #watchPage() {
     try {
-      if (!this.#busy && (this.#sentenceGroups.enabled || this.#emergency.phase !== 'off') && document.visibilityState === 'visible') {
+      if (!this.#busy && (this.#enabled || this.#sentenceGroups.enabled || this.#emergency.phase !== 'off') && document.visibilityState === 'visible') {
         await this.#getPageStatus();
         this.requestUpdate();
       }
@@ -131,6 +133,7 @@ class RoamcatPopup extends LitElement {
     const result = await chrome.tabs.sendMessage(this.#tab.id, {type: 'SS_STATUS'}, {frameId: 0}).catch(() => null);
     if (snapshot !== this.#sentenceGroups || !result?.ok) return;
     this.#enabled = Boolean(result.data?.enabled);
+    this.#page = result.data;
     if (result.data?.sentenceGroups) this.#sentenceGroups = {...this.#sentenceGroups, ...result.data.sentenceGroups};
     if (result.data?.emergency) this.#emergency = emergencySnapshot(result.data.emergency);
   }
@@ -334,7 +337,14 @@ class RoamcatPopup extends LitElement {
       statusText = '此页不可用'; toggleText = '当前页不可用'; pageNote = '请在普通网页主文档中使用。';
     } else if (this.#enabled) {
       statusText = '本页已开启'; toggleText = '暂停本页';
-      pageNote = this.#state?.settings?.assistanceMode === 'on-demand' ? '当前为仅在需要时；保留主动求助。' : '保留英文，只在当前位置提供少量支撑。';
+      const page = this.#page;
+      if (this.#state?.settings?.assistanceMode === 'on-demand') pageNote = '当前为仅在需要时；保留主动求助。';
+      else if (page?.noReadingRoot) pageNote = '本页未识别到英文正文区域，自动提示不可用。';
+      else if (page?.failed) pageNote = '辅助请求未完成；暂停后重新开启可重试。';
+      else if (page && !page.automaticReady) pageNote = '正在识别本页正文…';
+      else if (page?.providerConfigured && page.count > 0) pageNote = '已在附近标注 ' + page.count + ' 处提示。';
+      else if (page?.providerConfigured) pageNote = '附近暂无需提示的词；继续阅读或滚动后再看。';
+      else pageNote = '保留英文，只在当前位置提供少量支撑。';
     } else if (this.#automation?.paused) {
       statusText = '本页已暂停'; toggleText = '继续辅助';
     }
@@ -378,7 +388,7 @@ class RoamcatPopup extends LitElement {
 
     <div class="popup-content-body rc-stagger">
       <section id="service-warning" class="popup-alert-card" ?hidden=${!serviceProblem}>
-        <div class="popup-alert-icon">⚠️</div>
+        <div class="popup-alert-icon">${icon('alert', {size: 18})}</div>
         <div class="popup-alert-info">
           <b>服务未就绪</b>
           <p id="service-warning-copy">${serviceProblem || ''}</p>
@@ -420,7 +430,7 @@ class RoamcatPopup extends LitElement {
       <section class="popup-card sentence-groups-panel" aria-labelledby="sentence-groups-title">
         <div class="feature-card-header">
           <div class="feature-card-title-wrap">
-            <div class="feature-icon-badge">🧩</div>
+            <div class="feature-icon-badge">${icon('layers', {size: 16})}</div>
             <div>
               <h2 id="sentence-groups-title">阅读解构</h2>
               <p id="sentence-groups-note" aria-live="polite">${sgNote}</p>
@@ -438,7 +448,7 @@ class RoamcatPopup extends LitElement {
       <section id="emergency-panel" class="popup-card emergency-panel" aria-labelledby="emergency-title" tabindex="-1">
         <div class="emergency-heading">
           <div class="feature-card-title-wrap">
-            <div class="feature-icon-badge">📖</div>
+            <div class="feature-icon-badge">${icon('languages', {size: 16})}</div>
             <div>
               <h2 id="emergency-title">本页双语翻译</h2>
               <p id="emergency-status" aria-live="polite">${this.#emergencyPhaseText()}</p>

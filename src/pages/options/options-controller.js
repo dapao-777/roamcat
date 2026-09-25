@@ -295,6 +295,14 @@ function optionsRenderAll(){
   }
   const petThemeSelect = document.querySelector('#floating-pet-theme');
   if (petThemeSelect) petThemeSelect.value = optionsState.settings.floatingPet?.themeMode || 'auto';
+  const petQuotesCfg = optionsState.settings.floatingPet?.quotes || {enabled: true, intervalMin: 15};
+  const petQuotesEnabled = document.querySelector('#floating-pet-quotes-enabled');
+  const petQuotesInterval = document.querySelector('#floating-pet-quotes-interval');
+  if (petQuotesEnabled) petQuotesEnabled.checked = petQuotesCfg.enabled !== false;
+  if (petQuotesInterval) {
+    petQuotesInterval.value = String([15, 30, 60].includes(petQuotesCfg.intervalMin) ? petQuotesCfg.intervalMin : 15);
+    petQuotesInterval.disabled = petQuotesCfg.enabled === false;
+  }
   optionsSetResult(optionsEls.dataProblem,optionsState.dataProblem||'',Boolean(optionsState.dataProblem));
   const video=optionsState.settings.video||{fontSize:20,theme:'auto'};
   optionsEls.videoFontSize.value=String(video.fontSize||20);optionsEls.videoTheme.value=video.theme||'auto';
@@ -489,6 +497,34 @@ function optionsInitCyberHUD() {
         themeMode
       }
     }, '伴读猫显示模式已更新');
+  });
+
+  document.querySelector('#floating-pet-quotes-enabled')?.addEventListener('change', event => {
+    const enabled = event.target.checked;
+    const intervalSelect = document.querySelector('#floating-pet-quotes-interval');
+    if (intervalSelect) intervalSelect.disabled = !enabled;
+    void optionsSavePatch({
+      floatingPet: {
+        ...(optionsState.settings.floatingPet || {}),
+        quotes: {
+          ...(optionsState.settings.floatingPet?.quotes || {}),
+          enabled
+        }
+      }
+    }, enabled ? '哲学语录已开启' : '哲学语录已关闭');
+  });
+
+  document.querySelector('#floating-pet-quotes-interval')?.addEventListener('change', event => {
+    const intervalMin = Number(event.target.value);
+    void optionsSavePatch({
+      floatingPet: {
+        ...(optionsState.settings.floatingPet || {}),
+        quotes: {
+          ...(optionsState.settings.floatingPet?.quotes || {}),
+          intervalMin
+        }
+      }
+    }, '语录间隔已更新');
   });
 
   document.querySelector('#floating-pet-reset-pos')?.addEventListener('click', () => {
