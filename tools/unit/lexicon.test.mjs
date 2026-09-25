@@ -17,6 +17,7 @@
  */
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
 import {
   termPattern,
   isKnownTerm,
@@ -31,6 +32,14 @@ import {
 
 // 词频表经 ensureLexicon 动态装载；顶层 await 先于全部用例完成。
 await ensureLexicon();
+
+test('词频 .txt 孪生文件与 .js 导出词序一致（SW fetch 路径的数据源）', async () => {
+  const url = new URL('../../roamcat-0.2.0/extension/frequency/english-frequency.txt', import.meta.url);
+  const words = (await readFile(url, 'utf8')).split('\n').filter(Boolean);
+  const {ENGLISH_FREQUENCY_RANK} = await import('../../roamcat-0.2.0/extension/frequency/english-frequency.js');
+  assert.equal(words.length, ENGLISH_FREQUENCY_RANK.size);
+  assert.deepEqual(words, [...ENGLISH_FREQUENCY_RANK.keys()]);
+});
 
 const SENTENCE = 'The database uses an index to find records quickly.';
 const knownWord = (term, domain = 'data') => ({

@@ -12,12 +12,22 @@
 import { wordId, DOMAINS } from './shared.js';
 import { sourceTokens } from './sentence-groups.mjs';
 
-// 词频表是 440KB 的生成文件：改为按需动态 import，Service Worker 因非阅读事件
+// 词频表是 440KB 的生成文件：按需装载，Service Worker 因非阅读事件
 // （STATE_GET、订阅状态、标签切换等）唤醒时不再付出解析与建表成本。
+// ServiceWorkerGlobalScope 禁止动态 import()（w3c/ServiceWorker#1356），
+// 故 SW 内 fetch 同内容物的 .txt 孪生文件重建词表；其余上下文（Node 单测等）
+// 继续动态 import。两文件由同一生成源产出，词序即词频名次。
 // 静态图检查不解析动态 import；正确性由调用侧门禁与 rankTable() 的显式失败保证。
 let frequencyRank = null;
+const inServiceWorker = typeof ServiceWorkerGlobalScope === 'function' && globalThis instanceof ServiceWorkerGlobalScope;
 export async function ensureLexicon() {
-  if (!frequencyRank) {
+  if (frequencyRank) return;
+  if (inServiceWorker) {
+    const response = await fetch(chrome.runtime.getURL('frequency/english-frequency.txt'));
+    if (!response.ok) throw new Error('词频表读取失败：HTTP ' + response.status);
+    const words = (await response.text()).split('\n').filter(Boolean);
+    frequencyRank = new Map(words.map((word, index) => [word, index + 1]));
+  } else {
     const module = await import('./frequency/english-frequency.js');
     frequencyRank = module.ENGLISH_FREQUENCY_RANK;
   }
