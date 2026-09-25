@@ -15,6 +15,7 @@ import {LitElement, html} from 'lit';
 import {classMap} from 'lit/directives/class-map.js';
 import {styleMap} from 'lit/directives/style-map.js';
 import {request} from '@ext/shared.js';
+import {CATALOG_TEMPLATES} from '@ext/ui/options-service-catalog.js';
 import {icon} from '../../components/icons.js';
 import '../../components/rc-switch.js';
 
@@ -46,7 +47,8 @@ class RoamcatPopup extends LitElement {
   #sentenceGroupsLoaded = false;
   #busy = false;
   #emergency = emergencySnapshot();
-  #errors = {action: '', siteAuto: '', sentenceGroups: ''};
+  #errors = {action: '', siteAuto: '', sentenceGroups: '', service: ''};
+  #serviceMenuOpen = false;
   #emergencyResult = {text: '', error: false};
   #suggestionVisible = false;
   #watchTimer = 0;
@@ -228,6 +230,50 @@ class RoamcatPopup extends LitElement {
     }
   }
 
+  // 快捷切换模型服务：订阅通道（chatgpt/grok/antigravity）+ 已保存的 API 服务；
+  // 切换即 STATE_PATCH，后台负责缓存失效与广播，密钥字段不进入渲染。
+  get #serviceCurrent() {
+    const settings = this.#state?.settings;
+    if (!settings) return null;
+    if (settings.providerKind === 'api') {
+      const service = settings.apiServices?.find(value => value.id === settings.activeApiServiceId);
+      if (!service) return null;
+      const template = CATALOG_TEMPLATES.find(value => value.id === service.providerId);
+      return {key: 'api:' + service.id, name: service.name, model: service.model, icon: template?.icon || 'custom-api'};
+    }
+    const template = CATALOG_TEMPLATES.find(value => value.id === settings.providerKind);
+    if (!template) return null;
+    return {key: settings.providerKind, name: template.name, model: settings.subscriptionModel || '默认模型', icon: template.icon};
+  }
+
+  get #serviceChoices() {
+    const subscriptions = CATALOG_TEMPLATES.filter(value => value.category === 'subscription')
+      .map(value => ({key: value.id, name: value.name, icon: value.icon, note: '本机连接器 · 免 API Key'}));
+    const services = (this.#state?.settings?.apiServices || []).map(service => {
+      const template = CATALOG_TEMPLATES.find(value => value.id === service.providerId);
+      return {key: 'api:' + service.id, name: service.name, icon: template?.icon || 'custom-api', note: service.model};
+    });
+    return [...subscriptions, ...services];
+  }
+
+  async #pickService(key) {
+    if (this.#busy || !this.#state) return;
+    this.#serviceMenuOpen = false;
+    if (key === this.#serviceCurrent?.key) { this.requestUpdate(); return; }
+    this.#busy = true;
+    this.#errors.service = '';
+    this.requestUpdate();
+    try {
+      const patch = key.startsWith('api:') ? {providerKind: 'api', activeApiServiceId: key.slice(4)} : {providerKind: key};
+      this.#state = await request('STATE_PATCH', {patch});
+    } catch (error) {
+      this.#errors.service = errorText(error);
+    } finally {
+      this.#busy = false;
+      this.requestUpdate();
+    }
+  }
+
   #canResumeEmergency() { return !this.#emergency.active && this.#emergency.total > 0 && ['stopped', 'error'].includes(this.#emergency.phase); }
 
   async #emergencyStart(resume = false) {
@@ -325,6 +371,9 @@ class RoamcatPopup extends LitElement {
     const configured = this.#siteConfigured;
     const allSites = Boolean(this.#automation?.automation?.allSites);
     const serviceProblem = this.#serviceProblem;
+    const serviceCurrent = this.#serviceCurrent;
+    const serviceChoices = this.#serviceChoices;
+    const serviceIconUrl = iconName => chrome.runtime.getURL(`icons/providers/${iconName || 'custom-api'}.svg`);
     const emergencyVisible = Boolean(this.#emergency.active || this.#emergency.displayed || this.#emergency.phase !== 'off');
     const resumable = this.#canResumeEmergency();
     const retryable = this.#emergency.active && (this.#emergency.failed > 0 || this.#emergency.phase === 'error');
@@ -394,6 +443,41 @@ class RoamcatPopup extends LitElement {
           <p id="service-warning-copy">${serviceProblem || ''}</p>
           <button id="repair-service" class="popup-btn-warning" type="button" @click=${() => this.#openOptions('service')}>前往服务设置 →</button>
         </div>
+      </section>
+
+      <section class="popup-card service-switch-panel" aria-labelledby="service-switch-title">
+        <div class="feature-card-header">
+          <div class="feature-card-title-wrap">
+            <div class="feature-icon-badge service-provider-badge">
+              ${serviceCurrent ? html`<img src=${serviceIconUrl(serviceCurrent.icon)} width="15" height="15" alt="" aria-hidden="true">` : icon('zap', {size: 15})}
+            </div>
+            <div>
+              <h2 id="service-switch-title">模型服务</h2>
+              <p id="service-current-note" aria-live="polite">${serviceCurrent ? serviceCurrent.name + (serviceCurrent.model ? ' · ' + serviceCurrent.model : '') : '尚未选择服务'}</p>
+            </div>
+          </div>
+          <button id="service-menu-toggle" class="secondary-button popup-service-btn" type="button"
+            aria-expanded=${this.#serviceMenuOpen ? 'true' : 'false'} aria-controls="service-menu"
+            .disabled=${this.#busy || !this.#state}
+            @click=${() => { this.#serviceMenuOpen = !this.#serviceMenuOpen; }}>${this.#serviceMenuOpen ? '收起' : '切换'}</button>
+        </div>
+        <div id="service-menu" class="service-menu" role="listbox" aria-label="选择模型服务" ?hidden=${!this.#serviceMenuOpen}>
+          ${serviceChoices.map(choice => html`
+            <button type="button" role="option" aria-selected=${choice.key === serviceCurrent?.key ? 'true' : 'false'}
+              class=${classMap({'service-menu-item': true, active: choice.key === serviceCurrent?.key})}
+              .disabled=${this.#busy} @click=${() => void this.#pickService(choice.key)}>
+              <img class="service-menu-icon" src=${serviceIconUrl(choice.icon)} width="15" height="15" alt="" aria-hidden="true">
+              <span class="service-menu-name">${choice.name}</span>
+              <span class="service-menu-note">${choice.note}</span>
+              ${choice.key === serviceCurrent?.key ? html`<span class="service-menu-check">${icon('check', {size: 12})}</span>` : ''}
+            </button>`)}
+          <button type="button" class="service-menu-item service-menu-manage" @click=${() => this.#openOptions('service')}>
+            ${icon('settings', {size: 14, cls: 'service-menu-gear'})}
+            <span class="service-menu-name">管理服务与密钥</span>
+            <span class="service-menu-note">设置中心</span>
+          </button>
+        </div>
+        <p id="service-switch-error" class="inline-message error" role="alert" ?hidden=${!this.#errors.service}>${this.#errors.service}</p>
       </section>
 
       <section class="popup-card activation-panel" aria-labelledby="activation-title">
