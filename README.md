@@ -21,6 +21,7 @@
   <a href="https://github.com/dapao-777/roamcat/releases">下载预发版</a> ·
   <a href="#快速开始">安装指南</a> ·
   <a href="roamcat-0.0.1/README.md">产品文档</a> ·
+  <a href="roamcat-0.0.1/docs/design-system.md">设计文档</a> ·
   <a href="roamcat-0.0.1/SPEC.md">工程规范</a>
 </p>
 
@@ -60,6 +61,20 @@
 <p align="center">
   <img src=".github/assets/options-light.png" alt="RoamCat 设置页" width="88%">
 </p>
+
+## 设计语言
+
+**纸墨 × 像素 × 轻拟物**：米白纸面 `#faf9f4` + 暖黑墨色 `#161511`，Silkscreen 像素字体与扫描线猫点缀数码感；控件是带物理反馈的键帽——按钮有底沿裙边、按下下沉，开关是铣槽瓷珠，徽标是凹刻铭牌。暗色主题为石墨漆面 + 琥珀金。
+
+| 项 | 规格 |
+|---|---|
+| 界面正文 | 系统无衬线（Segoe UI / PingFang SC / 微软雅黑），14–15px |
+| 阅读文本与标题 | 宋体系（Noto Serif SC → 宋体 → Georgia），正文 15px / 行距 1.6 |
+| 品牌 / 数字 / 键帽 | Silkscreen 像素体（已内置 woff2，离线可用） |
+| 标签 / 词性 / 诊断码 | ui-monospace 等宽，13px |
+| 动效 | 80 / 160 / 280 / 440ms 四档 + `linear()` 弹簧曲线，遵守 `prefers-reduced-motion` |
+
+全部视觉决策收敛在 `src/styles/tokens.css` 一套 `--rc-*` token；页内组件经 Shadow DOM + `design.js` 注入同一套 token，对网站样式零污染。完整规范与组件清单见[设计系统文档](roamcat-0.0.1/docs/design-system.md)。
 
 ## 快速开始
 
@@ -169,6 +184,18 @@ node tools/verify-ui.cjs          # UI 布局与明暗主题
 | [`tools/`](tools/) | 模块图门禁、单元测试、构建产物门禁、本机浏览器回归脚本。 |
 
 </details>
+
+## 文档
+
+| 文档 | 内容 |
+|------|------|
+| [产品文档](roamcat-0.0.1/README.md) | 功能详情、安装、模型服务配置与隐私说明 |
+| [设计系统](roamcat-0.0.1/docs/design-system.md) | 设计语汇、字体排版、色彩材质、动效与组件规范 |
+| [工程规范](roamcat-0.0.1/SPEC.md) | 消息协议、存储模型、安全边界、测试门禁 |
+| [隐私政策](roamcat-0.0.1/PRIVACY.md) | 数据处理与权限用途的完整披露 |
+| [上架清单](roamcat-0.0.1/CHROMEWEBSTORE.md) | Chrome Web Store 文案与逐权限理由 |
+| [更新日志](CHANGELOG.md) | 版本变更记录（Keep a Changelog 格式） |
+| [贡献指南](CONTRIBUTING.md) · [行为准则](CODE_OF_CONDUCT.md) · [安全政策](SECURITY.md) | 协作与披露流程 |
 
 ## 致谢与项目渊源
 
