@@ -274,11 +274,6 @@
         --pet-btn-active-ink: #5d3d0c;
         --pet-glyph: #463b28;
         --pet-glyph-emboss: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.72));
-        --pet-coin-edge: repeating-conic-gradient(from 0deg, #e2bc6d 0deg 6deg, #a37d2e 6deg 12deg);
-        --pet-coin-face: radial-gradient(circle at 32% 26%, #fff8e1 0%, #f6dd9f 40%, #e0b459 76%, #bf9134 100%);
-        --pet-coin-face-back: radial-gradient(circle at 32% 26%, #ffe3a6 0%, #f0bd55 45%, #d9a02e 80%, #b07f22 100%);
-        --pet-coin-inset: inset 0 1px 1px rgba(255, 255, 255, 0.75), inset 0 -1px 2px rgba(119, 84, 23, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.28), inset 0 0 0 2.5px rgba(122, 86, 24, 0.32);
-        --pet-coin-emboss: 0 1px 0 rgba(255, 255, 255, 0.55);
       }
 
       :host([data-theme="dark"]) {
@@ -313,11 +308,6 @@
         --pet-btn-active-ink: #241703;
         --pet-glyph: #ece7d9;
         --pet-glyph-emboss: drop-shadow(0 -1px 1px rgba(0, 0, 0, 0.75));
-        --pet-coin-edge: repeating-conic-gradient(from 0deg, #8a6a24 0deg 6deg, #54400f 6deg 12deg);
-        --pet-coin-face: radial-gradient(circle at 32% 26%, #6e5c33 0%, #54431f 45%, #3a2f15 80%, #2b2210 100%);
-        --pet-coin-face-back: radial-gradient(circle at 32% 26%, #c99622 0%, #a97c15 45%, #7d5a0b 82%, #5f430a 100%);
-        --pet-coin-inset: inset 0 1px 1px rgba(255, 244, 214, 0.22), inset 0 -1px 2px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(255, 244, 214, 0.08), inset 0 0 0 2.5px rgba(0, 0, 0, 0.35);
-        --pet-coin-emboss: 0 -1px 1px rgba(0, 0, 0, 0.6);
       }
 
       @media (prefers-color-scheme: dark) {
@@ -352,11 +342,6 @@
           --pet-btn-active-ink: #241703;
           --pet-glyph: #ece7d9;
           --pet-glyph-emboss: drop-shadow(0 -1px 1px rgba(0, 0, 0, 0.75));
-          --pet-coin-edge: repeating-conic-gradient(from 0deg, #8a6a24 0deg 6deg, #54400f 6deg 12deg);
-          --pet-coin-face: radial-gradient(circle at 32% 26%, #6e5c33 0%, #54431f 45%, #3a2f15 80%, #2b2210 100%);
-          --pet-coin-face-back: radial-gradient(circle at 32% 26%, #c99622 0%, #a97c15 45%, #7d5a0b 82%, #5f430a 100%);
-          --pet-coin-inset: inset 0 1px 1px rgba(255, 244, 214, 0.22), inset 0 -1px 2px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(255, 244, 214, 0.08), inset 0 0 0 2.5px rgba(0, 0, 0, 0.35);
-          --pet-coin-emboss: 0 -1px 1px rgba(0, 0, 0, 0.6);
         }
       }
 
