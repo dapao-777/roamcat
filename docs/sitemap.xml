@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://dapao-777.github.io/roamcat/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://dapao-777.github.io/roamcat/"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://dapao-777.github.io/roamcat/zh.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://dapao-777.github.io/roamcat/"/>
+    <lastmod>2026-09-27</lastmod>
+  </url>
+  <url>
+    <loc>https://dapao-777.github.io/roamcat/zh.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://dapao-777.github.io/roamcat/"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://dapao-777.github.io/roamcat/zh.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://dapao-777.github.io/roamcat/"/>
+    <lastmod>2026-09-27</lastmod>
+  </url>
+</urlset>

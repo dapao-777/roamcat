@@ -1,0 +1,82 @@
+<!doctype html>
+<!-- @file tools/social-preview.html — GitHub social preview / og-image 卡片（1280×640），由 capture-social.mjs 截图为 PNG。仓库自有内容 MPL-2.0。 -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+@font-face{font-family:'Silkscreen';src:url('../roamcat-0.0.1/extension/fonts/slk-400.woff2') format('woff2');font-weight:400}
+@font-face{font-family:'Silkscreen';src:url('../roamcat-0.0.1/extension/fonts/slk-700.woff2') format('woff2');font-weight:700}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1280px;height:640px;overflow:hidden}
+body{
+  background:#faf9f4;color:#161511;
+  font-family:"Segoe UI",system-ui,"PingFang SC","Microsoft YaHei",sans-serif;
+  position:relative;
+}
+/* 圆点波纹带——品牌母题 */
+body::before{
+  content:'';position:absolute;inset:0;
+  background-image:radial-gradient(#161511 1.2px,transparent 1.3px);
+  background-size:22px 22px;opacity:.05;
+}
+.frame{
+  position:absolute;inset:26px;border:2.5px solid #161511;border-radius:26px;
+  display:flex;align-items:center;gap:56px;padding:0 64px;
+  background:#fffdf8;box-shadow:10px 10px 0 rgba(22,21,17,.9);
+}
+.left{flex:1;min-width:0}
+.eyebrow{
+  font-family:'Silkscreen',monospace;font-size:17px;letter-spacing:2px;
+  color:#b4761a;margin-bottom:14px;
+}
+h1{font-family:'Silkscreen',monospace;font-weight:700;font-size:64px;letter-spacing:1px;line-height:1.05}
+h1 .zh{font-size:44px}
+.tag{font-size:24px;margin-top:14px;color:#3c3931;font-weight:600}
+.sub{font-size:17.5px;margin-top:8px;color:#6b675c}
+.pills{display:flex;gap:10px;margin-top:26px;flex-wrap:wrap}
+.pill{
+  font-family:'Silkscreen',monospace;font-size:13.5px;padding:7px 13px;
+  border:2px solid #161511;border-radius:7px;background:#faf9f4;
+  box-shadow:0 3px 0 #161511;letter-spacing:.5px;
+}
+.url{
+  margin-top:30px;font-family:ui-monospace,Consolas,monospace;font-size:16px;color:#6b675c;
+}
+.right{
+  flex:0 0 340px;height:400px;border:2.5px solid #161511;border-radius:22px;
+  background:#faf9f4;display:grid;place-items:center;position:relative;
+  box-shadow:0 6px 0 #161511;
+}
+.right::after{
+  content:'';position:absolute;inset:14px;border:1.5px dashed #d9d4c8;border-radius:14px;pointer-events:none;
+}
+.right img{width:230px;height:230px}
+.badge{
+  position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);
+  font-family:'Silkscreen',monospace;font-size:14px;background:#161511;color:#faf9f4;
+  padding:8px 16px;border-radius:7px;letter-spacing:1px;white-space:nowrap;
+}
+</style>
+</head>
+<body>
+  <div class="frame">
+    <div class="left">
+      <div class="eyebrow">OPEN-SOURCE · MPL-2.0 · MANIFEST V3</div>
+      <h1>RoamCat <span class="zh">随心阅</span></h1>
+      <div class="tag">A dual-mode reading extension for Chrome &amp; Edge</div>
+      <div class="sub">In-place bilingual translation · sparse-hint reading assistance —<br>local-first, no telemetry, BYOK × 28 providers</div>
+      <div class="pills">
+        <span class="pill">双语对照</span>
+        <span class="pill">阅读辅助</span>
+        <span class="pill">PDF / EPUB</span>
+        <span class="pill">🐱 伴读猫</span>
+      </div>
+      <div class="url">github.com/dapao-777/roamcat</div>
+    </div>
+    <div class="right">
+      <img src="../roamcat-0.0.1/extension/icons/roamcat.svg" alt="">
+      <div class="badge">READS WITH YOU</div>
+    </div>
+  </div>
+</body>
+</html>

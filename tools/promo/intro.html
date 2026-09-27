@@ -1,0 +1,543 @@
+<!doctype html>
+<!--
+  tools/promo/intro.html — RoamCat 宣传片动画页（1920×1080，确定性时钟驱动）
+  用法：由 capture.mjs 逐帧 seek 截图；窗口对象暴露 __seek(t) 与 __ready。
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<style>
+@font-face{font-family:slk;src:url('../../roamcat-0.0.1/extension/fonts/slk-400.woff2');font-weight:400}
+@font-face{font-family:slk;src:url('../../roamcat-0.0.1/extension/fonts/slk-700.woff2');font-weight:700}
+:root{
+  --paper:#faf9f4;--canvas:#efeee6;--ink:#161511;--ink2:#4c4a41;--ink3:#6f6c5e;--ink4:#9b9889;
+  --line:#dbd8c6;--linemid:#c2bea8;--amberL:#c26a1b;--sig:#d97a2b;--read:#f0e8d2;
+  --surface:#faf9f4;--sub:#f1f0e8;--hov:#e7e5d8;
+  --dc:#0b0e13;--dpaper:#10141b;--dsurf:#161d27;--dsurf2:#1d2634;--dink:#ece7d9;
+  --dink2:rgba(236,231,217,.62);--dink3:rgba(236,231,217,.38);--dline:rgba(236,231,217,.13);
+  --amber:#f0a63c;--teal:#d9ae6a;--green:#3ecf96;--violet:#a99af2;--red:#f0756a;--warn:#eab23d;
+  --serif:"Noto Serif SC","Source Han Serif SC","SimSun","Songti SC",Georgia,"Times New Roman",serif;
+  --ui:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1920px;height:1080px;overflow:hidden;background:var(--canvas);font-family:var(--ui)}
+#root{position:absolute;inset:0}
+.scene{position:absolute;inset:0;visibility:hidden}
+.cam{position:absolute;inset:0}
+.grain{position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background-image:repeating-linear-gradient(0deg,rgba(22,21,17,.022) 0 1px,transparent 1px 3px)}
+.grain.d{background-image:repeating-linear-gradient(0deg,rgba(236,231,217,.02) 0 1px,transparent 1px 3px)}
+.vignette{position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(120% 120% at 50% 45%,transparent 62%,rgba(10,10,8,.10) 100%)}
+.vignette.d{background:radial-gradient(120% 120% at 50% 45%,transparent 58%,rgba(0,0,0,.42) 100%)}
+.gridbg{position:absolute;inset:0;
+  background-image:linear-gradient(rgba(22,21,17,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(22,21,17,.05) 1px,transparent 1px);
+  background-size:46px 46px}
+.gridbg.d{background-image:linear-gradient(rgba(236,231,217,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(236,231,217,.045) 1px,transparent 1px)}
+
+/* ---------- 通用组件 ---------- */
+.slk{font-family:slk}
+.keycap{font-family:var(--ui);font-weight:600;font-size:15px;color:var(--ink);
+  background:linear-gradient(180deg,#fffdf6 0%,#f5f1e4 55%,#ece5d0 100%);
+  border:1px solid var(--linemid);border-radius:9px;padding:9px 20px;position:relative;
+  box-shadow:0 3px 0 #c9c3ab,0 4px 8px rgba(64,55,28,.18),inset 0 1px 0 rgba(255,255,255,.9);
+  display:inline-flex;align-items:center;gap:8px}
+.keycap.dark{color:#1d180e;background:linear-gradient(180deg,#fdfaf0 0%,#f0e9d3 55%,#e2d6b6 100%);
+  box-shadow:0 3px 0 #8f8465,0 4px 10px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.95)}
+.keycap.ink{color:#f5f4ee;background:linear-gradient(180deg,#3a382f 0%,#23211b 55%,#161511 100%);
+  border-color:#000;box-shadow:0 3px 0 #000,0 5px 12px rgba(22,21,17,.35),inset 0 1px 0 rgba(255,255,255,.14)}
+.badge{font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--ink3);
+  border:1px solid var(--linemid);border-radius:6px;padding:3px 10px;background:var(--sub);
+  box-shadow:inset 0 1px 2px rgba(64,55,28,.12),0 1px 0 rgba(255,255,255,.7)}
+.badge.d{color:var(--dink3);border-color:var(--dline);background:var(--dsurf);
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.5)}
+.chip{font-family:var(--ui);font-weight:600;font-size:15px;color:var(--ink2);
+  border:1px solid var(--linemid);border-radius:999px;padding:8px 18px;background:var(--surface);
+  box-shadow:0 1px 0 rgba(255,255,255,.8),0 2px 6px rgba(64,55,28,.10);display:inline-flex;align-items:center;gap:8px}
+.chip .dot{width:8px;height:8px;border-radius:50%;background:var(--sig)}
+.cap{position:absolute;left:96px;bottom:88px;display:flex;gap:18px;align-items:flex-start;
+  background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 26px 18px 20px;
+  box-shadow:0 10px 30px rgba(64,55,28,.16),inset 0 1px 0 #fff}
+.cap.d{background:rgba(22,29,39,.92);border-color:var(--dline);box-shadow:0 14px 40px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.05)}
+.cap .n{font-family:slk;font-weight:700;font-size:15px;color:#fff;background:var(--ink);border-radius:7px;
+  padding:4px 9px;margin-top:3px;letter-spacing:.04em}
+.cap.d .n{background:var(--amber);color:#1d180e}
+.cap b{display:block;font-family:var(--serif);font-weight:700;font-size:24px;color:var(--ink);letter-spacing:.01em}
+.cap.d b{color:var(--dink)}
+.cap i{display:block;font-family:var(--mono);font-style:normal;font-size:12.5px;color:var(--ink3);margin-top:5px;letter-spacing:.06em}
+.cap.d i{color:var(--dink3)}
+
+/* ---------- S0 片头 ---------- */
+#s-logo{background:var(--dc)}
+#s-logo .gridwrap{position:absolute;inset:0}
+#logoCat{position:absolute;left:1180px;top:150px;width:430px;color:var(--dink)}
+#logoCat svg{width:100%;height:auto;overflow:visible}
+#logoCat .lm{position:absolute;left:0;top:0;width:100%;height:100%}
+#wordmark{position:absolute;left:250px;top:430px;display:flex;gap:26px}
+#wordmark span{font-family:slk;font-weight:700;font-size:118px;color:var(--dink);display:inline-block}
+#logoSub{position:absolute;left:256px;top:575px}
+.zht{font-family:var(--serif)}
+#logoSub .zht{font-size:38px;color:var(--dink);letter-spacing:.06em}
+#logoSub .en{font-family:var(--mono);font-size:16px;color:var(--dink3);letter-spacing:.22em;margin-top:14px}
+#logoBadge{position:absolute;left:256px;top:330px}
+#logoBadge .badge.d{font-size:14px;padding:6px 14px}
+#logoTag{position:absolute;left:256px;top:760px;font-family:var(--serif);font-size:19px;color:var(--dink2)}
+#logoTag em{font-style:normal;color:var(--amber)}
+#dotwave{position:absolute;left:0;right:0;bottom:64px;height:16px;opacity:.9}
+#dotwave .row{position:absolute;inset:0;
+  background-image:radial-gradient(circle,var(--sig) 2.1px,transparent 2.4px);
+  background-size:26px 16px;background-position:0 0}
+#scanline{position:absolute;left:1180px;top:150px;width:430px;height:470px;overflow:hidden;pointer-events:none}
+#scanline .beam{position:absolute;left:-10%;width:120%;height:56px;
+  background:linear-gradient(180deg,transparent,rgba(240,166,60,.14) 45%,rgba(240,166,60,.14) 55%,transparent)}
+
+/* ---------- 浏览器舞台 S1-S4 ---------- */
+#stage{background:var(--canvas)}
+#win{position:absolute;left:170px;top:52px;width:1580px;height:976px;background:var(--surface);
+  border:1px solid var(--line);border-radius:16px;overflow:hidden;
+  box-shadow:0 30px 80px rgba(64,55,28,.22),0 4px 14px rgba(64,55,28,.10)}
+.chrome{height:94px;background:linear-gradient(180deg,#f3f2ea,#eeecdf);border-bottom:1px solid var(--line);
+  position:relative;z-index:5}
+.tabs{display:flex;gap:8px;padding:12px 18px 0}
+.tab{display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--line);
+  border-bottom:none;border-radius:10px 10px 0 0;padding:8px 16px;font-size:13.5px;color:var(--ink2);
+  font-weight:600;box-shadow:inset 0 1px 0 #fff;max-width:400px;white-space:nowrap}
+.tab span{overflow:hidden;text-overflow:ellipsis}
+.tab img{width:17px;height:17px;border-radius:4px}
+.tab .x{color:var(--ink4);font-style:normal;margin-left:8px}
+.tab.ghost{background:transparent;border-color:transparent;color:var(--ink4);box-shadow:none}
+.bar{display:flex;align-items:center;gap:10px;padding:10px 18px}
+.nav{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);color:var(--ink3);
+  display:flex;align-items:center;justify-content:center;font-size:14px;font-style:normal;background:var(--surface)}
+.url{flex:1;display:flex;align-items:center;gap:9px;height:32px;border:1px solid var(--line);border-radius:999px;
+  background:#fff;padding:0 16px;font-family:var(--mono);font-size:13px;color:var(--ink3)}
+.url .lock{font-size:11px;color:var(--ink4)}
+.url b{color:var(--ink2);font-weight:600}
+.extdot{width:30px;height:30px;border-radius:9px;border:1px solid var(--linemid);background:var(--surface);
+  display:flex;align-items:center;justify-content:center;position:relative}
+.extdot svg{width:19px;height:19px;color:var(--ink)}
+.extdot .pulse{position:absolute;inset:-4px;border-radius:12px;border:2px solid var(--amber);opacity:0}
+.vp{position:absolute;left:0;right:0;top:94px;bottom:0;overflow:hidden;background:var(--paper)}
+#artScroll{position:absolute;left:0;right:0;top:0;padding:46px 330px 300px}
+article h1{font-family:var(--serif);font-weight:700;font-size:37px;color:var(--ink);line-height:1.25;letter-spacing:.005em}
+.byline{display:flex;align-items:center;gap:12px;margin:16px 0 30px;font-size:13.5px;color:var(--ink3);font-family:var(--ui)}
+.byline .av{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#d97a2b,#a8500f);
+  display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700}
+.tagrow{display:flex;gap:8px;margin:-16px 0 26px}
+.tagrow .tg{font-size:12.5px;color:var(--amberL);background:#f6efe0;border:1px solid #e5d9bd;border-radius:6px;padding:2px 9px}
+p.b{font-family:var(--serif);font-size:18.5px;line-height:1.75;color:#2a2823;margin:0 0 24px;position:relative}
+.zhwrap{overflow:hidden;height:0}
+.zh{font-family:var(--serif);font-size:16.5px;line-height:1.65;color:var(--ink2);
+  background:var(--sub);border:1px solid var(--line);border-radius:9px;padding:10px 16px;margin:-14px 0 24px;
+  position:relative}
+.zh:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px;background:var(--sig);opacity:.75}
+pre.code{font-family:var(--mono);font-size:15px;color:#3d3a30;background:#f4f3ea;border:1px solid var(--line);
+  border-radius:10px;padding:14px 20px;margin:0 0 24px}
+pre.code .cm{color:var(--ink4)}
+table.tb{width:100%;border-collapse:collapse;margin:0 0 26px;font-size:14.5px}
+table.tb th,table.tb td{border:1px solid var(--line);padding:9px 16px;text-align:left;font-family:var(--ui)}
+table.tb th{background:var(--sub);font-weight:600;color:var(--ink2);font-size:13.5px}
+table.tb td{color:var(--ink2);font-family:var(--mono);font-size:14px}
+table.tb .zhc{font-family:var(--serif);font-size:12px;color:var(--ink3);margin-top:2px;opacity:0}
+.w{position:relative;white-space:nowrap}
+.w .gloss{position:absolute;left:50%;top:-1.5em;transform:translateX(-50%) scale(.8);opacity:0;
+  font-family:var(--serif);font-size:12.5px;color:var(--amberL);white-space:nowrap;font-weight:600}
+.w.hl{background:linear-gradient(180deg,transparent 55%,rgba(240,166,60,.5) 55%);border-radius:2px}
+.w.query{outline:2px solid var(--amberL);outline-offset:2px;border-radius:3px;background:rgba(240,166,60,.14)}
+.seg{position:relative}
+.seg .ul{position:absolute;left:0;right:0;bottom:-3px;height:3px;border-radius:2px;transform:scaleX(0);transform-origin:left center}
+.s-subj .ul{background:#3b82c4}.s-pred .ul{background:#d97706}.s-obj .ul{background:#0e9f6e}
+.s-attr .ul{background:#8b5cf6}.s-adv .ul{background:#6f6c5e}
+.longtag{display:inline-block;vertical-align:middle;margin-left:10px;font-family:var(--mono);font-size:11.5px;
+  color:var(--amberL);border:1px dashed #d99a4e;border-radius:6px;padding:2px 8px;background:#fdf6e8;opacity:0}
+.legend{display:flex;gap:8px;margin:-8px 0 22px;opacity:0}
+.legend .li{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink3);font-family:var(--ui);
+  border:1px solid var(--line);border-radius:6px;padding:3px 9px;background:var(--surface)}
+.legend .li i{width:9px;height:9px;border-radius:3px}
+.rmark{position:absolute;left:290px;right:290px;height:2px;top:0;opacity:0;z-index:3;
+  background:linear-gradient(90deg,var(--sig),rgba(217,122,43,.15));box-shadow:0 0 8px rgba(217,122,43,.5)}
+.rmark:before{content:"";position:absolute;left:-8px;top:-4px;width:10px;height:10px;background:var(--sig);
+  clip-path:polygon(0 50%,100% 0,100% 100%)}
+.rmark .tag{position:absolute;right:-4px;top:-11px;font-family:var(--mono);font-size:10.5px;color:#fff;
+  background:var(--sig);border-radius:4px;padding:1px 7px;letter-spacing:.05em}
+/* 迷你 popup */
+#popup{position:absolute;right:36px;top:10px;width:390px;background:#f3f1e7;border:1px solid var(--linemid);
+  border-radius:15px;box-shadow:0 18px 50px rgba(64,55,28,.30);z-index:9;overflow:hidden;opacity:0;
+  transform-origin:top right}
+#popup .ph{display:flex;align-items:center;gap:9px;padding:12px 16px;border-bottom:1px solid var(--line)}
+#popup .ph img{width:22px;height:22px;border-radius:5px}
+#popup .ph .nm{font-family:slk;font-weight:700;font-size:14px;color:var(--ink)}
+#popup .ph .zh{font-size:12.5px;color:var(--ink3);margin-top:1px}
+#popup .ph .vb{margin-left:auto}
+.prow{display:flex;align-items:center;gap:11px;margin:10px 12px;background:var(--surface);
+  border:1px solid var(--line);border-radius:11px;padding:11px 14px;box-shadow:inset 0 1px 0 #fff}
+.prow .ic{width:26px;height:26px;border-radius:8px;background:var(--sub);border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--ink2)}
+.prow b{font-size:13.5px;color:var(--ink);font-weight:600;display:block}
+.prow i{font-size:11.5px;color:var(--ink3);font-style:normal;display:block;margin-top:1px}
+.prow .sp{flex:1}
+.prow .mini{font-size:12px;color:var(--ink3);border:1px solid var(--line);border-radius:7px;padding:4px 11px;background:var(--sub)}
+.prow .go{margin-left:auto}
+.sw{width:34px;height:20px;border-radius:10px;background:#d9d5c3;position:relative;flex:none}
+.sw:after{content:"";position:absolute;left:2px;top:2px;width:16px;height:16px;border-radius:50%;
+  background:linear-gradient(180deg,#fffdf6,#eae2cc);box-shadow:0 1px 3px rgba(64,55,28,.4)}
+.sw.on{background:linear-gradient(180deg,#d9a441,#c26a1b)}
+.sw.on:after{left:16px}
+/* 词卡（深色） */
+#wordcard{position:absolute;left:400px;bottom:118px;width:430px;background:linear-gradient(180deg,#1a2330,#141a25);
+  border:1px solid rgba(236,231,217,.14);border-radius:15px;box-shadow:0 22px 60px rgba(0,0,0,.45);z-index:8;
+  padding:20px 22px 14px;opacity:0}
+#wordcard .wh{display:flex;align-items:center;gap:10px}
+#wordcard .hw{font-family:var(--serif);font-weight:700;font-size:26px;color:var(--dink)}
+#wordcard .phon{font-family:var(--mono);font-size:13px;color:var(--dink3)}
+#wordcard .wtag{margin-left:auto;font-size:11.5px;color:var(--amber);border:1px solid rgba(240,166,60,.45);
+  border-radius:6px;padding:3px 9px;background:rgba(240,166,60,.10)}
+#wordcard .pos{font-family:var(--serif);font-size:15.5px;color:var(--dink);margin-top:10px;line-height:1.55}
+#wordcard .ex{font-family:var(--serif);font-size:13.5px;color:var(--dink2);margin-top:6px;line-height:1.6}
+#wordcard .inner{margin-top:12px;background:rgba(255,255,255,.035);border:1px solid rgba(236,231,217,.09);
+  border-radius:9px;padding:10px 13px;font-size:13px;line-height:1.65}
+#wordcard .inner .lab{color:var(--amber);font-weight:600;font-size:12px;margin-right:6px}
+#wordcard .inner div{color:var(--dink2);font-family:var(--serif)}
+#wordcard .inner .en{color:var(--dink3);font-size:12.5px}
+#wordcard .wbtns{display:flex;gap:8px;margin-top:14px}
+#wordcard .kc{flex:none;font-size:12.5px;font-weight:600;color:var(--dink);padding:7px 13px;border-radius:8px;
+  background:linear-gradient(180deg,#28303e,#1b222d);border:1px solid rgba(236,231,217,.16);
+  box-shadow:0 2px 0 rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.07);display:flex;align-items:center;gap:6px}
+#wordcard .kc.ok{color:#0f2419;background:linear-gradient(180deg,#4fd8a0,#33b97f);border-color:#1d7a52}
+#wordcard .wfoot{display:flex;align-items:center;margin-top:12px;font-size:11.5px;color:var(--dink3)}
+#wordcard .wfoot .more{font-family:var(--ui)}
+#wordcard .wfoot .brand{margin-left:auto;font-family:var(--mono);display:flex;align-items:center;gap:6px}
+#wordcard .wfoot .brand svg{width:14px;height:14px}
+/* 伴读猫 + 快捷坞 + 摘要卡 */
+#petwrap{position:absolute;right:22px;bottom:14px;width:150px;height:160px;z-index:9;opacity:0;visibility:hidden}
+#petwrap .cat{position:absolute;right:0;bottom:0;width:140px;color:#241f18}
+#petwrap .cat svg{width:100%;height:auto;overflow:visible}
+#dock{position:absolute;right:128px;bottom:26px;display:flex;flex-direction:column;gap:9px}
+.dockb{width:46px;height:46px;border-radius:13px;border:1px solid rgba(96,74,38,.34);position:relative;
+  background:radial-gradient(135% 135% at 30% 18%,#fffdf7 0%,rgba(255,253,247,0) 52%),linear-gradient(180deg,#fbf7ec 0%,#f1e9d6 58%,#e7dbbf 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1.5px 2.5px rgba(122,95,49,.32),0 2px 5px rgba(64,48,21,.25),0 6px 14px rgba(64,48,21,.14);
+  display:flex;align-items:center;justify-content:center;opacity:0}
+.dockb svg{width:21px;height:21px;color:#463b28;filter:drop-shadow(0 1px 0 rgba(255,255,255,.72))}
+.dockb .tip{position:absolute;right:56px;top:50%;transform:translateY(-50%);white-space:nowrap;
+  font-size:12px;color:var(--ink2);background:var(--surface);border:1px solid var(--line);border-radius:7px;
+  padding:4px 10px;box-shadow:0 3px 10px rgba(64,55,28,.15);opacity:0}
+#sumcard{position:absolute;right:190px;bottom:14px;width:520px;transform-origin:bottom right;opacity:0;
+  background:linear-gradient(180deg,#1a2330 0%,#131a24 100%);border:1px solid rgba(236,231,217,.14);
+  border-radius:16px;box-shadow:0 26px 70px rgba(0,0,0,.5);padding:18px 22px 14px}
+#sumcard .sh{display:flex;align-items:center;gap:10px}
+#sumcard .sh b{font-size:16px;color:var(--dink);font-weight:600}
+#sumcard .sh .mtag{font-size:11px;color:var(--amber);border:1px solid rgba(240,166,60,.4);border-radius:5px;padding:2px 8px}
+#sumcard .sh .si{margin-left:auto;display:flex;gap:7px}
+#sumcard .sh .si i{width:24px;height:24px;border-radius:7px;border:1px solid rgba(236,231,217,.15);color:var(--dink3);
+  font-style:normal;display:flex;align-items:center;justify-content:center;font-size:12px}
+#sumcard .meta{margin-top:9px;font-size:12.5px;color:var(--dink3);font-family:var(--ui)}
+#sumcard .core{margin-top:11px;border:1px solid rgba(240,166,60,.30);background:rgba(240,166,60,.07);
+  border-radius:10px;padding:10px 14px;font-family:var(--serif);font-size:14px;line-height:1.65;color:var(--dink)}
+#sumcard .core .cl{color:var(--amber);font-size:12px;font-weight:600;margin-right:8px}
+#sumcard .pts{margin-top:12px}
+#sumcard .pts .pttl{font-size:12px;color:var(--dink3);margin-bottom:6px}
+#sumcard .pt{display:flex;gap:10px;align-items:baseline;padding:6px 0;border-top:1px solid rgba(236,231,217,.08);
+  font-family:var(--serif);font-size:13.5px;color:var(--dink2)}
+#sumcard .pt .no{font-family:slk;font-weight:700;color:var(--amber);font-size:12px;flex:none}
+#sumcard .pt u{color:var(--teal);text-decoration:none;border-bottom:1px solid rgba(217,174,106,.5)}
+#sumcard .terms{margin-top:11px;display:flex;gap:7px;align-items:center;font-size:11px;color:var(--dink3)}
+#sumcard .terms .tm{font-size:11.5px;color:var(--teal);border:1px solid rgba(217,174,106,.4);border-radius:5px;padding:2px 8px}
+#sumcard .sfoot{display:flex;align-items:center;gap:9px;margin-top:13px;border-top:1px solid rgba(236,231,217,.08);padding-top:11px}
+#sumcard .sfoot .kc{font-size:12px;font-weight:600;color:var(--dink);padding:6px 12px;border-radius:8px;
+  background:linear-gradient(180deg,#28303e,#1b222d);border:1px solid rgba(236,231,217,.16);
+  box-shadow:0 2px 0 rgba(0,0,0,.5);display:flex;gap:6px;align-items:center}
+#sumcard .sfoot .brand{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--dink3)}
+/* 光标 */
+#cursor{position:absolute;left:0;top:0;z-index:20;width:26px;pointer-events:none;opacity:0;
+  filter:drop-shadow(0 3px 5px rgba(64,55,28,.4))}
+#cursor svg{width:100%}
+#keyD{position:absolute;z-index:20;font-family:slk;font-weight:700;font-size:17px;color:var(--ink);
+  width:40px;height:40px;border-radius:9px;border:1px solid var(--linemid);display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(180deg,#fffdf6,#ece5d0);box-shadow:0 4px 0 #c9c3ab,0 6px 12px rgba(64,55,28,.2);opacity:0}
+
+/* ---------- S5 模型服务 ---------- */
+#s-svc{background:var(--dc)}
+#svcTitle{position:absolute;left:0;right:0;top:120px;text-align:center}
+#svcTitle .zht{font-weight:700;font-size:46px;color:var(--dink);letter-spacing:.04em}
+#svcTitle .en{font-family:var(--mono);font-size:15px;color:var(--dink3);letter-spacing:.3em;margin-top:14px}
+#svcCards{position:absolute;left:190px;right:190px;top:340px;display:flex;gap:34px}
+.svccard{flex:1;background:linear-gradient(180deg,#182030,#121823);border:1px solid var(--dline);border-radius:20px;
+  padding:28px 30px 26px;box-shadow:0 20px 60px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.05)}
+.svccard .h{display:flex;align-items:baseline;gap:12px}
+.svccard .h b{font-family:var(--serif);font-weight:700;font-size:22px;color:var(--dink)}
+.svccard .h .num{font-family:slk;font-weight:700;font-size:34px;color:var(--amber)}
+.svccard .sub{margin-top:4px;font-size:12.5px;color:var(--dink3);font-family:var(--mono);letter-spacing:.04em}
+.svccard .body{margin-top:20px}
+.icongrid{display:grid;grid-template-columns:repeat(4,1fr);gap:11px}
+.icongrid .ic{aspect-ratio:1.15;border:1px solid #b9b298;border-radius:11px;
+  background:linear-gradient(180deg,#faf7ec 0%,#efe9d5 60%,#e4dcc3 100%);
+  box-shadow:0 2px 0 #9a9378,0 4px 10px rgba(0,0,0,.35),inset 0 1px 0 #fff;
+  display:flex;align-items:center;justify-content:center}
+.icongrid .ic img{width:27px;height:27px}
+.icongrid .ic.more{font-family:slk;font-weight:700;color:var(--amber);font-size:15px;border-style:dashed;
+  background:rgba(240,166,60,.08);border-color:rgba(240,166,60,.45);box-shadow:none}
+.svcrow{display:flex;align-items:center;gap:11px;padding:9px 0;border-top:1px solid rgba(236,231,217,.07);font-size:14px;color:var(--dink2)}
+.svcrow:first-child{border-top:none}
+.svcrow .rowic{width:30px;height:30px;border-radius:8px;flex:none;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(180deg,#faf7ec,#ebe4cd);border:1px solid #b9b298;box-shadow:inset 0 1px 0 #fff}
+.svcrow img{width:19px;height:19px}
+.svcrow b{color:var(--dink);font-weight:600}
+.svcrow .dt{margin-left:auto;font-size:11.5px;color:var(--dink3);font-family:var(--mono)}
+.svccard .foot{margin-top:18px;padding-top:14px;border-top:1px solid rgba(236,231,217,.08);
+  font-size:12.5px;color:var(--dink3);font-family:var(--ui);display:flex;gap:8px;align-items:center}
+.svccard .foot i{color:var(--amber);font-style:normal}
+.minilm{display:flex;flex-direction:column;gap:12px}
+.minilm .mchip{display:flex;align-items:center;gap:10px;border:1px dashed rgba(240,166,60,.4);border-radius:10px;
+  padding:11px 14px;background:rgba(240,166,60,.05)}
+.minilm .mchip .slk{font-size:15px;color:var(--amber);font-weight:700}
+.minilm .mchip span{font-size:12px;color:var(--dink3)}
+.minilm .frow{display:flex;gap:8px;flex-wrap:wrap}
+.minilm .fc{font-size:11.5px;color:var(--dink2);border:1px solid var(--dline);border-radius:6px;padding:4px 10px;background:rgba(255,255,255,.03)}
+/* ---------- S6 阅读器 ---------- */
+#s-reader{background:var(--dc)}
+#rdwin{position:absolute;left:190px;top:90px;width:1540px;height:900px;background:var(--dpaper);
+  border:1px solid var(--dline);border-radius:16px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.55)}
+#rdbar{height:64px;background:#0d1219;border-bottom:1px solid var(--dline);display:flex;align-items:center;gap:14px;padding:0 22px}
+#rdbar .lg{display:flex;align-items:center;gap:9px}
+#rdbar .lg svg{width:22px;height:22px;color:var(--dink)}
+#rdbar .lg .slk{font-size:15px;color:var(--dink);font-weight:700}
+#rdbar .ttl{font-family:var(--serif);font-size:15px;color:var(--dink2)}
+#rdbar .demo{font-size:11px;color:var(--dink3);border:1px solid var(--dline);border-radius:5px;padding:2px 8px}
+#rdbar .ops{margin-left:auto;display:flex;gap:10px;align-items:center}
+.tgl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dink2)}
+.tgl .sw{background:#2a3442}
+.tgl .sw.on{background:linear-gradient(180deg,#f0b45a,#d97a2b)}
+.rdkey{font-size:13px;font-weight:600;color:#1d180e;padding:8px 16px;border-radius:9px;border:1px solid #8f8465;
+  background:linear-gradient(180deg,#fdfaf0,#e9dfc2);box-shadow:0 3px 0 #8f8465,0 5px 12px rgba(0,0,0,.4),inset 0 1px 0 #fff;
+  display:flex;align-items:center;gap:7px}
+.rdkey.ghost{color:var(--dink2);background:linear-gradient(180deg,#222b38,#1a222d);border-color:rgba(236,231,217,.16);
+  box-shadow:0 3px 0 rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.06)}
+#rdbody{display:flex;height:836px}
+#toc{width:250px;border-right:1px solid var(--dline);padding:22px 14px;background:rgba(255,255,255,.014)}
+#toc .ti{font-size:13.5px;color:var(--dink3);padding:10px 14px;border-radius:9px;font-family:var(--serif)}
+#toc .ti.on{color:var(--dink);background:rgba(255,255,255,.05);border:1px solid var(--dline)}
+#rdart{flex:1;padding:44px 150px;overflow:hidden;position:relative}
+#rdart h1{font-family:var(--serif);font-weight:700;font-size:30px;color:var(--dink);margin-bottom:26px}
+#rdart p{font-family:var(--serif);font-size:16.5px;line-height:1.8;color:rgba(236,231,217,.88);margin-bottom:18px}
+#rdart .zh{background:#161e29;border-color:rgba(236,231,217,.10);color:rgba(236,231,217,.72);margin:-8px 0 20px}
+#rdart .zh:before{background:var(--amber)}
+#rdscroll{position:absolute;inset:0;padding:44px 150px}
+/* ---------- S7 收尾 ---------- */
+#s-out{background:var(--paper)}
+#outChips{position:absolute;left:0;right:0;top:120px;display:flex;justify-content:center;gap:14px}
+#outLock{position:absolute;left:0;right:0;top:330px;display:flex;flex-direction:column;align-items:center}
+#outCat{width:220px;color:var(--ink)}
+#outCat svg{width:100%;height:auto;overflow:visible}
+#outWord{margin-top:8px;display:flex;gap:15px}
+#outWord span{font-family:slk;font-weight:700;font-size:74px;color:var(--ink)}
+#outSub{margin-top:10px;font-family:var(--serif);font-size:24px;color:var(--ink2);letter-spacing:.08em}
+#outEn{margin-top:12px;font-family:var(--mono);font-size:14px;color:var(--ink3);letter-spacing:.28em}
+#outMeta{position:absolute;left:0;right:0;top:830px;display:flex;justify-content:center;gap:12px}
+#outUrl{position:absolute;left:0;right:0;top:892px;text-align:center;font-family:var(--mono);font-size:15px;color:var(--ink3)}
+#outUrl b{color:var(--amberL);font-weight:600}
+#outWave{position:absolute;left:0;right:0;bottom:52px;height:16px;
+  background-image:radial-gradient(circle,#161511 1.9px,transparent 2.2px);background-size:24px 16px;opacity:.55}
+#outPet{position:absolute;right:150px;bottom:60px;width:130px;color:#241f18}
+#outPet svg{width:100%;height:auto;overflow:visible}
+.caret{display:inline-block;width:3px;height:1em;background:var(--amber);vertical-align:-2px;margin-left:4px}
+</style>
+</head>
+<body>
+<div id="root">
+
+  <!-- ============ S0 LOGO ============ -->
+  <div class="scene" id="s-logo">
+    <div class="cam">
+      <div class="gridbg d"></div>
+      <div id="logoBadge"><span class="badge d">SYSTEM READY // 首次安装就绪</span><span class="badge d" style="margin-left:10px">FREE-ROAM READING ENGINE</span></div>
+      <div id="wordmark"></div>
+      <div id="logoSub"><div class="zht">随心阅 · 漫游英文世界</div><div class="en">ROAM THE ENGLISH WEB LIKE A CAT</div></div>
+      <div id="logoTag">少一点依赖，<em>多一点直接读懂。</em></div>
+      <div id="logoCat"></div>
+      <div id="scanline"><div class="beam"></div></div>
+      <div id="dotwave"><div class="row"></div></div>
+      <div class="grain d"></div><div class="vignette d"></div>
+    </div>
+  </div>
+
+  <!-- ============ S1-S4 浏览器舞台 ============ -->
+  <div class="scene" id="stage">
+    <div class="gridbg"></div>
+    <div id="win">
+      <div class="chrome">
+        <div class="tabs">
+          <div class="tab"><img src="../../roamcat-0.0.1/extension/icons/icon-32.png" alt=""><span id="tabttl">Why Your Event Loop Isn't the Bottleneck</span><i class="x">×</i></div>
+          <div class="tab ghost">＋</div>
+        </div>
+        <div class="bar">
+          <i class="nav">‹</i><i class="nav">›</i><i class="nav">⟳</i>
+          <div class="url"><svg width="11" height="12" viewBox="0 0 11 12" style="flex:none"><rect x="1" y="5" width="9" height="6.5" rx="1.5" fill="none" stroke="#6f6c5e" stroke-width="1.4"/><path d="M3.2 5V3.6a2.3 2.3 0 0 1 4.6 0V5" fill="none" stroke="#6f6c5e" stroke-width="1.4"/></svg><span><b>dev.to</b>/devteam/event-loop-bottleneck</span></div>
+          <div class="extdot" id="extDot"><svg viewBox="0 0 128 128"><g transform="translate(8 5) scale(.244)" fill="currentColor"><path d="M32,12L40,12L40,20L57,20L57,30L75,30L75,42L93,42L93,55L113,55L113,66L188,66L188,53L213,53L213,37L236,37L236,20L254,20L254,8L268,8L268,25L277,25L277,74L285,74L285,119L295,119L295,178L305,178L305,213L321,213L321,225L343,225L343,237L365,237L365,249L393,249L406,240L412,221L412,194L403,178L390,169L384,149L384,123L390,102L398,99L407,110L407,139L422,151L438,168L445,193L445,223L438,246L425,269L404,285L381,294L375,325L375,426L362,426L362,454L319,454L319,398L298,398L298,412L287,412L287,461L235,461L235,398L198,398L185,405L168,405L168,466L112,466L112,407L96,407L96,453L48,453L48,401L39,380L31,346L25,308L19,279L10,256L7,228L15,201L23,181L23,157L31,133L31,91L25,91L25,48L32,48Z"/></g></svg><i class="pulse"></i></div>
+        </div>
+      </div>
+      <div class="vp" id="vp">
+        <div id="artScroll">
+          <article id="art">
+            <h1>Why Your Event Loop Isn't the Bottleneck</h1>
+            <div class="byline"><span class="av">D</span><span>Posted on Sep 23 by <b style="color:var(--ink2)">devteam</b> · 6 min read</span></div>
+            <div class="tagrow"><span class="tg">#javascript</span><span class="tg">#performance</span><span class="tg">#webdev</span></div>
+            <p class="b" id="p1">Every frontend team eventually discovers that the elegant <span class="w" id="w1">abstraction<i class="gloss">抽象（层）</i></span> they trusted has quietly become the source of their <span class="w" id="w2">latency<i class="gloss">延迟</i></span> problem.</p>
+            <div class="zhwrap"><div class="zh">每个前端团队最终都会发现：他们信任的那个优雅抽象，已经悄悄成了延迟问题的源头。</div></div>
+            <p class="b" id="p2">The cache layer reduces perceived <span class="w" id="w3">congestion<i class="gloss">拥塞</i></span> costs significantly when network traffic spikes during peak hours.</p>
+            <div class="zhwrap"><div class="zh">当高峰时段网络流量飙升时，缓存层能显著摊薄拥塞带来的感知代价。</div></div>
+            <p class="b" id="p3"><span class="seg s-subj"><span class="tx">Careful readers</span><i class="ul"></i></span> <span class="seg s-pred"><span class="tx">compare</span><i class="ul"></i></span> <span class="seg s-obj"><span class="tx">the evidence</span><i class="ul"></i></span> <span class="seg s-attr"><span class="tx">that each explanation provides</span><i class="ul"></i></span> <span class="seg s-adv"><span class="tx">before they reach a conclusion about which layer actually deserves the blame</span><i class="ul"></i></span>.<span class="longtag">长难句 · 26 词</span></p>
+            <div class="legend"><span class="li"><i style="background:#3b82c4"></i>主语</span><span class="li"><i style="background:#d97706"></i>谓语</span><span class="li"><i style="background:#0e9f6e"></i>宾语</span><span class="li"><i style="background:#8b5cf6"></i>定语</span><span class="li"><i style="background:#6f6c5e"></i>状语</span></div>
+            <div class="zhwrap"><div class="zh">细心的读者会对比每条解释给出的证据，然后再判断究竟哪一层真正该背锅。</div></div>
+            <p class="b" id="p4"><span class="w" id="w4">Instrumentation<i class="gloss">埋点 / 插桩</i></span> beats intuition: measure first, then optimize. When the fix finally landed, it felt like <span class="w" id="wq">serendipity</span>.</p>
+            <div class="zhwrap"><div class="zh">埋点胜过直觉：先测量，再优化。修复上线那天，简直有种机缘巧合的惊喜。</div></div>
+            <pre class="code"><span class="cm"># 先看火焰图，再谈优化</span>
+npm run profile -- --scenario=cold-start</pre>
+            <table class="tb">
+              <tr><th>Metric<div class="zhc">指标</div></th><th>Before<div class="zhc">优化前</div></th><th>After<div class="zhc">优化后</div></th></tr>
+              <tr><td>TTI</td><td>4.2s</td><td>1.9s</td></tr>
+              <tr><td>p95 API</td><td>380ms</td><td>210ms</td></tr>
+            </table>
+            <p class="b" id="p5">Ship the boring fix. Celebrate the boring fix.</p>
+            <div class="zhwrap"><div class="zh">把无聊的修复发上线，然后为它鼓掌。</div></div>
+          </article>
+        </div>
+        <div class="rmark" id="rmark"><span class="tag">阅读位置</span></div>
+
+        <!-- 迷你 popup -->
+        <div id="popup">
+          <div class="ph"><img src="../../roamcat-0.0.1/extension/icons/icon-32.png" alt=""><div><div class="nm">ROAMCAT</div></div><div class="zh">随心阅</div><span class="vb badge">v0.0.1</span></div>
+          <div class="prow"><div class="ic">◉</div><div><b>模型服务</b><i>ChatGPT 订阅 · 默认模型</i></div><span class="sp"></span><span class="mini">切换</span></div>
+          <div class="prow" style="opacity:.55"><div class="ic">◈</div><div><b>阅读解构</b><i>副模式 · 稀疏提示</i></div><span class="sp"></span><span class="sw" id="swDec"></span></div>
+          <div class="prow" style="border-color:var(--sig)"><div class="ic" style="color:var(--amberL)">文A</div><div><b>本页双语翻译</b><i>主模式 · 随读随译</i></div><span class="keycap ink go" id="btnTr">翻译本页</span></div>
+        </div>
+
+        <!-- 词卡 -->
+        <div id="wordcard">
+          <div class="wh"><span class="hw">serendipity</span><span class="phon">/ˌser.ənˈdɪp.ə.ti/</span><span class="wtag">词语释义</span></div>
+          <div class="pos">n. 意外发现珍奇事物的运气；机缘巧合</div>
+          <div class="ex">那天早上我们在车站相遇纯属机缘巧合。</div>
+          <div class="inner">
+            <div><span class="lab">释义</span><span class="en">the faculty of making happy and unexpected discoveries by accident</span></div>
+            <div style="margin-top:6px"><span class="lab">助记</span>serene + dip：心情平静时，偶然「蘸」到惊喜</div>
+          </div>
+          <div class="wbtns"><span class="kc ok">✓ 我已认识此词</span><span class="kc">用中文说明</span><span class="kc">展开本句译文</span></div>
+          <div class="wfoot"><span class="more">▸ 更多</span><span class="brand"><svg viewBox="0 0 128 128"><g transform="translate(8 5) scale(.244)" fill="currentColor"><path d="M32,12L40,12L40,20L57,20L57,30L75,30L75,42L93,42L93,55L113,55L113,66L188,66L188,53L213,53L213,37L236,37L236,20L254,20L254,8L268,8L268,25L277,25L277,74L285,74L285,119L295,119L295,178L305,178L305,213L321,213L321,225L343,225L343,237L365,237L365,249L393,249L406,240L412,221L412,194L403,178L390,169L384,149L384,123L390,102L398,99L407,110L407,139L422,151L438,168L445,193L445,223L438,246L425,269L404,285L381,294L375,325L375,426L362,426L362,454L319,454L319,398L298,398L298,412L287,412L287,461L235,461L235,398L198,398L185,405L168,405L168,466L112,466L112,407L96,407L96,453L48,453L48,401L39,380L31,346L25,308L19,279L10,256L7,228L15,201L23,181L23,157L31,133L31,91L25,91L25,48L32,48Z"/></g></svg>RoamCat</span></div>
+        </div>
+
+        <!-- 伴读猫 -->
+        <div id="petwrap">
+          <div id="dock"></div>
+          <div class="cat" id="petCat"></div>
+        </div>
+        <div id="sumcard">
+          <div class="sh"><b>文章精华导读</b><span class="mtag">通用阅读</span><span class="si"><i>⟳</i><i>×</i></span></div>
+          <div class="meta">▤ 全文约 1,234 词　/　◷ 预估精读 6 分钟</div>
+          <div class="core"><span class="cl">核心精粹</span>性能瓶颈多半不在事件循环：缓存命中率与冷启动路径才是关键变量，把随机等待变成有序预热。</div>
+          <div class="pts"><div class="pttl">主要论点</div>
+            <div class="pt"><span class="no">01</span><span>缓存层把<u>高峰拥塞</u>的感知代价摊薄到接近常数</span></div>
+            <div class="pt"><span class="no">02</span><span>火焰图先于直觉：先测量，<u>再优化</u></span></div>
+            <div class="pt"><span class="no">03</span><span>冷启动路径决定了 80% 的首屏体感</span></div>
+          </div>
+          <div class="terms">专业术语 · 点击复制<span class="tm">TTI</span><span class="tm">p95</span><span class="tm">冷启动</span></div>
+          <div class="sfoot"><span class="kc">⟳ 重新提炼</span><span class="kc">⧉ 复制摘要</span><span class="brand">RoamCat · AI 深度提炼</span></div>
+        </div>
+
+      </div>
+      <!-- 光标 / D 键：挂在 #win 层，可越过浏览器 chrome -->
+      <div id="keyD">D</div>
+      <div id="cursor"><svg viewBox="0 0 24 24"><path d="M5 3l14 8.5-6.4 1.1L9.5 19z" fill="#fffdf6" stroke="#161511" stroke-width="1.6"/></svg></div>
+    </div>
+    <div class="grain"></div><div class="vignette"></div>
+  </div>
+
+  <!-- ============ S5 模型服务 ============ -->
+  <div class="scene" id="s-svc">
+    <div class="cam">
+      <div class="gridbg d"></div>
+      <div id="svcTitle"><div class="zht">能力来源，你来选择</div><div class="en">MODEL SERVICES — YOUR CHOICE OF SOURCE</div></div>
+      <div id="svcCards">
+        <div class="svccard" id="svcA">
+          <div class="h"><span class="num">28</span><b>家 API 服务商</b></div>
+          <div class="sub">8 PROTOCOLS · BYO API KEY</div>
+          <div class="body"><div class="icongrid" id="icongrid"></div></div>
+          <div class="foot"><i>◆</i>结构化输出能力先探测，再优雅降级</div>
+        </div>
+        <div class="svccard" id="svcB">
+          <div class="h"><span class="num">3</span><b>订阅连接器</b></div>
+          <div class="sub">NATIVE MESSAGING · NO API KEY</div>
+          <div class="body" id="svcRows"></div>
+          <div class="foot"><i>◆</i>复用本机已登录的官方 CLI 订阅</div>
+        </div>
+        <div class="svccard" id="svcC">
+          <div class="h"><span class="num">1</span><b>本地模型</b></div>
+          <div class="sub">OFFSCREEN ONNX · OFFLINE</div>
+          <div class="body"><div class="minilm">
+            <div class="mchip"><span class="slk">MiniLM-L6</span><span>Xenova/all-MiniLM-L6-v2</span></div>
+            <div class="frow"><span class="fc">页面领域分类</span><span class="fc">完全离线</span><span class="fc">零下载</span><span class="fc">闲置 5 分钟自动释放</span></div>
+          </div></div>
+          <div class="foot"><i>◆</i>提示与领域判断可以在本地完成</div>
+        </div>
+      </div>
+      <div class="grain d"></div><div class="vignette d"></div>
+    </div>
+  </div>
+
+  <!-- ============ S6 阅读器 ============ -->
+  <div class="scene" id="s-reader">
+    <div class="cam">
+      <div class="gridbg d"></div>
+      <div id="rdwin">
+        <div id="rdbar">
+          <div class="lg"><svg viewBox="0 0 128 128"><g transform="translate(8 5) scale(.244)" fill="currentColor"><path d="M32,12L40,12L40,20L57,20L57,30L75,30L75,42L93,42L93,55L113,55L113,66L188,66L188,53L213,53L213,37L236,37L236,20L254,20L254,8L268,8L268,25L277,25L277,74L285,74L285,119L295,119L295,178L305,178L305,213L321,213L321,225L343,225L343,237L365,237L365,249L393,249L406,240L412,221L412,194L403,178L390,169L384,149L384,123L390,102L398,99L407,110L407,139L422,151L438,168L445,193L445,223L438,246L425,269L404,285L381,294L375,325L375,426L362,426L362,454L319,454L319,398L298,398L298,412L287,412L287,461L235,461L235,398L198,398L185,405L168,405L168,466L112,466L112,407L96,407L96,453L48,453L48,401L39,380L31,346L25,308L19,279L10,256L7,228L15,201L23,181L23,157L31,133L31,91L25,91L25,48L32,48Z"/></g></svg><span class="slk">ROAMCAT</span></div>
+          <span class="ttl">The Quiet Machinery of Morning</span><span class="demo">演示文档</span>
+          <div class="ops">
+            <span class="tgl"><span class="sw on"></span>双语</span>
+            <span class="rdkey" id="btnTrAll">翻译全文</span>
+            <span class="rdkey ghost">打开文件</span>
+            <span class="rdkey ghost">设置</span>
+          </div>
+        </div>
+        <div id="rdbody">
+          <div id="toc"><div class="ti on">一 · 清晨的机器</div><div class="ti">二 · 小事物的语言</div><div class="ti">三 · 琥珀色的守夜</div></div>
+          <div id="rdart">
+            <div id="rdscroll">
+              <h1>The Quiet Machinery of Morning</h1>
+              <p>The city wakes before its people. Delivery trucks exhale at the curb, and the streetlights surrender their amber watch to a pale and widening sky.</p>
+              <div class="zhwrap"><div class="zh">城市比它的居民更早醒来。货车在路边排气，街灯把琥珀色的守夜交给渐亮的天空。</div></div>
+              <p>In a third-floor apartment, a kettle begins its slow ascent toward a whistle — the day's first small argument against silence.</p>
+              <div class="zhwrap"><div class="zh">在三楼的一间公寓里，水壶开始缓慢升温，逼近一声哨响——这是白昼对寂静发起的第一场小小抗争。</div></div>
+              <p>We rarely notice the grammar of ordinary objects: the comma of a paused elevator, the ellipsis of an unfinished letter.</p>
+              <div class="zhwrap"><div class="zh">我们很少注意日常物件的语法：电梯暂停时的逗号，未写完信件的省略号。</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="grain d"></div><div class="vignette d"></div>
+    </div>
+  </div>
+
+  <!-- ============ S7 收尾 ============ -->
+  <div class="scene" id="s-out">
+    <div class="cam">
+      <div class="gridbg"></div>
+      <div id="outChips"></div>
+      <div id="outLock">
+        <div id="outCat"></div>
+        <div id="outWord"></div>
+        <div id="outSub">随心阅 · 漫游英文世界</div>
+        <div id="outEn">ROAM THE ENGLISH WEB LIKE A CAT</div>
+      </div>
+      <div id="outMeta"></div>
+      <div id="outUrl"><b>github.com/dapao-777/roamcat</b> · Chrome / Edge 125+ · Manifest V3 · MPL-2.0</div>
+      <div id="outWave"></div>
+      <div id="outPet"></div>
+      <div class="grain"></div><div class="vignette"></div>
+    </div>
+  </div>
+
+</div>
+<script src="_assets.js"></script>
+<script src="anim.js"></script>
+</body>
+</html>

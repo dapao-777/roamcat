@@ -1,0 +1,26 @@
+# RoamCat · 随心阅
+
+> RoamCat is a free, open-source (MPL-2.0) dual-mode reading extension for Chrome and Edge (Manifest V3). It helps Chinese-speaking readers on English websites in two ways: (1) Bilingual Translation — in-place English-Chinese paragraph pairs that follow your reading position; (2) Reading Assistance — the page stays English, with sparse hints on hard words, D+click word cards, sentence deconstruction and on-demand rescue that fade as you read. Local-first: no vendor servers, no telemetry, reading history off by default. AI comes from the user's choice — 28 bring-your-own API providers, a bundled local MiniLM model, or a local connector reusing signed-in ChatGPT / Grok / Antigravity (Google) CLI subscriptions. Includes a built-in PDF/EPUB reader and a draggable companion-cat widget. UI is fully bilingual (zh/en). Status: 0.0.1 prerelease, developer-mode install, not yet on the Chrome Web Store.
+
+## Project
+
+- [Repository](https://github.com/dapao-777/roamcat): source, issues and releases
+- [Releases](https://github.com/dapao-777/roamcat/releases): prerelease zip download
+- [README (English)](https://github.com/dapao-777/roamcat/blob/main/README.md): features, modes, quick start, architecture
+- [README (中文)](https://github.com/dapao-777/roamcat/blob/main/README.zh-CN.md): 中文说明
+- [Site (中文)](https://dapao-777.github.io/roamcat/zh.html): Chinese landing page
+
+## Key facts
+
+- Positioning: an open-source, local-first alternative in the bilingual-translation / reading-assistance space (compare: Immersive Translate, Relingo, 彩云小译); a rebuild of the open-source RelyLess project
+- Platforms: Chrome / Edge 125+ desktop; no Firefox or Safari
+- Cost: free software; users only pay their own chosen API provider if any
+- Privacy: API keys in chrome.storage.local only; content scripts limited to 33 whitelisted message types; no remote code
+- Tech: Manifest V3, Lit + Vite pages, lit-html content UI, Native Messaging connector (Node.js 20+), ONNX MiniLM local inference
+
+## Docs
+
+- [Product docs](https://github.com/dapao-777/roamcat/blob/main/roamcat-0.0.1/README.md): feature details and configuration
+- [Engineering spec](https://github.com/dapao-777/roamcat/blob/main/roamcat-0.0.1/SPEC.md): message protocol, storage model, security boundaries
+- [Privacy policy](https://github.com/dapao-777/roamcat/blob/main/roamcat-0.0.1/PRIVACY.md): full data-handling disclosure
+- [Changelog](https://github.com/dapao-777/roamcat/blob/main/CHANGELOG.md): version history

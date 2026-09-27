@@ -13,7 +13,8 @@
     "verify:ui": "node tools/verify-ui-all.cjs",
     "verify:pet": "node tools/verify-pet-buttons.cjs",
     "test": "node --test \"tools/unit/*.test.mjs\"",
-    "gen:tokens": "node build/gen-design-tokens.mjs"
+    "gen:tokens": "node build/gen-design-tokens.mjs",
+    "promo": "node tools/promo/render.mjs"
   },
   "keywords": [
     "chrome-extension",
