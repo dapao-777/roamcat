@@ -7,7 +7,8 @@
 <p align="center">
   <strong>像猫一样漫游英文世界的双模式阅读扩展</strong><br/>
   双语翻译把页面英文原位译成中英对照；<br/>
-  阅读辅助保留原文，只给稀疏提示与按需救援。
+  阅读辅助保留原文，只给稀疏提示与按需救援。<br/>
+  <em>免费、开源、本地优先 —— Manifest V3，适用于 Chrome 与 Edge 125+。</em>
 </p>
 
 <p align="center">
@@ -88,6 +89,23 @@
 - 密钥不进内容脚本、诊断日志或连接器；内容脚本仅可用 74 种消息中的 **33 种白名单类型**。
 - 模型输出全部经 `gloss.mjs` 结构化校验才进入 UI；自定义 API 地址强制 HTTPS（仅本机回环允许 HTTP）。
 
+## ⚖️ 与同类工具的对比
+
+诚实的定位说明——RoamCat 不打算在所有人手里替代谁：
+
+| | **RoamCat** | 沉浸式翻译 | Relingo | 彩云小译 |
+|---|---|---|---|---|
+| **思路** | 双模式：双语对照*或*保留原文为主的稀疏阅读辅助 | 整页双语翻译 | 按词频分级高亮 + 查词 | 整页与划词翻译 |
+| **开源** | ✅ MPL-2.0 | ❌ 闭源 | ❌ 闭源 | ❌ 闭源 |
+| **数据路径** | 无自有服务器、无遥测，阅读记录默认关闭 | 文本发往所选翻译服务，另有云端功能 | 云账户体系 | 云端服务 |
+| **模型来源** | 28 家自备 API、内置本地模型，或复用本机 ChatGPT / Grok / Google CLI 订阅 | 内置服务 + 部分 AI 模型可自备 Key | 内置 | 内置 |
+| **费用** | 免费——只有自选付费 API 才产生费用 | 订阅制免费额度 | 订阅制 | 订阅制 |
+| **平台** | Chrome / Edge 125+ | Chrome、Edge、Firefox、Safari、移动端 | Chrome、Edge | Chrome、Edge、App |
+
+想要最省心、平台最全的整页翻译，沉浸式翻译更成熟。想让英文原文始终主导、想要可审计的开源代码、或想复用已有的 AI 订阅而非再买一个——选 RoamCat。
+
+同样值得一看的开源邻居：[kiss-translator](https://github.com/fishjar/kiss-translator)、[openai-translator](https://github.com/openai-translator/openai-translator)。RoamCat 本身是 [RelyLess](#-致谢与项目渊源) 的重构延续。
+
 ## 🎨 设计语言
 
 **纸墨 × 像素 × 轻拟物**。米白纸面 `#faf9f4` + 暖黑墨色 `#161511`，Silkscreen 像素字体与扫描线猫点缀数码感；控件是带物理反馈的键帽——按钮有底沿裙边、按下下沉，开关是铣槽瓷珠，徽标是凹刻铭牌。暗色主题是同一套材质语言的镜像：**砚台冷墨**——微蓝砚底 `#0b0e13` + 暖象牙字 `#ece7d9` + 瓷白漆主键，琥珀金 `#f0a63c` 只留给语义强调。
@@ -118,7 +136,7 @@
 
 <p align="center">
   <img src=".github/assets/options-zh-dark.png" alt="RoamCat 设置页 · 深色" width="60%">
-  <img src=".github/assets/popup-light.png" alt="RoamCat 工具栏弹窗" width="24%">
+  <img src=".github/assets/popup-dark.png" alt="RoamCat 工具栏弹窗 · 深色" width="24%">
 </p>
 
 ## 🚀 快速开始
@@ -187,6 +205,29 @@ node roamcat-0.0.1/connector/install.mjs --extension-id <扩展ID> --backend gro
 - 阅读辅助覆盖更多载体（副模式方向）：PDF、电子阅读器。
 - `host_permissions` 由全站改为 `optional_host_permissions` 按需申请。
 - Chrome Web Store / Microsoft Edge Add-ons 上架（文案与权限理由已备于 [`CHROMEWEBSTORE.md`](roamcat-0.0.1/CHROMEWEBSTORE.md)）。
+
+## ❓ 常见问题
+
+**RoamCat 收费吗？**
+不收——MPL-2.0 开源，无账户、无付费档、无遥测。只有你自己选择接入付费 API 时才需要向该服务商付费；内置本地模型与订阅连接器零额外成本。
+
+**RoamCat 会把我的阅读数据传到哪里吗？**
+项目没有自有服务器。阅读记录默认关闭、按站授权；页面文本只在你主动调用模型功能时离开本机，且直达你配置的服务商，不经任何中转。
+
+**支持哪些浏览器？**
+桌面端 Chrome 与 Edge 125+（Manifest V3）。暂不支持 Firefox 与 Safari。
+
+**能整页翻译吗？**
+能——双语翻译模式按阅读位置逐段插入中文对照。阅读辅助模式则保持整页英文，只给随读渐退的稀疏提示。
+
+**支持 PDF 和 EPUB 吗？**
+支持——内置阅读器可打开本地 PDF / EPUB 或粘贴的文章，共用同一套双语引擎。
+
+**可以用哪些模型？**
+28 家自备 API（OpenAI、DeepSeek、Gemini、Anthropic、xAI、OpenRouter、Ollama、阿里云、火山、Kimi、阶跃……）、内置本地领域识别模型，或经本机连接器复用已登录的 ChatGPT / Grok / Antigravity CLI 订阅——免 API Key。
+
+**适合谁？**
+日常泡在英文站点上的中文读者——文档、GitHub、Reddit、Hacker News——想要随阅读进步而渐退的帮助，或需要时的中英对照。
 
 ## 🛠️ 开发
 

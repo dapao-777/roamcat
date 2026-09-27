@@ -7,7 +7,8 @@
 <p align="center">
   <strong>A dual-mode reading extension that roams the English web like a cat</strong><br/>
   Bilingual mode turns English pages into side-by-side Chinese-English text;<br/>
-  Reading Assistance keeps the original — sparse hints plus on-demand rescue.
+  Reading Assistance keeps the original — sparse hints plus on-demand rescue.<br/>
+  <em>Free, open-source and local-first — Manifest V3, for Chrome &amp; Edge 125+.</em>
 </p>
 
 <p align="center">
@@ -88,6 +89,23 @@ Opens **PDF and EPUB** files (or any pasted article) with the same bilingual eng
 - Keys never enter content scripts, diagnostic logs, or the connector; content scripts can only send **33 whitelisted message types** out of 74.
 - All model output passes `gloss.mjs` structured validation before reaching the UI; custom API endpoints must be HTTPS (loopback excepted).
 
+## ⚖️ How RoamCat compares
+
+An honest look next to tools you may already know — RoamCat is not trying to be everything for everyone:
+
+| | **RoamCat** | Immersive Translate | Relingo | 彩云小译 |
+|---|---|---|---|---|
+| **Approach** | Two modes: bilingual pairs *or* sparse assistance that keeps the original English primary | Full-page bilingual translation | Graded word highlights + look-ups | Page & selection translation |
+| **Open source** | ✅ MPL-2.0 | ❌ closed | ❌ closed | ❌ closed |
+| **Data path** | No vendor servers, no telemetry, history off by default | Text goes to the translation services you pick; vendor cloud features exist | Cloud account | Cloud service |
+| **Model source** | 28 BYOK providers, a bundled local model, or reuse ChatGPT / Grok / Google CLI subscriptions | Built-in services + BYOK for select AI models | Built-in | Built-in |
+| **Cost** | Free — you only pay your own API provider, if any | Freemium | Freemium | Freemium |
+| **Platforms** | Chrome / Edge 125+ | Chrome, Edge, Firefox, Safari, mobile | Chrome, Edge | Chrome, Edge, apps |
+
+If you want the most polished set-and-forget full-page translator on the most platforms, Immersive Translate is the mature choice. Pick RoamCat if you want the English original to stay in charge, want code you can audit, or would rather spend your existing AI subscriptions than buy another one.
+
+Open-source neighbors worth a look: [kiss-translator](https://github.com/fishjar/kiss-translator) and [openai-translator](https://github.com/openai-translator/openai-translator). RoamCat itself is a rebuild of [RelyLess](#-acknowledgements-and-origin).
+
 ## 🎨 Design language
 
 **Paper &amp; ink × pixels × soft skeuomorphism.** Cream paper `#faf9f4` + warm ink `#161511`, the Silkscreen pixel font and a scanline cat add a digital accent; controls are keycaps with physical feedback — buttons carry bottom-edge skirts and sink on press, toggles are milled ceramic beads, badges are engraved plates. The dark theme mirrors the same material language as **cool inkstone graphite**: slightly blue-tinted canvas `#0b0e13`, warm ivory ink `#ece7d9`, porcelain-white primary keys, amber `#f0a63c` reserved for semantic accents.
@@ -118,7 +136,7 @@ All visual decisions collapse into a single set of `--rc-*` tokens in `src/style
 
 <p align="center">
   <img src=".github/assets/options-zh-dark.png" alt="RoamCat options — Chinese UI, dark theme" width="60%">
-  <img src=".github/assets/popup-light.png" alt="RoamCat toolbar popup" width="24%">
+  <img src=".github/assets/popup-dark.png" alt="RoamCat toolbar popup, dark theme" width="24%">
 </p>
 
 ## 🚀 Quick start
@@ -190,6 +208,29 @@ Planned directions — may change with progress and feedback, no promises:
 - Reading assistance on more substrates (secondary-mode direction): PDF, e-readers.
 - `host_permissions` changed from all-sites to `optional_host_permissions` requested on demand.
 - Chrome Web Store / Microsoft Edge Add-ons publishing (copy and per-permission justifications ready in [`CHROMEWEBSTORE.md`](roamcat-0.0.1/CHROMEWEBSTORE.md), 中文).
+
+## ❓ FAQ
+
+**Is RoamCat free?**
+Yes — MPL-2.0 open source, no accounts, no paid tier, no telemetry. You only pay if you choose to connect a paid API yourself; the bundled local model and the subscription connector cost nothing.
+
+**Does RoamCat send my reading data anywhere?**
+There are no RoamCat servers. Reading history is off by default and opt-in per site; page text leaves the device only when you invoke a model feature, and goes directly to the provider you configured.
+
+**Which browsers are supported?**
+Chrome and Edge 125+ on desktop (Manifest V3). Firefox and Safari are not currently supported.
+
+**Can it translate an entire page?**
+Yes — Bilingual mode inserts Chinese next to each English paragraph at your reading position. Reading Assistance mode instead keeps the page fully English and only adds sparse hints that fade as you read.
+
+**Does it work with PDFs and EPUBs?**
+Yes — the built-in reader opens local PDF/EPUB files and pasted articles with the same bilingual engine.
+
+**Which AI models can I use?**
+28 bring-your-own providers (OpenAI, DeepSeek, Gemini, Anthropic, xAI, OpenRouter, Ollama, Alibaba Cloud, Volcano Engine, Kimi, StepFun…), a bundled local model for on-device domain classification, or a local connector that reuses your signed-in ChatGPT / Grok / Antigravity CLI subscriptions — no API key needed.
+
+**Who is RoamCat for?**
+Chinese-speaking readers who live on English sites — docs, GitHub, Reddit, Hacker News — and want help that fades as their reading improves, or side-by-side bilingual text when it doesn't.
 
 ## 🛠️ Development
 
