@@ -341,7 +341,7 @@ export function petWidget(shadow, {domainKey = 'general', domainName = '', catSv
         <button type="button" class="zoom-btn" id="zoom-in" aria-label=${T('pet.zoomIn')} title=${T('pet.zoomIn')}>${icon('plus', {size: 12})}</button>
       </div>
       <div class="roamcat-quick-dock">
-        <button type="button" class="roamcat-flip-btn" id="roamcat-flip-btn" tabindex="-1" aria-label=${T('pet.flipAria')}>
+        <button type="button" class="roamcat-flip-btn" id="roamcat-flip-btn" tabindex="-1" aria-label=${T('pet.flipAria')} aria-pressed="false">
           <div class="flip-coin">
             <div class="coin-face coin-face-front">
               <span class="coin-glyph-bilingual">
@@ -355,7 +355,7 @@ export function petWidget(shadow, {domainKey = 'general', domainName = '', catSv
           </svg>
           <div class="flip-tooltip" id="flip-tooltip">${T('pet.flipTip')}</div>
         </button>
-        <button type="button" class="roamcat-quick-btn" id="quick-reading" tabindex="-1" aria-label=${T('pet.readAria')} title=${T('pet.readTip')}>
+        <button type="button" class="roamcat-quick-btn" id="quick-reading" tabindex="-1" aria-label=${T('pet.readAria')} title=${T('pet.readTip')} aria-pressed="false">
           <span class="quick-glyph" aria-hidden="true">${icon('book-open', {size: 15})}</span>
           <span class="quick-tooltip">${T('pet.readTip')}</span>
         </button>
@@ -367,7 +367,7 @@ export function petWidget(shadow, {domainKey = 'general', domainName = '', catSv
           <span class="quick-glyph" aria-hidden="true">${icon('settings', {size: 15})}</span>
           <span class="quick-tooltip">${T('pet.optTip')}</span>
         </button>
-        <button type="button" class="roamcat-quick-btn" id="quick-dock" tabindex="-1" aria-label=${T('pet.dockAria')} title=${T('pet.dockTip')}>
+        <button type="button" class="roamcat-quick-btn" id="quick-dock" tabindex="-1" aria-label=${T('pet.dockAria')} title=${T('pet.dockTip')} aria-pressed="false">
           <span class="quick-glyph" aria-hidden="true">${icon('dock-edge', {size: 15, cls: 'icon-dock-edge'})}</span>
           <span class="quick-tooltip">${T('pet.dockTip')}</span>
         </button>

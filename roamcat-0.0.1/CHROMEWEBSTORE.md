@@ -1,6 +1,6 @@
 # Chrome Web Store Listing — RoamCat · 随心阅
 
-> Last Updated: 2026-09-22（与 SPEC v1.2、71 种消息协议同步）
+> Last Updated: 2026-09-26（与 SPEC v1.6、74 种消息协议同步；全界面中英双语）
 > 本文是上架 Chrome Web Store / Microsoft Edge Add-ons 的单一事实源：商店文案、权限理由、隐私披露、版本历史。
 > 提交前请逐项核对文末「提交前检查单」。本文不随 Release ZIP 发布（放在仓库根目录，打包白名单之外）。
 
@@ -29,6 +29,8 @@ RoamCat · 随心阅
 • 生词渐退——对反复求助的用法自动从「短注」渐退到「仅标记」再到「暂缓」，熟悉的内容不再打扰
 • 文章摘要——一键提炼整篇文章的核心结论、主要论点与关键术语；复制时保留原文章标题与链接
 • 伴读猫——可拖拽的桌面小伙伴，随时访问常用功能
+• 内置阅读器——打开 PDF / EPUB 或粘贴文章，「翻译全文」逐段生成中文对照
+• 中英双语界面——设置、弹窗、引导页、阅读器与页内挂件统一切换，可跟随浏览器语言
 
 如何使用
 1. 点击工具栏图标，开启当前页面的阅读辅助
@@ -65,6 +67,8 @@ Features
 • Gradual fade-out for words you keep looking up, so familiar content stops interrupting
 • One-tap article digest with key takeaways and terms
 • A draggable desktop companion for quick access
+• Built-in reader for PDF / EPUB / pasted articles, with paragraph-by-paragraph bilingual translation
+• Fully bilingual interface (Chinese / English) across every page and in-page widget
 
 How to use
 1. Click the toolbar icon to start reading assistance on the current page
@@ -101,7 +105,8 @@ Chinese (Simplified)
 | Screenshot 2 [RECOMMENDED] | 1280×800 | 🟡 需裁剪 | `preview/audit/real-page-translation.png`（1440×1000） |
 | Screenshot 3 [RECOMMENDED] | 1280×800 | 🟡 需裁剪 | `preview/audit/real-sentence-structure.png`（1440×1000） |
 | Screenshot 4 [RECOMMENDED] | 1280×800 | 🟡 需裁剪 | `preview/final-popup.png` 或 `preview/popup-emergency-ready.png` |
-| Screenshot 5 [RECOMMENDED] | 1280×800 | 🟡 需裁剪 | `preview/audit/welcome.png` 或 `preview/audit/dark-assistance.png`（设置页） |
+| Screenshot 5 [RECOMMENDED] | 1280×800 | 🟡 需裁剪 | `.github/assets/welcome-light.png` / `options-dark.png`（最新 UI 审计产物，见下） |
+| 最新界面截图（README 同步） | — | ✅ 已更新 | `.github/assets/`：welcome-light/dark、options-light/dark/en、popup-light、reader-dark、widget-summary-dark、wordcard-light |
 | Small Promo Tile [RECOMMENDED] | 440×280 | ⬜ Not created | |
 | Marquee Promo Tile | 1400×560 | ⬜ Not created | |
 
@@ -224,7 +229,7 @@ https://github.com/dapao-777/roamcat
 - [ ] 至少 1 张 1280×800 截图（候选素材已列出，需裁剪）
 - [ ] 128×128 商店图标就绪
 - [x] 无混淆代码；第三方许可声明齐全
-- [x] 已在真实 Edge 无头回归验证主要功能（截至 2026-09-22：完整回归 29 项 + 摘要补充 22 项，去重 30 场景；单元 81 项；模块图 43 文件/66 导入；报告见 `preview/audit/full-regression-20260922.json`）
+- [x] 已在真实 Edge 无头回归验证主要功能（截至 2026-09-26：单元 178 项；`verify:ui` 全界面门禁 77 项含明暗主题与中英文断言；`verify:pet` 伴读猫门禁 65 项；`verify:build` 10 项；报告见 `preview/`）
 
 ### Rejection History
 （暂无）

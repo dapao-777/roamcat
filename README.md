@@ -1,119 +1,158 @@
 <p align="center">
-  <img src="roamcat-0.0.1/extension/icons/roamcat.svg" alt="RoamCat Logo" width="96" height="96">
+  <img src="roamcat-0.0.1/extension/icons/roamcat.svg" alt="RoamCat logo" width="88" height="88">
 </p>
 
 <h1 align="center">RoamCat · 随心阅</h1>
 
 <p align="center">
   <strong>A dual-mode reading extension that roams the English web like a cat</strong><br/>
-  Bilingual mode translates English pages into side-by-side Chinese-English text; Reading Assistance keeps the original English and gives only sparse hints plus on-demand rescue.
+  Bilingual mode turns English pages into side-by-side Chinese-English text;<br/>
+  Reading Assistance keeps the original — sparse hints plus on-demand rescue.
 </p>
 
 <p align="center">
-  <a href="https://img.shields.io/badge/license-MPL--2.0-blue"><img alt="License: MPL-2.0" src="https://img.shields.io/badge/license-MPL--2.0-blue"></a>
+  <a href="LICENSE"><img alt="License: MPL-2.0" src="https://img.shields.io/badge/license-MPL--2.0-blue"></a>
   <a href="https://github.com/dapao-777/roamcat/releases"><img alt="Version" src="https://img.shields.io/badge/version-0.0.1%20prerelease-orange"></a>
   <a href="https://github.com/dapao-777/roamcat/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/dapao-777/roamcat/actions/workflows/ci.yml/badge.svg"></a>
-  <img alt="Chrome / Edge" src="https://img.shields.io/badge/Chrome%20%2F%20Edge-125%2B-green">
+  <img alt="Chrome / Edge 125+" src="https://img.shields.io/badge/Chrome%20%2F%20Edge-125%2B-green">
   <img alt="Manifest V3" src="https://img.shields.io/badge/manifest-V3-blueviolet">
 </p>
 
 <p align="center">
-  <a href="README.zh-CN.md">中文</a> ·
+  <a href="README.zh-CN.md">中文文档</a> ·
   <a href="https://github.com/dapao-777/roamcat/releases">Download prerelease</a> ·
-  <a href="#quick-start">Install guide</a> ·
-  <a href="roamcat-0.0.1/README.md">Product docs (中文)</a> ·
-  <a href="roamcat-0.0.1/docs/design-system.md">Design docs (中文)</a> ·
-  <a href="roamcat-0.0.1/SPEC.md">Engineering spec (中文)</a>
+  <a href="roamcat-0.0.1/README.md">Product docs</a> ·
+  <a href="roamcat-0.0.1/SPEC.md">Engineering spec</a> ·
+  <a href="roamcat-0.0.1/docs/design-system.md">Design docs</a>
 </p>
-
-> This is the 0.0.1 prerelease: loaded via developer mode, not yet published on any store.
-
-> This project is a refactor, optimization, and repair of the open-source project [RelyLess](https://github.com/rockythink/relyless). Thanks to the original author, Bilibili creator [停车拾穗](https://live.bilibili.com/392612).
-
-**Local-first**: no servers operated, no telemetry, reading history off by default and gated per site. AI capability comes from a service you choose — a built-in local classification model, one of 28 bring-your-own API providers, or a local connector that reuses your ChatGPT / Grok / Antigravity subscription.
 
 <p align="center">
-  <img src=".github/assets/welcome-light.png" alt="RoamCat welcome page" width="88%">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset=".github/assets/banner-welcome-dark.png">
+    <img src=".github/assets/banner-welcome-light.png" alt="RoamCat welcome page" width="94%">
+  </picture>
 </p>
 
-## Two modes, one engine
+> **0.0.1 prerelease** — loaded via developer mode, not yet on any store. This project rebuilds, optimizes and repairs the open-source [RelyLess](https://github.com/rockythink/relyless); thanks to its author, Bilibili creator [停车拾穗](https://live.bilibili.com/392612).
 
-| | 🌐 Bilingual Translation · Primary | 📖 Reading Assistance · Secondary |
+**Local-first.** No servers operated, no telemetry, reading history off by default and gated per site. AI capability comes from a source you choose — a bundled local classification model, one of **28 bring-your-own API providers**, or a local connector that reuses your **ChatGPT / Grok / Antigravity** subscriptions.
+
+**Bilingual interface.** Every surface — popup, options, welcome, reader, in-page widgets and the companion cat — switches between Chinese and English; `auto` follows the browser's UI language.
+
+## 🌓 Two modes, one engine
+
+| | 🌐 Bilingual Translation · primary | 📖 Reading Assistance · secondary |
 |---|---|---|
-| **What it does** | Translates page English in place into Chinese-English pairs | Keeps the English; sparse hints plus on-demand rescue only |
-| **How to use** | Popup "Translate this page" or `Alt+Shift+T`; progresses with your reading position, never pre-translates the whole article in the background | Automatic sparse hints that taper off; hold `D` + click to look up a word; select a phrase or passage for manual rescue |
-| **Display** | Body paragraphs get inline bilingual pairs; tables and cards are matched in place; navigation, sidebars, and other page chrome get small inline translations | Lookup card / top-of-line glosses / sentence-deconstruction underlines; failed passages retry individually |
+| **Does** | Translates page English in place into Chinese-English pairs | Keeps the English; sparse hints plus on-demand rescue only |
+| **Invoke** | Popup "Translate this page" or `Alt+Shift+T`; follows your reading position — never pre-translates the whole article in the background | Auto hints that taper off as you read; hold `D` + click to look up a word; select a phrase or passage for manual rescue |
+| **Looks like** | Inline bilingual pairs in body text; tables and cards matched in place; navigation, sidebars and other page chrome get small inline translations | Lookup card / top-of-line glosses / sentence-deconstruction underlines |
 | **Exit** | "Back to English" removes only extension-injected content, without rolling back site updates | Hints fade as you read — the goal is to stop needing them |
 
-**🐱 Companion cat**: a Shadow DOM widget that perches at the page edge — reading switch, article digest, settings and shortcut entries; draggable and dockable to the edge; one per page; never injected unless enabled.
+Failed units retry on a graded backoff (2.5s → 6s → 14s, classified by error code) before surfacing a manual "retry this passage" — transient rate limits no longer flash failure UI.
 
-## Model services — your choice of source
+### 🐱 The companion cat
 
-- **Bring-your-own API**: 28 providers across 8 protocols (OpenAI / DeepSeek / Gemini / Anthropic / Grok / OpenRouter / Ollama / Alibaba Cloud / Volcano Engine / Kimi / StepFun…), with structured-output capability probed first, then gracefully degraded.
-- **Subscription connector**: local Native Messaging reuses your official CLI entitlements — Codex CLI (ChatGPT subscription), Grok CLI (SuperGrok / X Premium+), Antigravity `agy` (Google AI Pro / Ultra).
-- **Local model**: bundled `Xenova/all-MiniLM-L6-v2` runs page-domain classification in an offscreen document + worker — fully offline, nothing to download.
-
-## Local-first boundaries
-
-- Reading history is off by default and opt-in per site; nothing is collected on incognito pages; API keys live only in `chrome.storage.local`.
-- Keys never enter content scripts, diagnostic logs, or the connector; content scripts can only send 33 whitelisted message types.
-- All model output passes `gloss.mjs` structured validation before reaching the UI; custom API endpoints must be HTTPS (HTTP allowed for loopback only).
+A Shadow DOM widget that perches at the page edge — reading switch, article digest, settings and shortcut entries; draggable and dockable, one per page, never injected unless enabled.
 
 <p align="center">
-  <img src=".github/assets/options-light.png" alt="RoamCat options page" width="88%">
+  <img src=".github/assets/pet-summary-dark.png" alt="In-page article digest card with the companion cat" width="66%">
+  <img src=".github/assets/widget-wordcard-dark.png" alt="Word lookup card" width="29%">
 </p>
 
-## Design language
+### 🧭 Fluent on real pages
 
-**Paper & ink × pixels × soft skeuomorphism**: cream paper `#faf9f4` + warm ink `#161511`, the Silkscreen pixel font and a scanline cat add a digital accent; controls are keycaps with physical feedback — buttons have bottom-edge skirts and sink on press, toggles are milled ceramic beads, badges are engraved plates. The dark theme is graphite lacquer + amber gold.
+- **Site profiles** for developer haunts — GitHub, Reddit (old &amp; new), Hacker News, Stack Exchange, Discourse, dev.to (Forem), Lobsters: code blocks, diffs, file trees, vote and byline chrome stay out of reading blocks and translate as page furniture.
+- **Long-sentence detection** flags ≥22-word sentences carrying subordinate clauses with a subtle amber underline — purely local, no model call.
+- **Formula protection** keeps MathML / KaTeX / MathJax containers and inline `$…$` / `\(…\)` / `\[…\]` out of translation units.
+- **Popup quick-switch**: the toolbar popup shows the active model service inline and expands to swap between subscription channels and saved APIs.
+
+## 📚 Built-in reader
+
+Opens **PDF and EPUB** files (or any pasted article) with the same bilingual engine — "Translate all" renders paragraph by paragraph at your reading position:
+
+<p align="center">
+  <img src=".github/assets/reader-dark.png" alt="RoamCat reader with bilingual translation" width="88%">
+</p>
+
+## 🔌 Model services — your choice of source
+
+| Source | What you get |
+|---|---|
+| **Bring-your-own API** | 28 providers across 8 protocols — OpenAI / DeepSeek / Gemini / Anthropic / xAI / OpenRouter / Ollama / Alibaba Cloud / Volcano Engine / Kimi / StepFun and more. Structured-output capability is probed first, then gracefully degraded. |
+| **Subscription connector** | Local Native Messaging reuses your official CLI entitlements — Codex CLI (ChatGPT subscription), Grok CLI (SuperGrok / X Premium+), Antigravity `agy` (Google AI Pro / Ultra). No API key needed. |
+| **Local model** | Bundled `Xenova/all-MiniLM-L6-v2` runs page-domain classification in an offscreen document + worker — fully offline, nothing to download. |
+
+## 🔒 Local-first boundaries
+
+- Reading history is off by default and opt-in per site; nothing is collected on incognito pages; API keys live only in `chrome.storage.local`.
+- Keys never enter content scripts, diagnostic logs, or the connector; content scripts can only send **33 whitelisted message types** out of 74.
+- All model output passes `gloss.mjs` structured validation before reaching the UI; custom API endpoints must be HTTPS (loopback excepted).
+
+## 🎨 Design language
+
+**Paper &amp; ink × pixels × soft skeuomorphism.** Cream paper `#faf9f4` + warm ink `#161511`, the Silkscreen pixel font and a scanline cat add a digital accent; controls are keycaps with physical feedback — buttons carry bottom-edge skirts and sink on press, toggles are milled ceramic beads, badges are engraved plates. The dark theme mirrors the same material language as **cool inkstone graphite**: slightly blue-tinted canvas `#0b0e13`, warm ivory ink `#ece7d9`, porcelain-white primary keys, amber `#f0a63c` reserved for semantic accents.
+
+<details>
+<summary><strong>Design spec at a glance</strong></summary>
 
 | Item | Spec |
 |---|---|
 | UI body text | System sans (Segoe UI / PingFang SC / Microsoft YaHei), 14–15px |
-| Reading text & headings | Serif (Noto Serif SC → SimSun → Georgia), body 15px / 1.6 line-height |
+| Reading text &amp; headings | Serif (Noto Serif SC → SimSun → Georgia), body 15px / 1.6 line-height |
 | Brand / digits / keycaps | Silkscreen pixel font (bundled woff2, works offline) |
 | Tags / POS / diagnostic codes | ui-monospace, 13px |
-| Palette | Paper `#faf9f4` + ink `#161511` in light mode (ink doubles as the accent); graphite `#0b0e13` + ivory `#ece7d9` + amber `#f0a63c` in dark |
-| Logo & marks | Scanline cat (`icons/roamcat.svg` + `roamcat-cat-ink.svg`, `fill="currentColor"`), dot-wave band, pixel spark |
+| Palette | Paper `#faf9f4` + ink `#161511` in light (ink doubles as accent); graphite `#0b0e13` + ivory `#ece7d9` + amber `#f0a63c` in dark |
+| Logo &amp; marks | Scanline cat (`icons/roamcat.svg` + `roamcat-cat-ink.svg`, `fill="currentColor"`), dot-wave band, pixel spark |
 | Motion | 80 / 160 / 280 / 440ms tiers + `linear()` spring curves, honors `prefers-reduced-motion` |
 
-All visual decisions collapse into a single set of `--rc-*` tokens in `src/styles/tokens.css`; in-page components inject the same tokens via Shadow DOM + `design.js`, with zero pollution of site styles. Full spec and component inventory in the [design system doc](roamcat-0.0.1/docs/design-system.md) (中文); logo usage, palette ratios and voice rules in the [brand guidelines](roamcat-0.0.1/docs/brand.md) (中文) — or browse the rendered [brand board](roamcat-0.0.1/docs/brand-board.html) locally for every swatch, typeface and material sample.
+</details>
 
-## Quick start
+All visual decisions collapse into a single set of `--rc-*` tokens in `src/styles/tokens.css`; in-page components inject the same tokens via Shadow DOM + `design.js`, with zero pollution of site styles. Full spec in the [design system doc](roamcat-0.0.1/docs/design-system.md) (中文); logo usage, palette ratios and voice rules in the [brand guidelines](roamcat-0.0.1/docs/brand.md) (中文) — or open the rendered [brand board](roamcat-0.0.1/docs/brand-board.html) for every swatch, typeface and material sample.
 
-### Option A: Release zip (fastest, no build)
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset=".github/assets/options-dark.png">
+    <img src=".github/assets/options-light.png" alt="RoamCat options page" width="88%">
+  </picture>
+</p>
 
-Download `roamcat-0.0.1-extension.zip` from [Releases](https://github.com/dapao-777/roamcat/releases) and unzip it, then go to `chrome://extensions` → enable Developer mode → "Load unpacked" → select the unzipped `extension` directory.
+<p align="center">
+  <img src=".github/assets/options-en.png" alt="RoamCat options in English" width="60%">
+  <img src=".github/assets/popup-light.png" alt="RoamCat toolbar popup" width="24%">
+</p>
 
-> The zip artifact has no fixed key injected, so the extension ID is derived from the install path; if you use the subscription connector, bind it to the actual ID during its install flow.
+## 🚀 Quick start
 
-### Option B: Build from source (recommended for development; fixed extension ID)
+Requires Chrome or Edge **125+**.
+
+**A · Release zip (fastest, no build)** — Download `roamcat-0.0.1-extension.zip` from [Releases](https://github.com/dapao-777/roamcat/releases), unzip, then `chrome://extensions` → enable Developer mode → "Load unpacked" → select the unzipped `extension` directory. The zip has no fixed key injected, so the extension ID is derived from the install path — if you use the subscription connector, bind it to the actual ID during its install flow.
+
+**B · Build from source (recommended for development; fixed extension ID)**
 
 ```sh
 npm ci
 npm run build    # → dist/extension (dev build, manifest gets a fixed key)
 ```
 
-Load **`dist/extension`**. The dev-build extension ID is pinned by `build/extension-key.json` (currently `afpeggkplomdjjiemgajjgcajieincng`); moving the build directory does not change the ID, so the connector never needs reinstalling. After changing source, rerun `npm run build`, hit reload on the extension management page, then refresh open pages.
+Load **`dist/extension`**. The dev-build ID is pinned by `build/extension-key.json` (currently `afpeggkplomdjjiemgajjgcajieincng`) — moving the build directory does not change the ID, so the connector never needs reinstalling. After changing source, rerun `npm run build`, hit reload on the extension page, then refresh open tabs.
 
-### Option C: Load the source directory directly (no build)
+**C · Load the source directory directly (no build)** — Load **`roamcat-0.0.1/extension`**. Note: an unpacked extension's ID is bound to its directory path — moving the directory changes the ID and breaks the local connector.
 
-Load **`roamcat-0.0.1/extension`**. Note: an unpacked extension's ID is bound to its directory path — moving the directory changes the ID and breaks the local connector.
-
-### Optional: subscription connector
-
-Let the extension call your locally signed-in ChatGPT / Grok / Antigravity CLIs:
+**Optional · subscription connector** — let the extension call your locally signed-in ChatGPT / Grok / Antigravity CLIs:
 
 ```sh
 node roamcat-0.0.1/connector/install.mjs --extension-id <extension-id> --backend grok
 ```
 
-## Architecture
+## 🏗️ Architecture
 
 ```
 ┌─────────────────────────────── browser ────────────────────────────────┐
-│ Content scripts (four static entries, document_idle)                   │
-│   design.js → reading-style.js → content-ui.js → content.js            │
+│ Content scripts (nine static entries, document_idle)                   │
+│   design.js → i18n.js → reading-style.js → content-ui.js →             │
+│   pet-quotes.js → complexity.js → formula.js → site-profiles.js →      │
+│   content.js                                                           │
+│   · i18n.js: zh/en runtime dictionary shared by all surfaces           │
 │   · content-ui.js: lit-html in-page UI layer (build artifact, in repo) │
 │   · content.js: reading-area detection / annotation / lookup /         │
 │     deconstruction / bilingual translation engine                      │
@@ -121,10 +160,11 @@ node roamcat-0.0.1/connector/install.mjs --extension-id <extension-id> --backend
 │   · floating-pet.js companion cat · auto-start.js auto-enable          │
 ├────────────────────────────────────────────────────────────────────────┤
 │ Service Worker: background.js (ES module, stateless)                   │
-│   71 message routes · settings validation & migration ·                │
-│   cache / concurrency / watchdog · subscription ports                  │
+│   74 message routes · settings validation & migration ·                │
+│   cache / concurrency / watchdog · subscription ports ·                │
+│   uiLang broadcast to every tab                                        │
 ├────────────────────────────────────────────────────────────────────────┤
-│ Extension pages: popup / options / welcome                             │
+│ Extension pages: popup / options / welcome / reader                    │
 │   Lit apps under src/, built by Vite into dist/extension/ui/           │
 │ Offscreen document: local-inference (ONNX MiniLM domain classifier,    │
 │   disposed after 5 min idle)                                           │
@@ -137,11 +177,12 @@ node roamcat-0.0.1/connector/install.mjs --extension-id <extension-id> --backend
 Engineering highlights:
 
 - **Trust boundary**: extension pages (trusted) → content scripts (33 whitelisted message types) → model output (structured validation before UI) → page DOM (enters prompts as data, `SOURCE_DATA_INSTRUCTIONS`).
-- **Single source of truth for the message protocol**: `extension/message-protocol.js` registers all 71 message types with payload parsers; registry-to-handler correspondence is enforced by contract tests.
+- **Single source of truth for the message protocol**: `extension/message-protocol.js` registers all 74 message types with payload parsers; registry-to-handler correspondence is enforced by contract tests.
+- **Bilingual UI runtime**: `extension/i18n.js` is the single zh/en dictionary (~1,600 aligned keys) consumed by Lit pages, classic scripts and the service worker; content scripts that cannot reach `chrome.storage` sync the language preference through `STATE_GET` / `SS_REFRESH` snapshots.
 - **No in-memory state assumptions in the Service Worker**: cross-call state lives in `chrome.storage.local/session` and IndexedDB; writes are serialized; long operations carry watchdogs.
 - Full spec in [`roamcat-0.0.1/SPEC.md`](roamcat-0.0.1/SPEC.md) (中文).
 
-## Roadmap
+## 🗺️ Roadmap
 
 Planned directions — may change with progress and feedback, no promises:
 
@@ -150,25 +191,26 @@ Planned directions — may change with progress and feedback, no promises:
 - `host_permissions` changed from all-sites to `optional_host_permissions` requested on demand.
 - Chrome Web Store / Microsoft Edge Add-ons publishing (copy and per-permission justifications ready in [`CHROMEWEBSTORE.md`](roamcat-0.0.1/CHROMEWEBSTORE.md), 中文).
 
-## Development
+## 🛠️ Development
 
 Requires Node.js 20.11+ (verified on Node 24). Static checks and unit tests are zero-dependency:
 
-```sh
-npm run build          # Vite dev build → dist/extension (fixed key injected)
-npm run build:watch    # watch-mode continuous build
-npm run verify         # module-graph gates R1–R11: load contract / no cycles / layering / file headers / manifest resources
-npm run verify:sites   # site-profile e2e: fixtures routed by real URL into Edge asserting inspect() (--live rechecks real sites)
-npm test               # unit tests (node --test, works on Node 18+)
-npm run verify:build   # build-artifact gates: byte comparison + real Edge load smoke test
-npm run gen:tokens     # regenerate extension/design.js from src/tokens.css
-```
+| Command | What it does / gates |
+|---|---|
+| `npm run build` · `npm run build:watch` | Vite dev build → `dist/extension` (fixed key injected) |
+| `npm run verify` | Module-graph gates R1–R11: load contract / no cycles / layering / file headers / manifest resources |
+| `npm run verify:sites` | Site-profile e2e: fixtures routed by real URL into Edge asserting `inspect()` (`--live` rechecks real sites) |
+| `npm test` | 179 unit tests (`node --test`, zero-dep, Node 18+) |
+| `npm run verify:build` | Build-artifact gates: byte comparison + real Edge load smoke test |
+| `npm run verify:ui` | 77-check UI sweep: every page &amp; widget, light+dark, zh+en assertions, screenshots → `preview/` |
+| `npm run verify:pet` | 65-check companion-cat sweep: every floating button clicked for real |
+| `npm run gen:tokens` · `node tools/check-dict.cjs` | Regenerate `extension/design.js` from tokens · zh/en dictionary parity check |
 
 Local browser regression (requires Playwright + local Edge, output to `preview/`):
 
 ```sh
 node tools/audit-extension.cjs    # main regression
-node tools/verify-ui.cjs          # UI layout and light/dark themes
+node tools/verify-ui-all.cjs      # UI layout, light/dark themes, zh/en language assertions
 ```
 
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) (中文) before contributing; report security issues privately per [SECURITY.md](SECURITY.md).
@@ -178,26 +220,21 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) (中文) before contributing; rep
 
 | Path | Contents |
 |------|----------|
-| [`roamcat-0.0.1/extension/`](roamcat-0.0.1/extension/) | Manifest V3 extension source layer: background, content scripts, domain modules, local inference, icons/fonts/_locales, plus the `ui/` modules and styles shared by the Lit apps (classic page sources are replaced by build output). |
+| [`roamcat-0.0.1/extension/`](roamcat-0.0.1/extension/) | Manifest V3 extension source layer: background, content scripts, `i18n.js` zh/en runtime, domain modules, local inference, icons/fonts/_locales, plus the `ui/` modules and styles shared by the Lit apps (classic page sources are replaced by build output). |
 | [`roamcat-0.0.1/connector/`](roamcat-0.0.1/connector/) | Native Messaging host + adapters for the three subscription CLIs: Codex / Grok / Antigravity. |
 | [`src/`](src/) | Vite + Lit page apps and shared components; `src/content-ui` is the in-page lit-html render layer; the `@ext` alias points at the extension source directory. |
 | [`build/`](build/) | Build-time scripts: extension copy/manifest transform plugin, design-token generation, dev extension key; `vite.content-ui.config.mjs` builds the content-ui IIFE. |
 | `dist/extension/` | Build output (not committed) = source-layer copy − `REPLACED_BY_BUILD` + Vite page artifacts + transformed manifest. |
-| [`roamcat-0.0.1/README.md`](roamcat-0.0.1/README.md) | Product docs (中文): features, install, model-service configuration, and privacy. |
-| [`roamcat-0.0.1/SPEC.md`](roamcat-0.0.1/SPEC.md) | Engineering spec (中文): message protocol, storage, security boundaries, test gates. |
-| [`roamcat-0.0.1/docs/`](roamcat-0.0.1/docs/) | Topical docs (中文) such as the design system. |
-| [`roamcat-0.0.1/PRIVACY.md`](roamcat-0.0.1/PRIVACY.md) | Privacy policy text. |
-| [`roamcat-0.0.1/CHROMEWEBSTORE.md`](roamcat-0.0.1/CHROMEWEBSTORE.md) | Store listing copy, per-permission justifications, privacy disclosure checklist (中文). |
 | [`tools/`](tools/) | Module-graph gates, unit tests, build-artifact gates, local browser regression scripts. |
 
 </details>
 
-## Docs
+## 📖 Docs
 
 | Doc | Contents |
 |-----|----------|
 | [Product docs](roamcat-0.0.1/README.md) (中文) | Feature details, install, model-service configuration, and privacy notes |
-| [Design system](roamcat-0.0.1/docs/design-system.md) (中文) | Design vocabulary, typography, color & material, motion, component spec |
+| [Design system](roamcat-0.0.1/docs/design-system.md) (中文) | Design vocabulary, typography, color &amp; material, motion, component spec |
 | [Brand guidelines](roamcat-0.0.1/docs/brand.md) (中文) · [Brand board](roamcat-0.0.1/docs/brand-board.html) | Logo usage, brand palette, typography roles, voice; open the board locally to see it rendered |
 | [Engineering spec](roamcat-0.0.1/SPEC.md) (中文) | Message protocol, storage model, security boundaries, test gates |
 | [Privacy policy](roamcat-0.0.1/PRIVACY.md) | Full disclosure of data handling and permission usage |
@@ -205,7 +242,7 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) (中文) before contributing; rep
 | [Changelog](CHANGELOG.md) | Version history (Keep a Changelog format) |
 | [Contributing](CONTRIBUTING.md) (中文) · [Code of conduct](CODE_OF_CONDUCT.md) · [Security policy](SECURITY.md) | Collaboration and disclosure processes |
 
-## Acknowledgements and origin
+## 🙏 Acknowledgements and origin
 
 RoamCat is a refactor of [RelyLess](https://github.com/rockythink/relyless) — this project rebuilds, optimizes, and repairs it on top of its open-source code and product ideas (the dual-mode engine, the Vite + Lit page build chain, whole-page bilingual translation, the subscription connector, and more were built on that foundation).
 

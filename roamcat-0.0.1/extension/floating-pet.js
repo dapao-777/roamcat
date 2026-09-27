@@ -514,11 +514,11 @@
       .roamcat-flip-btn {
         position: relative;
         flex-shrink: 0;
-        width: 32px;
-        height: 32px;
+        width: 30px;
+        height: 30px;
         border-radius: 50%;
-        /* 黄铜铣边币：repeating-conic 齿纹缘，币面内缩 2.5px 露出轮圈 */
-        background: var(--pet-coin-edge, var(--pet-surface-elevated, #ffffff));
+        /* 与快捷钮同一象牙瓷扣面（曾为黄铜铣边币，已统一为同排按钮材质） */
+        background: var(--pet-btn-face, var(--pet-surface-elevated, #ffffff));
         border: 1px solid var(--pet-btn-rim, var(--pet-line, #e2ded4));
         box-shadow: var(--pet-btn-inset, none), var(--pet-btn-cast, var(--pet-shadow-sm));
         cursor: pointer;
@@ -565,19 +565,14 @@
         justify-content: center;
       }
 
-      /* Coin Face：币面内缩露出铣边轮圈，径向渐变做凸面受光；
-         单面按钮——双语开启只换配色，不再翻面 */
+      /* Coin Face：内层字形容器——币面材质已去除，与钮面同色，仅负责字形居中 */
       .coin-face {
         position: absolute;
-        inset: 2.5px;
+        inset: 0;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        background: var(--pet-coin-face, var(--pet-surface-elevated, #ffffff));
-        box-shadow: var(--pet-coin-inset, none);
-        text-shadow: var(--pet-coin-emboss, none);
-        transition: background 0.25s ease;
       }
 
       .coin-face-front {
@@ -586,15 +581,17 @@
         line-height: 1;
       }
 
+      /* 中/En 字形按钮面图标处理：同色压印，与 quick-glyph svg 一致 */
       .coin-glyph-bilingual {
         display: inline-flex;
         align-items: center;
         font-size: 10px;
         font-weight: 700;
+        filter: var(--pet-glyph-emboss, none);
       }
 
       .glyph-main {
-        color: var(--pet-primary, #f59e0b);
+        color: var(--pet-glyph, var(--pet-ink, #161511));
         font-size: 11px;
       }
 
@@ -638,24 +635,16 @@
         transform-origin: center;
       }
 
-      /* ACTIVE STATE (双语翻译已开启)：币面换深金色 + 字形提亮，不翻面 */
-      .roamcat-flip-btn.is-active {
-        border-color: var(--pet-primary, #f59e0b);
-        box-shadow: 0 0 0 1px var(--pet-primary, #f59e0b), var(--pet-shadow-sm);
-      }
-
-      .roamcat-flip-btn.is-active .coin-face-front {
-        background: var(--pet-coin-face-back, var(--pet-primary-soft, rgba(245, 158, 11, 0.14)));
-      }
-
+      /* ACTIVE STATE (双语翻译已开启)：与快捷钮同一开启态——琥珀釉面 +
+         主色描边 + 右上角状态点；字形换深色墨 */
       .roamcat-flip-btn.is-active .coin-glyph-bilingual .glyph-main,
       .roamcat-flip-btn.is-active .coin-glyph-bilingual .glyph-sub {
-        color: #fff8e1;
+        color: var(--pet-btn-active-ink, #5d3d0c);
       }
 
       .roamcat-flip-btn.is-active .coin-glyph-bilingual .glyph-sep {
-        color: rgba(255, 248, 225, 0.55);
-        opacity: 1;
+        color: var(--pet-btn-active-ink, #5d3d0c);
+        opacity: 0.55;
       }
 
       /* TRANSLATING STATE (正在逐段翻译中) */
@@ -1024,11 +1013,27 @@
         box-shadow: var(--pet-btn-press, none);
       }
 
-      /* 开启态：琥珀釉面 */
-      .roamcat-quick-btn.is-active {
+      /* 开启态（阅读辅助 / 双语翻译共用）：琥珀釉面 + 持久主色描边 + 右上角
+         实心状态点——扫一眼即可区分开关，不再只依赖面色的微妙变化 */
+      .roamcat-quick-btn.is-active,
+      .roamcat-flip-btn.is-active {
         background: var(--pet-btn-active-face, var(--pet-primary-soft, #fef3c7));
         border-color: color-mix(in srgb, var(--pet-primary, #f59e0b) 55%, rgba(0, 0, 0, 0.35));
         color: var(--pet-btn-active-ink, var(--pet-primary, #f59e0b));
+        box-shadow: var(--pet-btn-inset, none), var(--pet-btn-glow, none), var(--pet-btn-cast, var(--pet-shadow-sm)), 0 0 0 1.5px var(--pet-primary, #f59e0b);
+      }
+
+      .roamcat-quick-btn.is-active::after,
+      .roamcat-flip-btn.is-active::after {
+        content: '';
+        position: absolute;
+        top: -1.5px;
+        right: -1.5px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--pet-primary, #f59e0b);
+        box-shadow: 0 0 0 1.5px var(--pet-surface-elevated, #ffffff), var(--pet-shadow-sm);
       }
 
       /* 切换进行中：压暗 + 琥珀细环脉冲，并屏蔽连点 */
@@ -3189,6 +3194,7 @@
       isDocked = true;
       this.closeQuickDock();
       this.container?.classList.add('docked');
+      this.shadowQuery('#quick-dock')?.setAttribute('aria-pressed', 'true');
       if (side === 'left') {
         currentRight = Math.max(0, window.innerWidth - Math.round(64 * petScale));
         this.container?.classList.add('is-left');
@@ -3207,6 +3213,7 @@
       if (!isDocked) return;
       isDocked = false;
       this.container?.classList.remove('docked');
+      this.shadowQuery('#quick-dock')?.setAttribute('aria-pressed', 'false');
       if (this.avatarWrap) {
         this.avatarWrap.title = T('pet.avatarTitle');
       }
@@ -3241,6 +3248,7 @@
 
     startIdleActions() {
       clearTimeout(this._idleTimer);
+      clearTimeout(this._driveTimer);
       const scheduleNext = () => {
         if (this._disposed) return;
         const delay = 10000 + Math.random() * 12000; // 10~22s
@@ -3281,19 +3289,24 @@
     startSleepWatchdog() {
       this._lastActivityTime = Date.now();
       this._isSleeping = false;
-      const onUserActivity = () => {
-        this._lastActivityTime = Date.now();
-        if (this._isSleeping) {
-          this.wakeUp();
-        }
-      };
+      // 监听只绑一次：禁用→重开会再次走到这里，signal 仍是同一个，
+      // 重复 addEventListener 会按次数叠加回调。
+      if (!this._sleepBound) {
+        this._sleepBound = true;
+        const onUserActivity = () => {
+          this._lastActivityTime = Date.now();
+          if (this._isSleeping) {
+            this.wakeUp();
+          }
+        };
 
-      const signal = this._abort?.signal;
-      window.addEventListener('pointermove', onUserActivity, { signal, passive: true });
-      window.addEventListener('pointerdown', onUserActivity, { signal, passive: true });
-      window.addEventListener('keydown', onUserActivity, { signal, passive: true });
-      window.addEventListener('wheel', onUserActivity, { signal, passive: true });
-      window.addEventListener('scroll', onUserActivity, { signal, passive: true });
+        const signal = this._abort?.signal;
+        window.addEventListener('pointermove', onUserActivity, { signal, passive: true });
+        window.addEventListener('pointerdown', onUserActivity, { signal, passive: true });
+        window.addEventListener('keydown', onUserActivity, { signal, passive: true });
+        window.addEventListener('wheel', onUserActivity, { signal, passive: true });
+        window.addEventListener('scroll', onUserActivity, { signal, passive: true });
+      }
 
       clearInterval(this._sleepWatchdogInterval);
       this._sleepWatchdogInterval = setInterval(() => {
@@ -3370,6 +3383,7 @@
       const quickReading = this.shadowQuery('#quick-reading');
       if (quickReading) {
         quickReading.classList.toggle('is-active', readingEnabled);
+        quickReading.setAttribute('aria-pressed', String(readingEnabled));
         quickReading.title = readingEnabled ? T('fp.readingOn') : T('fp.readingOff');
       }
     }
@@ -3437,6 +3451,7 @@
       if (this.flipBtn) {
         this.flipBtn.classList.toggle('is-active', isActive);
         this.flipBtn.classList.toggle('is-translating', isTranslating);
+        this.flipBtn.setAttribute('aria-pressed', String(isActive));
 
         const tooltip = this.shadowQuery('#flip-tooltip');
         if (tooltip) {
@@ -3752,10 +3767,15 @@
       this.summaryWindow = null;
       this._initialized = false;
       this._driving = false;
+      this._isSleeping = false;
+      this._sleepBound = false;
       clearTimeout(this._driveTimer);
       isDragging = false;
+      dragMoved = false;
       isDockOpen = false;
       isSummaryOpen = false;
+      isDocked = false;
+      petState = 'idle';
       if (globalThis.RoamCatPet === this) globalThis.RoamCatPet = null;
     }
 
@@ -3949,11 +3969,37 @@
       currentSettings = newSettings || {};
       if (currentSettings.floatingPet?.enabled === false) {
         this.stopQuoteTicker();
+        this.releaseDrag();
+        clearTimeout(this._idleTimer);
+        clearTimeout(this._driveTimer);
+        clearTimeout(this._speechTimer);
+        clearInterval(this._sleepWatchdogInterval);
+        this._summaryRequest = null;
+        this._summaryPending = false;
+        this._hoverStash = null;
+        this._isSleeping = false;
+        this._driving = false;
+        this._capturedPointerId = null;
         if (hostEl) {
           hostEl.remove();
           hostEl = null;
           shadowRoot = null;
         }
+        // DOM 已移除，所有指向旧节点的引用与交互标志一并复位，
+        // 否则重新启用时新 DOM 会继承悬空的贴边/展开/拖拽状态。
+        this.container = null;
+        this.edgeTab = null;
+        this.flipBtn = null;
+        this.avatarWrap = null;
+        this.quickDock = null;
+        this.zoomControls = null;
+        this.summaryWindow = null;
+        isDragging = false;
+        dragMoved = false;
+        isDockOpen = false;
+        isSummaryOpen = false;
+        isDocked = false;
+        petState = 'idle';
       } else {
         if (!hostEl && this._initialized) {
           this.createDOM();

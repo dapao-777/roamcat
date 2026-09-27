@@ -48,6 +48,15 @@ const cases = [
     chromeOnly: ['notification settings wording', 'signed in to change notification']
   },
   {
+    // 仓库列表：元信息行（语言/星标/证书/更新时间）是纯数据，整块译文会把行内 flex 撑散；
+    // 仓库名是标识符不译，描述段照常进入阅读块与翻译单元。
+    slug: 'github-repolist', url: 'https://github.com/octocat?tab=repositories', site: 'github',
+    mustRead: ['deterministic SQL compilation', 'vectorized execution engine for analytical'],
+    mustNotRead: ['MIT License', 'Apache-2.0'],
+    mustNotTranslate: ['MIT License', 'Apache-2.0', 'Python', 'last week', 'Forge'],
+    chromeOnly: []
+  },
+  {
     slug: 'reddit-post', url: 'https://www.reddit.com/r/learnprogramming/comments/1wkbpei/fixture/', site: 'reddit',
     mustRead: ['share the small programming project they built', 'toy parser using a proper token stream', 'requestAnimationFrame timing actually behaves', 'comparing the two implementations taught me more'],
     mustNotRead: ['promoted bootcamp advertisement', 'community header wording', 'Posted by u/curiousstudent', 'reply award share'],

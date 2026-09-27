@@ -251,7 +251,7 @@ button, input, select, textarea { font-family: var(--font-sans); }
 }
 .options-body .pet-hint-text {
   font-size: 12px;
-  color: var(--color-text-muted);
+  color: var(--color-text-dim);
 }
 .options-body .pet-reset-btn {
   padding: 5px 12px;
@@ -326,7 +326,7 @@ button, input, select, textarea { font-family: var(--font-sans); }
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: var(--color-text-muted);
+  color: var(--color-text-dim);
   cursor: pointer;
   padding: 5px;
   display: inline-flex;
@@ -367,7 +367,7 @@ button, input, select, textarea { font-family: var(--font-sans); }
 .options-body .task-routing .field-help {
   margin: 0;
   font-size: 12px;
-  color: var(--color-text-muted);
+  color: var(--color-text-dim);
 }
 .options-body .task-routing .route-row {
   display: flex;
@@ -401,7 +401,7 @@ button, input, select, textarea { font-family: var(--font-sans); }
 }
 .options-body .usage-stats .usage-chip .usage-chip-label {
   font-size: 11px;
-  color: var(--color-text-muted);
+  color: var(--color-text-dim);
 }
 .options-body .usage-stats .usage-chip strong {
   font-size: 15px;
@@ -411,7 +411,7 @@ button, input, select, textarea { font-family: var(--font-sans); }
 .options-body .usage-stats .usage-chip small {
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: 10.5px;
-  color: var(--color-text-muted);
+  color: var(--color-text-dim);
 }
 .options-body .usage-stats .usage-table-wrap {
   overflow-x: auto;
@@ -433,14 +433,14 @@ button, input, select, textarea { font-family: var(--font-sans); }
 .options-body .usage-stats .usage-table thead th {
   font-size: 11px;
   font-weight: 600;
-  color: var(--color-text-muted);
+  color: var(--color-text-dim);
   border-bottom: 1px solid var(--color-border, rgba(0,0,0,.12));
 }
 .options-body .usage-stats .usage-table tbody tr:last-child td { border-bottom: none; }
 .options-body .usage-stats .usage-table td:first-child { font-weight: 600; }
 .options-body .usage-stats .usage-table td small {
   font-weight: 400;
-  color: var(--color-text-muted);
+  color: var(--color-text-dim);
 }
 @media (max-width: 560px) {
   .options-body .usage-stats .usage-totals { grid-template-columns: minmax(0, 1fr); }

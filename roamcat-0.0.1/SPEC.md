@@ -11,7 +11,7 @@
 | 形态 | Chrome / Edge Manifest V3 扩展 + Node.js 本机 Native Messaging 连接器 |
 | 最低浏览器 | Chrome / Edge 125（`minimum_chrome_version: "125"`） |
 | 许可 | 项目代码 MPL-2.0；第三方材料见 `NOTICE.txt` 及各子目录声明 |
-| 规范版本 | v1.5（2026-09-24，页内 UI 渲染层迁移：content script 静态四件套（新增 src/content-ui 构建产物 content-ui.js）+ 伴读猫按需动态注册；词卡/解构卡/状态条/已认识 toast/伴读猫骨架改由 lit-html 工厂构建；Vite/Lit 构建链覆盖全部 UI 表面） |
+| 规范版本 | v1.6（2026-09-26，全界面中英双语：新增 `i18n.js` 运行时字典（约 1,600 键双语对齐）接入 4 个扩展页/页内挂件/伴读猫/后台消息，语言偏好 `roamcat_ui_lang` 经 SS_REFRESH 快照同步到受限上下文；深色主题重设计为砚台冷墨材质；reader.html 阅读器页入库） |
 
 ---
 
@@ -39,8 +39,9 @@
 
 ```
 ┌────────────────────────── 浏览器 ──────────────────────────┐
-│ content scripts（manifest 静态五件套，document_idle）         │
-│   design.js → reading-style.js → content-ui.js → pet-quotes.js → complexity.js → formula.js → site-profiles.js → content.js │
+│ content scripts（manifest 静态九件套，document_idle）         │
+│   design.js → i18n.js → reading-style.js → content-ui.js → pet-quotes.js → complexity.js → formula.js → site-profiles.js → content.js │
+│   · i18n.js：中英双语运行时（RoamCatI18n），全表面共享字典      │
 │   · content-ui.js：lit-html 页内 UI 渲染层（构建产物入库）      │
 │   · pet-quotes.js：伴读猫哲学语录库（RoamCatPetQuotes）        │
 │   · content.js：阅读区识别/标注/查词卡片/解构/整页翻译          │
@@ -50,9 +51,10 @@
 ├────────────────────────────────────────────────────────────┤
 │ Service Worker（background.js，ES module）                   │
 │   · 74 种消息路由、设置校验、缓存、并发、诊断、订阅端口管理    │
+│   · roamcat_ui_lang 变更经 storage.onChanged → SS_REFRESH 广播 │
 ├────────────────────────────────────────────────────────────┤
-│ 扩展页面：popup.html / options.html / welcome.html           │
-│   · 三页均由 src/ 下 Lit 应用经 Vite 构建产出                 │
+│ 扩展页面：popup.html / options.html / welcome.html / reader.html │
+│   · 四页均由 src/ 下 Lit 应用经 Vite 构建产出                 │
 │ 离屏文档：local-inference/offscreen.html（本地 MiniLM 分类） │
 ├────────────────────────────────────────────────────────────┤
 │ 本机连接器（Node.js 20+，Native Messaging stdio）            │
@@ -69,7 +71,7 @@
 ### 2.3 信任边界
 | 来源 | 可信度 | 约束 |
 |---|---|---|
-| 扩展页面（popup/options/welcome） | 高（trusted） | 可访问全部消息；`API_MODELS_LIST` 仅 options 页 |
+| 扩展页面（popup/options/welcome/reader） | 高（trusted） | 可访问全部消息；`API_MODELS_LIST` 仅 options 页，`READER_TRANSLATE` 仅扩展页 |
 | 内容脚本（网页上下文） | 低 | 仅 `contentAllowed` 白名单 33 种消息；密钥/历史数据不直接暴露 |
 | 模型返回内容 | 不可信数据 | 全部经 `gloss.mjs` 的结构化校验后才进入 UI |
 | 网页 DOM 文本 | 不可信数据 | 提示词统一声明 `SOURCE_DATA_INSTRUCTIONS`（数据非指令） |
@@ -81,7 +83,7 @@
 ### 3.1 字段规范
 - `manifest_version: 3`；`background.service_worker = background.js`，`type: module`。
 - `minimum_chrome_version: "125"`；`content_security_policy.extension_pages = "script-src 'self' 'wasm-unsafe-eval'; object-src 'none'; base-uri 'none'"`（wasm 供本地 ONNX 推理）。
-- 内容脚本固定八件套 `design.js, reading-style.js, content-ui.js, pet-quotes.js, complexity.js, formula.js, site-profiles.js, content.js`（`content-ui.js` 为 `src/content-ui` 经 `vite.content-ui.config.mjs` 构建的 IIFE 产物，入库、不手改），`run_at: document_idle`，`all_frames: false`；`floating-pet.js`（连同其语录库 `pet-quotes.js`）与 `auto-start.js` 改为 `chrome.scripting` 按需动态注册（同为 classic 形态，受模块图 R1 同约束）。
+- 内容脚本固定九件套 `design.js, i18n.js, reading-style.js, content-ui.js, pet-quotes.js, complexity.js, formula.js, site-profiles.js, content.js`（`content-ui.js` 为 `src/content-ui` 经 `vite.content-ui.config.mjs` 构建的 IIFE 产物，入库、不手改；`i18n.js` 必须在所有调用 `t()` 的脚本之前加载），`run_at: document_idle`，`all_frames: false`；`floating-pet.js`（连同其语录库 `pet-quotes.js`）与 `auto-start.js` 改为 `chrome.scripting` 按需动态注册（同为 classic 形态，受模块图 R1 同约束）。
 - `web_accessible_resources` 仅 `icons/roamcat.svg`（`use_dynamic_url: true`）——页面内品牌图标所需，最小暴露面。
 
 ### 3.2 权限与用途（上架时可直接引用的理由）
@@ -128,21 +130,30 @@
 | `content.js` | 阅读根识别、文本映射、自动标注、查词（按键+卡片+顶部词注）、选段翻译、阅读解构高亮、整页翻译引擎、历史采集、重载侦察（失效 toast） | 只拆文本节点不重建强调/链接；所有跨文档操作带 generation 校验；DOM 批量更新走 rAF；重载侦察用可见性门控的低频探测，不用常驻 port（不阻止 SW 空闲回收） |
 | `floating-pet.js` | 伴读猫（SVG/Shadow DOM/拖拽贴边/菜单/摘要/状态气泡/左侧快捷按钮行）、全局快捷键 | window 级监听只注册一次（`bindGlobalEvents`）；快捷键在输入框/可编辑区不触发（`petShortcutBlocked`）；左侧快捷按钮行（阅读开关/摘要/设置/贴边）贴左屏时翻向右侧，贴边时随旋旋翻隐藏 |
 | `design.js` | 设计 token（明暗双主题）唯一下发 | 仅当脚本带 `data-roamcat-page` 时才向页面根注入 |
+| `i18n.js` | 中英双语运行时 `RoamCatI18n`：`t()`/`lang()`/`pref()`/`setPref()`/`apply()`/`onChange()`，字典约 1,600 键双语对齐 | storage 受限上下文自动回退 `STATE_GET` 拉取偏好，监听 `SS_REFRESH` 同步变更 |
 | `reading-style.js` | 三层（原文/词注/译文）样式规范化与 CSS 生成 | 选择器必须静态；`!important` 全覆盖以对抗站点样式 |
 
 ### 4.3 扩展页面
-- 三个扩展页均已迁移到 `src/`（Vite + Lit）：`build/extension-plugin.mjs` 的 `REPLACED_BY_BUILD` 清单使构建产物覆盖对应 `ui/` 文件；**不要直接改将由构建替代的源文件**。页内 UI（content script 一侧）为后续阶段。
-- `ui/popup.html|js`（构建产物来自 `src/pages/popup/`）：本页开关、网站自动开启、阅读解构、本页双语翻译（立即开始）、服务告警。
-- `ui/options.html|js` + `options-nav.js`（构建产物来自 `src/pages/options/`：shell + 12 分区模板，`options-controller.js` 与 `@ext/ui/history.js` 动态加载填充动态内容）：12 个设置分区（assistance/appearance/sites/advanced/terms/personalization/history/privacy/service/diagnostics/shortcuts/guide）。
-- `ui/welcome.html|js` + `welcome.css`（构建产物来自 `src/pages/welcome/`）：首次安装引导与交互式演示。
+- 四个扩展页均已迁移到 `src/`（Vite + Lit）：`build/extension-plugin.mjs` 的 `REPLACED_BY_BUILD` 清单使构建产物覆盖对应 `ui/` 文件；**不要直接改将由构建替代的源文件**。页内 UI（`src/content-ui`）同样经构建链产出 `content-ui.js`。
+- `ui/popup.html|js`（构建产物来自 `src/pages/popup/`）：本页开关、网站自动开启、阅读解构、本页双语翻译（立即开始）、服务告警、语言切换钮。
+- `ui/options.html|js` + `options-nav.js`（构建产物来自 `src/pages/options/`：shell + 12 分区模板，`options-controller.js` 与 `@ext/ui/history.js` 动态加载填充动态内容）：12 个设置分区（assistance/appearance/sites/advanced/terms/personalization/history/privacy/service/diagnostics/shortcuts/guide）；顶栏含主题与语言循环钮。
+- `ui/welcome.html|js` + `welcome.css`（构建产物来自 `src/pages/welcome/`）：首次安装引导与交互式演示，顶栏含主题/语言循环钮。
+- `ui/reader.html|js`（构建产物来自 `src/pages/reader/`）：PDF/EPUB/粘贴文章的阅读器，`READER_TRANSLATE` 逐段双语对照，工具栏含语言切换钮。
 - `ui/provider-picker.js`：原生 select + Popover 自定义列表（Chrome 116+）。
 - `ui/theme-init.js`：防主题闪烁的早期脚本（外链文件，符合 CSP）。
 - 设计 token 唯一事实源 `src/tokens.css`：`npm run gen:tokens` 生成 `extension/design.js`，`design-tokens.test.mjs` 断言同步（见 `docs/design-system.md`）。
 
-### 4.4 本地推理
+### 4.4 界面多语言（i18n）
+- `extension/i18n.js` 是唯一语言运行时：暴露 `globalThis.RoamCatI18n`（`t(key, vars)` 查 `DICTS.zh/en`，缺键返回键名本身；`lang()/pref()/setPref()/apply()/onChange()`）。偏好键 `roamcat_ui_lang` ∈ `auto|zh|en`，存 `localStorage` + `chrome.storage.local`；`auto` 回落 `chrome.i18n.getUILanguage()`。`apply()` 写入 `data-ui-lang` 与 `<html lang>`。
+- 消费方式：Lit 页面经 `src/i18n-runtime.js` 的 `t()`；classic 脚本各自定义轻量 `T()` 包装；Service Worker / 后台模块用就地 `M(zh, en)` 助手按 `lang()` 取值。**新增可见文案必须先在中英字典加同名键**（`node tools/check-dict.cjs` 校验对齐）。
+- 受限上下文同步：内容脚本隔离世界可能拒绝 `chrome.storage`（"Access to storage is not allowed"）——此时 `i18n.js` 回退 `STATE_GET` 消息读取 `publicState().uiLang`；后台 `storage.onChanged` 监听偏好变更并经 `broadcast()` 的 `SS_REFRESH` 快照推送到所有标签页，实现「设置页改语言 → 全部已开页面即时跟随」，未新增协议类型。
+- 后台生成的持久化文本（如连接器错误）以**生成时**语言存储，切换语言后需触发对应状态刷新才会用新语言重建。
+- 门禁：`verify:ui` 含英文档断言（options/popup/content script 三端）；`verify:pet` 断言伴读猫文案键解析成功。
+
+### 4.5 本地推理
 `local-inference/`：Xenova/all-MiniLM-L6-v2（q8, wasm, 单线程）+ ONNX Runtime Web + `domain-prototypes.json`。分类 = 标题+正文 embedding 与各域原型集合的 top1/top2 加权相似度，`score≥0.10` 且 `margin≥0.055` 才采信，否则 `general`。
 
-### 4.5 注释规范
+### 4.6 注释规范
 
 - 每个源文件从第一个字符开始提供文件级长注释，统一写明：`@file` 相对路径、`文件职责`（解决什么问题）、`主要内容`（维护的关键类型/流程/UI）、`模块边界`（允许依赖什么、不得承担什么）。职责变化时必须同步维护，禁止复制不含文件语义的占位模板。`gloss.mjs` 与 `reading.js` 的文件头是本规范的示范。
 - 非平凡的编排函数使用有意义的 step 注释（先做什么、再做什么、为什么）；注释解释「为什么、边界和所有权」，不复述语法；不为一行 getter、显然的类型守卫或简单映射机械添加。
@@ -279,6 +290,7 @@
 | `supportUsage` | 近 28 天按日聚合（eligible/hints/errors/help） |
 | `legacyReadingArchive` | 首次迁移时的旧档案只读副本 |
 | `readingHistory` | 阅读记录配置（enabled/origins/summaries/personalization/autoApply/epoch） |
+| `roamcat_ui_lang` | 界面语言偏好（`auto`/`zh`/`en`，另有 localStorage 同名镜像供早期同步读取） |
 | `subscriptionLinked` / `grokSubscriptionLinked` / `antigravitySubscriptionLinked` | 连接器登录态标志 |
 | `diagnostics` | 诊断开关与事件（≤500 条，7 天 TTL） |
 | `sentenceGroupsDensity` / `sentenceGroupsLineStyle` | 全局解构外观 |
@@ -308,7 +320,7 @@
 
 ## 11. 错误与诊断规范
 - 错误码全集见 `diagnostics.mjs DIAGNOSTIC_CODES`（43 个）；`diagnosticError()` 负责从 message 推断码。
-- 用户可见错误一律中文、可操作（「请先连接服务」「请刷新模型列表」等）；技术细节进诊断。
+- 用户可见错误一律走双语（`M(zh,en)` 或字典键）、可操作（「请先连接服务」/ "Connect a service first" 等）；技术细节进诊断。
 - `STALE/CANCELLED/NOT_READY` 视为取消而非失败，不计入失败率。
 - 诊断汇总：requests / failures / slow(≥10s) / pending(>150s 判 INTERRUPTED) / NOT_DISPLAYED（期望渲染但 15s 内无回执）/ REPEATED_FAILURE（同操作 ≥3 次）。
 
@@ -318,17 +330,19 @@
 | 层 | 工具 | 覆盖 |
 |---|---|---|
 | 连接器单测 | `tools/verify-summary-timeout.mjs`（chrome mock + 定时器拦截） | 原生消息超时与计时器释放 |
-| 单元测试 | `node --test "tools/unit/**/*.test.mjs"`（Node 20+，零安装依赖，103 例） | `gloss.mjs` 四类协议的准备/校验/纠正重试与失败码；`reading.js` 渐退状态机、迁移与读者证据；`lexicon.js` 词提名（排除规则/优先级/出现位置）；`activation.js` 自动化策略；`message-router/protocol` 注册表契约、载荷解析、设置补丁与副作用计划；`connector/host.mjs` 帧协议与来源校验；`background.js` mock 浏览器冒烟（注册表构造、信任边界、真实派发） |
+| 单元测试 | `node --test "tools/unit/*.test.mjs"`（Node 20+，零安装依赖，178 例） | `gloss.mjs` 四类协议的准备/校验/纠正重试与失败码；`reading.js` 渐退状态机、迁移与读者证据；`lexicon.js` 词提名（排除规则/优先级/出现位置）；`activation.js` 自动化策略；`message-router/protocol` 注册表契约、载荷解析、设置补丁与副作用计划；`connector/host.mjs` 帧协议与来源校验；`background.js` mock 浏览器冒烟（注册表构造、信任边界、真实派发） |
 | 静态检查 | `node tools/verify-module-graph.cjs`（11 条规则：加载契约、import 解析、无环、连接器闭包纯净、分层方向、无反向依赖、文件头注释、无重复 ID、无内联脚本、manifest 资源存在、classic 脚本 `node --check` 语法）；`node tools/verify-deadcode.cjs`（未使用导出/导入，报告型） | 模块依赖方向、页面契约、语法与死代码 |
-| 真实扩展回归 | `tools/audit-extension.cjs`（playwright-core + 系统 Edge 无头，本地 fixture 文章 + 模拟模型服务） | 截至 2026-09-22：完整回归 29 项 + 摘要补充回归 22 项（去重 30 场景）：设置持久化、11 分区明暗/窄窗、术语/规则、API 模型列表、内容脚本开关、真实按键查词卡片、语言切换、已认识词撤销、历史导出清理、句子结构、整页翻译显示与清除、本地模型零请求分类、个性化空态、摘要防重与切换文章/模型过期、伴读猫拖拽持久化、欢迎页 |
-| 专项回归 | `tools/verify-bilingual-shortcut.cjs` 等（另有 `verify-catalog/jev/connector-throttle/pet-actions/popup-colors/popup-emergency/summary-timeout/ui`） | 快捷键（页面触发/输入框忽略/旋旋翻开关/工具栏入口）、服务目录、Jev 判定、连接器节流、伴读猫操作、弹窗配色与应急翻译、摘要超时、UI 布局 |
+| 真实扩展回归 | `tools/audit-extension.cjs`（playwright-core + 系统 Edge 无头，本地 fixture 文章 + 模拟模型服务） | 截至 2026-09-22：完整回归 29 项 + 摘要补充回归 22 项（去重 30 场景）：设置持久化、12 分区明暗/窄窗、术语/规则、API 模型列表、内容脚本开关、真实按键查词卡片、语言切换、已认识词撤销、历史导出清理、句子结构、整页翻译显示与清除、本地模型零请求分类、个性化空态、摘要防重与切换文章/模型过期、伴读猫拖拽持久化、欢迎页 |
+| 专项回归 | `tools/verify-bilingual-shortcut.cjs` 等（另有 `verify-catalog/jev/connector-throttle/pet-actions/popup-colors/popup-emergency/summary-timeout`） | 快捷键（页面触发/输入框忽略/旋旋翻开关/工具栏入口）、服务目录、Jev 判定、连接器节流、伴读猫操作、弹窗配色与应急翻译、摘要超时 |
+| 全界面门禁 | `npm run verify:ui`（`tools/verify-ui-all.cjs`，77 项断言） | options 全 12 分区明暗/窄窗、welcome/reader/popup、页内挂件（词卡/任务条/解构卡/toast/选区条/伴读猫）、中英文档断言、横向溢出、控制台错误 |
+| 伴读猫门禁 | `npm run verify:pet`（`tools/verify-pet-buttons.cjs`，65 项断言） | 快捷坞/旋旋翻/缩放/贴边/气泡/摘要窗全部按钮的真实点击与键盘操作、文案键解析 |
 | 连接器行为 | 临时脚本（假 spawn） | Grok 重试门控（AUTH/429 不重试、格式错误重试、过长不重试） |
 
 模块图七规则（`tools/lib/module-graph.cjs`，零依赖，可由 `audit-extension.cjs` 在浏览器回归前自动执行，失败即中止）：
 
 | 规则 | 内容 |
 |---|---|
-| R1 | manifest content script 七件套顺序固定、文件存在、且不得包含 ESM 语法；动态注册的 classic 脚本（`pet-quotes.js`、`floating-pet.js`、`auto-start.js`）同约束 |
+| R1 | manifest content script 九件套顺序固定（`i18n.js` 先于所有 `t()` 调用方）、文件存在、且不得包含 ESM 语法；动态注册的 classic 脚本（`pet-quotes.js`、`floating-pet.js`、`auto-start.js`）同约束 |
 | R2 | 全部相对 import 必须解析到真实文件 |
 | R3 | extension 与 connector 全图无循环依赖 |
 | R4 | connector 的 import 闭包内的 extension 文件必须属于 §4.1 共享协议清单，且能在 Node 中安全 import（顶层不触碰浏览器 API） |
@@ -386,15 +400,17 @@ MV3 下改代码必须重载扩展：service worker 变更需重载扩展本身�
 | 18 | 下一批要等上一批结束；一批抛错就停掉整页；译文要等整批结束才出现 | 附近最多两批同时在飞。一批失败只标失败段落，未连接服务时停住等待。流式进度先画出已经译完的段落 |
 | 19 | 服务商目录混入无官网、来源不明或与阅读场景不符的通道 | 移除 Jalapeno Cloud / Tensdaq / Atlas Cloud / Vercel / Replicate / Perplexity 六家及 `replicate` 协议实现与相关特判，服务商 32→26 家、协议 9→8 种；存量失效服务配置在加载归一化时静默丢弃 |
 | 20 | 页面层为手写 HTML/JS 无构建链：样式 token 多处重复、无产物门禁；伴读猫常驻所有页面；产品叙事未反映双模式定位 | 新增 `src/`（Vite + Lit 页面应用）+ `build/`（拷贝/manifest 变换插件、tokens 生成、dev 固定 key）构建链，`npm run build` → `dist/extension`，`verify:build` 产物门禁；`minimum_chrome_version` 升至 125；manifest content script 四件套→三件套，`floating-pet.js`/`auto-start.js` 改 `chrome.scripting` 按需动态注册；README/SPEC 按「双语翻译主模式 + 阅读辅助副模式」重写 |
-| 21 | options 页仍为经典 imperative 实现，与已迁移的 popup/welcome 两套 UI 体系并存；商店文案与 Release 说明仍是单模式旧口径 | options 迁移至 `src/pages/options`（Lit shell + 11 分区静态模板，`options-controller.js` 与 `@ext/ui/history.js` 动态填充），`REPLACED_BY_BUILD` 增加 options/options-nav/history 四项，三个扩展页全部 Lit 化；`verify:build` 新增 options 路由/主题/侧栏/弹层检查；`_locales` extDescription 与 Release 包内容清单改双模式与构建产物口径 |
+| 21 | options 页仍为经典 imperative 实现，与已迁移的 popup/welcome 两套 UI 体系并存；商店文案与 Release 说明仍是单模式旧口径 | options 迁移至 `src/pages/options`（Lit shell + 12 分区静态模板，`options-controller.js` 与 `@ext/ui/history.js` 动态填充），`REPLACED_BY_BUILD` 增加 options/options-nav/history 四项，扩展页全部 Lit 化；`verify:build` 新增 options 路由/主题/侧栏/弹层检查；`_locales` extDescription 与 Release 包内容清单改双模式与构建产物口径 |
+| 22 | 全界面硬编码中文，无双语切换 | 新增 `extension/i18n.js` 运行时字典（约 1,600 键双语对齐，`node tools/check-dict.cjs` 校验）；四个扩展页、页内挂件、伴读猫、后台错误消息全部接入；偏好 `roamcat_ui_lang` ∈ auto/zh/en，`auto` 跟随浏览器语言；content script 受限上下文经 `STATE_GET`/`SS_REFRESH` 同步；各页顶栏语言循环钮 |
+| 23 | 深色主题为 Relingo 蓝灰调色板，与 tokens.css 漂移、材质发糊 | 深色重设计为砚台冷墨材质（`#0b0e13` 微蓝底/象牙字/瓷白主键/琥珀收敛为语义色）；`ui.css` 重复 token 块清除，主题色回归 `src/styles/tokens.css` 单一事实源；新增 `--rc-face-panel` 大面板材质（大卡与小控件分层） |
 
 
 ### 14.2 遗留 / 观察项
 - 视频字幕代码（`video-subtitles.js`、`youtube-captions-bridge.js`、vendor 许可）因 `VIDEO_SUPPORT_ENABLED=false` 不可达，保留待启用。
 - API 模式每个新 (provider, endpoint, model, key) 组合会多发一次 128-token 能力探测请求（1 小时缓存）。
-- 伴读猫在所有 http/https 页面常驻（STATE_GET + Shadow DOM + 主题探测）。
+- 伴读猫默认开启、经 `chrome.scripting` 按需注册到普通网页（关闭后不注入）。
 - Linux 连接器实测覆盖不足；Google 高思考模型等待时间是独立性能问题。
-- `welcome.js` 保留两处 `console` 排障日志。
+- `src/pages/welcome/welcome-app.js` 保留两处 `console.error` 排障日志。
 
 ### 14.3 规范符合性核对（chrome-extensions 技能包 Output Checklist）
 MV3 ✓ · 图标文件真实存在 ✓ · 无内联脚本/处理器 ✓ · async/await ✓ · SW 无内存态假设 ✓ · `action` 存在 ✓ · offscreen 仅用 runtime 消息 ✓ · 图片引用均为真实文件 ✓ · 内容脚本 rAF 批量 ✓ · `host_permissions` 需在上架前补充措辞（宽泛）· `chrome.action.openPopup`（127+）已有降级提示 · `chrome.storage.setAccessLevel`（136+）已做特性检测。

@@ -30,7 +30,26 @@ export function normalizeSettings(value = {}) {
   settings.providerKind = ['chatgpt','grok','antigravity','api'].includes(value.providerKind) ? value.providerKind : (value.provider?.apiKey ? 'api' : 'chatgpt');
   const legacyProvider = !Array.isArray(value.apiServices) && Object.hasOwn(value,'provider');
   const rows = Array.isArray(value.apiServices) ? value.apiServices : (legacyProvider ? [{id:'legacy-api',name:M('原有 API 服务','Legacy API service'),baseUrl:value.provider?.baseUrl,model:value.provider?.model,apiKey:value.provider?.apiKey}] : []);
-  const seen=new Set();settings.apiServices=rows.flatMap(row=>{try{const service=normalizeApiService(row);if(!service.id||seen.has(service.id))return [];seen.add(service.id);return [service];}catch{return [];}});
+  const seen=new Set();
+  // 读取侧容错：存量行先严格归一化；失败则剔除未知字段、丢弃畸形的 apiKeys/主密钥后重试，
+  // 仍失败（如服务商已下架、地址不可用）才丢弃并告警——告警只含 id/name/providerId，绝不打印密钥。
+  const SERVICE_FIELDS=['id','name','providerId','baseUrl','model','apiKey','apiKeys','options','maxConcurrency'];
+  settings.apiServices=rows.flatMap(row=>{
+    const attempt=input=>{const service=normalizeApiService(input);if(!service.id||seen.has(service.id))return null;seen.add(service.id);return service;};
+    let service=null,reason='';
+    try{service=attempt(row);}catch(first){
+      if(row&&typeof row==='object'&&!Array.isArray(row)){
+        const stripped={};for(const key of SERVICE_FIELDS)if(Object.hasOwn(row,key))stripped[key]=row[key];
+        if(!Array.isArray(stripped.apiKeys))delete stripped.apiKeys;
+        if(typeof stripped.apiKey!=='string')stripped.apiKey='';
+        try{service=attempt(stripped);}catch(retry){reason=retry?.message||first?.message||'';}
+      }
+      else reason=first?.message||'';
+    }
+    if(service)return [service];
+    if(row&&typeof row==='object'&&!Array.isArray(row))console.warn('RoamCat: 已丢弃无法识别的 API 服务配置',{id:row.id,name:row.name,providerId:row.providerId,reason});
+    return [];
+  });
   settings.activeApiServiceId = settings.apiServices.some(service=>service.id===value.activeApiServiceId) ? value.activeApiServiceId : (legacyProvider&&settings.apiServices.some(service=>service.id==='legacy-api')?'legacy-api':'');
   // 任务路由：仅保留已知任务且指向现存服务的条目；失效引用静默回落到默认服务。
   const routingSource=value.apiRouting&&typeof value.apiRouting==='object'&&!Array.isArray(value.apiRouting)?value.apiRouting:{};

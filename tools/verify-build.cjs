@@ -79,13 +79,16 @@ function* walkFiles(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:tr
 
    const page=await context.newPage();page.setDefaultTimeout(10000);
    page.on('pageerror',e=>report.pageErrors.push(e.message));
+   // auto 主题契约是「无 data-theme 属性、由媒体查询驱动」，种一个非 auto 值
+   // 才能区分 theme-init.js 已执行与根本没跑。
+   await context.addInitScript(()=>{try{localStorage.setItem('roamcat_ui_theme','dark');}catch{}});
    await page.goto(`chrome-extension://${id}/ui/popup.html`);
 
    await check('Popup renders in built extension',async()=>{
      await page.locator('#toggle-page').waitFor();
      assert.equal(await page.locator('.popup-brand-name').textContent(),'ROAMCAT');
      assert.equal(await page.evaluate(()=>getComputedStyle(document.body).width),'360px','样式表未生效');
-     assert.match(await page.evaluate(()=>document.documentElement.dataset.theme||''),/^(light|dark)$/u,'theme-init.js 未执行');
+     assert.equal(await page.evaluate(()=>document.documentElement.dataset.theme||''),'dark','theme-init.js 未执行');
      await page.screenshot({path:path.join(out,'build-popup.png')});
      return {theme:await page.evaluate(()=>document.documentElement.dataset.theme)};
    });

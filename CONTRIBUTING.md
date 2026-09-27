@@ -30,6 +30,7 @@ CI 会强制以下检查，本地先跑一遍能省一轮返工：
 2. **`npm test`** — `tools/unit/**/*.test.mjs`，纯 Node 单测。
 3. **消息协议单一事实源**：新增消息类型必须先在 `extension/message-protocol.js` 的 `MESSAGE_TYPES` 登记并写校验器，background 注册表必须与之一一对应。
 4. **信任边界**：`sender.id !== chrome.runtime.id` 的消息一律拒绝；网页可见类型仅限 `CONTENT_ALLOWED_TYPES` 子集。修改路由/校验逻辑必须附带对应单测。
+5. **界面文案双语**：新增/修改用户可见文案必须在 `extension/i18n.js` 的 `DICTS.zh` 与 `DICTS.en` 各加同名键（`node tools/check-dict.cjs` 校验对齐），页面用 `t()`/`T()`/`M()` 取值，不得再写死单一语言。改完界面文案跑 `npm run verify:ui` 与 `npm run verify:pet`（含英文档断言）。
 
 ## 提交规范
 

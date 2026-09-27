@@ -224,7 +224,7 @@
     --rc-ink-secondary: #4c4a41;
     --rc-ink-tertiary: #6f6c5e;
     --rc-ink-dim: #7a7768;
-    --rc-ink-faint: #9b9889;
+    --rc-ink-faint: #7f7c69;
     --rc-ink-strong: #000000;
     --rc-ink-soft: rgba(22, 21, 17, 0.06);
     --rc-ink-line: rgba(22, 21, 17, 0.28);
@@ -338,7 +338,7 @@
     --rc-ink-secondary: #bcb6a5;
     --rc-ink-tertiary: #908b7c;
     --rc-ink-dim: #908b7c;
-    --rc-ink-faint: #6d695c;
+    --rc-ink-faint: #848070;
     --rc-ink-strong: #f9f5e8;
     --rc-ink-soft: rgba(236, 231, 217, 0.07);
     --rc-ink-line: rgba(236, 231, 217, 0.22);

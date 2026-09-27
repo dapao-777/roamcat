@@ -16,8 +16,9 @@
   try {
     var savedTheme = localStorage.getItem('roamcat_ui_theme') || 'auto';
     if (savedTheme === 'auto') {
-      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+      // auto 契约：不留 data-theme，由 tokens.css 的 prefers-color-scheme 媒体查询驱动，
+      // 这样系统主题切换会实时生效；固定值会把 auto 冻结在首次解析结果上。
+      document.documentElement.removeAttribute('data-theme');
     } else {
       document.documentElement.setAttribute('data-theme', savedTheme);
     }

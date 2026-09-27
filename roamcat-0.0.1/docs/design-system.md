@@ -73,8 +73,9 @@ emboss / engrave / lacquer / key-* / brass / track / knob / grain`）。
 `data-theme="light|dark"` 显式覆盖（`theme-init.js` 在绘制前写入，防闪烁）。
 别名在 `common` 段以 `var(--rc-*)` 定义，use-site 解析自动跟随主题。
 
-亮色主题是「纸墨」本体；暗色主题是「砚台石墨漆面」——accent 从暖黑切换为琥珀金
-`#f0a63c`，材质渐变随之换成近中性面 + 细高光刃口。
+亮色主题是「纸墨」本体；暗色主题是「砚台冷墨」——微蓝砚底 `#0b0e13`、
+暖象牙字 `#ece7d9`、瓷白漆主键（浅漆镜像），琥珀金 `#f0a63c` 收敛为纯语义
+强调（选中边框/焦点环/激活态）；材质渐变换成近中性面 + 细高光刃口。
 
 ### 3.3 拟物材质层（可选装饰，缺省即退化为扁平）
 
@@ -82,7 +83,7 @@ emboss / engrave / lacquer / key-* / brass / track / knob / grain`）。
 
 | token | 语义 |
 |---|---|
-| `--rc-face / -raised / -well` | 象牙瓷面 / 抬升面 / 凹井面（左上光源三段渐变） |
+| `--rc-face / -raised / -well / -panel` | 象牙瓷面 / 抬升面 / 凹井面 / 大面板柔光（`-panel` 只留顶缘微光，专供 hero 等大卡片；小控件用 `-raised`） |
 | `--rc-rim / -soft`、`--rc-edge-hi` | 沿口描边与受光棱线 |
 | `--rc-inset / -soft`、`--rc-cast / -hover`、`--rc-press`、`--rc-well-shadow` | 内嵌高光、外投影、按下塌陷、刻井阴影 |
 | `--rc-emboss / --rc-engrave` | 文字凸印 / 凹刻 |

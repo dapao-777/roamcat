@@ -6,7 +6,11 @@
 
 ### 已有
 
-- **程序员站点档案**：新增 `site-profiles.js`（content script 八件套之一）——按 hostname/生成器匹配 GitHub、Reddit（新旧 UI）、Hacker News、Stack Exchange 系、Discourse、dev.to（Forem）、Lobsters，向 SKIP 体系注入站点级跳过/构件选择器并可指定阅读根；代码区、diff、文件树、署名/时间戳/投票/标签、侧栏与页眉页脚不再进阅读块，构件区归入整页翻译的 chrome 分区。新增 `npm run verify:sites` fixture 验收（`--live` 复核真站）。
+- **全界面中英双语**：新增 `extension/i18n.js` 运行时字典（约 1,600 键双语对齐），设置页、弹窗、引导页、阅读器、页内挂件、伴读猫与后台错误消息统一切换；偏好 `roamcat_ui_lang` 支持跟随浏览器/中文/English，语言变更经 `SS_REFRESH` 快照即时同步所有页面与内容脚本（含 storage 受限上下文的 `STATE_GET` 回退）；各页顶栏提供语言循环钮。
+- **深色主题重设计**：砚台冷墨材质——微蓝砚底 `#0b0e13`、暖象牙字、瓷白漆主键、琥珀金收敛为语义强调；`ui.css` 重复 token 块清除，主题色回归 `src/styles/tokens.css` 单一事实源；新增 `--rc-face-panel` 大面板材质。
+- **欢迎页改版**：材质接入新 token 体系，顶栏新增主题/语言循环钮，移除点阵分隔带。
+- **新门禁**：`npm run verify:ui`（77 项：全页面/挂件遍历、明暗主题、中英文断言、溢出与控制台检查）、`npm run verify:pet`（65 项：伴读猫全部按钮真实点击）；`node tools/check-dict.cjs` 双语典对齐校验。
+- **程序员站点档案**：新增 `site-profiles.js`（content script 九件套之一）——按 hostname/生成器匹配 GitHub、Reddit（新旧 UI）、Hacker News、Stack Exchange 系、Discourse、dev.to（Forem）、Lobsters，向 SKIP 体系注入站点级跳过/构件选择器并可指定阅读根；代码区、diff、文件树、署名/时间戳/投票/标签、侧栏与页眉页脚不再进阅读块，构件区归入整页翻译的 chrome 分区。新增 `npm run verify:sites` fixture 验收（`--live` 复核真站）。
 - **整页翻译失败恢复升级**：失败单元由「仅自动重试一次」改为分级退避重试（默认 2.5s→6s→14s，共 3 次）——批级失败按错误码分类（限流/HTTP/解析类可重试，鉴权/协议/封装类直接失败），可重试时整泵进入一拍冷却避免持续捶打；退避期间单元为静默 `retrying` 态不渲染失败 UI，状态条显示「重试中 N」，耗尽后才露出「重试这一段」。
 
 ## [0.0.1] - 2026-09

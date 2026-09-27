@@ -11,7 +11,10 @@
       skip: [
         '.blob-code', '.blob-num', 'table.diff-table', '.js-file-line-container', '.react-code-lines', '.react-code-text', '.react-file-line', '.js-file', '.file-header', '[data-tagsearch-path]', '.diff-text', '[data-diff-anchor]',
         '[role="tree"]', '#repos-file-tree', '[class*="TreeView"]', 'table[aria-labelledby="folders-and-files"]', '.react-directory-filename-cell', '.react-directory-commit-message', '[data-testid="latest-commit-html"]',
-        'a.author', '[data-testid="avatar-link"]', '[data-testid="actor-link"]', '[data-testid="issue-body-header-author"]', '[class*="AuthorLink-module"]', '[class*="ActivityHeader-module__AuthorName"]', 'a[data-hovercard-type="user"]', 'relative-time', '.commit-ref', '[class*="BranchName"]', '.IssueLabel', '.Label', '.topic-tag', '[class*="TopicTag"]', '.Counter', '#repository-details-container', '[data-testid="breadcrumbs"]', '#file-name-id-wide', '#file-name-id'
+        'a.author', '[data-testid="avatar-link"]', '[data-testid="actor-link"]', '[data-testid="issue-body-header-author"]', '[class*="AuthorLink-module"]', '[class*="ActivityHeader-module__AuthorName"]', 'a[data-hovercard-type="user"]', 'relative-time', '.commit-ref', '[class*="BranchName"]', '.IssueLabel', '.Label', '.topic-tag', '[class*="TopicTag"]', '.Counter', '#repository-details-container', '[data-testid="breadcrumbs"]', '#file-name-id-wide', '#file-name-id',
+        // 仓库/星标/搜索列表的元信息行（语言·星标·证书·时间戳）——纯数据不进翻译单元，
+        // 否则块级译文插进行内流会把整行撑散成逐项竖排；仓库名是标识符同样不译。
+        '#user-repositories-list .f6', '#user-repositories-list h3', '#user-starred-repos .f6', '#user-starred-repos h3', '[data-testid="results-list"] .f6', '[data-testid="results-list"] h3', '.opened-by'
       ],
       chrome: [
         '.AppHeader', '.UnderlineNav', '.tabnav', '#partial-discussion-sidebar', '#pr-conversation-sidebar', '.discussion-sidebar', '[data-testid="issue-viewer-metadata-pane"]', '.Layout-sidebar', '.BorderGrid', '[class*="SidebarSection-module"]', '[class*="SignedOutBanner"]', '.timeline-comment-header', '[class*="ActivityHeader-module"]', '.TimelineItem-body:not(:has(.comment-body))', '.TimelineBody:not(:has([class*="IssueCommentViewer"]))'

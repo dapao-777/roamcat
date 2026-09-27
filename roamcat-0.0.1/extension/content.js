@@ -1288,7 +1288,7 @@ const LIMIT_ERROR = T('c.limit');
     },onSettingsChange:async patch=>{const result=await request('VIDEO_SETTINGS_PATCH',{patch});state.settings.video=result.video;return result;}});
   }
   function emergencyText(node) {
-    if(node.nodeType===Node.TEXT_NODE)return node.nodeValue;
+    if(node.nodeType===Node.TEXT_NODE)return node.nodeValue.replace(/\s+/g,' ');
     if(node.nodeType!==Node.ELEMENT_NODE||node.namespaceURI!=='http://www.w3.org/1999/xhtml')return '';
     if(node.matches(SKIP_HARD)||node.hasAttribute(OWN)&&!['term','annotation'].includes(node.getAttribute(OWN))||hiddenStyle(getComputedStyle(node)))return '';
     if(node.tagName==='BR')return '\n';

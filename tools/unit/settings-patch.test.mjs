@@ -277,6 +277,42 @@ test('apiServiceKeys/apiKeyPoolPick/apiKeyPoolCool 轮换语义', () => {
   assert.equal(apiKeyPoolPick(service, state, {now: 200_000}).service.apiKey !== '', true);
 });
 
+test('normalizeSettings 对存量服务读取侧容错：剔除未知字段可救回，真正失效才丢弃', () => {
+  const warnings = [];
+  const originalWarn = console.warn;
+  console.warn = (...args) => warnings.push(args);
+  try {
+    const stored = normalizeSettings({
+      apiServices: [
+        // 带未知字段（版本间 schema 漂移）→ 剔除后救回，密钥保留。
+        {id: 'keep', name: 'keep', providerId: 'deepseek', baseUrl: 'https://api.deepseek.com', model: 'm', apiKey: 'sk-keep', apiKeys: ['sk-keep', 'sk-2'], options: {}, futureField: 1},
+        // apiKeys 畸形 → 丢弃池但保留主密钥。
+        {id: 'pool-broken', name: 'pb', providerId: 'openai', baseUrl: 'https://api.openai.com/v1', model: 'm', apiKey: 'sk-main', apiKeys: 'oops'},
+        // 服务商已下架 → 无法救回，丢弃并告警。
+        {id: 'gone', name: 'gone', providerId: 'removed-provider', baseUrl: 'https://api.x.com/v1', model: 'm', apiKey: 'sk-x'},
+      ],
+      activeApiServiceId: 'keep',
+      apiRouting: {assist: 'keep', support: 'gone'},
+    });
+    const ids = stored.apiServices.map(service => service.id);
+    assert.deepEqual(ids, ['keep', 'pool-broken']);
+    assert.equal(stored.apiServices[0].apiKey, 'sk-keep');
+    assert.deepEqual(stored.apiServices[0].apiKeys, ['sk-keep', 'sk-2']);
+    assert.deepEqual(stored.apiServices[1].apiKeys, ['sk-main']);
+    assert.equal(stored.activeApiServiceId, 'keep');
+    assert.equal(stored.apiRouting.assist, 'keep');
+    assert.equal(stored.apiRouting.support, '');
+    // 告警只携带非敏感字段，绝不含密钥。
+    assert.equal(warnings.length, 1);
+    const meta = warnings[0][1];
+    assert.equal(meta.id, 'gone');
+    assert.equal(meta.providerId, 'removed-provider');
+    assert.ok(!JSON.stringify(meta).includes('sk-'));
+  } finally {
+    console.warn = originalWarn;
+  }
+});
+
 test('apiProviderForTask 按任务解析并回落默认服务', () => {
   const settings = normalizeSettings();
   const svc = (id) => ({id, name: id, providerId: 'openai-compatible', baseUrl: 'https://api.example.com/v1', model: 'm', apiKey: 'k', apiKeys: ['k'], options: {}, maxConcurrency: 2});
