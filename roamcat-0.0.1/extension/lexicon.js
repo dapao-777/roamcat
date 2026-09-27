@@ -12,6 +12,8 @@
 import { wordId, DOMAINS } from './shared.js';
 import { sourceTokens } from './sentence-groups.mjs';
 
+const M=(zh,en)=>globalThis.RoamCatI18n?.lang?.()==='en'?en:zh;
+
 // 词频表是 440KB 的生成文件：按需装载，Service Worker 因非阅读事件
 // （STATE_GET、订阅状态、标签切换等）唤醒时不再付出解析与建表成本。
 // ServiceWorkerGlobalScope 禁止动态 import()（w3c/ServiceWorker#1356），
@@ -24,7 +26,7 @@ export async function ensureLexicon() {
   if (frequencyRank) return;
   if (inServiceWorker) {
     const response = await fetch(chrome.runtime.getURL('frequency/english-frequency.txt'));
-    if (!response.ok) throw new Error('词频表读取失败：HTTP ' + response.status);
+    if (!response.ok) throw new Error(M('词频表读取失败：HTTP ','Frequency table fetch failed: HTTP ') + response.status);
     const words = (await response.text()).split('\n').filter(Boolean);
     frequencyRank = new Map(words.map((word, index) => [word, index + 1]));
   } else {
@@ -33,7 +35,7 @@ export async function ensureLexicon() {
   }
 }
 function rankTable() {
-  if (!frequencyRank) throw new Error('词频表尚未加载：调用方须先 await ensureLexicon()。');
+  if (!frequencyRank) throw new Error(M('词频表尚未加载：调用方须先 await ensureLexicon()。','Frequency table not loaded; callers must await ensureLexicon() first.'));
   return frequencyRank;
 }
 

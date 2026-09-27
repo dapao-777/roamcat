@@ -11,6 +11,8 @@
  */
 import {DOMAINS} from './shared.js';
 
+const M=(zh,en)=>globalThis.RoamCatI18n?.lang?.()==='en'?en:zh;
+
 export const ROUTE_VERSION = 1;
 // Only narrowly scoped professional sites/paths; user-generated-content hosts are not whole-site rules.
 const BUILTIN_RULES = [
@@ -26,23 +28,23 @@ const BUILTIN_RULES = [
 ].map(([host,pathPrefix,domain]) => ({host,pathPrefix,domain,includeSubdomains:false}));
 
 export function normalizeDomainRules(rules) {
-  if (!Array.isArray(rules) || rules.length > 200) throw new Error('网站规则最多保存 200 条。');
+  if (!Array.isArray(rules) || rules.length > 200) throw new Error(M('网站规则最多保存 200 条。','At most 200 site rules can be saved.'));
   const keys = new Set();
   return rules.map(rule => {
-    if (!rule || typeof rule !== 'object' || Array.isArray(rule)) throw new Error('无效的网站规则。');
-    if (!Object.hasOwn(DOMAINS,rule.domain) || rule.domain === 'auto') throw new Error('网站规则需要指定领域，或明确选择通用阅读。');
-    if (typeof rule.host !== 'string' || rule.host.length > 253 || !rule.host.trim() || /[\s/@?#]/.test(rule.host.trim())) throw new Error('请输入域名，不包含协议、端口或路径。');
+    if (!rule || typeof rule !== 'object' || Array.isArray(rule)) throw new Error(M('无效的网站规则。','Invalid site rule.'));
+    if (!Object.hasOwn(DOMAINS,rule.domain) || rule.domain === 'auto') throw new Error(M('网站规则需要指定领域，或明确选择通用阅读。','A site rule needs a specific domain, or choose General reading explicitly.'));
+    if (typeof rule.host !== 'string' || rule.host.length > 253 || !rule.host.trim() || /[\s/@?#]/.test(rule.host.trim())) throw new Error(M('请输入域名，不包含协议、端口或路径。','Enter a domain without protocol, port, or path.'));
     let parsed;
-    try { parsed = new URL(`https://${rule.host.trim()}`); } catch { throw new Error('网站域名无效。'); }
+    try { parsed = new URL(`https://${rule.host.trim()}`); } catch { throw new Error(M('网站域名无效。','Invalid site domain.')); }
     const host = parsed.hostname.toLowerCase().replace(/\.$/,'');
-    if (parsed.port || !host || host.includes('*') || parsed.username || parsed.password) throw new Error('网站域名不能包含端口或通配符；子域名请使用开关。');
+    if (parsed.port || !host || host.includes('*') || parsed.username || parsed.password) throw new Error(M('网站域名不能包含端口或通配符；子域名请使用开关。','A site domain cannot contain a port or wildcard; use the subdomain toggle instead.'));
     const prefix = rule.pathPrefix ?? '/';
-    if (typeof prefix !== 'string' || prefix.length > 500 || !prefix.startsWith('/') || prefix.startsWith('//') || /[?#\s]/.test(prefix)) throw new Error('路径应以 / 开头，不包含查询参数或片段。');
+    if (typeof prefix !== 'string' || prefix.length > 500 || !prefix.startsWith('/') || prefix.startsWith('//') || /[?#\s]/.test(prefix)) throw new Error(M('路径应以 / 开头，不包含查询参数或片段。','A path must start with / and must not contain query params or fragments.'));
     const pathPrefix = new URL(prefix,'https://rules.invalid').pathname.replace(/\/+$/,'') || '/';
-    if (rule.includeSubdomains !== undefined && typeof rule.includeSubdomains !== 'boolean') throw new Error('子域名选项必须为开关。');
+    if (rule.includeSubdomains !== undefined && typeof rule.includeSubdomains !== 'boolean') throw new Error(M('子域名选项必须为开关。','The subdomain option must be a boolean.'));
     const includeSubdomains = rule.includeSubdomains === true;
     const key = JSON.stringify([host,pathPrefix,includeSubdomains]);
-    if (keys.has(key)) throw new Error('相同域名、路径和子域名范围不能重复添加规则。');
+    if (keys.has(key)) throw new Error(M('相同域名、路径和子域名范围不能重复添加规则。','A rule with the same domain, path, and subdomain scope already exists.'));
     keys.add(key);
     return {host,pathPrefix,includeSubdomains,domain:rule.domain};
   });

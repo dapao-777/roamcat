@@ -13,21 +13,23 @@ import {createHistoryStore} from './history-store.js';
 import {createPersonalization} from './personalization.mjs';
 import {supportState} from './reading.js';
 
+const M=(zh,en)=>globalThis.RoamCatI18n?.lang?.()==='en'?en:zh;
+
 const CONFIG='readingHistory', SESSIONS='readingHistorySessions';
 const DOMAINS=new Set(['general','tech','data','finance','medical','legal','design']);
 const defaults=()=>({enabled:false,origins:[],summaries:false,personalization:false,autoApply:false,startedAt:0,epoch:0});
 const bounded=(value,max)=>typeof value==='string'?value.slice(0,max):'';
 const digest=async value=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value))),n=>n.toString(16).padStart(2,'0')).join('');
 function validateConfig(patch,current){
-  if(!patch||typeof patch!=='object'||Array.isArray(patch)||Object.keys(patch).some(k=>!['enabled','origins','summaries','personalization','autoApply'].includes(k)))throw new Error('历史设置无效。');
+  if(!patch||typeof patch!=='object'||Array.isArray(patch)||Object.keys(patch).some(k=>!['enabled','origins','summaries','personalization','autoApply'].includes(k)))throw new Error(M('历史设置无效。','Invalid history settings.'));
   const next={...current};
-  for(const key of ['enabled','summaries','personalization','autoApply'])if(patch[key]!==undefined){if(typeof patch[key]!=='boolean')throw new Error('历史开关无效。');next[key]=patch[key];}
+  for(const key of ['enabled','summaries','personalization','autoApply'])if(patch[key]!==undefined){if(typeof patch[key]!=='boolean')throw new Error(M('历史开关无效。','Invalid history toggles.'));next[key]=patch[key];}
   if(patch.origins!==undefined){
-    if(!Array.isArray(patch.origins)||patch.origins.length>100)throw new Error('历史授权网站最多 100 个。');
-    next.origins=[...new Set(patch.origins.map(value=>{let url;try{url=new URL(value);}catch{throw new Error('请输入完整网站 origin。');}if(!['https:','http:'].includes(url.protocol)||url.username||url.password||url.pathname!=='/'||url.search||url.hash)throw new Error('历史网站只接受协议和主机，不接受路径或查询参数。');return url.origin;}))];
+    if(!Array.isArray(patch.origins)||patch.origins.length>100)throw new Error(M('历史授权网站最多 100 个。','At most 100 authorized sites for history.'));
+    next.origins=[...new Set(patch.origins.map(value=>{let url;try{url=new URL(value);}catch{throw new Error(M('请输入完整网站 origin。','Please enter a complete site origin.'));}if(!['https:','http:'].includes(url.protocol)||url.username||url.password||url.pathname!=='/'||url.search||url.hash)throw new Error(M('历史网站只接受协议和主机，不接受路径或查询参数。','History sites accept scheme + host only — no path or query params.'));return url.origin;}))];
   }
-  if((patch.summaries===true||patch.personalization===true)&&(!next.enabled||!next.origins.length))throw new Error('请先开启阅读记录并添加允许网站。');
-  if(patch.autoApply===true&&!next.personalization)throw new Error('请先开启个性化分析。');
+  if((patch.summaries===true||patch.personalization===true)&&(!next.enabled||!next.origins.length))throw new Error(M('请先开启阅读记录并添加允许网站。','Enable reading history and add allowed sites first.'));
+  if(patch.autoApply===true&&!next.personalization)throw new Error(M('请先开启个性化分析。','Enable personalized analysis first.'));
   if(!next.origins.length){next.summaries=false;next.personalization=false;next.autoApply=false;}
   if(!next.enabled){next.summaries=false;next.personalization=false;next.autoApply=false;}
   if(!next.personalization)next.autoApply=false;
@@ -37,7 +39,7 @@ export function createReadingHistory({storage,session,source,paused,writable=()=
   let config=defaults(),meta={overrides:[],profile:null},problem='',queue=Promise.resolve(),nextAnalysisCheck=0;
   const serial=fn=>{const next=queue.then(fn,fn);queue=next.catch(()=>{});return next;};
   const reload=async()=>{meta=await store.meta();};
-  const ready=storage.get(CONFIG).then(async data=>{const saved=data[CONFIG];if(saved){try{config={...validateConfig({enabled:saved.enabled,origins:saved.origins,summaries:saved.summaries,personalization:saved.personalization,autoApply:saved.autoApply},defaults()),startedAt:Number(saved.startedAt)||0,epoch:Number(saved.epoch)||0};await reload();}catch{config=defaults();problem='历史存储无法读取，已停止采集。';}}}).catch(()=>{problem='历史授权无法读取，已停止采集。';});
+  const ready=storage.get(CONFIG).then(async data=>{const saved=data[CONFIG];if(saved){try{config={...validateConfig({enabled:saved.enabled,origins:saved.origins,summaries:saved.summaries,personalization:saved.personalization,autoApply:saved.autoApply},defaults()),startedAt:Number(saved.startedAt)||0,epoch:Number(saved.epoch)||0};await reload();}catch{config=defaults();problem=M('历史存储无法读取，已停止采集。','History storage is unreadable; collection stopped.');}}}).catch(()=>{problem=M('历史授权无法读取，已停止采集。','History authorization is unreadable; collection stopped.');});
   const engine=createPersonalization({history:store,config:async()=>{await ready;return {...config,enabled:config.enabled&&writable(),assistanceMode:(await state()).settings.assistanceMode};},runModel,onChange:async()=>{const previous=JSON.stringify(meta.profile?.after);await reload();await onChange({keepDefinitions:previous===JSON.stringify(meta.profile?.after)});}});
   async function allowed(sender,active=false){
     await ready;if(!writable()||!config.enabled||sender.tab?.incognito||sender.frameId!==0)return null;
@@ -55,13 +57,13 @@ export function createReadingHistory({storage,session,source,paused,writable=()=
   function policy(){const profile=meta.profile;return writable()&&config.enabled&&config.personalization&&profile?.expiresAt>Date.now()?profile.after:null;}
   function effective(word,senseKey){
     const manual=meta.overrides?.find(v=>v.wordId===word.id&&v.senseKey===senseKey);
-    if(manual)return {stage:manual.stage,reason:'手动选择',origin:'manual',locked:manual.locked,expiresAt:0};
+    if(manual)return {stage:manual.stage,reason:M('手动选择','Manual choice'),origin:'manual',locked:manual.locked,expiresAt:0};
     const base=supportState(word,senseKey),sense=word.senses?.find(v=>v.key===senseKey),personal=policy();
-    if(word.hintPreference==='less'||sense?.hintPreference==='less')return {...base,reason:'你选择了减少提示',origin:'manual',locked:false,expiresAt:0};
-    if(base.stage!=='quiet'&&['hint','mark'].includes(personal?.annotation?.depth))return {stage:personal.annotation.depth,reason:'已生效的个性化调整',origin:'adaptive',locked:false,expiresAt:meta.profile.expiresAt};
-    return {...base,reason:base.stage==='quiet'?'当前处于可恢复的暂缓提示期':base.stage==='mark'?'当前支持策略仅保留标记':'当前语境保留短注',origin:'default',locked:false,expiresAt:base.stage==='quiet'?sense?.quietUntil||0:0};
+    if(word.hintPreference==='less'||sense?.hintPreference==='less')return {...base,reason:M('你选择了减少提示','You chose fewer hints'),origin:'manual',locked:false,expiresAt:0};
+    if(base.stage!=='quiet'&&['hint','mark'].includes(personal?.annotation?.depth))return {stage:personal.annotation.depth,reason:M('已生效的个性化调整','Effective personalized adjustment'),origin:'adaptive',locked:false,expiresAt:meta.profile.expiresAt};
+    return {...base,reason:base.stage==='quiet'?M('当前处于可恢复的暂缓提示期','Currently in a resumable hint-pause period'):base.stage==='mark'?M('当前支持策略仅保留标记','The current support policy keeps marks only'):M('当前语境保留短注','A brief hint is kept for the current context'),origin:'default',locked:false,expiresAt:base.stage==='quiet'?sense?.quietUntil||0:0};
   }
-  async function report(operation){try{return await operation();}catch{problem='历史记录写入失败；阅读功能仍可使用，请导出现有记录后检查本机空间。';return false;}}
+  async function report(operation){try{return await operation();}catch{problem=M('历史记录写入失败；阅读功能仍可使用，请导出现有记录后检查本机空间。','Writing history failed; reading still works — export existing records and check local storage.');return false;}}
   async function snapshot(filter={}){await ready;const current=await state();const data=await store.snapshot(filter);await reload();return {...data,config:{...config},problem,knownWords:current.words.filter(w=>w.knownAt>0).map(w=>({wordId:w.id,term:w.term,domain:w.domain,kind:w.kind,knownAt:w.knownAt})).sort((a,b)=>b.knownAt-a.knownAt),legacyWords:current.words.filter(w=>(w.helpCount>0||w.requestedAt>0)&&(!config.startedAt||w.requestedAt<config.startedAt)).map(w=>({wordId:w.id,term:w.term,domain:w.domain,kind:w.kind,helpCount:w.helpCount,requestedAt:w.requestedAt,legacy:true})),rules:current.words.flatMap(w=>(w.senses||[]).map(s=>({wordId:w.id,senseKey:s.key,term:w.term,domain:w.domain,sense:s.label,...effective(w,s.key)})))};}
   const api={
     ready,policy,effective,
@@ -76,7 +78,7 @@ export function createReadingHistory({storage,session,source,paused,writable=()=
       const page=await allowed(sender,true);if(!page)return {recorded:false};const all=await sessions(),row=all[page.tabId];
       if(message.epoch!==config.epoch||!row||row.id!==message.sessionId||row.epoch!==config.epoch||row.sourceHash!==page.sourceHash||row.documentId!==(sender.documentId||null))return {recorded:false};
       if(!Number.isSafeInteger(message.sequence)||message.sequence<=row.sequence)return {recorded:false};
-      if(!Number.isInteger(message.elapsedMs)||message.elapsedMs<0||message.elapsedMs>5000||!Array.isArray(message.words)||message.words.length>500||message.words.some(v=>typeof v!=='string'||!/^[a-z0-9:._-]{1,100}$/i.test(v)))throw new Error('阅读统计信号无效。');
+      if(!Number.isInteger(message.elapsedMs)||message.elapsedMs<0||message.elapsedMs>5000||!Array.isArray(message.words)||message.words.length>500||message.words.some(v=>typeof v!=='string'||!/^[a-z0-9:._-]{1,100}$/i.test(v)))throw new Error(M('阅读统计信号无效。','Invalid reading-stats signal.'));
       const now=Date.now(),elapsedMs=Math.min(message.elapsedMs,Math.max(0,now-row.lastTick+100),5000),known=new Set(row.words),fresh=[...new Set(message.words)].filter(v=>!known.has(v)).slice(0,Math.max(0,20000-row.words.length));
       const event={id:row.id+':'+new Date(now).toISOString().slice(0,10),sequence:message.sequence,type:'reading',at:now,sessionId:row.id,domain:DOMAINS.has(message.domain)?message.domain:'general',elapsedMs,wordCount:new Set(fresh).size};
       const recorded=await report(()=>store.append(event));if(!recorded)return {recorded:false};
@@ -104,7 +106,7 @@ export function createReadingHistory({storage,session,source,paused,writable=()=
     async invalidateOutsideQueue(){await ready;const next={...config,epoch:config.epoch+1};await storage.set({[CONFIG]:next});config=next;await clearPendingSessions();},
     async clear({notify=true}={}){await ready;await serial(async()=>{await api.invalidateOutsideQueue();await store.clear();await session.remove(SESSIONS);await reload();problem='';if(notify)await onChange();});return {cleared:true};},
     async export(){await ready;return {config:{...config},...await store.snapshot({days:0,limit:Number.MAX_SAFE_INTEGER}),personalization:await store.meta()};},
-    async personalization(){await ready;const current=await state(),provider=current.settings.providerKind==='api'?current.settings.apiServices.find(v=>v.id===current.settings.activeApiServiceId):null;return {...await engine.snapshot(),config:{...config},serviceLabel:current.settings.providerKind==='api'?(provider?provider.name+' · '+provider.model:'未配置 API 服务'):current.settings.providerKind==='grok'?('Grok · '+(current.settings.subscriptionModel||'默认模型')):current.settings.providerKind==='antigravity'?('Google · '+(current.settings.subscriptionModel||'默认模型')):'ChatGPT · '+(current.settings.subscriptionModel||'默认模型')};},
+    async personalization(){await ready;const current=await state(),provider=current.settings.providerKind==='api'?current.settings.apiServices.find(v=>v.id===current.settings.activeApiServiceId):null;return {...await engine.snapshot(),config:{...config},serviceLabel:current.settings.providerKind==='api'?(provider?provider.name+' · '+provider.model:M('未配置 API 服务','No API service configured')):current.settings.providerKind==='grok'?('Grok · '+(current.settings.subscriptionModel||M('默认模型','Default model'))):current.settings.providerKind==='antigravity'?('Google · '+(current.settings.subscriptionModel||M('默认模型','Default model'))):'ChatGPT · '+(current.settings.subscriptionModel||M('默认模型','Default model'))};},
     async operate(method,value){await ready;if(method==='setOverride')await storage.set({[CONFIG]:config});await engine[method](value);await reload();return api.personalization();},
   };
   return api;

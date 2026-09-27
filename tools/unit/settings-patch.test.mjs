@@ -26,8 +26,9 @@ import {
   parseHistoryRecordRef,
   parseHistorySummaryEdit,
 } from '../../roamcat-0.0.1/extension/message-protocol.js';
-import {normalizeSettings} from '../../roamcat-0.0.1/extension/shared.js';
+import {normalizeSettings, apiProviderForTask} from '../../roamcat-0.0.1/extension/shared.js';
 import {SUBSCRIPTION_KINDS} from '../../roamcat-0.0.1/extension/subscription.js';
+import {apiServiceKeys, apiKeyPoolPick, apiKeyPoolCool} from '../../roamcat-0.0.1/extension/api-providers.mjs';
 
 const currentSettings = normalizeSettings();
 
@@ -213,4 +214,81 @@ test('parseHistoryRecordRef 与 parseHistorySummaryEdit 校验编号与摘要', 
   assert.deepEqual(parseHistorySummaryEdit({id: 'e1', summary: ' 摘要 '}), {id: 'e1', summary: '摘要'});
   assert.throws(() => parseHistorySummaryEdit({id: 'e1'}), /摘要不能为空/u);
   assert.throws(() => parseHistorySummaryEdit({id: 'e1', summary: 'x'.repeat(601)}), /不能超过 600/u);
+});
+
+test('validatePatch 校验任务路由（apiRouting）', () => {
+  const service = (id) => ({id, name: id, providerId: 'openai-compatible', baseUrl: 'https://api.example.com/v1', model: 'm', apiKey: 'k'});
+  const withServices = normalizeSettings();
+  withServices.apiServices = [service('a'), service('b')];
+  withServices.activeApiServiceId = 'a';
+  // 合法映射：任务 → 已保存服务；部分任务键在旧值上合并。
+  withServices.apiRouting = {assist: '', support: 'a', groups: '', translate: '', summary: ''};
+  const routed = validatePatch({apiRouting: {assist: 'b'}}, withServices);
+  assert.equal(routed.apiRouting.assist, 'b');
+  assert.equal(routed.apiRouting.support, 'a');
+  // 未知任务、非对象、引用不存在的服务均拒绝。
+  assert.throws(() => validatePatch({apiRouting: {bogus: 'a'}}, withServices), /未知任务/u);
+  assert.throws(() => validatePatch({apiRouting: []}, withServices), /无效的任务路由/u);
+  assert.throws(() => validatePatch({apiRouting: {assist: 'missing'}}, withServices), /必须引用已保存的服务/u);
+  // 空串表示回落默认服务。
+  assert.equal(validatePatch({apiRouting: {assist: ''}}, withServices).apiRouting.assist, '');
+});
+
+test('validatePatch 校验 API 服务多密钥池（apiKeys）', () => {
+  const service = (extra = {}) => ({id: 'one', name: 'one', providerId: 'openai-compatible', baseUrl: 'https://api.example.com/v1', model: 'm', apiKey: 'k1', ...extra});
+  const patch = (apiServices) => ({apiServices, activeApiServiceId: 'one'});
+  const single = validatePatch(patch([service({apiKeys: ['k1', 'k2', 'k2', ' k3 ']})]), currentSettings);
+  assert.deepEqual(single.apiServices[0].apiKeys, ['k1', 'k2', 'k3']);
+  assert.equal(single.apiServices[0].apiKey, 'k1');
+  // apiKey 主密钥会被并入轮换池首位去重。
+  const merged = validatePatch(patch([service({apiKeys: ['k2', 'k1']})]), currentSettings);
+  assert.deepEqual(merged.apiServices[0].apiKeys, ['k1', 'k2']);
+  // 非数组、超量、超长均拒绝。
+  assert.throws(() => validatePatch(patch([service({apiKeys: 'k2'})]), currentSettings), /轮换列表必须是数组/u);
+  assert.throws(() => validatePatch(patch([service({apiKeys: Array.from({length: 11}, (_, i) => `k${i}`)})]), currentSettings), /最多 10 把/u);
+  assert.throws(() => validatePatch(patch([service({apiKeys: ['x'.repeat(4097)]})]), currentSettings), /4096/u);
+  assert.throws(() => validatePatch(patch([service({apiKeys: [42]})]), currentSettings), /密钥必须是文本/u);
+  // 无 apiKeys 的旧数据归一化为单密钥池。
+  assert.deepEqual(validatePatch(patch([service()]), currentSettings).apiServices[0].apiKeys, ['k1']);
+});
+
+test('apiServiceKeys/apiKeyPoolPick/apiKeyPoolCool 轮换语义', () => {
+  const service = {apiKey: 'k1', apiKeys: ['k1', 'k2', 'k3']};
+  assert.deepEqual(apiServiceKeys(service), ['k1', 'k2', 'k3']);
+  assert.deepEqual(apiServiceKeys({apiKey: 'only'}), ['only']);
+  assert.deepEqual(apiServiceKeys({apiKeys: ['x', 'y']}), ['x', 'y']);
+  // 无状态（单密钥场景）：取首把且不包装服务。
+  const first = apiKeyPoolPick({apiKey: 'k1'}, null);
+  assert.equal(first.keyIndex, 0);
+  assert.equal(first.service.apiKey, 'k1');
+  // 轮询：连续 pick 循环各把；exclude 跳过已试过的下标。
+  const state = {cursor: 0, cooling: new Map()};
+  assert.equal(apiKeyPoolPick(service, state, {now: 0}).keyIndex, 0);
+  assert.equal(apiKeyPoolPick(service, state, {now: 0}).keyIndex, 1);
+  assert.equal(apiKeyPoolPick(service, state, {now: 0}).keyIndex, 2);
+  assert.equal(apiKeyPoolPick(service, state, {now: 0}).keyIndex, 0);
+  assert.equal(apiKeyPoolPick(service, state, {now: 0, exclude: new Set([0, 1])}).keyIndex, 2);
+  // 冷却中的密钥被跳过；全部冷却时选最早解冻的把（不返回 null，保证永不死锁）。
+  apiKeyPoolCool(state, 0, 60_000, 0);
+  apiKeyPoolCool(state, 2, 120_000, 0);
+  const pick = apiKeyPoolPick(service, state, {now: 1_000, exclude: new Set([1])});
+  assert.equal(pick.keyIndex, 0);
+  // 冷却到期自动清理。
+  assert.equal(apiKeyPoolPick(service, state, {now: 200_000}).service.apiKey !== '', true);
+});
+
+test('apiProviderForTask 按任务解析并回落默认服务', () => {
+  const settings = normalizeSettings();
+  const svc = (id) => ({id, name: id, providerId: 'openai-compatible', baseUrl: 'https://api.example.com/v1', model: 'm', apiKey: 'k', apiKeys: ['k'], options: {}, maxConcurrency: 2});
+  settings.apiServices = [svc('a'), svc('b')];
+  settings.activeApiServiceId = 'a';
+  settings.apiRouting = {assist: 'b', support: '', groups: '', translate: 'b', summary: ''};
+  assert.equal(apiProviderForTask(settings, 'assist').id, 'b');
+  assert.equal(apiProviderForTask(settings, 'translate').id, 'b');
+  assert.equal(apiProviderForTask(settings, 'support').id, 'a');
+  assert.equal(apiProviderForTask(settings, 'summary').id, 'a');
+  assert.equal(apiProviderForTask(settings, 'unknown-task'), settings.apiServices[0]);
+  // normalizeSettings 会清除悬空路由。
+  const dirty = normalizeSettings({apiServices: settings.apiServices, activeApiServiceId: 'a', apiRouting: {assist: 'gone'}});
+  assert.equal(dirty.apiRouting.assist, '');
 });

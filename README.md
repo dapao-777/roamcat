@@ -30,7 +30,7 @@
 
 > This project is a refactor, optimization, and repair of the open-source project [RelyLess](https://github.com/rockythink/relyless). Thanks to the original author, Bilibili creator [停车拾穗](https://live.bilibili.com/392612).
 
-**Local-first**: no servers operated, no telemetry, reading history off by default and gated per site. AI capability comes from a service you choose — a built-in local classification model, one of 26 bring-your-own API providers, or a local connector that reuses your ChatGPT / Grok / Antigravity subscription.
+**Local-first**: no servers operated, no telemetry, reading history off by default and gated per site. AI capability comes from a service you choose — a built-in local classification model, one of 28 bring-your-own API providers, or a local connector that reuses your ChatGPT / Grok / Antigravity subscription.
 
 <p align="center">
   <img src=".github/assets/welcome-light.png" alt="RoamCat welcome page" width="88%">
@@ -49,7 +49,7 @@
 
 ## Model services — your choice of source
 
-- **Bring-your-own API**: 26 providers across 8 protocols (OpenAI / DeepSeek / Gemini / Anthropic / Grok / OpenRouter / Ollama / Alibaba Cloud / Volcano Engine / Kimi / StepFun…), with structured-output capability probed first, then gracefully degraded.
+- **Bring-your-own API**: 28 providers across 8 protocols (OpenAI / DeepSeek / Gemini / Anthropic / Grok / OpenRouter / Ollama / Alibaba Cloud / Volcano Engine / Kimi / StepFun…), with structured-output capability probed first, then gracefully degraded.
 - **Subscription connector**: local Native Messaging reuses your official CLI entitlements — Codex CLI (ChatGPT subscription), Grok CLI (SuperGrok / X Premium+), Antigravity `agy` (Google AI Pro / Ultra).
 - **Local model**: bundled `Xenova/all-MiniLM-L6-v2` runs page-domain classification in an offscreen document + worker — fully offline, nothing to download.
 
@@ -73,9 +73,11 @@
 | Reading text & headings | Serif (Noto Serif SC → SimSun → Georgia), body 15px / 1.6 line-height |
 | Brand / digits / keycaps | Silkscreen pixel font (bundled woff2, works offline) |
 | Tags / POS / diagnostic codes | ui-monospace, 13px |
+| Palette | Paper `#faf9f4` + ink `#161511` in light mode (ink doubles as the accent); graphite `#0b0e13` + ivory `#ece7d9` + amber `#f0a63c` in dark |
+| Logo & marks | Scanline cat (`icons/roamcat.svg` + `roamcat-cat-ink.svg`, `fill="currentColor"`), dot-wave band, pixel spark |
 | Motion | 80 / 160 / 280 / 440ms tiers + `linear()` spring curves, honors `prefers-reduced-motion` |
 
-All visual decisions collapse into a single set of `--rc-*` tokens in `src/styles/tokens.css`; in-page components inject the same tokens via Shadow DOM + `design.js`, with zero pollution of site styles. Full spec and component inventory in the [design system doc](roamcat-0.0.1/docs/design-system.md) (中文).
+All visual decisions collapse into a single set of `--rc-*` tokens in `src/styles/tokens.css`; in-page components inject the same tokens via Shadow DOM + `design.js`, with zero pollution of site styles. Full spec and component inventory in the [design system doc](roamcat-0.0.1/docs/design-system.md) (中文); logo usage, palette ratios and voice rules in the [brand guidelines](roamcat-0.0.1/docs/brand.md) (中文) — or browse the rendered [brand board](roamcat-0.0.1/docs/brand-board.html) locally for every swatch, typeface and material sample.
 
 ## Quick start
 
@@ -196,6 +198,7 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) (中文) before contributing; rep
 |-----|----------|
 | [Product docs](roamcat-0.0.1/README.md) (中文) | Feature details, install, model-service configuration, and privacy notes |
 | [Design system](roamcat-0.0.1/docs/design-system.md) (中文) | Design vocabulary, typography, color & material, motion, component spec |
+| [Brand guidelines](roamcat-0.0.1/docs/brand.md) (中文) · [Brand board](roamcat-0.0.1/docs/brand-board.html) | Logo usage, brand palette, typography roles, voice; open the board locally to see it rendered |
 | [Engineering spec](roamcat-0.0.1/SPEC.md) (中文) | Message protocol, storage model, security boundaries, test gates |
 | [Privacy policy](roamcat-0.0.1/PRIVACY.md) | Full disclosure of data handling and permission usage |
 | [Store checklist](roamcat-0.0.1/CHROMEWEBSTORE.md) (中文) | Chrome Web Store copy and per-permission justifications |

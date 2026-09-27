@@ -15,6 +15,8 @@
 
  */
 import {sourceTokens} from './sentence-groups.mjs';
+
+const M=(zh,en)=>globalThis.RoamCatI18n?.lang?.()==='en'?en:zh;
 export const SUPPORT_POLICY_VERSION = 'english-scaffolding-v12-bound-target-ids';
 
 const DOMAINS = new Set(['general','tech','data','finance','medical','legal','design']);
@@ -87,33 +89,33 @@ export function prepareSupportItems(items) {
   return items.map(item=>{
     const tokens=sourceTokens(item.sentence),prepared={...item,tokens:tokens.map((token,index)=>[index+1,token[0]])};
     if(item.focus!==undefined){
-      if(!exactKeys(item.focus,['start','end'])||!Number.isInteger(item.focus.start)||!Number.isInteger(item.focus.end)||item.focus.start<0||item.focus.end<=item.focus.start)throw new Error('自动支持焦点无效。');
+      if(!exactKeys(item.focus,['start','end'])||!Number.isInteger(item.focus.start)||!Number.isInteger(item.focus.end)||item.focus.start<0||item.focus.end<=item.focus.start)throw new Error(M('自动支持焦点无效。','Invalid auto-support focus.'));
       const first=tokens.findIndex(token=>token.index===item.focus.start),last=tokens.findIndex(token=>token.index+token[0].length===item.focus.end);
-      if(first<0||last<first||last-first>=8)throw new Error('自动支持焦点未对齐 token。');
+      if(first<0||last<first||last-first>=8)throw new Error(M('自动支持焦点未对齐 token。','Auto-support focus is not aligned to tokens.'));
       prepared.focus={first:first+1,last:last+1};
     }
     prepared.targets=supportTargets(prepared,tokens);
-    if(prepared.focus&&!prepared.targets.length)throw new Error('自动支持焦点不属于候选。');
+    if(prepared.focus&&!prepared.targets.length)throw new Error(M('自动支持焦点不属于候选。','Auto-support focus is outside the candidates.'));
     return prepared;
   });
 }
 
 export function normalizeSupportProviderItems(items) {
-  if(!Array.isArray(items))throw new Error('自动支持批次无效。');
+  if(!Array.isArray(items))throw new Error(M('自动支持批次无效。','Invalid auto-support batch.'));
   const local=items.map(item=>{
-    if(!exactKeys(item,['id','sentence','tokens','targets','domain','candidates','reader','focus'],['id','sentence','tokens','targets','domain','candidates']))throw new Error('自动支持词项无效。');
+    if(!exactKeys(item,['id','sentence','tokens','targets','domain','candidates','reader','focus'],['id','sentence','tokens','targets','domain','candidates']))throw new Error(M('自动支持词项无效。','Invalid auto-support item.'));
     return {id:item.id,sentence:item.sentence,domain:item.domain,candidates:item.candidates,...(item.reader?{reader:item.reader}:{})};
   });
   const selected=normalizeSupportItems(local),expected=prepareSupportItems(selected);
   return items.map((item,index)=>{
-    if(JSON.stringify(item.tokens)!==JSON.stringify(expected[index].tokens))throw new Error('自动支持 token 无效。');
+    if(JSON.stringify(item.tokens)!==JSON.stringify(expected[index].tokens))throw new Error(M('自动支持 token 无效。','Invalid auto-support token.'));
     let prepared=expected[index];
     if(item.focus!==undefined){
-      if(!exactKeys(item.focus,['first','last'])||!Number.isInteger(item.focus.first)||!Number.isInteger(item.focus.last)||item.focus.first<1||item.focus.last<item.focus.first||item.focus.last>item.tokens.length||item.focus.last-item.focus.first>=8)throw new Error('自动支持焦点无效。');
+      if(!exactKeys(item.focus,['first','last'])||!Number.isInteger(item.focus.first)||!Number.isInteger(item.focus.last)||item.focus.first<1||item.focus.last<item.focus.first||item.focus.last>item.tokens.length||item.focus.last-item.focus.first>=8)throw new Error(M('自动支持焦点无效。','Invalid auto-support focus.'));
       prepared=focusedSupportItem(prepared,{...item.focus});
-      if(!prepared.targets.length)throw new Error('自动支持焦点不属于候选。');
+      if(!prepared.targets.length)throw new Error(M('自动支持焦点不属于候选。','Auto-support focus is outside the candidates.'));
     }
-    if(JSON.stringify(item.targets)!==JSON.stringify(prepared.targets))throw new Error('自动支持候选位置无效。');
+    if(JSON.stringify(item.targets)!==JSON.stringify(prepared.targets))throw new Error(M('自动支持候选位置无效。','Invalid auto-support candidate position.'));
     return prepared;
   });
 }
@@ -169,19 +171,19 @@ function sentenceCount(text) { return (text.match(/[.!?]+(?=\s|$)/g) || []).leng
 export function normalizePreparationContext(article) {
   if (article === undefined || article === null) return {key:'',text:'',coverage:'excerpt'};
   if (!exactKeys(article,['key','text','coverage']) || typeof article.key !== 'string' || typeof article.text !== 'string'
-    || !COVERAGES.has(article.coverage) || article.text.length > 12000) throw new Error('文章准备上下文无效。');
+    || !COVERAGES.has(article.coverage) || article.text.length > 12000) throw new Error(M('文章准备上下文无效。','Invalid article-prep context.'));
   if (!article.key && !article.text && article.coverage === 'excerpt') return {key:'',text:'',coverage:'excerpt'};
-  if (!ARTICLE_KEY.test(article.key) || !article.text.trim()) throw new Error('文章准备上下文无效。');
+  if (!ARTICLE_KEY.test(article.key) || !article.text.trim()) throw new Error(M('文章准备上下文无效。','Invalid article-prep context.'));
   return {key:article.key,text:article.text,coverage:article.coverage};
 }
 
 export function normalizeSupportItems(items) {
-  if (!Array.isArray(items) || items.length < 1 || items.length > 8) throw new Error('自动支持批次需要 1–8 项。');
+  if (!Array.isArray(items) || items.length < 1 || items.length > 8) throw new Error(M('自动支持批次需要 1–8 项。','An auto-support batch needs 1–8 items.'));
   const ids = new Set(); let size = 0;
   return items.map(item => {
     if (!exactKeys(item,['id','sentence','domain','candidates','reader'],['id','sentence','domain','candidates']) || !validId(item.id) || ids.has(item.id)
       || typeof item.sentence !== 'string' || !item.sentence.trim() || item.sentence.length > 2000 || !DOMAINS.has(item.domain)
-      || !Array.isArray(item.candidates) || item.candidates.length > 3) throw new Error('自动支持词项无效或重复。');
+      || !Array.isArray(item.candidates) || item.candidates.length > 3) throw new Error(M('自动支持词项无效或重复。','Auto-support items are invalid or duplicated.'));
     ids.add(item.id); size += item.sentence.length;
     const candidates = item.candidates.map(candidate => {
       if (!exactKeys(candidate,['text','wordId','knownSenses','evidence'],['text']) || typeof candidate.text !== 'string' || !candidate.text.trim()
@@ -189,7 +191,7 @@ export function normalizeSupportItems(items) {
         || (candidate.wordId !== undefined && (typeof candidate.wordId !== 'string' || !candidate.wordId || candidate.wordId.length > 160))
         || (candidate.evidence !== undefined && !['requested','suggested','custom','domain','frequency'].includes(candidate.evidence))
         || (candidate.knownSenses !== undefined && (!Array.isArray(candidate.knownSenses) || candidate.knownSenses.length > 8
-          || candidate.knownSenses.some(sense=>!validEnglish(sense,60))))) throw new Error('自动支持候选无效。');
+          || candidate.knownSenses.some(sense=>!validEnglish(sense,60))))) throw new Error(M('自动支持候选无效。','Invalid auto-support candidate.'));
       size += candidate.text.length;
       return {text:candidate.text,...(candidate.wordId === undefined ? {} : {wordId:candidate.wordId}),...(candidate.evidence === undefined ? {} : {evidence:candidate.evidence}),...(candidate.knownSenses === undefined ? {} : {knownSenses:[...candidate.knownSenses]})};
     });
@@ -199,11 +201,11 @@ export function normalizeSupportItems(items) {
         || !Array.isArray(item.reader.recentQueries) || item.reader.recentQueries.length > 12
         || !Array.isArray(item.reader.lessHelpTerms) || item.reader.lessHelpTerms.length > 12
         || item.reader.recentQueries.some(term=>!validEnglish(term,100))
-        || item.reader.lessHelpTerms.some(term=>!validEnglish(term,100))) throw new Error('自动支持读者证据无效。');
+        || item.reader.lessHelpTerms.some(term=>!validEnglish(term,100))) throw new Error(M('自动支持读者证据无效。','Invalid auto-support reader evidence.'));
       reader = {recentQueries:[...item.reader.recentQueries],lessHelpTerms:[...item.reader.lessHelpTerms]};
       size += [...reader.recentQueries,...reader.lessHelpTerms].reduce((total,term)=>total+term.length,0);
     }
-    if (size > 8000) throw new Error('自动支持批次的上下文过长。');
+    if (size > 8000) throw new Error(M('自动支持批次的上下文过长。','The auto-support batch context is too long.'));
     return {id:item.id,sentence:item.sentence,domain:item.domain,candidates,...(reader ? {reader} : {})};
   });
 }
@@ -213,37 +215,37 @@ function supportFailure(message,fields,itemIndex,code='OUTPUT_INVALID',counts={}
 }
 
 function normalizeBilingual(value,{nullable=false,itemIndex}={}) {
-  if (!exactKeys(value,['en','zh'])) supportFailure('支持服务返回了解释字段无效。',['meaning'],itemIndex);
+  if (!exactKeys(value,['en','zh'])) supportFailure(M('支持服务返回了解释字段无效。','The support service returned an invalid explanation field.'),['meaning'],itemIndex);
   if (nullable && value.en === null && value.zh === null) return {en:null,zh:null};
-  if (!validEnglish(value.en,600)) supportFailure('支持服务返回了解释内容无效。',['meaning','en'],itemIndex);
-  if (!validChinese(value.zh,400)) supportFailure('支持服务返回了解释内容无效。',['meaning','zh'],itemIndex);
+  if (!validEnglish(value.en,600)) supportFailure(M('支持服务返回了解释内容无效。','The support service returned invalid explanation content.'),['meaning','en'],itemIndex);
+  if (!validChinese(value.zh,400)) supportFailure(M('支持服务返回了解释内容无效。','The support service returned invalid explanation content.'),['meaning','zh'],itemIndex);
   return {en:value.en,zh:value.zh};
 }
 
 export function normalizeSupportResult(value, items, article) {
   normalizePreparationContext(article);
-  if (!exactKeys(value,['items']) || !Array.isArray(value.items)) supportFailure('支持服务未返回完整批次。',['items'],undefined,'BATCH_SHAPE');
-  if (value.items.length !== items.length) supportFailure('支持服务未返回完整批次。',['items'],undefined,'BATCH_COUNT',{expectedCount:items.length,actualCount:value.items.length});
+  if (!exactKeys(value,['items']) || !Array.isArray(value.items)) supportFailure(M('支持服务未返回完整批次。','The support service did not return a complete batch.'),['items'],undefined,'BATCH_SHAPE');
+  if (value.items.length !== items.length) supportFailure(M('支持服务未返回完整批次。','The support service did not return a complete batch.'),['items'],undefined,'BATCH_COUNT',{expectedCount:items.length,actualCount:value.items.length});
   const expected = new Map(items.map(item=>[item.id,item])); const results = new Map();
   for (const [itemIndex,result] of value.items.entries()) {
-    if (!exactKeys(result,['id','target','meaning','sentenceTranslation'])) supportFailure('支持服务返回了无效词项字段。',['items'],itemIndex,'ITEM_FIELDS');
-    if (!expected.has(result.id)) supportFailure('支持服务返回了无效词项编号。',['id'],itemIndex,'ITEM_ID');
-    if (results.has(result.id)) supportFailure('支持服务返回了重复词项。',['id'],itemIndex,'ITEM_DUPLICATE');
+    if (!exactKeys(result,['id','target','meaning','sentenceTranslation'])) supportFailure(M('支持服务返回了无效词项字段。','The support service returned an invalid item field.'),['items'],itemIndex,'ITEM_FIELDS');
+    if (!expected.has(result.id)) supportFailure(M('支持服务返回了无效词项编号。','The support service returned an invalid item id.'),['id'],itemIndex,'ITEM_ID');
+    if (results.has(result.id)) supportFailure(M('支持服务返回了重复词项。','The support service returned a duplicate item.'),['id'],itemIndex,'ITEM_DUPLICATE');
     const item = expected.get(result.id), source = item.sentence; const target = result.target;
     if (target !== null) {
-      if (!exactKeys(target,['text','start','end','hint','translation','sense'])) supportFailure('支持服务返回了无效目标。',['target'],itemIndex,'ITEM_FIELDS');
+      if (!exactKeys(target,['text','start','end','hint','translation','sense'])) supportFailure(M('支持服务返回了无效目标。','The support service returned an invalid target.'),['target'],itemIndex,'ITEM_FIELDS');
 
       // A heading may be a whole lexical target. Local candidates, not source length, bind its identity.
-      if (!validSupportTargetText(target.text) || !item.candidates.some(candidate => candidate.text === target.text)) supportFailure('支持服务返回了无效目标。',['target','text'],itemIndex);
+      if (!validSupportTargetText(target.text) || !item.candidates.some(candidate => candidate.text === target.text)) supportFailure(M('支持服务返回了无效目标。','The support service returned an invalid target.'),['target','text'],itemIndex);
       if (!Number.isInteger(target.start) || !Number.isInteger(target.end) || target.start < 0 || target.end <= target.start
-        || source.slice(target.start,target.end) !== target.text) supportFailure('支持服务返回了无效目标。',['target','start','end'],itemIndex);
-      if (!validEnglish(target.hint,80) || target.hint.split(/\s+/).length > 8) supportFailure('支持服务返回了无效目标。',['target','hint'],itemIndex);
-      if (!validChinese(target.translation,160)) supportFailure('支持服务返回了无效目标。',['target','translation'],itemIndex);
-      if (!validEnglish(target.sense,60)) supportFailure('支持服务返回了无效目标。',['target','sense'],itemIndex);
+        || source.slice(target.start,target.end) !== target.text) supportFailure(M('支持服务返回了无效目标。','The support service returned an invalid target.'),['target','start','end'],itemIndex);
+      if (!validEnglish(target.hint,80) || target.hint.split(/\s+/).length > 8) supportFailure(M('支持服务返回了无效目标。','The support service returned an invalid target.'),['target','hint'],itemIndex);
+      if (!validChinese(target.translation,160)) supportFailure(M('支持服务返回了无效目标。','The support service returned an invalid target.'),['target','translation'],itemIndex);
+      if (!validEnglish(target.sense,60)) supportFailure(M('支持服务返回了无效目标。','The support service returned an invalid target.'),['target','sense'],itemIndex);
     }
     const meaning = normalizeBilingual(result.meaning,{nullable:target === null,itemIndex});
-    if (target === null && meaning.en !== null) supportFailure('支持服务返回了无目标的解释。',['target','meaning'],itemIndex);
-    if (target === null ? result.sentenceTranslation !== null : !validChinese(result.sentenceTranslation,2000)) supportFailure('支持服务返回的本句翻译无效。',['sentenceTranslation'],itemIndex);
+    if (target === null && meaning.en !== null) supportFailure(M('支持服务返回了无目标的解释。','The support service returned a targetless explanation.'),['target','meaning'],itemIndex);
+    if (target === null ? result.sentenceTranslation !== null : !validChinese(result.sentenceTranslation,2000)) supportFailure(M('支持服务返回的本句翻译无效。','The support service returned an invalid sentence translation.'),['sentenceTranslation'],itemIndex);
     results.set(result.id,{target:target === null ? null : {...target},meaning,sentenceTranslation:result.sentenceTranslation});
   }
   return {items:items.map(({id})=>({id,...results.get(id)}))};
@@ -251,19 +253,19 @@ export function normalizeSupportResult(value, items, article) {
 
 export function normalizeSupportResponse(value,items,article){
   const selected=normalizeSupportProviderItems(items);
-  if(!exactKeys(value,['items'])||!Array.isArray(value.items))supportFailure('支持服务未返回完整批次。',['items'],undefined,'BATCH_SHAPE');
-  if(value.items.length!==selected.length)supportFailure('支持服务未返回完整批次。',['items'],undefined,'BATCH_COUNT',{expectedCount:selected.length,actualCount:value.items.length});
+  if(!exactKeys(value,['items'])||!Array.isArray(value.items))supportFailure(M('支持服务未返回完整批次。','The support service did not return a complete batch.'),['items'],undefined,'BATCH_SHAPE');
+  if(value.items.length!==selected.length)supportFailure(M('支持服务未返回完整批次。','The support service did not return a complete batch.'),['items'],undefined,'BATCH_COUNT',{expectedCount:selected.length,actualCount:value.items.length});
   const expected=new Map(selected.map(item=>[item.id,item])),normalized=[];
   for(const [itemIndex,result] of value.items.entries()){
-    if(!exactKeys(result,['id','target','meaning','sentenceTranslation']))supportFailure('支持服务返回了无效词项字段。',['items'],itemIndex,'ITEM_FIELDS');
-    if(!expected.has(result.id))supportFailure('支持服务返回了无效词项编号。',['id'],itemIndex,'ITEM_ID');
-    if(normalized.some(item=>item.id===result.id))supportFailure('支持服务返回了重复词项。',['id'],itemIndex,'ITEM_DUPLICATE');
+    if(!exactKeys(result,['id','target','meaning','sentenceTranslation']))supportFailure(M('支持服务返回了无效词项字段。','The support service returned an invalid item field.'),['items'],itemIndex,'ITEM_FIELDS');
+    if(!expected.has(result.id))supportFailure(M('支持服务返回了无效词项编号。','The support service returned an invalid item id.'),['id'],itemIndex,'ITEM_ID');
+    if(normalized.some(item=>item.id===result.id))supportFailure(M('支持服务返回了重复词项。','The support service returned a duplicate item.'),['id'],itemIndex,'ITEM_DUPLICATE');
     const item=expected.get(result.id),tokens=sourceTokens(item.sentence),target=result.target;
     if(target===null)normalized.push({...result,target:null});
     else{
-      if(!exactKeys(target,['id','hint','translation','sense']))supportFailure('支持服务返回了无效目标字段。',['target'],itemIndex,'ITEM_FIELDS');
+      if(!exactKeys(target,['id','hint','translation','sense']))supportFailure(M('支持服务返回了无效目标字段。','The support service returned an invalid target field.'),['target'],itemIndex,'ITEM_FIELDS');
       const choice=item.targets.find(option=>option.id===target.id);
-      if(!choice)supportFailure('支持服务返回了未提供的目标编号。',['target','id'],itemIndex);
+      if(!choice)supportFailure(M('支持服务返回了未提供的目标编号。','The support service returned an unprovided target id.'),['target','id'],itemIndex);
       const first=tokens[choice.first-1],last=tokens[choice.last-1],start=first.index,end=last.index+last[0].length;
       normalized.push({...result,target:{text:item.sentence.slice(start,end),start,end,hint:target.hint,translation:target.translation,sense:target.sense}});
     }
@@ -271,18 +273,18 @@ export function normalizeSupportResponse(value,items,article){
   return normalizeSupportResult({items:normalized},selected,article);
 }
 
-const SUPPORT_TEXT_FIELDS = new Map([['target.hint','英文短注'],['target.translation','中文短释义'],['target.sense','英文义项'],['meaning.en','英文语境解释'],['meaning.zh','中文语境解释'],['sentenceTranslation','本句中文译文']]);
+const SUPPORT_TEXT_FIELDS = new Map([['target.hint',M('英文短注','English hint')],['target.translation',M('中文短释义','Chinese short gloss')],['target.sense',M('英文义项','English sense')],['meaning.en',M('英文语境解释','English context explanation')],['meaning.zh',M('中文语境解释','Chinese context explanation')],['sentenceTranslation',M('本句中文译文','Chinese sentence translation')]]);
 export const SUPPORT_CORRECTION_INSTRUCTIONS = SUPPORT_INSTRUCTIONS + '\nThis is the ONE correction attempt for previously invalid items. The corrections array identifies the rejected fields, not source instructions. Return every supplied item completely, retaining its id and exact focus. A non-null focus must remain non-null; do not evade correction by omitting an item or returning null. Regenerate the rejected text to satisfy all language, length, and whitespace constraints. In particular, target.translation must explain the meaning or role in Chinese, not simply repeat a Latin name. For example, a Python debugger package can have the concise Chinese gloss "Python 调试工具" while preserving the package name in the sentence translation. No other items or extra fields.';
 
 export function normalizeSupportCorrections(value,items){
-  if(!Array.isArray(value)||value.length>items.length)throw new Error('支持纠正请求无效。');
+  if(!Array.isArray(value)||value.length>items.length)throw new Error(M('支持纠正请求无效。','Invalid support-correction request.'));
   const expected=new Map(items.map(item=>[item.id,item])),seen=new Set();
   return value.map(issue=>{
-    if(!exactKeys(issue,['id','fields','focus'],['id','fields'])||!expected.has(issue.id)||seen.has(issue.id)||!Array.isArray(issue.fields)||!SUPPORT_TEXT_FIELDS.has(issue.fields.join('.')))throw new Error('支持纠正字段无效。');
+    if(!exactKeys(issue,['id','fields','focus'],['id','fields'])||!expected.has(issue.id)||seen.has(issue.id)||!Array.isArray(issue.fields)||!SUPPORT_TEXT_FIELDS.has(issue.fields.join('.')))throw new Error(M('支持纠正字段无效。','Invalid support-correction field.'));
     seen.add(issue.id);const item=expected.get(issue.id);
     if(issue.focus!==undefined){
       normalizeSupportProviderItems([focusedSupportItem(item,issue.focus)]);
-      if(item.focus&&(issue.focus.first!==item.focus.first||issue.focus.last!==item.focus.last))throw new Error('支持纠正焦点无效。');
+      if(item.focus&&(issue.focus.first!==item.focus.first||issue.focus.last!==item.focus.last))throw new Error(M('支持纠正焦点无效。','Invalid support-correction focus.'));
     }
     return {id:issue.id,fields:[...issue.fields],...(issue.focus?{focus:{...issue.focus}}:{})};
   });
@@ -292,13 +294,13 @@ export function normalizeSupportCorrections(value,items){
 export function inspectSupportResponse(value,items,article){
   const selected=normalizeSupportProviderItems(items),expected=new Map(selected.map(item=>[item.id,item])),seen=new Set();
   normalizePreparationContext(article);
-  if(!exactKeys(value,['items'])||!Array.isArray(value.items))supportFailure('支持服务未返回完整批次。',['items'],undefined,'BATCH_SHAPE');
-  if(value.items.length!==selected.length)supportFailure('支持服务未返回完整批次。',['items'],undefined,'BATCH_COUNT',{expectedCount:selected.length,actualCount:value.items.length});
+  if(!exactKeys(value,['items'])||!Array.isArray(value.items))supportFailure(M('支持服务未返回完整批次。','The support service did not return a complete batch.'),['items'],undefined,'BATCH_SHAPE');
+  if(value.items.length!==selected.length)supportFailure(M('支持服务未返回完整批次。','The support service did not return a complete batch.'),['items'],undefined,'BATCH_COUNT',{expectedCount:selected.length,actualCount:value.items.length});
   const valid=[],invalid=[];
   for(const [index,result] of value.items.entries()){
-    if(!exactKeys(result,['id','target','meaning','sentenceTranslation']))supportFailure('支持服务返回了无效词项字段。',['items'],index,'ITEM_FIELDS');
-    if(!expected.has(result.id))supportFailure('支持服务返回了无效词项编号。',['id'],index,'ITEM_ID');
-    if(seen.has(result.id))supportFailure('支持服务返回了重复词项。',['id'],index,'ITEM_DUPLICATE');
+    if(!exactKeys(result,['id','target','meaning','sentenceTranslation']))supportFailure(M('支持服务返回了无效词项字段。','The support service returned an invalid item field.'),['items'],index,'ITEM_FIELDS');
+    if(!expected.has(result.id))supportFailure(M('支持服务返回了无效词项编号。','The support service returned an invalid item id.'),['id'],index,'ITEM_ID');
+    if(seen.has(result.id))supportFailure(M('支持服务返回了重复词项。','The support service returned a duplicate item.'),['id'],index,'ITEM_DUPLICATE');
     seen.add(result.id);
     try{valid.push(normalizeSupportResponse({items:[result]},[expected.get(result.id)],article).items[0]);}
     catch(error){
@@ -313,18 +315,18 @@ export function inspectSupportResponse(value,items,article){
 // Native transport carries only validated results and bounded failure metadata, never rejected text.
 export function normalizeSupportAttempt(value,items,article){
   const selected=normalizeSupportProviderItems(items),expected=new Map(selected.map(item=>[item.id,item])),seen=new Set();
-  if(!exactKeys(value,['items','invalid'])||!Array.isArray(value.items)||!Array.isArray(value.invalid)||value.items.length+value.invalid.length!==selected.length)supportFailure('支持服务未返回完整校验结果。',['items'],undefined,'BATCH_SHAPE');
+  if(!exactKeys(value,['items','invalid'])||!Array.isArray(value.items)||!Array.isArray(value.invalid)||value.items.length+value.invalid.length!==selected.length)supportFailure(M('支持服务未返回完整校验结果。','The support service did not return a complete validation result.'),['items'],undefined,'BATCH_SHAPE');
   const invalid=normalizeSupportCorrections(value.invalid,selected);
   for(const result of [...value.items,...invalid]){
-    if(!expected.has(result?.id))supportFailure('支持服务返回了无效词项编号。',['id'],undefined,'ITEM_ID');
-    if(seen.has(result.id))supportFailure('支持服务返回了重复词项。',['id'],undefined,'ITEM_DUPLICATE');
+    if(!expected.has(result?.id))supportFailure(M('支持服务返回了无效词项编号。','The support service returned an invalid item id.'),['id'],undefined,'ITEM_ID');
+    if(seen.has(result.id))supportFailure(M('支持服务返回了重复词项。','The support service returned a duplicate item.'),['id'],undefined,'ITEM_DUPLICATE');
     seen.add(result.id);
   }
   const valid=normalizeSupportResult({items:value.items},value.items.map(result=>expected.get(result.id)),article).items;
   for(const result of valid){
     if(!result.target)continue;
     const item=expected.get(result.id),tokens=sourceTokens(item.sentence);
-    if(!item.targets.some(choice=>result.target.start===tokens[choice.first-1].index&&result.target.end===tokens[choice.last-1].index+tokens[choice.last-1][0].length))supportFailure('支持服务返回了未提供的目标位置。',['target','start','end'],selected.findIndex(value=>value.id===item.id));
+    if(!item.targets.some(choice=>result.target.start===tokens[choice.first-1].index&&result.target.end===tokens[choice.last-1].index+tokens[choice.last-1][0].length))supportFailure(M('支持服务返回了未提供的目标位置。','The support service returned an unprovided target position.'),['target','start','end'],selected.findIndex(value=>value.id===item.id));
   }
   return {items:valid,invalid};
 }
@@ -345,7 +347,7 @@ export async function requestSupportWithCorrection(items,article,request){
       const retryItems=pending.filter(item=>issues.has(item.id)).map(item=>issues.get(item.id).focus?focusedSupportItem(item,issues.get(item.id).focus):item);
       const second=await attempt(retryItems,first.invalid);
       const failed=second.invalid[0]||first.invalid.find(issue=>issue.focus&&second.items.find(item=>item.id===issue.id)?.target===null);
-      if(failed)supportFailure('支持服务纠正后仍返回无效的'+SUPPORT_TEXT_FIELDS.get(failed.fields.join('.'))+'。',failed.fields,selected.findIndex(item=>item.id===failed.id));
+      if(failed)supportFailure(M('支持服务纠正后仍返回无效的','The service still returned an invalid field after correction: ')+(SUPPORT_TEXT_FIELDS.get(failed.fields.join('.'))||failed.fields.join('.'))+M('。',''),failed.fields,selected.findIndex(item=>item.id===failed.id));
       for(const item of second.items)merged.set(item.id,item);
     }
   }
@@ -353,31 +355,31 @@ export async function requestSupportWithCorrection(items,article,request){
 }
 
 export function normalizeEmergencyItems(items) {
-  if (!Array.isArray(items) || items.length < 1 || items.length > 4) throw new Error('整页应急翻译批次需要 1–4 项。');
+  if (!Array.isArray(items) || items.length < 1 || items.length > 4) throw new Error(M('整页应急翻译批次需要 1–4 项。','An emergency page-translation batch needs 1–4 items.'));
   const ids = new Set(); let total = 0;
   return items.map(item => {
-    if (!exactKeys(item,['id','text']) || !validId(item.id) || ids.has(item.id) || typeof item.text !== 'string' || !item.text.trim() || item.text.length > 4000) throw new Error('整页应急翻译词项无效或重复。');
+    if (!exactKeys(item,['id','text']) || !validId(item.id) || ids.has(item.id) || typeof item.text !== 'string' || !item.text.trim() || item.text.length > 4000) throw new Error(M('整页应急翻译词项无效或重复。','Emergency page-translation items are invalid or duplicated.'));
     ids.add(item.id); total += item.text.length;
-    if (total > 12000) throw new Error('整页应急翻译批次过长。');
+    if (total > 12000) throw new Error(M('整页应急翻译批次过长。','The emergency page-translation batch is too long.'));
     return {id:item.id,text:item.text};
   });
 }
 
 export function normalizePageTranslationItems(items) {
-  if (!Array.isArray(items) || items.length < 1 || items.length > 8) throw new Error('本页翻译批次需要 1–8 项。');
+  if (!Array.isArray(items) || items.length < 1 || items.length > 8) throw new Error(M('本页翻译批次需要 1–8 项。','A page-translation batch needs 1–8 items.'));
   const ids=new Set();let total=0;
   return items.map(item=>{
-    if(!exactKeys(item,['id','text','context'])||!validId(item.id)||ids.has(item.id)||typeof item.text!=='string'||!item.text.trim()||item.text.length>4000)throw new Error('本页翻译词项无效或重复。');
+    if(!exactKeys(item,['id','text','context'])||!validId(item.id)||ids.has(item.id)||typeof item.text!=='string'||!item.text.trim()||item.text.length>4000)throw new Error(M('本页翻译词项无效或重复。','Page-translation items are invalid or duplicated.'));
     const context=item.context;
-    if(!exactKeys(context,['title','heading','before','after'])||typeof context.title!=='string'||context.title.length>160||typeof context.heading!=='string'||context.heading.length>160||typeof context.before!=='string'||context.before.length>400||typeof context.after!=='string'||context.after.length>400)throw new Error('本页翻译上下文无效。');
+    if(!exactKeys(context,['title','heading','before','after'])||typeof context.title!=='string'||context.title.length>160||typeof context.heading!=='string'||context.heading.length>160||typeof context.before!=='string'||context.before.length>400||typeof context.after!=='string'||context.after.length>400)throw new Error(M('本页翻译上下文无效。','Invalid page-translation context.'));
     ids.add(item.id);total+=item.text.length+context.title.length+context.heading.length+context.before.length+context.after.length;
-    if(total>20000)throw new Error('本页翻译批次过长。');
+    if(total>20000)throw new Error(M('本页翻译批次过长。','The page-translation batch is too long.'));
     return {id:item.id,text:item.text,context:{title:context.title,heading:context.heading,before:context.before,after:context.after}};
   });
 }
 
-const translationFailures = {BATCH_SHAPE:'顶层字段或条目数组不符',BATCH_COUNT:'返回条目数量不符',ITEM_FIELDS:'条目缺少字段或包含额外字段',ITEM_ID:'返回了非本批次的条目 ID',ITEM_DUPLICATE:'返回了重复的条目 ID',TRANSLATION_TYPE:'译文不是字符串',TRANSLATION_EMPTY:'译文为空',TRANSLATION_WHITESPACE:'译文包含首尾空白',TRANSLATION_LENGTH:'译文超过长度上限',TRANSLATION_NO_HAN:'译文未包含汉字（可能原样保留了英文名称）'};
-function translationFailure(code,detail){const error=new Error('整页翻译校验失败：'+translationFailures[code]+'。');error.code=code;error.detail=detail;throw error;}
+const translationFailures = {BATCH_SHAPE:M('顶层字段或条目数组不符','Top-level fields or items array mismatch'),BATCH_COUNT:M('返回条目数量不符','Returned item count mismatch'),ITEM_FIELDS:M('条目缺少字段或包含额外字段','An item is missing fields or has extra fields'),ITEM_ID:M('返回了非本批次的条目 ID','An out-of-batch item id was returned'),ITEM_DUPLICATE:M('返回了重复的条目 ID','A duplicate item id was returned'),TRANSLATION_TYPE:M('译文不是字符串','The translation is not a string'),TRANSLATION_EMPTY:M('译文为空','The translation is empty'),TRANSLATION_WHITESPACE:M('译文包含首尾空白','The translation has leading/trailing whitespace'),TRANSLATION_LENGTH:M('译文超过长度上限','The translation exceeds the length limit'),TRANSLATION_NO_HAN:M('译文未包含汉字（可能原样保留了英文名称）','The translation contains no Chinese characters (the English name may have been kept)')};
+function translationFailure(code,detail){const error=new Error(M('整页翻译校验失败：','Page translation validation failed: ')+translationFailures[code]+'。');error.code=code;error.detail=detail;throw error;}
 function translationItemCode(item){
   if(!exactKeys(item,['id','translation']))return 'ITEM_FIELDS';
   if(typeof item.translation!=='string')return 'TRANSLATION_TYPE';
@@ -447,10 +449,10 @@ export function normalizePageTranslationResult(value,items){
 
 
 export function normalizeAssistanceCommand(command) {
-  if (!exactKeys(command,['requestId','text','context','domain','kind','level','detail','wordId','senseKey','bypassCache'],['requestId','text','context','domain','kind','level','detail'])) throw new Error('帮助请求字段无效。');
+  if (!exactKeys(command,['requestId','text','context','domain','kind','level','detail','wordId','senseKey','bypassCache'],['requestId','text','context','domain','kind','level','detail'])) throw new Error(M('帮助请求字段无效。','Invalid help-request field.'));
   if (!validId(command.requestId) || typeof command.bypassCache !== 'undefined' && typeof command.bypassCache !== 'boolean'
     || (command.wordId !== undefined && (typeof command.wordId !== 'string' || !command.wordId || command.wordId.length > 160))
-    || (command.senseKey !== undefined && (typeof command.senseKey !== 'string' || !command.senseKey || command.senseKey.length > 160))) throw new Error('帮助请求身份无效。');
+    || (command.senseKey !== undefined && (typeof command.senseKey !== 'string' || !command.senseKey || command.senseKey.length > 160))) throw new Error(M('帮助请求身份无效。','Invalid help-request identity.'));
   const request = normalizeAssistanceRequest(command);
   return {...request,requestId:command.requestId,...(command.wordId === undefined?{}:{wordId:command.wordId}),...(command.senseKey === undefined?{}:{senseKey:command.senseKey}),bypassCache:command.bypassCache === true};
 }
@@ -459,29 +461,29 @@ export function normalizeAssistanceRequest(request) {
   if (!request || typeof request !== 'object' || Array.isArray(request) || typeof request.text !== 'string' || !request.text.trim()
     || typeof request.context !== 'string' || !request.context.trim() || request.context.length > 2000 || !request.context.includes(request.text)
     || !DOMAINS.has(request.domain) || !KINDS.has(request.kind) || !LEVELS.has(request.level) || !DETAILS.has(request.detail)
-    || (request.kind === 'passage' && request.detail !== 'full')) throw new Error('帮助请求无效。');
+    || (request.kind === 'passage' && request.detail !== 'full')) throw new Error(M('帮助请求无效。','Invalid help request.'));
   const limit = request.kind === 'passage' ? 600 : 100;
-  if (request.text.length > limit) throw new Error(request.kind === 'passage' ? '请只选择一个句子或短段（最多 3 句、600 字符）' : '单词或短语不能超过 100 字符。');
-  if (request.kind === 'passage' && sentenceCount(request.text) > 3) throw new Error('请只选择一个句子或短段（最多 3 句、600 字符）');
+  if (request.text.length > limit) throw new Error(request.kind === 'passage' ? M('请只选择一个句子或短段（最多 3 句、600 字符）','Select a single sentence or short passage (up to 3 sentences / 600 chars)') : M('单词或短语不能超过 100 字符。','A word or phrase cannot exceed 100 characters.'));
+  if (request.kind === 'passage' && sentenceCount(request.text) > 3) throw new Error(M('请只选择一个句子或短段（最多 3 句、600 字符）','Select a single sentence or short passage (up to 3 sentences / 600 chars)'));
   return {text:request.text,context:request.context,domain:request.domain,kind:request.kind,level:request.level,detail:request.detail};
 }
 
 export function normalizeAssistanceResult(value, request) {
   const selected = normalizeAssistanceRequest(request); const passage = selected.kind === 'passage'; const hint = selected.level === 'hint';
   const field = hint ? 'hint' : 'translation'; const full = selected.detail === 'full'; const allowed = passage ? ['level',field] : ['level',field,'sense',...(full?['details']:[])];
-  if (!exactKeys(value,allowed,['level',field]) || value.level !== selected.level || !(value[field] === null || typeof value[field] === 'string')) throw new Error('帮助服务返回格式无效。');
+  if (!exactKeys(value,allowed,['level',field]) || value.level !== selected.level || !(value[field] === null || typeof value[field] === 'string')) throw new Error(M('帮助服务返回格式无效。','The help service returned an invalid format.'));
   if (value[field] === null) {
-    if (Object.hasOwn(value,'sense') || Object.hasOwn(value,'details')) throw new Error('上下文不足的结果不得包含义项或解释详情。');
+    if (Object.hasOwn(value,'sense') || Object.hasOwn(value,'details')) throw new Error(M('上下文不足的结果不得包含义项或解释详情。','A context-insufficient result must not contain senses or explanation details.'));
     return {level:selected.level,[field]:null};
   }
   const max = hint ? (passage ? 240 : 80) : 1200;
   if (!value[field].trim() || value[field] !== value[field].trim() || value[field].length > max
     || (hint && (!validEnglish(value[field],max) || (!passage && value[field].split(/\s+/).length > 8) || (passage && value[field].split(/\s+/).length > 30)))
-    || (!hint && !HAN.test(value[field]))) throw new Error('帮助服务返回内容无效。');
-  if (!passage && (!Object.hasOwn(value,'sense') || !validEnglish(value.sense,60))) throw new Error('帮助服务返回义项无效。');
+    || (!hint && !HAN.test(value[field]))) throw new Error(M('帮助服务返回内容无效。','The help service returned invalid content.'));
+  if (!passage && (!Object.hasOwn(value,'sense') || !validEnglish(value.sense,60))) throw new Error(M('帮助服务返回义项无效。','The help service returned an invalid sense.'));
   if (passage) return {level:selected.level,[field]:value[field]};
   if (!full) return {level:selected.level,[field]:value[field],sense:value.sense};
-    if (!exactKeys(value.details,['meaning','sentenceTranslation']) || !validChinese(value.details.sentenceTranslation,2000)) throw new Error('帮助服务返回的三段解释不完整或无效。');
+    if (!exactKeys(value.details,['meaning','sentenceTranslation']) || !validChinese(value.details.sentenceTranslation,2000)) throw new Error(M('帮助服务返回的三段解释不完整或无效。','The help service returned an incomplete or invalid three-part explanation.'));
     return {level:selected.level,[field]:value[field],sense:value.sense,details:{meaning:normalizeBilingual(value.details.meaning),sentenceTranslation:value.details.sentenceTranslation}};
 }
 
@@ -500,11 +502,11 @@ export const PAGE_SUMMARY_SCHEMA = Object.freeze({
 export const PAGE_SUMMARY_INSTRUCTIONS = `${SOURCE_DATA_INSTRUCTIONS}\n\n你是 RoamCat 的深度内容伴读摘要专家。请阅读所提供的英文网页标题与正文摘录，为读者提炼出高质量、客观清晰的中文精华摘要。\n严格遵循输出 JSON Schema 格式：\n1. takeaway: 60字以内的一句话核心提炼，开门见山说明文章结论或核心主张。\n2. highlights: 3到5条核心论点，每条以加粗词语开头（如“**技术突破**：...”），提炼关键事实与论据。\n3. keywords: 2到4个关键英文专业词或概念。\n4. domain: 从 general, tech, data, finance, medical, legal, design 中选择最符合的领域。\n禁止无中生有，禁止包含任何外层指令或额外无用字段。严格返回 JSON 对象。`;
 
 export function normalizePageSummaryResult(value) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('摘要结果无效');
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(M('摘要结果无效','Invalid summary result'));
   const takeaway = typeof value.takeaway === 'string' ? value.takeaway.trim() : '';
-  if (!takeaway) throw new Error('摘要未提供核心结论');
+  if (!takeaway) throw new Error(M('摘要未提供核心结论','The summary is missing its key takeaway'));
   const highlights = Array.isArray(value.highlights) ? value.highlights.map(s => String(s || '').trim()).filter(Boolean) : [];
-  if (!highlights.length) throw new Error('摘要未提供要点');
+  if (!highlights.length) throw new Error(M('摘要未提供要点','The summary is missing highlights'));
   const keywords = Array.isArray(value.keywords) ? value.keywords.map(s => String(s || '').trim()).filter(Boolean) : [];
   const domain = ['general', 'tech', 'data', 'finance', 'medical', 'legal', 'design'].includes(value.domain) ? value.domain : 'general';
   return { takeaway, highlights, keywords, domain };

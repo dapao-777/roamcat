@@ -28,7 +28,7 @@ button, input, select, textarea { font-family: var(--font-sans); }
 .options-body .sidebar-collapse-btn { width: 24px; height: 24px; }
 .options-body .brand-live-dot { width: 7px; height: 7px; border-width: 1.5px; box-shadow: none; }
 .options-body .main-canvas-content { max-width: 1500px; margin: 0 auto; padding: 32px 40px 64px; }
-.options-body .compact-hero-banner { position: relative; padding: 27px 30px; border-radius: 4px; box-shadow: none; gap: 32px; }
+.options-body .compact-hero-banner { position: relative; padding: 27px 30px; border-radius: 8px; border-color: var(--rim-soft, var(--color-border-card)); background-image: var(--face-raised, none); box-shadow: var(--inset-soft, none), var(--cast, none); gap: 32px; }
 .options-body .hero-pill-badge { border: 0; padding: 0; background: none; font: 10px var(--font-display); letter-spacing: .05em; }
 .options-body .hero-stage-chip { background: none; border: 0; border-left: 1px solid var(--color-border-card); border-radius: 0; color: var(--color-text-muted); font-size: 11px; font-weight: 400; }
 .options-body .hero-tag-row { flex-wrap: wrap; }
@@ -37,7 +37,8 @@ button, input, select, textarea { font-family: var(--font-sans); }
 .readout-edit { display: inline-flex; align-items: center; gap: 5px; color: var(--color-text-secondary); text-decoration: none; font-size: 11px; font-weight: 400; padding: 3px 0 3px 6px; }
 .readout-edit:hover { color: var(--color-text-primary); text-decoration: underline; text-underline-offset: 3px; }
 .readout-main { display: flex; gap: 14px; align-items: center; margin: 17px 0 18px; }
-.readout-key { display: grid; place-items: center; flex-shrink: 0; width: 44px; height: 46px; padding: 0; font: 22px/1 var(--font-display); color: var(--color-text-primary); background: var(--color-card-bg); border: 1px solid var(--color-border-card); border-bottom-width: 3px; border-radius: 8px; box-shadow: 0 2px 3px rgba(0,0,0,.03); }
+/* 快捷键大字键帽：瓷面 + 厚底沿 + 顶棱高光，像一颗真的键 */
+.readout-key { display: grid; place-items: center; flex-shrink: 0; width: 44px; height: 46px; padding: 0; font: 22px/1 var(--font-display); color: var(--color-text-primary); background-color: var(--color-card-bg); background-image: var(--face, none); border: 1px solid var(--rim, var(--color-border-card)); border-bottom: 3px solid var(--keycap-border-bottom, var(--color-border-card)); border-radius: 8px; box-shadow: var(--inset-soft, none), 0 2px 4px rgba(64, 48, 21, 0.12); text-shadow: var(--emboss, none); }
 .readout-action { display: block; font-size: 13px; font-weight: 500; margin-bottom: 5px; }
 .readout-caption { display: block; font-size: 11px; color: var(--color-text-secondary); line-height: 1.6; }
 .readout-footer { display: grid; grid-template-columns: 1.3fr 1fr; gap: 14px; margin: 0; border-top: 1px solid var(--color-border-card); padding-top: 13px; }
@@ -46,15 +47,17 @@ button, input, select, textarea { font-family: var(--font-sans); }
 .readout-footer dt { font-size: 10px; line-height: 1.5; color: var(--color-text-secondary); margin: 0 0 5px; }
 .readout-footer dd { margin: 0; font-size: 12px; line-height: 1.5; font-weight: 500; }
 .options-body .settings-cards-stack { gap: 20px; }
-.options-body :is(.swiss-card,.paper-card) { border-radius: 5px; box-shadow: none; }
+.options-body :is(.swiss-card,.paper-card) { border-radius: 7px; }
 .options-body .swiss-card { padding: 24px; }
 .options-body .sec-code-badge { background: none; border: 0; padding: 0; color: var(--color-text-muted); font: 11px var(--font-display); }
 .options-body .sec-code-badge::before,.options-body .sec-code-badge::after { content: '+'; opacity: .6; }
 .options-body .sec-label-row { gap: 12px; flex-wrap: wrap; }
-.options-body :is(.rec-badge,.phase-badge) { background: none; border: 1px solid var(--color-border-card); color: var(--color-text-muted); border-radius: 2px; font: 9px var(--font-mono); letter-spacing: .04em; box-shadow: none; }
-.options-body .choice-card-item { position: relative; border: 1px solid var(--color-border-card); border-radius: 4px; padding: 18px; box-shadow: none; gap: 13px; align-items: flex-start; transition: background .15s,border-color .15s; }
-.options-body .choice-card-item.is-selected { border-color: var(--color-text-primary); background: var(--choice-selected-bg); box-shadow: inset 0 0 0 1px var(--color-text-primary); }
-.options-body .choice-card-item:hover { border-color: var(--color-text-muted); transform: none; }
+/* 徽标做成凹刻铭牌：井面 + 阴刻字 */
+.options-body :is(.rec-badge,.phase-badge) { background-color: var(--color-card-inset); background-image: var(--face-well, none); border: 1px solid var(--rim-soft, var(--color-border-card)); color: var(--color-text-muted); border-radius: 3px; font: 9px var(--font-mono); letter-spacing: .04em; box-shadow: var(--well-shadow, none); text-shadow: var(--engrave, none); }
+.options-body .choice-card-item { position: relative; border: 1px solid var(--rim-soft, var(--color-border-card)); border-radius: 6px; padding: 18px; background-image: var(--face, none); box-shadow: var(--inset-soft, none), var(--cast, none); gap: 13px; align-items: flex-start; transition: background .15s,border-color .15s,box-shadow .15s; }
+/* 选中态：像被按进面板的凹格 + 暖色描边光 */
+.options-body .choice-card-item.is-selected { border-color: var(--color-text-primary); background-image: var(--face-well, none); box-shadow: var(--press, inset 0 0 0 1px var(--color-text-primary)), inset 0 0 0 1px var(--color-text-primary); }
+.options-body .choice-card-item:hover { border-color: var(--rim, var(--color-text-muted)); transform: none; box-shadow: var(--inset-soft, none), var(--cast-hover, none); }
 .options-body .choice-card-item:focus-within { outline: 2px solid var(--color-amber); outline-offset: 3px; }
 .options-body .choice-card-item input[type=radio] { margin-top: 2px; accent-color: var(--color-text-primary); }
 .choice-illustration { display: block; width: 100%; height: 58px; margin-bottom: 14px; position: relative; overflow: hidden; color: var(--color-text-primary); }
@@ -80,12 +83,14 @@ button, input, select, textarea { font-family: var(--font-sans); }
 .options-body .matrix-step-cell { border-radius: 0; background: var(--color-border-card); mask: repeating-linear-gradient(to bottom,#000 0 5px,transparent 5px 8px); }
 .options-body .matrix-step-cell.active { background: var(--color-text-primary); }
 .options-body .matrix-step-cell.current { background: var(--color-amber); box-shadow: none; }
-.options-body input.swiss-range-input { display: block; background: var(--color-border-card); height: 3px; min-height: 0; padding: 0; border: 0; margin: 12px 0; border-radius: 0; }
-.options-body .swiss-range-input::-webkit-slider-thumb { width: 15px; height: 19px; border-radius: 2px; border: 2px solid var(--color-card-bg); background: var(--color-text-primary); box-shadow: none; }
+/* 滑杆：铣出的槽 + 瓷质握把 */
+.options-body input.swiss-range-input { display: block; background-color: var(--color-border-card); background-image: var(--face-well, none); height: 6px; min-height: 0; padding: 0; border: 1px solid var(--rim-soft, transparent); margin: 12px 0; border-radius: 999px; box-shadow: var(--track, none); -webkit-appearance: none; appearance: none; }
+.options-body .swiss-range-input::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 15px; height: 19px; border-radius: 4px; border: 1px solid var(--rim, var(--color-card-bg)); background-color: var(--color-card-bg); background-image: var(--face, none); box-shadow: var(--inset-soft, none), 0 1px 3px rgba(64, 48, 21, 0.3); cursor: grab; }
+.options-body .swiss-range-input::-webkit-slider-thumb:active { cursor: grabbing; box-shadow: var(--press, none); }
 .options-body .swiss-range-input:focus-visible { outline: 2px solid var(--color-amber); outline-offset: 6px; }
 .options-body .matrix-scale-legend { gap: 12px; flex-wrap: wrap; }
 .options-body .history-metrics { gap: 12px; }
-.options-body .history-metrics > div { position: relative; border-radius: 4px; padding: 20px; box-shadow: none; }
+.options-body .history-metrics > div { position: relative; border-radius: 7px; padding: 20px; border-color: var(--rim-soft, var(--color-border-card)); background-image: var(--face-raised, none); box-shadow: var(--inset-soft, none), var(--cast, none); }
 .options-body .history-metrics strong { font-family: var(--font-display),var(--font-sans); font-size: 26px; font-weight: 400; letter-spacing: -.03em; }
 .options-body .history-metrics > div::after { content: '+'; position: absolute; top: 12px; right: 13px; color: var(--color-text-muted); font: 12px var(--font-mono); }
 .options-body .history-chart { gap: 5px; background: repeating-linear-gradient(to top,transparent 0 31px,var(--color-border-subtle) 31px 32px); }
@@ -156,8 +161,8 @@ button, input, select, textarea { font-family: var(--font-sans); }
 /* A quiet, single-surface brand card in the sidebar. */
 .options-body .sidebar-user-card-wrap { padding: 14px 16px 16px; border-top: 0; }
 .options-body .stamp-group-header { padding-left: 2px; margin-bottom: 2px; }
-.options-body .matrix-stamp-card { align-items: center; gap: 12px; padding: 13px 12px; min-height: 96px; border: 1px solid var(--color-border-subtle); border-radius: 10px; background: var(--color-card-bg); box-shadow: none; }
-.options-body .matrix-stamp-card:hover { background: var(--color-card-inset); border-color: var(--color-border-card); transform: none; box-shadow: none; }
+.options-body .matrix-stamp-card { align-items: center; gap: 12px; padding: 13px 12px; min-height: 96px; border: 1px solid var(--rim-soft, var(--color-border-subtle)); border-radius: 10px; background-color: var(--color-card-bg); background-image: var(--face, none); box-shadow: var(--inset-soft, none), var(--cast, none); }
+.options-body .matrix-stamp-card:hover { background-image: var(--face-raised, none); border-color: var(--rim, var(--color-border-card)); transform: none; box-shadow: var(--inset-soft, none), var(--cast-hover, none); }
 .options-body .matrix-stamp-card .stamp-art-box { width: 46px; min-width: 46px; height: 62px; padding: 0 10px 0 0; background: none; border: 0; border-right: 1px dashed var(--color-border-subtle); overflow: hidden; }
 .options-body .matrix-stamp-card .stamp-art-box::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 15px; background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--color-emerald) 32%, transparent) 55%, transparent); opacity: 0; transform: translateY(-100%); pointer-events: none; }
 .options-body .matrix-stamp-card:hover .stamp-art-box::after { opacity: 1; animation: stamp-scanline 1.4s var(--rc-ease-standard, ease) infinite; }
@@ -224,8 +229,11 @@ button, input, select, textarea { font-family: var(--font-sans); }
   font-family: var(--font-mono, monospace);
   padding: 4px 10px;
   border-radius: 4px;
-  background: var(--color-card-inset, rgba(0,0,0,0.03));
-  border: 1px solid var(--color-border-subtle, rgba(0,0,0,0.08));
+  background-color: var(--color-card-inset, rgba(0,0,0,0.03));
+  background-image: var(--face-well, none);
+  border: 1px solid var(--rim-soft, var(--color-border-subtle, rgba(0,0,0,0.08)));
+  box-shadow: var(--well-shadow, none);
+  text-shadow: var(--engrave, none);
   color: var(--color-text-secondary);
 }
 .options-body .pet-tag-icon {
@@ -296,9 +304,20 @@ button, input, select, textarea { font-family: var(--font-sans); }
   align-items: center;
   width: 100%;
 }
-.options-body .password-input-wrap input {
+.options-body .password-input-wrap input,
+.options-body .password-input-wrap textarea {
   width: 100%;
   padding-right: 38px !important;
+}
+.options-body textarea.key-pool-input {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 12px;
+  line-height: 1.6;
+  resize: vertical;
+  min-height: 54px;
+}
+.options-body textarea.key-pool-input:not(.key-pool-revealed) {
+  -webkit-text-security: disc;
 }
 .options-body .toggle-password-btn {
   position: absolute;
@@ -324,12 +343,114 @@ button, input, select, textarea { font-family: var(--font-sans); }
   outline: 2px solid var(--color-amber, #f59e0b);
   outline-offset: 2px;
 }
+.options-body .password-input-wrap textarea + .toggle-password-btn {
+  top: 8px;
+  transform: none;
+}
+
+/* 任务路由：每类任务可绑定独立 API 服务 */
+.options-body .task-routing {
+  border: 1px solid var(--color-border, rgba(0,0,0,.12));
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.options-body .task-routing legend {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  padding: 0 6px;
+}
+.options-body .task-routing .field-help {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.options-body .task-routing .route-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.options-body .task-routing .route-row > span {
+  flex: 0 0 130px;
+  font-size: 13px;
+  color: var(--color-text-primary);
+}
+.options-body .task-routing .route-row select {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 模型用量统计：沿用 task-routing 卡片边框；汇总芯片 + 明细表 */
+.options-body .usage-stats .usage-totals {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.options-body .usage-stats .usage-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-subtle, var(--color-border, rgba(0,0,0,.1)));
+  border-radius: 8px;
+  background: var(--color-card-inset, transparent);
+}
+.options-body .usage-stats .usage-chip .usage-chip-label {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+.options-body .usage-stats .usage-chip strong {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+.options-body .usage-stats .usage-chip small {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 10.5px;
+  color: var(--color-text-muted);
+}
+.options-body .usage-stats .usage-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-border-subtle, var(--color-border, rgba(0,0,0,.1)));
+  border-radius: 8px;
+}
+.options-body .usage-stats .usage-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.options-body .usage-stats .usage-table th,
+.options-body .usage-stats .usage-table td {
+  padding: 7px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border-subtle, rgba(0,0,0,.08));
+  white-space: nowrap;
+}
+.options-body .usage-stats .usage-table thead th {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-border, rgba(0,0,0,.12));
+}
+.options-body .usage-stats .usage-table tbody tr:last-child td { border-bottom: none; }
+.options-body .usage-stats .usage-table td:first-child { font-weight: 600; }
+.options-body .usage-stats .usage-table td small {
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+@media (max-width: 560px) {
+  .options-body .usage-stats .usage-totals { grid-template-columns: minmax(0, 1fr); }
+}
 
 /* 伴读猫直达聚焦聚光灯动效 */
 @keyframes petCardFlash {
-  0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
-  50% { box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.4); }
-  100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(240, 166, 60, 0.7); }
+  50% { box-shadow: 0 0 0 5px rgba(240, 166, 60, 0.4); }
+  100% { box-shadow: 0 0 0 0 rgba(240, 166, 60, 0); }
 }
 .options-body .pet-card-highlight {
   animation: petCardFlash 1.4s cubic-bezier(0.16, 1, 0.3, 1) 2;

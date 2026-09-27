@@ -18,6 +18,7 @@ import {request} from '@ext/shared.js';
 import {CATALOG_TEMPLATES} from '@ext/ui/options-service-catalog.js';
 import {icon} from '../../components/icons.js';
 import '../../components/rc-switch.js';
+import {t} from '../../i18n-runtime.js';
 
 const EMERGENCY_PHASES = new Set(['off', 'translating', 'waiting', 'complete', 'partial', 'stopped', 'error']);
 
@@ -59,7 +60,7 @@ class RoamcatPopup extends LitElement {
 
   get #supported() { return Boolean(this.#tab?.id && /^https?:\/\//iu.test(this.#tab.url || '')); }
   get #origin() { try { return this.#supported ? new URL(this.#tab.url).origin : ''; } catch { return ''; } }
-  get #hostname() { try { return this.#supported ? new URL(this.#tab.url).hostname : '当前标签页'; } catch { return '当前标签页'; } }
+  get #hostname() { try { return this.#supported ? new URL(this.#tab.url).hostname : t('pop.thisTab'); } catch { return t('pop.thisTab'); } }
   get #lookupKey() {
     const key = this.#state?.settings?.lookupKey;
     return typeof key === 'string' && /^[A-Z]$/u.test(key) ? key : 'D';
@@ -68,17 +69,31 @@ class RoamcatPopup extends LitElement {
   get #serviceProblem() {
     return this.#state?.providerError
       || (['chatgpt', 'grok', 'antigravity'].includes(this.#state?.settings?.providerKind) ? this.#state?.subscription?.error : '')
-      || (!this.#state?.providerConfigured ? '辅助服务尚未连接。本页开关和伴读猫仍可用，词语线索、阅读解构和双语译文会在连上后继续。' : '');
+      || (!this.#state?.providerConfigured ? t('pop.noProvider') : '');
   }
+
+  #onMenuDismiss = (e) => {
+    if (!this.#serviceMenuOpen) return;
+    if (e.type === 'keydown' && e.key !== 'Escape') return;
+    if (e.type === 'pointerdown' && e.composedPath().some(n => n?.id === 'service-menu' || n?.id === 'service-menu-toggle')) return;
+    this.#serviceMenuOpen = false;
+    if (e.type === 'keydown') this.querySelector('#service-menu-toggle')?.focus();
+    this.requestUpdate();
+  };
 
   connectedCallback() {
     super.connectedCallback();
+    document.title = t('pop.brandTitle');
     chrome.storage.onChanged.addListener(this.#onStorageChanged);
+    document.addEventListener('pointerdown', this.#onMenuDismiss);
+    document.addEventListener('keydown', this.#onMenuDismiss);
     void this.#init().then(() => { this.#watchTimer = setTimeout(() => void this.#watchPage(), 1000); });
   }
 
   disconnectedCallback() {
     chrome.storage.onChanged.removeListener?.(this.#onStorageChanged);
+    document.removeEventListener('pointerdown', this.#onMenuDismiss);
+    document.removeEventListener('keydown', this.#onMenuDismiss);
     clearTimeout(this.#watchTimer);
     super.disconnectedCallback();
   }
@@ -91,7 +106,7 @@ class RoamcatPopup extends LitElement {
         await this.#getSentenceGroups();
       } catch (error) {
         this.#sentenceGroupsLoaded = false;
-        this.#errors.sentenceGroups = '无法读取阅读解构设置：' + errorText(error);
+        this.#errors.sentenceGroups = t('pop.sgReadFail',{err:errorText(error)});
       }
       await this.#getPageStatus();
       this.requestUpdate();
@@ -156,7 +171,7 @@ class RoamcatPopup extends LitElement {
     this.requestUpdate();
     try {
       if (enabled && !await chrome.permissions.request({origins: [this.#origin + '/*']})) {
-        throw new Error('未授予此网站权限，设置未更改。');
+        throw new Error(t('pop.permSite'));
       }
       const sites = this.#automation.automation.sites.filter(site => site.origin !== this.#origin);
       sites.push({origin: this.#origin, enabled});
@@ -179,11 +194,11 @@ class RoamcatPopup extends LitElement {
     try {
       await request('PAGE_UI_INJECT', {tabId: this.#tab.id});
       const result = await chrome.tabs.sendMessage(this.#tab.id, {type: 'SS_SET_ENABLED', enabled: !this.#enabled});
-      if (!result?.ok) throw new Error(result?.error || '请刷新网页后重试。');
+      if (!result?.ok) throw new Error(result?.error || t('pop.refreshRetry'));
       this.#enabled = Boolean(result.data?.enabled);
       this.#automation = await request('AUTOMATION_GET', {tabId: this.#tab.id});
     } catch (error) {
-      this.#errors.action = `无法更新当前页：${errorText(error)}`;
+      this.#errors.action = t('pop.actionFail',{err:errorText(error)});
     } finally {
       this.#busy = false;
       this.requestUpdate();
@@ -201,13 +216,13 @@ class RoamcatPopup extends LitElement {
       await request('PAGE_UI_INJECT', {tabId: this.#tab.id});
       await request('SENTENCE_GROUPS_SET', {tabId: this.#tab.id, enabled});
       const result = await chrome.tabs.sendMessage(this.#tab.id, {type: 'SS_SET_SENTENCE_GROUPS', enabled}, {frameId: 0});
-      if (!result?.ok) throw new Error(result?.error || '网页未能应用阅读解构设置，请刷新后重试。');
+      if (!result?.ok) throw new Error(result?.error || t('pop.sgApplyFail'));
       this.#sentenceGroups = {...this.#sentenceGroups, ...result.data?.sentenceGroups};
       this.#enabled = Boolean(result.data?.enabled);
       this.#automation = await request('AUTOMATION_GET', {tabId: this.#tab.id});
     } catch (error) {
       try { await this.#getSentenceGroups(); } catch {}
-      this.#errors.sentenceGroups = '无法更新阅读解构：' + errorText(error);
+      this.#errors.sentenceGroups = t('pop.sgUpdateFail',{err:errorText(error)});
       control.checked = this.#sentenceGroups.enabled;
     } finally {
       this.#busy = false;
@@ -243,12 +258,12 @@ class RoamcatPopup extends LitElement {
     }
     const template = CATALOG_TEMPLATES.find(value => value.id === settings.providerKind);
     if (!template) return null;
-    return {key: settings.providerKind, name: template.name, model: settings.subscriptionModel || '默认模型', icon: template.icon};
+    return {key: settings.providerKind, name: template.name, model: settings.subscriptionModel || t('pop.defaultModel'), icon: template.icon};
   }
 
   get #serviceChoices() {
     const subscriptions = CATALOG_TEMPLATES.filter(value => value.category === 'subscription')
-      .map(value => ({key: value.id, name: value.name, icon: value.icon, note: '本机连接器 · 免 API Key'}));
+      .map(value => ({key: value.id, name: value.name, icon: value.icon, note: t('pop.subNote')}));
     const services = (this.#state?.settings?.apiServices || []).map(service => {
       const template = CATALOG_TEMPLATES.find(value => value.id === service.providerId);
       return {key: 'api:' + service.id, name: service.name, icon: template?.icon || 'custom-api', note: service.model};
@@ -279,7 +294,7 @@ class RoamcatPopup extends LitElement {
   async #emergencyStart(resume = false) {
     if (this.#busy || !this.#supported) return;
     if (!this.#state?.providerConfigured) {
-      this.#emergencyResult = {text: '辅助服务尚未连接。本页辅助和伴读猫仍可用，请先到设置里连接服务。', error: true};
+      this.#emergencyResult = {text: t('pop.noProviderTranslate'), error: true};
       this.requestUpdate();
       await this.updateComplete;
       this.querySelector('#repair-service')?.focus();
@@ -292,13 +307,13 @@ class RoamcatPopup extends LitElement {
     let token;
     try {
       const current = await chrome.tabs.get(this.#tab.id);
-      if (current.url !== this.#tab.url) throw new Error('网页已切换，请重新打开扩展弹窗后再翻译。');
+      if (current.url !== this.#tab.url) throw new Error(t('pop.tabChanged'));
       await request('PAGE_UI_INJECT', {tabId: this.#tab.id});
       ({token} = await request('EMERGENCY_BEGIN', {tabId: this.#tab.id, url: this.#tab.url}));
       const result = await chrome.tabs.sendMessage(this.#tab.id, {type: 'SS_EMERGENCY_START', token, resume}, {frameId: 0});
-      if (!result?.ok) throw new Error(result?.error || '无法启动本页翻译，请刷新网页后重试。');
+      if (!result?.ok) throw new Error(result?.error || t('pop.startFail'));
       this.#emergency = emergencySnapshot(result.data?.emergency || {active: true, displayed: resume, phase: 'translating'});
-      this.#emergencyResult = {text: resume ? '已继续，仅处理尚未完成的段落。' : '已开始，仅处理读到附近的正文。', error: false};
+      this.#emergencyResult = {text: resume ? t('pop.resumed') : t('pop.started'), error: false};
     } catch (error) {
       if (token) await request('EMERGENCY_END', {tabId: this.#tab.id, token}).catch(() => {});
       this.#emergencyResult = {text: errorText(error), error: true};
@@ -317,12 +332,12 @@ class RoamcatPopup extends LitElement {
     this.requestUpdate();
     try {
       const result = await chrome.tabs.sendMessage(this.#tab.id, {type}, {frameId: 0});
-      if (!result?.ok) throw new Error(result?.error || '网页未能完成操作，请刷新后重试。');
+      if (!result?.ok) throw new Error(result?.error || t('pop.opFail'));
       this.#emergency = emergencySnapshot(result.data?.emergency || {});
       this.#emergencyResult = {
-        text: type === 'SS_EMERGENCY_STOP' ? '已停止发送新请求；已显示的中文仍保留。'
-          : type === 'SS_EMERGENCY_RETRY' ? (this.#emergency.phase === 'error' && this.#emergency.failed === 0 ? '正在继续翻译附近段落。' : '正在重试失败段落。')
-          : '已移除本页译文，页面已返回英文。',
+        text: type === 'SS_EMERGENCY_STOP' ? t('pop.stopped')
+          : type === 'SS_EMERGENCY_RETRY' ? (this.#emergency.phase === 'error' && this.#emergency.failed === 0 ? t('pop.continuing') : t('pop.retrying'))
+          : t('pop.reverted'),
         error: false,
       };
     } catch (error) {
@@ -344,17 +359,35 @@ class RoamcatPopup extends LitElement {
   }
 
   #emergencyPhaseText() {
-    if (!this.#supported) return '当前页不可用；请在普通网页中使用。';
-    if (!this.#state?.providerConfigured) return '连接辅助服务后才能翻译本页。本页开关和伴读猫仍可用。';
+    if (!this.#supported) return t('pop.phase.unsupported');
+    if (!this.#state?.providerConfigured) return t('pop.phase.noProvider');
     const text = {
-      translating: '正在翻译读到附近的正文。',
-      waiting: '当前附近已处理，继续阅读时再翻译。',
-      complete: '已处理所有已识别段落，英文仍保留。',
-      partial: '部分段落未译完，可重试失败段落。',
-      stopped: '已停止发送新请求，现有译文仍保留。',
-      error: this.#emergency.error || '翻译已停止，可继续未完成段落。',
+      translating: t('pop.phase.translating'),
+      waiting: t('pop.phase.waiting'),
+      complete: t('pop.phase.complete'),
+      partial: t('pop.phase.partial'),
+      stopped: t('pop.phase.stopped'),
+      error: this.#emergency.error || t('pop.phase.error'),
     };
-    return text[this.#emergency.phase] || '保留英文，按阅读位置翻译附近正文。';
+    return text[this.#emergency.phase] || t('pop.phase.idle');
+  }
+
+  #langName() {
+    const pref = globalThis.RoamCatI18n?.pref?.() || 'auto';
+    return t(`common.lang${pref === 'auto' ? 'Auto' : pref === 'zh' ? 'Zh' : 'En'}`);
+  }
+
+  #langShort() {
+    const pref = globalThis.RoamCatI18n?.pref?.() || 'auto';
+    return t(pref === 'auto' ? 'pop.langAuto' : pref === 'zh' ? 'pop.langZh' : 'pop.langEn');
+  }
+
+  #cycleUiLang() {
+    const i18n = globalThis.RoamCatI18n;
+    if (!i18n) return;
+    const order = ['auto', 'zh', 'en'];
+    i18n.setPref(order[(order.indexOf(i18n.pref()) + 1) % order.length]);
+    this.requestUpdate();
   }
 
   #openOptions(section = '') {
@@ -379,41 +412,41 @@ class RoamcatPopup extends LitElement {
     const retryable = this.#emergency.active && (this.#emergency.failed > 0 || this.#emergency.phase === 'error');
     const emergencyPct = this.#emergency.total ? Math.min(100, Math.round(this.#emergency.completed / this.#emergency.total * 100)) : 0;
 
-    let statusText = '等待开启';
-    let toggleText = '开启本页';
-    let pageNote = '开启不会改变网站的长期授权规则。';
+    let statusText = t('pop.status.idle');
+    let toggleText = t('pop.toggle.on');
+    let pageNote = t('pop.note.idle');
     if (!supported) {
-      statusText = '此页不可用'; toggleText = '当前页不可用'; pageNote = '请在普通网页主文档中使用。';
+      statusText = t('pop.status.unsupported'); toggleText = t('pop.toggle.unsupported'); pageNote = t('pop.note.unsupported');
     } else if (this.#enabled) {
-      statusText = '本页已开启'; toggleText = '暂停本页';
+      statusText = t('pop.status.on'); toggleText = t('pop.toggle.off');
       const page = this.#page;
-      if (this.#state?.settings?.assistanceMode === 'on-demand') pageNote = '当前为仅在需要时；保留主动求助。';
-      else if (page?.noReadingRoot) pageNote = '本页未识别到英文正文区域，自动提示不可用。';
-      else if (page?.failed) pageNote = '辅助请求未完成；暂停后重新开启可重试。';
-      else if (page && !page.automaticReady) pageNote = '正在识别本页正文…';
-      else if (page?.providerConfigured && page.count > 0) pageNote = '已在附近标注 ' + page.count + ' 处提示。';
-      else if (page?.providerConfigured) pageNote = '附近暂无需提示的词；继续阅读或滚动后再看。';
-      else pageNote = '保留英文，只在当前位置提供少量支撑。';
+      if (this.#state?.settings?.assistanceMode === 'on-demand') pageNote = t('pop.note.ondemand');
+      else if (page?.noReadingRoot) pageNote = t('pop.note.noRoot');
+      else if (page?.failed) pageNote = t('pop.note.failed');
+      else if (page && !page.automaticReady) pageNote = t('pop.note.scanning');
+      else if (page?.providerConfigured && page.count > 0) pageNote = t('pop.note.marked',{n:page.count});
+      else if (page?.providerConfigured) pageNote = t('pop.note.none');
+      else pageNote = t('pop.note.support');
     } else if (this.#automation?.paused) {
-      statusText = '本页已暂停'; toggleText = '继续辅助';
+      statusText = t('pop.status.paused'); toggleText = t('pop.toggle.resume');
     }
 
-    let siteAutoNote = configured ? '下次打开此网站会自动辅助。' : '授权后自动开始；有限上下文用于准备，支持记录只在本机。';
-    if (!supported) siteAutoNote = '仅普通 HTTP 或 HTTPS 网页可授权。';
-    else if (this.#automation?.paused && configured) siteAutoNote = '此网站已授权；当前标签页已暂停。';
-    else if (allSites && this.#automation?.siteRule === false) siteAutoNote = '全部网站已开启；当前网站已排除。';
-    else if (allSites) siteAutoNote = '全部网站已开启；关闭可排除当前网站。';
+    let siteAutoNote = configured ? t('pop.siteOn') : t('pop.siteOff');
+    if (!supported) siteAutoNote = t('pop.siteUnsupported');
+    else if (this.#automation?.paused && configured) siteAutoNote = t('pop.sitePaused');
+    else if (allSites && this.#automation?.siteRule === false) siteAutoNote = t('pop.siteExcluded');
+    else if (allSites) siteAutoNote = t('pop.siteAll');
 
-    let sgNote = '已关闭；可随时为当前页面开启。';
-    if (!supported) sgNote = '当前页不可用；请在普通网页中使用阅读解构。';
+    let sgNote = t('pop.sg.off');
+    if (!supported) sgNote = t('pop.sg.unsupported');
     else if (!this.#state?.providerConfigured) {
-      sgNote = this.#sentenceGroups.enabled ? '阅读解构已打开。连上辅助服务后会自动开始，其它功能不受影响。' : '可以先打开。连上辅助服务后才会分析句子。';
-    } else if (this.#sentenceGroups.status === 'queued') sgNote = '正在准备分析当前可见正文。';
-    else if (this.#sentenceGroups.status === 'analyzing') sgNote = '正在分析当前可见正文；滚动后只分析新出现的句子。';
-    else if (this.#sentenceGroups.status === 'error') sgNote = '阅读解构出错，可在扩展中关闭后重新开启。';
-    else if (this.#sentenceGroups.status === 'paused') sgNote = '分析暂缓；页面恢复阅读状态后按需继续。';
+      sgNote = this.#sentenceGroups.enabled ? t('pop.sg.noProvOn') : t('pop.sg.noProvOff');
+    } else if (this.#sentenceGroups.status === 'queued') sgNote = t('pop.sg.queued');
+    else if (this.#sentenceGroups.status === 'analyzing') sgNote = t('pop.sg.analyzing');
+    else if (this.#sentenceGroups.status === 'error') sgNote = t('pop.sg.error');
+    else if (this.#sentenceGroups.status === 'paused') sgNote = t('pop.sg.paused');
     else if (this.#sentenceGroups.enabled) {
-      sgNote = this.#sentenceGroups.processed ? '已开启，已处理 ' + this.#sentenceGroups.processed + ' 句；滚动时按需继续。' : '已开启，等待分析可见正文。';
+      sgNote = this.#sentenceGroups.processed ? t('pop.sg.processed',{n:this.#sentenceGroups.processed}) : t('pop.sg.waiting');
     }
 
     return html`
@@ -423,15 +456,23 @@ class RoamcatPopup extends LitElement {
         <img class="brand-icon" src=${chrome.runtime.getURL('icons/roamcat.svg')} width="24" height="24" alt="RoamCat">
         <div class="brand-text-col">
           <span id="brand-title" class="popup-brand-name">ROAMCAT</span>
-          <span class="popup-brand-badge">随心阅</span>
+          <span class="popup-brand-badge">${t('pop.brand')}</span>
         </div>
       </div>
-      <button id="open-options" class="popup-header-btn" type="button" title="打开设置中心" @click=${() => this.#openOptions()}>
+      <button id="lang-toggle-btn" class="popup-header-btn" type="button" title=${t('opt.langToggleTitle',{lang:this.#langName()})} @click=${() => this.#cycleUiLang()}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="2" y1="12" x2="22" y2="12"></line>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4 10z"></path>
+        </svg>
+        <span>${this.#langShort()}</span>
+      </button>
+      <button id="open-options" class="popup-header-btn" type="button" title=${t('pop.openOptions')} @click=${() => this.#openOptions()}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13">
           <circle cx="12" cy="12" r="3"></circle>
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
         </svg>
-        <span>设置中心</span>
+        <span>${t('pop.options')}</span>
       </button>
     </header>
 
@@ -439,9 +480,9 @@ class RoamcatPopup extends LitElement {
       <section id="service-warning" class="popup-alert-card" ?hidden=${!serviceProblem}>
         <div class="popup-alert-icon">${icon('alert', {size: 18})}</div>
         <div class="popup-alert-info">
-          <b>服务未就绪</b>
+          <b>${t('pop.svcDown')}</b>
           <p id="service-warning-copy">${serviceProblem || ''}</p>
-          <button id="repair-service" class="popup-btn-warning" type="button" @click=${() => this.#openOptions('service')}>前往服务设置 →</button>
+          <button id="repair-service" class="popup-btn-warning" type="button" @click=${() => this.#openOptions('service')}>${t('pop.svcFix')}</button>
         </div>
       </section>
 
@@ -452,16 +493,16 @@ class RoamcatPopup extends LitElement {
               ${serviceCurrent ? html`<img src=${serviceIconUrl(serviceCurrent.icon)} width="15" height="15" alt="" aria-hidden="true">` : icon('zap', {size: 15})}
             </div>
             <div>
-              <h2 id="service-switch-title">模型服务</h2>
-              <p id="service-current-note" aria-live="polite">${serviceCurrent ? serviceCurrent.name + (serviceCurrent.model ? ' · ' + serviceCurrent.model : '') : '尚未选择服务'}</p>
+              <h2 id="service-switch-title">${t('pop.svcTitle')}</h2>
+              <p id="service-current-note" aria-live="polite">${serviceCurrent ? serviceCurrent.name + (serviceCurrent.model ? ' · ' + serviceCurrent.model : '') : t('pop.svcNone')}</p>
             </div>
           </div>
           <button id="service-menu-toggle" class="secondary-button popup-service-btn" type="button"
             aria-expanded=${this.#serviceMenuOpen ? 'true' : 'false'} aria-controls="service-menu"
             .disabled=${this.#busy || !this.#state}
-            @click=${() => { this.#serviceMenuOpen = !this.#serviceMenuOpen; }}>${this.#serviceMenuOpen ? '收起' : '切换'}</button>
+            @click=${() => { this.#serviceMenuOpen = !this.#serviceMenuOpen; this.requestUpdate(); }}>${this.#serviceMenuOpen ? t('pop.svcCollapse') : t('pop.svcSwitch')}</button>
         </div>
-        <div id="service-menu" class="service-menu" role="listbox" aria-label="选择模型服务" ?hidden=${!this.#serviceMenuOpen}>
+        <div id="service-menu" class="service-menu" role="listbox" aria-label=${t('pop.svcMenuLabel')} ?hidden=${!this.#serviceMenuOpen}>
           ${serviceChoices.map(choice => html`
             <button type="button" role="option" aria-selected=${choice.key === serviceCurrent?.key ? 'true' : 'false'}
               class=${classMap({'service-menu-item': true, active: choice.key === serviceCurrent?.key})}
@@ -473,8 +514,8 @@ class RoamcatPopup extends LitElement {
             </button>`)}
           <button type="button" class="service-menu-item service-menu-manage" @click=${() => this.#openOptions('service')}>
             ${icon('settings', {size: 14, cls: 'service-menu-gear'})}
-            <span class="service-menu-name">管理服务与密钥</span>
-            <span class="service-menu-note">设置中心</span>
+            <span class="service-menu-name">${t('pop.svcManage')}</span>
+            <span class="service-menu-note">${t('pop.options')}</span>
           </button>
         </div>
         <p id="service-switch-error" class="inline-message error" role="alert" ?hidden=${!this.#errors.service}>${this.#errors.service}</p>
@@ -491,7 +532,7 @@ class RoamcatPopup extends LitElement {
 
         <div class="activation-control-row">
           <div class="activation-heading">
-            <h2 id="activation-title">当前页面辅助</h2>
+            <h2 id="activation-title">${t('pop.assistTitle')}</h2>
             <p id="page-note" class="muted">${pageNote}</p>
           </div>
           <button id="toggle-page" class="primary-action popup-master-btn" type="button" .disabled=${this.#busy || !supported} @click=${() => void this.#togglePage()}>
@@ -502,11 +543,11 @@ class RoamcatPopup extends LitElement {
 
         <div class="site-auto-panel">
           <div class="site-auto-copy">
-            <h3 id="site-auto-title">此网站以后自动开启</h3>
+            <h3 id="site-auto-title">${t('pop.siteAuto')}</h3>
             <p id="site-auto-note">${siteAutoNote}</p>
           </div>
           <rc-switch id="site-auto" .checked=${Boolean(supported && configured)} .disabled=${this.#busy || !supported || !this.#automation}
-            label="此网站以后自动开启" @change=${event => void this.#toggleSite(event)}></rc-switch>
+            label=${t('pop.siteAuto')} @change=${event => void this.#toggleSite(event)}></rc-switch>
         </div>
         <p id="site-auto-error" class="inline-message error" role="alert" ?hidden=${!this.#errors.siteAuto}>${this.#errors.siteAuto}</p>
       </section>
@@ -516,16 +557,16 @@ class RoamcatPopup extends LitElement {
           <div class="feature-card-title-wrap">
             <div class="feature-icon-badge">${icon('layers', {size: 16})}</div>
             <div>
-              <h2 id="sentence-groups-title">阅读解构</h2>
+              <h2 id="sentence-groups-title">${t('pop.sgTitle')}</h2>
               <p id="sentence-groups-note" aria-live="polite">${sgNote}</p>
             </div>
           </div>
           <rc-switch id="sentence-groups" .checked=${Boolean(this.#sentenceGroupsLoaded && this.#sentenceGroups.enabled)}
             .disabled=${this.#busy || !supported || !this.#sentenceGroupsLoaded}
             describedby="sentence-groups-note sentence-structure-key sentence-groups-error"
-            label="阅读解构" @change=${event => void this.#toggleSentenceGroups(event)}></rc-switch>
+            label=${t('pop.sgTitle')} @change=${event => void this.#toggleSentenceGroups(event)}></rc-switch>
         </div>
-        <p id="sentence-structure-key" class="sentence-structure-key">标出当前页的主谓宾等结构骨架。分析会产生模型用量。</p>
+        <p id="sentence-structure-key" class="sentence-structure-key">${t('pop.sgKey')}</p>
         <p id="sentence-groups-error" class="inline-message error" role="alert" ?hidden=${!this.#errors.sentenceGroups}>${this.#errors.sentenceGroups}</p>
       </section>
 
@@ -534,47 +575,47 @@ class RoamcatPopup extends LitElement {
           <div class="feature-card-title-wrap">
             <div class="feature-icon-badge">${icon('languages', {size: 16})}</div>
             <div>
-              <h2 id="emergency-title">本页双语翻译</h2>
+              <h2 id="emergency-title">${t('pop.emTitle')}</h2>
               <p id="emergency-status" aria-live="polite">${this.#emergencyPhaseText()}</p>
             </div>
           </div>
           <button id="emergency-open" class="secondary-button popup-emergency-btn" type="button"
             ?hidden=${emergencyVisible} .disabled=${this.#busy || !supported}
-            @click=${() => void this.#emergencyStart()}>翻译本页</button>
+            @click=${() => void this.#emergencyStart()}>${t('pop.emStart')}</button>
         </div>
 
         <div id="emergency-progress" class="emergency-progress" ?hidden=${!emergencyVisible}>
-          <strong id="emergency-progress-copy">已译 ${this.#emergency.completed} / 已识别 ${this.#emergency.total} 段</strong>
+          <strong id="emergency-progress-copy">${t('pop.emProgress',{done:this.#emergency.completed,total:this.#emergency.total})}</strong>
           <div id="emergency-progress-bar" class="emergency-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow=${emergencyPct} aria-labelledby="emergency-progress-copy">
             <span id="emergency-progress-fill" class="emergency-progress-fill" style=${styleMap({width: emergencyPct + '%'})}></span>
           </div>
-          <span id="emergency-counts">待阅读 ${this.#emergency.pending} · 失败 ${this.#emergency.failed} · 跳过 ${this.#emergency.skipped}</span>
+          <span id="emergency-counts">${t('pop.emCounts',{pending:this.#emergency.pending,failed:this.#emergency.failed,skipped:this.#emergency.skipped})}</span>
         </div>
 
-        <div id="emergency-actions" class="provider-actions" role="group" aria-label="本页双语翻译操作" ?hidden=${!emergencyVisible}>
+        <div id="emergency-actions" class="provider-actions" role="group" aria-label=${t('pop.emGroup')} ?hidden=${!emergencyVisible}>
           <button id="emergency-stop" class="secondary-button" type="button" ?hidden=${!this.#emergency.active}
-            .disabled=${this.#busy || !this.#emergency.active} @click=${() => void this.#emergencyAction('SS_EMERGENCY_STOP')}>停止</button>
+            .disabled=${this.#busy || !this.#emergency.active} @click=${() => void this.#emergencyAction('SS_EMERGENCY_STOP')}>${t('pop.emStop')}</button>
           <button id="emergency-resume" class="primary-action" type="button" ?hidden=${!resumable}
-            .disabled=${this.#busy || !resumable} @click=${() => void this.#emergencyStart(true)}>继续</button>
+            .disabled=${this.#busy || !resumable} @click=${() => void this.#emergencyStart(true)}>${t('pop.emResume')}</button>
           <button id="emergency-retry" class="secondary-button" type="button" ?hidden=${!retryable}
-            .disabled=${this.#busy || !retryable} @click=${() => void this.#emergencyAction('SS_EMERGENCY_RETRY')}>${this.#emergency.phase === 'error' && this.#emergency.failed === 0 ? '继续翻译' : '重试失败段落'}</button>
+            .disabled=${this.#busy || !retryable} @click=${() => void this.#emergencyAction('SS_EMERGENCY_RETRY')}>${this.#emergency.phase === 'error' && this.#emergency.failed === 0 ? t('pop.emContinue') : t('pop.emRetry')}</button>
           <button id="emergency-clear" class="icon-text-button emergency-clear-btn" type="button"
-            .disabled=${this.#busy || !emergencyVisible} @click=${() => void this.#emergencyAction('SS_EMERGENCY_END')}>返回英文</button>
+            .disabled=${this.#busy || !emergencyVisible} @click=${() => void this.#emergencyAction('SS_EMERGENCY_END')}>${t('pop.emEnd')}</button>
         </div>
         <p id="emergency-result" class=${classMap({'inline-message': true, error: this.#emergencyResult.error})} role="status" aria-live="polite" ?hidden=${!this.#emergencyResult.text}>${this.#emergencyResult.text}</p>
       </section>
 
       <section id="on-demand-suggestion" class="popup-card suggestion-panel" ?hidden=${!this.#suggestionVisible}>
-        <b>想让页面更安静？</b>
-        <p>切换为“仅在需要时”会停止自动分析与标记；按住 <span data-lookup-key>${this.#lookupKey}</span> + 单击与选择求助仍可使用。</p>
-        <button id="choose-on-demand" class="secondary-button" type="button" @click=${() => void this.#chooseOnDemand()}>仅在需要时</button>
+        <b>${t('pop.quietTitle')}</b>
+        <p>${t('pop.quietBodyA')} <span data-lookup-key>${this.#lookupKey}</span> ${t('pop.quietBodyB')}</p>
+        <button id="choose-on-demand" class="secondary-button" type="button" @click=${() => void this.#chooseOnDemand()}>${t('pop.quietBtn')}</button>
       </section>
     </div>
 
     <footer class="popup-footer">
       <div class="popup-footer-hint">
         <span class="popup-footer-dot"></span>
-        <span>按住 <kbd class="popup-keycap" data-lookup-key>${this.#lookupKey}</kbd> + 单击原词即查</span>
+        <span>${t('pop.footerA')} <kbd class="popup-keycap" data-lookup-key>${this.#lookupKey}</kbd> ${t('pop.footerB')}</span>
       </div>
       <span class="popup-footer-ver">v${chrome.runtime.getManifest?.().version ?? '0.0.1'}</span>
     </footer>

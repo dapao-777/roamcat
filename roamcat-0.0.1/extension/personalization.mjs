@@ -9,6 +9,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
  */
+
+const M=(zh,en)=>globalThis.RoamCatI18n?.lang?.()==='en'?en:zh;
 const DOMAINS = Object.freeze(['general','tech','data','finance','medical','legal','design']);
 const DOMAIN_SET = new Set(DOMAINS);
 const DAY = 86_400_000;
@@ -80,15 +82,15 @@ function eventAt(item) { return Number.isFinite(item?.at) ? item.at : 0; }
 function isQuery(item) { return item?.type === 'query'; }
 function isSummary(item) { return item?.type === 'summary'; }
 function closedResult(value,evidence) {
-  if (!exact(value,['annotation','domainBias','translation','evidenceIds']) || !validPolicy({annotation:value.annotation,domainBias:value.domainBias,translation:value.translation})) throw new Error('个性化模型返回格式无效。');
-  if (!Array.isArray(value.evidenceIds) || !value.evidenceIds.length || value.evidenceIds.length > MAX_EVIDENCE || value.evidenceIds.some(item => typeof item !== 'string')) throw new Error('个性化模型证据引用无效。');
+  if (!exact(value,['annotation','domainBias','translation','evidenceIds']) || !validPolicy({annotation:value.annotation,domainBias:value.domainBias,translation:value.translation})) throw new Error(M('个性化模型返回格式无效。','The personalization model returned an invalid format.'));
+  if (!Array.isArray(value.evidenceIds) || !value.evidenceIds.length || value.evidenceIds.length > MAX_EVIDENCE || value.evidenceIds.some(item => typeof item !== 'string')) throw new Error(M('个性化模型证据引用无效。','The personalization model returned invalid evidence references.'));
   const evidenceById = new Map(evidence.map(item => [eventId(item),item]).filter(([key]) => key));
-  if (value.evidenceIds.some(value => !evidenceById.has(value))) throw new Error('个性化模型引用了快照外证据。');
+  if (value.evidenceIds.some(value => !evidenceById.has(value))) throw new Error(M('个性化模型引用了快照外证据。','The personalization model referenced evidence outside the snapshot.'));
   const activeTerms = new Set(value.evidenceIds.map(id=>evidenceById.get(id)).filter(isQuery).map(queryTerm).filter(Boolean).map(value => value.toLocaleLowerCase()));
   const terms=value.annotation.priorityTerms.map(value=>value.trim());
   const referenced=value.evidenceIds.map(value=>evidenceById.get(value));
-  if((value.annotation.depth==='mark'||value.annotation.density==='sparse')&&!referenced.some(isQuery))throw new Error('降低提示必须引用主动查询证据。');
-  if (terms.some(term => !activeTerms.has(term.toLocaleLowerCase()))) throw new Error('优先词必须来自主动查询。');
+  if((value.annotation.depth==='mark'||value.annotation.density==='sparse')&&!referenced.some(isQuery))throw new Error(M('降低提示必须引用主动查询证据。','Reducing hints must reference manual-lookup evidence.'));
+  if (terms.some(term => !activeTerms.has(term.toLocaleLowerCase()))) throw new Error(M('优先词必须来自主动查询。','Priority terms must come from manual lookups.'));
   return {annotation:{...value.annotation,priorityTerms:[...new Set(terms)]},domainBias:value.domainBias,translation:{...value.translation},evidenceIds:[...new Set(value.evidenceIds)]};
 }
 function onlyPriorityChanged(before,after) {
@@ -100,8 +102,8 @@ function authorized(config,kind) { return config?.enabled === true && Array.isAr
 function stateError(message,code){const error=new Error(message);error.code=code;return error;}
 
 export function createPersonalization({history,config,runModel,onChange}) {
-  if (!history || typeof history.meta !== 'function' || typeof history.updateMeta !== 'function' || typeof history.evidence !== 'function' || typeof history.append !== 'function' || typeof history.remove !== 'function' || typeof history.snapshot !== 'function') throw new TypeError('history 接口不完整。');
-  if (typeof config !== 'function' || typeof runModel !== 'function' || typeof onChange !== 'function') throw new TypeError('个性化依赖不完整。');
+  if (!history || typeof history.meta !== 'function' || typeof history.updateMeta !== 'function' || typeof history.evidence !== 'function' || typeof history.append !== 'function' || typeof history.remove !== 'function' || typeof history.snapshot !== 'function') throw new TypeError(M('history 接口不完整。','The history interface is incomplete.'));
+  if (typeof config !== 'function' || typeof runModel !== 'function' || typeof onChange !== 'function') throw new TypeError(M('个性化依赖不完整。','Personalization dependencies are incomplete.'));
   let analysisInFlight=null;
   const summaryInFlight=new Map();
 
@@ -110,7 +112,7 @@ export function createPersonalization({history,config,runModel,onChange}) {
     let changed=false;
     const result=await history.updateMeta(draft=>{
       const state=stateFrom(draft),out=fn(state);
-      if(out&&typeof out.then==='function')throw new TypeError('个性化元数据修改必须同步。');
+      if(out&&typeof out.then==='function')throw new TypeError(M('个性化元数据修改必须同步。','Personalization metadata edits must be synchronous.'));
       changed=out===true;
       if(changed){state.revision+=1;state.versions=state.versions.slice(-MAX_VERSIONS);Object.assign(draft,copy(state));}
     });
@@ -135,13 +137,13 @@ export function createPersonalization({history,config,runModel,onChange}) {
     if(summaryInFlight.has(session))return summaryInFlight.get(session);
     const task=(async()=>{
       const settings=await config();
-      if(!authorized(settings,'summaries'))throw stateError('阅读摘要未授权。','NOT_READY');
-      if(typeof session!=='string'||!session||session.length>200)throw new Error('阅读会话无效。');
+      if(!authorized(settings,'summaries'))throw stateError(M('阅读摘要未授权。','Reading summaries are not authorized.'),'NOT_READY');
+      if(typeof session!=='string'||!session||session.length>200)throw new Error(M('阅读会话无效。','Invalid reading session.'));
       const domain=args.domain??'general',sample=args.sample;
-      if(!DOMAIN_SET.has(domain))throw new Error('摘要领域无效。');
-      if(typeof sample!=='string'||!sample.trim()||sample.length>2000)throw new Error('摘要样本须为 1–2000 个字符。');
+      if(!DOMAIN_SET.has(domain))throw new Error(M('摘要领域无效。','Invalid summary domain.'));
+      if(typeof sample!=='string'||!sample.trim()||sample.length>2000)throw new Error(M('摘要样本须为 1–2000 个字符。','The summary sample must be 1–2000 characters.'));
       const evidence=await history.evidence();
-      if((evidence?.summaries||[]).some(item=>sessionId(item)===session))throw stateError('本会话已经生成过摘要。','NOT_READY');
+      if((evidence?.summaries||[]).some(item=>sessionId(item)===session))throw stateError(M('本会话已经生成过摘要。','This session already has a summary.'),'NOT_READY');
       const before=await history.meta(),epoch=configEpoch(settings),revision=before?.revision;
       let result;
       try{result=await runModel('summary',{sample,domain},SUMMARY_INSTRUCTIONS,SUMMARY_SCHEMA);}
@@ -153,14 +155,14 @@ export function createPersonalization({history,config,runModel,onChange}) {
       if(!exact(result,['summary','domain'])||typeof result.summary!=='string'||!result.summary.trim()||result.summary.length>600||!DOMAIN_SET.has(result.domain)){
         const currentConfig=await config(),currentMeta=await history.meta();
         if(authorized(currentConfig,'summaries')&&configEpoch(currentConfig)===epoch&&currentMeta?.revision===revision)await history.append({id:id('summary'),type:'summary',at:now(),sessionId:session,domain,summary:'',status:'error',modelGenerated:true},{expectedRevision:revision});
-        throw new Error('摘要模型返回格式无效。');
+        throw new Error(M('摘要模型返回格式无效。','The summary model returned an invalid format.'));
       }
       const latestConfig=await config(),latestMeta=await history.meta();
-      if(!authorized(latestConfig,'summaries')||configEpoch(latestConfig)!==epoch||latestMeta?.revision!==revision)throw stateError('摘要结果已因设置或历史变化失效。','STALE');
+      if(!authorized(latestConfig,'summaries')||configEpoch(latestConfig)!==epoch||latestMeta?.revision!==revision)throw stateError(M('摘要结果已因设置或历史变化失效。','The summary result was invalidated by settings/history changes.'),'STALE');
       const event={id:id('summary'),type:'summary',at:now(),sessionId:session,domain:result.domain,summary:result.summary.trim(),status:'ready',modelGenerated:true};
-      if(await history.append(event,{expectedRevision:revision})!==true)throw stateError('摘要结果已因设置或历史变化失效。','STALE');
+      if(await history.append(event,{expectedRevision:revision})!==true)throw stateError(M('摘要结果已因设置或历史变化失效。','The summary result was invalidated by settings/history changes.'),'STALE');
       const afterConfig=await config(),afterMeta=await history.meta();
-      if(!authorized(afterConfig,'summaries')||configEpoch(afterConfig)!==epoch||afterMeta.revision!==revision){await history.remove(event.id);throw stateError('摘要结果已因设置或历史变化失效。','STALE');}
+      if(!authorized(afterConfig,'summaries')||configEpoch(afterConfig)!==epoch||afterMeta.revision!==revision){await history.remove(event.id);throw stateError(M('摘要结果已因设置或历史变化失效。','The summary result was invalidated by settings/history changes.'),'STALE');}
       return copy(event);
     })().finally(()=>summaryInFlight.delete(session));
     summaryInFlight.set(session,task);return task;
@@ -170,19 +172,19 @@ export function createPersonalization({history,config,runModel,onChange}) {
     if(analysisInFlight)return analysisInFlight;
     analysisInFlight=(async()=>{
       const settings=await config();
-      if(!authorized(settings,'personalization'))throw stateError('个性化分析未开启。','NOT_READY');
+      if(!authorized(settings,'personalization'))throw stateError(M('个性化分析未开启。','Personalized analysis is not enabled.'),'NOT_READY');
       if(!manual&&settings.assistanceMode==='on-demand')return snapshot();
       const timestamp=now(),epoch=configEpoch(settings),interval=manual?MANUAL_INTERVAL:AUTO_INTERVAL;
       const raw=await history.evidence();
       const evidence=[...(raw?.queries||[]),...(raw?.summaries||[])].filter(item=>eventId(item)&&eventAt(item)>=timestamp-RETENTION&&(isQuery(item)||(isSummary(item)&&item.status==='ready'))).sort((a,b)=>eventAt(b)-eventAt(a)).slice(0,MAX_EVIDENCE);
       const queries=evidence.filter(isQuery);
-      if(new Set(evidence.map(sessionId).filter(Boolean)).size<3&&queries.length<10)throw stateError('需要至少 3 个含查询或摘要的阅读会话，或 10 次有效主动查询后才能分析。','NOT_READY');
+      if(new Set(evidence.map(sessionId).filter(Boolean)).size<3&&queries.length<10)throw stateError(M('需要至少 3 个含查询或摘要的阅读会话，或 10 次有效主动查询后才能分析。','Needs at least 3 sessions with lookups/summaries, or 10 valid manual lookups, before analysis.'),'NOT_READY');
       const evidenceKey=JSON.stringify(evidence.map(eventId).sort());
       let revision;
       await history.updateMeta(draft=>{
         const latest=stateFrom(draft),previous=manual?latest.lastManualAttemptAt:latest.lastAttemptAt;
-        if(!manual&&latest.lastEvidenceKey===evidenceKey)throw stateError('没有新的查询或摘要，不重复分析相同证据。','NOT_READY');
-        if(previous&&timestamp-previous<interval)throw stateError(manual?'手动分析请求过于频繁。':'本周已经尝试过自动分析。','NOT_READY');
+        if(!manual&&latest.lastEvidenceKey===evidenceKey)throw stateError(M('没有新的查询或摘要，不重复分析相同证据。','No new lookups or summaries; identical evidence is not re-analyzed.'),'NOT_READY');
+        if(previous&&timestamp-previous<interval)throw stateError(manual?M('手动分析请求过于频繁。','Manual analysis requests are too frequent.'):M('本周已经尝试过自动分析。','Automatic analysis was already attempted this week.'),'NOT_READY');
         if(manual)latest.lastManualAttemptAt=timestamp;else latest.lastAttemptAt=timestamp;
         latest.analysisError='';revision=latest.revision;Object.assign(draft,copy(latest));
       });
@@ -191,12 +193,12 @@ export function createPersonalization({history,config,runModel,onChange}) {
       const manualRules=stateSnapshot.overrides.slice(-40).map(({wordId,senseKey,stage,locked})=>({wordId,senseKey,stage,locked}));
       let output;
       try{output=closedResult(await runModel('personalization',{evidence:safeEvidence,activity,manualRules,currentPolicy:currentPolicy(stateSnapshot)},PERSONALIZATION_INSTRUCTIONS,PERSONALIZATION_SCHEMA),evidence);}
-      catch(error){const currentConfig=await config();if(authorized(currentConfig,'personalization')&&configEpoch(currentConfig)===epoch)await history.updateMeta(draft=>{if(draft.revision===revision)draft.analysisError='分析失败，未应用调整。请检查当前服务或诊断记录。';});throw error;}
+      catch(error){const currentConfig=await config();if(authorized(currentConfig,'personalization')&&configEpoch(currentConfig)===epoch)await history.updateMeta(draft=>{if(draft.revision===revision)draft.analysisError=M('分析失败，未应用调整。请检查当前服务或诊断记录。','Analysis failed; no adjustment applied. Check the current service or diagnostics.');});throw error;}
       const latestConfig=await config();
-      if(!authorized(latestConfig,'personalization')||configEpoch(latestConfig)!==epoch)throw stateError('个性化结果已因设置或历史变化失效。','STALE');
+      if(!authorized(latestConfig,'personalization')||configEpoch(latestConfig)!==epoch)throw stateError(M('个性化结果已因设置或历史变化失效。','The personalization result was invalidated by settings/history changes.'),'STALE');
       let saved,applied=false;
       await history.updateMeta(draft=>{
-        const current=stateFrom(draft);if(current.revision!==revision)throw stateError('个性化结果已因设置或历史变化失效。','STALE');
+        const current=stateFrom(draft);if(current.revision!==revision)throw stateError(M('个性化结果已因设置或历史变化失效。','The personalization result was invalidated by settings/history changes.'),'STALE');
         const before=currentPolicy(current),version={id:id('policy'),at:now(),expiresAt:now()+RETENTION,policy:1,before,after:{annotation:output.annotation,domainBias:output.domainBias,translation:output.translation},evidenceIds:output.evidenceIds,status:'pending'};
         if(settings.autoApply===true&&onlyPriorityChanged(before,version.after)){applied=true;version.status='applied';current.profile=version;current.versions.push(copy(version));current.pending=null;current.revision+=1;}else current.pending=version;
         current.lastEvidenceKey=evidenceKey;current.lastAnalysisAt=timestamp;current.analysisError='';current.versions=current.versions.slice(-MAX_VERSIONS);Object.assign(draft,copy(current));saved=current;
@@ -205,10 +207,10 @@ export function createPersonalization({history,config,runModel,onChange}) {
     })().finally(()=>{analysisInFlight=null;});
     return analysisInFlight;
   }
-  async function apply(versionId){return mutate(state=>{const version=state.pending;if(!version||version.id!==versionId)throw new Error('待确认提案不存在。');if(version.expiresAt<=now())throw new Error('个性化提案已过期。');version.status='applied';state.profile=copy(version);state.versions.push(copy(version));state.pending=null;return true;});}
+  async function apply(versionId){return mutate(state=>{const version=state.pending;if(!version||version.id!==versionId)throw new Error(M('待确认提案不存在。','The pending proposal does not exist.'));if(version.expiresAt<=now())throw new Error(M('个性化提案已过期。','The personalization proposal has expired.'));version.status='applied';state.profile=copy(version);state.versions.push(copy(version));state.pending=null;return true;});}
   async function dismiss(){return mutate(state=>{if(!state.pending)return false;state.pending.status='dismissed';state.versions.push(state.pending);state.pending=null;return true;});}
-  async function rollback(versionId){return mutate(state=>{const version=state.versions.find(item=>item.id===versionId&&item.status==='applied');if(!version)throw new Error('可回滚版本不存在。');state.pending=null;version.status='rolledBack';const rollback={id:id('policy'),at:now(),expiresAt:now()+RETENTION,policy:1,before:currentPolicy(state),after:copy(version.before),evidenceIds:copy(version.evidenceIds),status:'applied'};state.profile=rollback;state.versions.push(copy(rollback));return true;});}
+  async function rollback(versionId){return mutate(state=>{const version=state.versions.find(item=>item.id===versionId&&item.status==='applied');if(!version)throw new Error(M('可回滚版本不存在。','No rollbackable version exists.'));state.pending=null;version.status='rolledBack';const rollback={id:id('policy'),at:now(),expiresAt:now()+RETENTION,policy:1,before:currentPolicy(state),after:copy(version.before),evidenceIds:copy(version.evidenceIds),status:'applied'};state.profile=rollback;state.versions.push(copy(rollback));return true;});}
   async function reset(){return mutate(state=>{const before=currentPolicy(state),resetVersion={id:id('policy'),at:now(),expiresAt:now()+RETENTION,policy:1,before,after:copy(DEFAULT_POLICY),evidenceIds:[],status:'applied'};state.profile=resetVersion;state.versions.push(copy(resetVersion));state.pending=null;state.overrides=[];return true;});}
-  async function setOverride({wordId,senseKey='',stage,locked=false}={}){return mutate(state=>{if(typeof wordId!=='string'||!wordId||wordId.length>200||typeof senseKey!=='string'||senseKey.length>200||typeof locked!=='boolean'||(stage!==null&&!['hint','mark','quiet'].includes(stage)))throw new Error('手动提示规则无效。');const index=state.overrides.findIndex(item=>item.wordId===wordId&&item.senseKey===senseKey);if(stage===null){if(index<0)return false;state.pending=null;state.overrides.splice(index,1);return true;}state.pending=null;const value={wordId,senseKey,stage,locked,at:now()};if(index<0)state.overrides.push(value);else state.overrides[index]=value;return true;});}
+  async function setOverride({wordId,senseKey='',stage,locked=false}={}){return mutate(state=>{if(typeof wordId!=='string'||!wordId||wordId.length>200||typeof senseKey!=='string'||senseKey.length>200||typeof locked!=='boolean'||(stage!==null&&!['hint','mark','quiet'].includes(stage)))throw new Error(M('手动提示规则无效。','Invalid manual hint rule.'));const index=state.overrides.findIndex(item=>item.wordId===wordId&&item.senseKey===senseKey);if(stage===null){if(index<0)return false;state.pending=null;state.overrides.splice(index,1);return true;}state.pending=null;const value={wordId,senseKey,stage,locked,at:now()};if(index<0)state.overrides.push(value);else state.overrides[index]=value;return true;});}
   return {snapshot,analyze,summarize,apply,dismiss,rollback,reset,setOverride};
 }

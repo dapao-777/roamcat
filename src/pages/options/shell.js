@@ -14,6 +14,7 @@
 import {html} from 'lit';
 import {heroArt} from '../../components/hero-art.js';
 import {icon} from '../../components/icons.js';
+import {t} from '../../i18n-runtime.js';
 
 export const shellTop = html`
   <!-- Left Minimalist Swiss Sidebar -->
@@ -22,20 +23,20 @@ export const shellTop = html`
         <!-- Brand Header -->
         <div class="sidebar-brand-lockup" data-purpose="brand-header">
           <div class="sidebar-brand-left">
-            <div class="sidebar-brand-icon" id="sidebar-brand-logo" title="RoamCat · 随心阅">
-              <img src="../icons/roamcat.svg" width="26" height="26" alt="RoamCat · 随心阅" style="display:block;border-radius:4px;">
+            <div class="sidebar-brand-icon" id="sidebar-brand-logo" title="${t('common.brand')}">
+              <img src="../icons/roamcat.svg" width="26" height="26" alt="${t('common.brand')}" style="display:block;border-radius:4px;">
               <span class="brand-live-dot" aria-hidden="true"></span>
             </div>
             <div class="brand-info-wrap">
               <div class="brand-title-row">
-                <span class="brand-title">RoamCat<span class="brand-title-cn"> · 随心阅</span></span>
+                <span class="brand-title">RoamCat<span class="brand-title-cn"> · ${t('brand.cn')}</span></span>
                 <span class="brand-pro-tag">v0.2</span>
               </div>
-              <p class="brand-subtitle">随心漫游 · 自在阅读</p>
+              <p class="brand-subtitle">${t('common.brandTagline')}</p>
             </div>
           </div>
           <div class="sidebar-header-actions">
-            <button type="button" id="sidebar-collapse-btn" class="sidebar-collapse-btn" title="折叠侧边栏" aria-label="折叠侧边栏">
+            <button type="button" id="sidebar-collapse-btn" class="sidebar-collapse-btn" title="${t('opt.collapseSidebar')}" aria-label="${t('opt.collapseSidebar')}">
               <svg class="collapse-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
                 <path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"></path>
               </svg>
@@ -44,13 +45,13 @@ export const shellTop = html`
         </div>
 
         <!-- Navigation Menu -->
-        <nav class="sidebar-nav-menu" aria-label="设置导航" data-purpose="nav-menu">
+        <nav class="sidebar-nav-menu" aria-label="${t('opt.settingsNav')}" data-purpose="nav-menu">
           <!-- Group 1: 核心阅读 / CORE READING -->
           <div class="nav-group">
             <div class="nav-group-header">
-              <span>阅读设置</span>
+              <span>${t('opt.group.reading')}</span>
             </div>
-            <a href="#assistance" data-section="assistance" class="cyber-nav-item active" data-tooltip="阅读偏好">
+            <a href="#assistance" data-section="assistance" class="cyber-nav-item active" data-tooltip="${t('opt.nav.assist')}">
               <div class="nav-item-left">
                 <span class="nav-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" stroke-linecap="round" stroke-linejoin="round">
@@ -58,10 +59,10 @@ export const shellTop = html`
                     <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
                   </svg>
                 </span>
-                <span class="nav-text">阅读偏好</span>
+                <span class="nav-text">${t('opt.nav.assist')}</span>
               </div>
             </a>
-            <a href="#appearance" data-section="appearance" class="cyber-nav-item" data-tooltip="显示与解构">
+            <a href="#appearance" data-section="appearance" class="cyber-nav-item" data-tooltip="${t('opt.nav.appearance')}">
               <div class="nav-item-left">
                 <span class="nav-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" stroke-linecap="round" stroke-linejoin="round">
@@ -70,10 +71,10 @@ export const shellTop = html`
                     <polyline points="2 12 12 17 22 12"></polyline>
                   </svg>
                 </span>
-                <span class="nav-text">显示与解构</span>
+                <span class="nav-text">${t('opt.nav.appearance')}</span>
               </div>
             </a>
-            <a href="#sites" data-section="sites" class="cyber-nav-item" data-tooltip="网站规则">
+            <a href="#sites" data-section="sites" class="cyber-nav-item" data-tooltip="${t('opt.nav.sites')}">
               <div class="nav-item-left">
                 <span class="nav-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" stroke-linecap="round" stroke-linejoin="round">
@@ -82,10 +83,10 @@ export const shellTop = html`
                     <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
                   </svg>
                 </span>
-                <span class="nav-text">网站规则</span>
+                <span class="nav-text">${t('opt.nav.sites')}</span>
               </div>
             </a>
-            <a href="#advanced" data-section="advanced" class="cyber-nav-item" data-tooltip="领域识别">
+            <a href="#advanced" data-section="advanced" class="cyber-nav-item" data-tooltip="${t('opt.nav.advanced')}">
               <div class="nav-item-left">
                 <span class="nav-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" stroke-linecap="round" stroke-linejoin="round">
@@ -93,7 +94,7 @@ export const shellTop = html`
                     <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
                   </svg>
                 </span>
-                <span class="nav-text">领域识别</span>
+                <span class="nav-text">${t('opt.nav.advanced')}</span>
               </div>
             </a>
           </div>
@@ -101,9 +102,9 @@ export const shellTop = html`
           <!-- Group 2: 知识记忆 / MEMORY MATRIX -->
           <div class="nav-group">
             <div class="nav-group-header">
-              <span>词汇与记忆</span>
+              <span>${t('opt.group.memory')}</span>
             </div>
-            <a href="#terms" data-section="terms" class="cyber-nav-item" data-tooltip="生词记忆矩阵">
+            <a href="#terms" data-section="terms" class="cyber-nav-item" data-tooltip="${t('opt.nav.terms')}">
               <div class="nav-item-left">
                 <span class="nav-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" stroke-linecap="round" stroke-linejoin="round">
@@ -113,20 +114,20 @@ export const shellTop = html`
                     <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
                   </svg>
                 </span>
-                <span class="nav-text">生词记忆矩阵</span>
+                <span class="nav-text">${t('opt.nav.terms')}</span>
               </div>
             </a>
-            <a href="#personalization" data-section="personalization" class="cyber-nav-item" data-tooltip="已认识词与自适应">
+            <a href="#personalization" data-section="personalization" class="cyber-nav-item" data-tooltip="${t('opt.nav.personalization')}">
               <div class="nav-item-left">
                 <span class="nav-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
                   </svg>
                 </span>
-                <span class="nav-text">已认识词与自适应</span>
+                <span class="nav-text">${t('opt.nav.personalization')}</span>
               </div>
             </a>
-            <a href="#history" data-section="history" class="cyber-nav-item" data-tooltip="阅读记录">
+            <a href="#history" data-section="history" class="cyber-nav-item" data-tooltip="${t('opt.nav.history')}">
               <div class="nav-item-left">
                 <span class="nav-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" stroke-linecap="round" stroke-linejoin="round">
@@ -134,17 +135,17 @@ export const shellTop = html`
                     <polyline points="12 6 12 12 16 14"></polyline>
                   </svg>
                 </span>
-                <span class="nav-text">阅读记录</span>
+                <span class="nav-text">${t('opt.nav.history')}</span>
               </div>
             </a>
-            <a href="#privacy" data-section="privacy" class="cyber-nav-item" data-tooltip="数据与隐私">
+            <a href="#privacy" data-section="privacy" class="cyber-nav-item" data-tooltip="${t('opt.nav.privacy')}">
               <div class="nav-item-left">
                 <span class="nav-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                   </svg>
                 </span>
-                <span class="nav-text">数据与隐私</span>
+                <span class="nav-text">${t('opt.nav.privacy')}</span>
               </div>
             </a>
           </div>
@@ -152,9 +153,9 @@ export const shellTop = html`
           <!-- Group 3: 系统协议 / PROTOCOL & SYS -->
           <div class="nav-group">
             <div class="nav-group-header">
-              <span>服务与诊断</span>
+              <span>${t('opt.group.system')}</span>
             </div>
-            <a href="#service" data-section="service" class="cyber-nav-item" data-tooltip="模型服务">
+            <a href="#service" data-section="service" class="cyber-nav-item" data-tooltip="${t('opt.nav.model')}">
               <div class="nav-item-left">
                 <span class="nav-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" stroke-linecap="round" stroke-linejoin="round">
@@ -170,10 +171,10 @@ export const shellTop = html`
                     <line x1="1" y1="14" x2="4" y2="14"></line>
                   </svg>
                 </span>
-                <span class="nav-text">模型服务</span>
+                <span class="nav-text">${t('opt.nav.model')}</span>
               </div>
             </a>
-            <a href="#diagnostics" data-section="diagnostics" class="cyber-nav-item" data-tooltip="运行诊断">
+            <a href="#diagnostics" data-section="diagnostics" class="cyber-nav-item" data-tooltip="${t('opt.nav.diagnostics')}">
               <div class="nav-item-left">
                 <span class="nav-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" stroke-linecap="round" stroke-linejoin="round">
@@ -181,7 +182,7 @@ export const shellTop = html`
                     <line x1="12" y1="19" x2="20" y2="19"></line>
                   </svg>
                 </span>
-                <span class="nav-text">运行诊断</span>
+                <span class="nav-text">${t('opt.nav.diagnostics')}</span>
               </div>
             </a>
           </div>
@@ -189,9 +190,9 @@ export const shellTop = html`
           <!-- Group 4: 帮助与说明 / MANUAL & HELP -->
           <div class="nav-group">
             <div class="nav-group-header">
-              <span>帮助与说明</span>
+              <span>${t('opt.group.help')}</span>
             </div>
-            <a href="#guide" data-section="guide" class="cyber-nav-item" data-tooltip="快捷键与使用手册">
+            <a href="#shortcuts" data-section="shortcuts" class="cyber-nav-item" data-tooltip="${t('opt.nav.shortcuts')}">
               <div class="nav-item-left">
                 <span class="nav-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" stroke-linecap="round" stroke-linejoin="round">
@@ -205,7 +206,18 @@ export const shellTop = html`
                     <line x1="10" y1="16" x2="14" y2="16"></line>
                   </svg>
                 </span>
-                <span class="nav-text">快捷键与使用手册</span>
+                <span class="nav-text">${t('opt.nav.shortcuts')}</span>
+              </div>
+            </a>
+            <a href="#guide" data-section="guide" class="cyber-nav-item" data-tooltip="${t('opt.nav.guide')}">
+              <div class="nav-item-left">
+                <span class="nav-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                  </svg>
+                </span>
+                <span class="nav-text">${t('opt.nav.guide')}</span>
               </div>
             </a>
           </div>
@@ -214,8 +226,8 @@ export const shellTop = html`
 
             <!-- Bottom 随心阅 Stamp Card (Free Roam · 漫游猫) -->
       <div class="sidebar-user-card-wrap" data-purpose="user-status-card">
-        <div class="nav-group-header stamp-group-header">品牌印记</div>
-        <div class="matrix-stamp-card" id="sidebar-stamp-card" aria-label="了解随心阅的设计理念" role="button" tabindex="0" title="随心阅 · 随心漫步 · 点击了解设计寓意" data-tooltip="随心阅">
+        <div class="nav-group-header stamp-group-header">${t('opt.brandSeal')}</div>
+        <div class="matrix-stamp-card" id="sidebar-stamp-card" aria-label="${t('opt.stampCardAria')}" role="button" tabindex="0" title="${t('opt.stampCardTitle')}" data-tooltip="${t('opt.stampTooltip')}">
           <!-- Left: Halftone Dot Matrix Art Container -->
           <div class="stamp-art-box">
             ${heroArt('stamp-tree-svg stamp-cat-svg')}
@@ -224,9 +236,9 @@ export const shellTop = html`
           <!-- Right: Typographic Hierarchy & Rubber Stamp Seal -->
           <div class="stamp-content-wrap">
             <div class="stamp-eyebrow">Ex-Libris</div>
-            <div class="stamp-hero-num">漫游猫</div>
-            <div class="stamp-meta-info"><span class="stamp-meta-title">陪你自在阅读</span></div>
-            <div class="stamp-pet-status" id="stamp-pet-status"><span class="stamp-status-dot" aria-hidden="true"></span><span class="stamp-status-text">伴读猫</span></div>
+            <div class="stamp-hero-num">${t('opt.stampCat')}</div>
+            <div class="stamp-meta-info"><span class="stamp-meta-title">${t('opt.stampMotto')}</span></div>
+            <div class="stamp-pet-status" id="stamp-pet-status"><span class="stamp-status-dot" aria-hidden="true"></span><span class="stamp-status-text">${t('opt.stampPet')}</span></div>
           </div>
 
           <!-- Circular Rubber Stamp (钢印/邮戳) -->
@@ -250,14 +262,14 @@ export const mainToolbar = html`
       <header class="settings-toolbar">
         <div class="toolbar-left">
           <div class="toolbar-breadcrumb">
-            <span id="toolbar-category-title">设置</span>
+            <span id="toolbar-category-title">${t('opt.toolbarRoot')}</span>
             <span class="breadcrumb-sep">/</span>
-            <span id="toolbar-breadcrumb-title" class="breadcrumb-current">阅读偏好</span>
+            <span id="toolbar-breadcrumb-title" class="breadcrumb-current">${t('opt.nav.assist')}</span>
           </div>
           <span class="toolbar-divider">|</span>
           <span class="toolbar-engine-badge">
             <span class="engine-pulse-dot"></span>
-            本地优先
+            ${t('common.localOnly')}
           </span>
         </div>
         <div class="toolbar-right">
@@ -265,16 +277,26 @@ export const mainToolbar = html`
             <svg class="sync-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" aria-hidden="true">
               <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path>
             </svg>
-            <span id="save-state" class="save-state" aria-live="polite">偏好设置</span>
+            <span id="save-state" class="save-state" aria-live="polite">${t('opt.saveState')}</span>
           </div>
           <div class="theme-switch-wrap">
-            <button type="button" id="theme-toggle-btn" class="theme-switch-btn" title="当前主题: 跟随系统 (点击切换)">
+            <button type="button" id="theme-toggle-btn" class="theme-switch-btn" title="${t('opt.themeToggleTitle',{theme:t('opt.themeAuto')})}">
               <svg id="theme-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
                 <rect x="2" y="3" width="20" height="14" rx="2"></rect>
                 <line x1="8" y1="21" x2="16" y2="21"></line>
                 <line x1="12" y1="17" x2="12" y2="21"></line>
               </svg>
-              <span id="theme-toggle-label">跟随系统</span>
+              <span id="theme-toggle-label">${t('opt.themeBtnLabel', {label: t('opt.themeAuto')})}</span>
+            </button>
+          </div>
+          <div class="theme-switch-wrap">
+            <button type="button" id="lang-toggle-btn" class="theme-switch-btn" title="${t('opt.langToggleTitle',{lang:t('common.langAuto')})}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+              </svg>
+              <span id="lang-toggle-label">${t('opt.langBtnLabel', {label: t('common.langAuto')})}</span>
             </button>
           </div>
           <button type="button" id="preview-hud-btn" class="preview-hud-btn">
@@ -282,7 +304,7 @@ export const mainToolbar = html`
               <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round"></path>
               <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-linecap="round" stroke-linejoin="round"></path>
             </svg>
-            <span>实时效果预览</span>
+            <span>${t('opt.previewHud')}</span>
           </button>
         </div>
       </header>
@@ -293,17 +315,17 @@ export const heroBlock = html`
         <header id="common-workspace-header" class="compact-hero-banner" data-purpose="hero-header">
           <div class="hero-left">
             <div class="hero-tag-row">
-              <span id="hero-category-badge" class="hero-pill-badge">阅读设置</span>
-              <span id="hero-stage-badge" class="hero-stage-chip">按你的节奏阅读</span>
+              <span id="hero-category-badge" class="hero-pill-badge">${t('opt.group.reading')}</span>
+              <span id="hero-stage-badge" class="hero-stage-chip">${t('opt.heroStage')}</span>
             </div>
-            <h1 id="section-title" class="hero-title" tabindex="-1">阅读偏好设置</h1>
-            <p id="hero-desc" class="hero-desc">少一点打断，多一点理解。选择适合你的提示方式，留住阅读的节奏。</p>
+            <h1 id="section-title" class="hero-title" tabindex="-1">${t('opt.meta.assistance.title')}</h1>
+            <p id="hero-desc" class="hero-desc">${t('opt.meta.assistance.desc')}</p>
           </div>
 
-          <aside class="hero-right-card reading-readout" aria-label="当前阅读偏好">
-            <div class="readout-heading"><span class="readout-status-pill">当前生效</span><span class="readout-live-tag">实时同步</span></div>
-            <div class="readout-main"><kbd class="readout-key" data-lookup-key>D</kbd><div><strong class="readout-action">快捷查词</strong><span class="readout-caption">按住按键，单击单词</span></div></div>
-            <dl class="readout-footer"><div><dt>辅助方式</dt><dd id="readout-mode">自动少量提示</dd></div><div><dt>释义显示</dt><dd id="readout-display">解释卡片</dd></div></dl>
+          <aside class="hero-right-card reading-readout" aria-label="${t('opt.readoutAria')}">
+            <div class="readout-heading"><span class="readout-status-pill">${t('opt.readoutActive')}</span><span class="readout-live-tag">${t('opt.readoutLive')}</span></div>
+            <div class="readout-main"><kbd class="readout-key" data-lookup-key>D</kbd><div><strong class="readout-action">${t('opt.readoutAction')}</strong><span class="readout-caption">${t('opt.readoutActionHint')}</span></div></div>
+            <dl class="readout-footer"><div><dt>${t('opt.readoutMode')}</dt><dd id="readout-mode">${t('opt.readoutModeAuto')}</dd></div><div><dt>${t('opt.readoutGloss')}</dt><dd id="readout-display">${t('opt.readoutGlossCard')}</dd></div></dl>
           </aside>
         </header>
         <p id="global-error" class="notice error" role="alert" hidden></p>
@@ -317,15 +339,15 @@ export const telemetryFooter = html`
       <!-- Global Bottom Telemetry Bar -->
       <footer class="telemetry-bar" data-purpose="telemetry-footer">
         <div class="telemetry-left">
-          <span class="telemetry-brand">RoamCat · 随心阅</span>
+          <span class="telemetry-brand">${t('common.brand')}</span>
           <span class="telemetry-sep">·</span>
-          <span>偏好保存在本机</span>
+          <span>${t('opt.footerLocal')}</span>
           
         </div>
         <div class="telemetry-right">
-          <button type="button" id="footer-reset-config" class="telemetry-btn">恢复至初始配置</button>
+          <button type="button" id="footer-reset-config" class="telemetry-btn">${t('opt.footerReset')}</button>
           <span class="telemetry-sep-pipe">|</span>
-          <button type="button" id="footer-export-rules" class="telemetry-btn-export">导出规则包 (.json) &gt;</button>
+          <button type="button" id="footer-export-rules" class="telemetry-btn-export">${t('opt.footerExport')}</button>
         </div>
       </footer>
 `;
@@ -336,41 +358,41 @@ export const shellDialog = html`
       <div class="stamp-dialog-backdrop" id="stamp-modal-backdrop"></div>
       <div class="stamp-dialog-body">
         <div class="stamp-dialog-header">
-          <div class="stamp-dialog-badge">随心漫游</div>
-          <button type="button" class="stamp-dialog-close" id="stamp-modal-close" aria-label="关闭">&times;</button>
+          <div class="stamp-dialog-badge">${t('opt.stampBadge')}</div>
+          <button type="button" class="stamp-dialog-close" id="stamp-modal-close" aria-label="${t('common.close')}">&times;</button>
         </div>
         <div class="stamp-dialog-main">
           <div class="stamp-dialog-art-preview">
             ${heroArt('stamp-tree-svg stamp-cat-svg')}
           </div>
           <div class="stamp-dialog-info">
-            <h3 class="stamp-dialog-title">漫游猫 · 随心而阅</h3>
+            <h3 class="stamp-dialog-title">${t('opt.stampTitle')}</h3>
             <p class="stamp-dialog-desc">
-              猫，生来随心而行。它不为整张地图焦虑，只在自己需要的位置落下脚步；走过的地方，便不再需要回头张望。
+              ${t('opt.stampP1')}
             </p>
             <p class="stamp-dialog-desc">
-              而在外文阅读的数字世界中，<strong>“一键全页机翻”就像一根一直牵着你的绳索</strong>——虽然快捷，却会带来隐蔽的母语依赖，让阅读者逐渐丧失对真实英文语料的自治理解力。
+              ${t('opt.stampP2a')}<strong>${t('opt.stampP2strong')}</strong>${t('opt.stampP2b')}
             </p>
             <p class="stamp-dialog-desc">
-              <strong>RoamCat · 随心阅 的核心使命</strong>：以扫描线像素猫与点阵漫游轨迹为设计隐喻，通过「无感渐退的词注脚手架」与「主干句法解构」，助你像猫一样在真实语境中随心漫步，走自己的路，重获原版阅读的自由。
+              <strong>${t('opt.stampP3strong')}</strong>${t('opt.stampP3b')}
             </p>
             <div class="stamp-dialog-tags">
-              <span class="stamp-pill">#扫描线猫</span>
-              <span class="stamp-pill">#认知自治</span>
-              <span class="stamp-pill">#自适应退火</span>
-              <span class="stamp-pill">#随心漫游</span>
+              <span class="stamp-pill">${t('opt.stampPill1')}</span>
+              <span class="stamp-pill">${t('opt.stampPill2')}</span>
+              <span class="stamp-pill">${t('opt.stampPill3')}</span>
+              <span class="stamp-pill">${t('opt.stampPill4')}</span>
             </div>
           </div>
         </div>
         <div class="stamp-dialog-footer">
           <button type="button" id="stamp-modal-goto-pet" class="secondary-button" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:6px 14px;border-radius:4px;cursor:pointer;">
-            ${icon('paw', {size: 14})}<span>前往伴读猫设置</span>
+            ${icon('paw', {size: 14})}<span>${t('opt.stampGotoPet')}</span>
           </button>
           <button type="button" class="js-open-welcome stamp-dialog-link">
-            <span>打开新手引导沙盒</span>
+            <span>${t('opt.stampSandbox')}</span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
           </button>
-          <button type="button" class="primary-action stamp-dialog-confirm" id="stamp-modal-confirm">我已明晰</button>
+          <button type="button" class="primary-action stamp-dialog-confirm" id="stamp-modal-confirm">${t('opt.stampConfirm')}</button>
         </div>
       </div>
     </dialog>

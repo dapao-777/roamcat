@@ -12,96 +12,97 @@
 
  */
 import {html} from 'lit';
+import {t} from '../../../i18n-runtime.js';
 
 export const sitesSection = html`
 <section id="sites" class="settings-section" aria-labelledby="sites-heading" hidden="">
 <div class="section-intro">
-<h2 id="sites-heading" class="sr-only">网站规则</h2>
-<p>决定下次访问时是否自动开启。暂停本页不会修改这里的规则。</p>
+<h2 id="sites-heading" class="sr-only">${t('sec.sites.title')}</h2>
+<p>${t('sec.sites.desc')}</p>
 </div>
 <div class="paper-card form-stack">
           <div class="adaptive-setting">
 <div>
-<b>全部网站自动辅助</b>
-<p>需要所有 HTTP / HTTPS 网站权限；仅处理可靠正文附近的有限上下文。</p>
+<b>${t('sec.sites.allAssist')}</b>
+<p>${t('sec.sites.allAssistDesc')}</p>
 </div>
 <label class="switch">
 <input id="automation-all-sites" type="checkbox">
 <span aria-hidden="true">
 </span>
-<span class="sr-only">全部网站自动辅助</span>
+<span class="sr-only">${t('sec.sites.allAssist')}</span>
 </label>
 </div>
 <div class="adaptive-setting">
 <div>
-<b>所有网站自动显示句子结构</b>
-<p>需要网站访问权限；会调用模型并可能产生费用。遵守网站例外和本页暂停。</p>
+<b>${t('sec.sites.allStruct')}</b>
+<p>${t('sec.sites.allStructDesc')}</p>
 </div>
 <label class="switch">
 <input id="sentence-groups-all-sites" type="checkbox">
 <span aria-hidden="true">
 </span>
-<span class="sr-only">所有网站自动显示句子结构</span>
+<span class="sr-only">${t('sec.sites.allStruct')}</span>
 </label>
 </div>
           <form id="automation-site-form" class="automation-site-form">
 <label class="field">
-<span>指定网站</span>
+<span>${t('sec.sites.specific')}</span>
 <input id="automation-site-origin" type="url" required="" inputmode="url" autocomplete="off" placeholder="https://docs.example.com">
-<small>填写网站地址，不含文章路径。只申请这个网站的访问权限。</small>
+<small>${t('sec.sites.specificHint')}</small>
 </label>
-<button class="primary-action narrow" type="submit">添加网站</button>
+<button class="primary-action narrow" type="submit">${t('sec.sites.addSite')}</button>
 </form>
           <p id="automation-result" class="inline-message" role="alert" hidden="">
 </p>
           <div id="automation-site-list" class="automation-site-list">
 </div>
           <div id="automation-site-empty" class="empty-state compact-empty" hidden="">
-<h3>尚未添加网站</h3>
-<p>也可在扩展弹窗中授权当前网站。</p>
+<h3>${t('sec.sites.empty')}</h3>
+<p>${t('sec.sites.emptyHint')}</p>
 </div>
           <div class="adaptive-setting" data-video-feature hidden>
 <div>
-<b>视频网站入口</b>
-<p>单独授权 YouTube 后显示“这句”和“原文”入口；展开、滚动与播放不会自动处理整段字幕。</p>
+<b>${t('sec.sites.video')}</b>
+<p>${t('sec.sites.videoDesc')}</p>
 </div>
 <label class="switch">
 <input id="automation-video-sites" type="checkbox">
 <span aria-hidden="true">
 </span>
-<span class="sr-only">视频网站入口</span>
+<span class="sr-only">${t('sec.sites.video')}</span>
 </label>
 </div>
         </div>
 <details class="preference-block disclosure-block">
-<summary>网站领域规则</summary>
+<summary>${t('sec.sites.domainRules')}</summary>
 <div class="disclosure-content form-stack">
 <form id="domain-rule-form" class="rule-form">
 <label class="field">
-<span>主机名</span>
+<span>${t('sec.sites.host')}</span>
 <input id="rule-host" required="" placeholder="docs.example.com">
 </label>
 <label class="field">
-<span>路径前缀</span>
+<span>${t('sec.sites.pathPrefix')}</span>
 <input id="rule-path" required="" value="/">
 </label>
 <label class="field">
-<span>领域</span>
+<span>${t('sec.sites.domain')}</span>
 <select id="rule-domain">
 </select>
 </label>
 <label class="check-row compact-check">
 <input id="rule-subdomains" type="checkbox">
-<span>包含子域名</span>
+<span>${t('sec.sites.subdomain')}</span>
 </label>
-<button class="primary-action narrow" type="submit">添加规则</button>
+<button class="primary-action narrow" type="submit">${t('sec.sites.addRule')}</button>
 </form>
 <p id="domain-rule-result" class="inline-message" hidden="">
 </p>
 <div id="domain-rule-list" class="rule-list">
 </div>
 <div id="domain-rule-empty" class="empty-state compact-empty" hidden="">
-<h3>还没有个人站点规则</h3>
+<h3>${t('sec.sites.rulesEmpty')}</h3>
 </div>
 </div>
 </details>

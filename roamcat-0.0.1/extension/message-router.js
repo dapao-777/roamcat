@@ -14,20 +14,22 @@
 
  */
 
+const M=(zh,en)=>globalThis.RoamCatI18n?.lang?.()==='en'?en:zh;
+
 /**
  * 创建后台消息路由器。
  * @param {ReadonlyArray<{type:string,parse?:(message:object,context:object)=>object,handle:(message:object,context:object)=>unknown}>} handlers
  * @returns {{types:ReadonlyArray<string>,has:(type:string)=>boolean,dispatch:(message:object,context:object)=>Promise<unknown>}}
  */
 export function createMessageRouter(handlers) {
-  if (!Array.isArray(handlers) || !handlers.length) throw new Error('后台消息处理器注册表为空。');
+  if (!Array.isArray(handlers) || !handlers.length) throw new Error(M('后台消息处理器注册表为空。','The background message-handler registry is empty.'));
   const byType = new Map();
   for (const handler of handlers) {
-    if (!handler || typeof handler.type !== 'string' || !handler.type) throw new Error('消息处理器缺少类型。');
-    if (typeof handler.handle !== 'function') throw new Error(`消息处理器 ${handler.type} 缺少 handle。`);
-    if (handler.parse !== undefined && typeof handler.parse !== 'function') throw new Error(`消息处理器 ${handler.type} 的 parse 不是函数。`);
+    if (!handler || typeof handler.type !== 'string' || !handler.type) throw new Error(M('消息处理器缺少类型。','A message handler is missing its type.'));
+    if (typeof handler.handle !== 'function') throw new Error(M(`消息处理器 ${handler.type} 缺少 handle。`,`Message handler ${handler.type} is missing handle.`));
+    if (handler.parse !== undefined && typeof handler.parse !== 'function') throw new Error(M(`消息处理器 ${handler.type} 的 parse 不是函数。`,`Message handler ${handler.type} has a non-function parse.`));
     // 重复注册会静默覆盖前一个 handler，属于必须立即失败的程序设计错误。
-    if (byType.has(handler.type)) throw new Error(`后台消息处理器重复注册: ${handler.type}`);
+    if (byType.has(handler.type)) throw new Error(M(`后台消息处理器重复注册: ${handler.type}`,`Duplicate background message handler: ${handler.type}`));
     byType.set(handler.type, handler);
   }
   return {
@@ -35,7 +37,7 @@ export function createMessageRouter(handlers) {
     has: type => byType.has(type),
     async dispatch(message, context) {
       const handler = byType.get(message?.type);
-      if (!handler) throw new Error('未知请求。');
+      if (!handler) throw new Error(M('未知请求。','Unknown request.'));
       const parsed = handler.parse ? handler.parse(message, context) : message;
       return handler.handle(parsed, context);
     },

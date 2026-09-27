@@ -22,3 +22,4 @@ export {historySection} from './history.js';
 export {personalizationSection} from './personalization.js';
 export {diagnosticsSection} from './diagnostics.js';
 export {guideSection} from './guide.js';
+export {shortcutsSection} from './shortcuts.js';

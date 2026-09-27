@@ -30,7 +30,7 @@
 
 > 本项目是对开源项目 [RelyLess](https://github.com/rockythink/relyless) 的重构、优化与修复，感谢原作者 B 站 UP 主 [停车拾穗](https://live.bilibili.com/392612)。
 
-**本地优先**：不经营服务器、不采集遥测、阅读历史默认关闭且按站授权。AI 能力来自你自选的服务——内置本地分类模型、26 家自备 API 之一，或本机 ChatGPT / Grok / Antigravity 订阅连接器。
+**本地优先**：不经营服务器、不采集遥测、阅读历史默认关闭且按站授权。AI 能力来自你自选的服务——内置本地分类模型、28 家自备 API 之一，或本机 ChatGPT / Grok / Antigravity 订阅连接器。
 
 <p align="center">
   <img src=".github/assets/welcome-light.png" alt="RoamCat 欢迎页" width="88%">
@@ -49,7 +49,7 @@
 
 ## 模型服务，自选来源
 
-- **自备 API**：26 家服务商、8 种协议（OpenAI / DeepSeek / Gemini / Anthropic / Grok / OpenRouter / Ollama / 阿里云 / 火山 / Kimi / 阶跃……），结构化输出能力先探测后降级。
+- **自备 API**：28 家服务商、8 种协议（OpenAI / DeepSeek / Gemini / Anthropic / Grok / OpenRouter / Ollama / 阿里云 / 火山 / Kimi / 阶跃……），结构化输出能力先探测后降级。
 - **订阅连接器**：本机 Native Messaging 复用官方 CLI 权益——Codex CLI（ChatGPT 订阅）、Grok CLI（SuperGrok / X Premium+）、Antigravity `agy`（Google AI Pro / Ultra）。
 - **本地模型**：内置 `Xenova/all-MiniLM-L6-v2` 在离屏文档 + Worker 中做页面领域识别，不联网、无需下载。
 
@@ -73,9 +73,11 @@
 | 阅读文本与标题 | 宋体系（Noto Serif SC → 宋体 → Georgia），正文 15px / 行距 1.6 |
 | 品牌 / 数字 / 键帽 | Silkscreen 像素体（已内置 woff2，离线可用） |
 | 标签 / 词性 / 诊断码 | ui-monospace 等宽，13px |
+| 色板 | 浅色：纸 `#faf9f4` + 墨 `#161511`（墨色即强调）；深色：砚台 `#0b0e13` + 象牙 `#ece7d9` + 琥珀 `#f0a63c` |
+| 标志与图形 | 扫描线猫（`icons/roamcat.svg` + `roamcat-cat-ink.svg`，`fill="currentColor"`）、圆点波纹带、像素星芒 |
 | 动效 | 80 / 160 / 280 / 440ms 四档 + `linear()` 弹簧曲线，遵守 `prefers-reduced-motion` |
 
-全部视觉决策收敛在 `src/styles/tokens.css` 一套 `--rc-*` token；页内组件经 Shadow DOM + `design.js` 注入同一套 token，对网站样式零污染。完整规范与组件清单见[设计系统文档](roamcat-0.0.1/docs/design-system.md)。
+全部视觉决策收敛在 `src/styles/tokens.css` 一套 `--rc-*` token；页内组件经 Shadow DOM + `design.js` 注入同一套 token，对网站样式零污染。完整规范与组件清单见[设计系统文档](roamcat-0.0.1/docs/design-system.md)；标志用法、配色比例与文案语气见[品牌方案](roamcat-0.0.1/docs/brand.md)，也可直接打开[可视化品牌板](roamcat-0.0.1/docs/brand-board.html)查看全部色卡、字模与材质样张。
 
 ## 快速开始
 
@@ -193,6 +195,7 @@ node tools/verify-ui.cjs          # UI 布局与明暗主题
 |------|------|
 | [产品文档](roamcat-0.0.1/README.md) | 功能详情、安装、模型服务配置与隐私说明 |
 | [设计系统](roamcat-0.0.1/docs/design-system.md) | 设计语汇、字体排版、色彩材质、动效与组件规范 |
+| [品牌方案](roamcat-0.0.1/docs/brand.md) · [品牌板](roamcat-0.0.1/docs/brand-board.html) | 标志用法、品牌色板、字体角色与文案语气；本地打开品牌板可看渲染效果 |
 | [工程规范](roamcat-0.0.1/SPEC.md) | 消息协议、存储模型、安全边界、测试门禁 |
 | [隐私政策](roamcat-0.0.1/PRIVACY.md) | 数据处理与权限用途的完整披露 |
 | [上架清单](roamcat-0.0.1/CHROMEWEBSTORE.md) | Chrome Web Store 文案与逐权限理由 |

@@ -41,7 +41,7 @@ RoamCat 是一个面向英语阅读的 Chrome / Edge 扩展，按双模式组织
 - 阅读辅助保留英文原文，在词、短语和句子附近提供有限提示；需要时可主动请求局部中文说明。
 - 可配置提示密度、查词方式、显示样式、领域识别、固定术语和网站规则。
 - 阅读记录、摘要与远程个性化分析需明确开启；本地求助词档案默认开启，可关闭或清理。
-- 模型服务可选择 26 家自备 API 之一，或通过本机连接器使用官方 Codex CLI 可访问的 ChatGPT 订阅权益、官方 Grok CLI 可访问的 SuperGrok / X Premium+ 订阅权益，以及官方 Antigravity CLI（agy）可访问的 Google AI Pro / Ultra 订阅权益。
+- 模型服务可选择 28 家自备 API 之一，或通过本机连接器使用官方 Codex CLI 可访问的 ChatGPT 订阅权益、官方 Grok CLI 可访问的 SuperGrok / X Premium+ 订阅权益，以及官方 Antigravity CLI（agy）可访问的 Google AI Pro / Ultra 订阅权益。
 - 内置本地领域识别模型，随扩展提供，不需要首次运行时另行下载。
 
 模型输出不是事实保证。网络、额度、权限、模型兼容性、内容安全策略和响应格式都可能导致请求失败；失败时不应把未确认结果当作可靠翻译。

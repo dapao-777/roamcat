@@ -41,6 +41,7 @@ export default defineConfig(({mode}) => ({
         popup: path.join(repoRoot, 'src', 'ui', 'popup.html'),
         welcome: path.join(repoRoot, 'src', 'ui', 'welcome.html'),
         options: path.join(repoRoot, 'src', 'ui', 'options.html'),
+        reader: path.join(repoRoot, 'src', 'ui', 'reader.html'),
       },
     },
   },

@@ -1,8 +1,8 @@
 /**
  * @file src/pages/options/options-app.js
- * 文件职责：设置页 Lit 应用壳——11 分区 hash 路由（含 view transitions）、
+ * 文件职责：设置页 Lit 应用壳——12 分区 hash 路由（含 view transitions）、
  *   侧栏折叠、主题切换、宣言弹层、密码可见性切换、选择卡高亮委托。
- * 主要内容：渲染 shell.js + 11 个静态分区模板（light DOM 保留全部 id 契约）；
+ * 主要内容：渲染 shell.js + 12 个静态分区模板（light DOM 保留全部 id 契约）；
  *   首帧渲染完成后动态加载 options-controller.js 与 history.js，二者沿用原
  *   imperative DOM 契约填充动态内容；optionsSectionEnter 负责分区进入钩子。
  * 模块边界：扩展页受信上下文；路由与外壳状态唯一来源为本组件。
@@ -13,48 +13,52 @@
 
  */
 import {LitElement, html} from 'lit';
+import {t} from '../../i18n-runtime.js';
 import {shellTop, mainToolbar, heroBlock, telemetryFooter, shellDialog} from './shell.js';
 import {
   assistanceSection, appearanceSection, sitesSection, advancedSection,
   termsSection, personalizationSection, historySection, privacySection,
-  serviceSection, diagnosticsSection, guideSection,
+  serviceSection, diagnosticsSection, guideSection, shortcutsSection,
 } from './sections/index.js';
 
-const SECTIONS = ['assistance', 'appearance', 'sites', 'advanced', 'terms', 'personalization', 'history', 'privacy', 'service', 'diagnostics', 'guide'];
+const SECTIONS = ['assistance', 'appearance', 'sites', 'advanced', 'terms', 'personalization', 'history', 'privacy', 'service', 'diagnostics', 'shortcuts', 'guide'];
 const SECTION_TEMPLATES = {
   assistance: assistanceSection, appearance: appearanceSection, sites: sitesSection,
   advanced: advancedSection, terms: termsSection, personalization: personalizationSection,
   history: historySection, privacy: privacySection, service: serviceSection,
-  diagnostics: diagnosticsSection, guide: guideSection,
+  diagnostics: diagnosticsSection, shortcuts: shortcutsSection, guide: guideSection,
 };
 const LABELS = {
-  assistance: '阅读偏好', appearance: '显示与解构', sites: '网站规则', advanced: '领域识别',
-  terms: '生词记忆矩阵', personalization: '已认识词与自适应', history: '阅读记录',
-  privacy: '数据与隐私', service: '模型服务', diagnostics: '运行诊断', guide: '快捷键与使用手册',
+  assistance: 'opt.nav.assist', appearance: 'opt.nav.appearance', sites: 'opt.nav.sites', advanced: 'opt.nav.advanced',
+  terms: 'opt.nav.terms', personalization: 'opt.nav.personalization', history: 'opt.nav.history',
+  privacy: 'opt.nav.privacy', service: 'opt.nav.model', diagnostics: 'opt.nav.diagnostics',
+  shortcuts: 'opt.nav.shortcuts', guide: 'opt.nav.guide',
 };
 const SECTION_META = {
-  assistance: {title: '阅读偏好设置', category: '阅读设置', stage: '按你的节奏阅读', desc: '少一点打断，多一点理解。选择适合你的提示方式，留住阅读的节奏。'},
-  appearance: {title: '显示与解构', category: '阅读设置', stage: '视觉定制', desc: '设定原词标注、顶部词注、句子解构及译文的呈现样式与视觉层级。'},
-  sites: {title: '网站规则', category: '阅读设置', stage: '网站策略', desc: '决定下次访问时是否自动开启。暂停本页不会修改这里的规则。'},
-  advanced: {title: '领域识别', category: '阅读设置', stage: '领域识别', desc: '智能识别学术、技术、商业等专业领域，为生词匹配最契合的语境。'},
-  terms: {title: '生词记忆矩阵', category: '词汇与记忆', stage: '生词记忆', desc: '保存你希望沿用的参考译法与生词本，按领域建立个性化词汇资产。'},
-  personalization: {title: '已认识词与自适应', category: '词汇与记忆', stage: '自适应调整', desc: '管理已认识词汇与自适应渐退节奏，避免熟悉词反复打扰，不进行任何用户画像。'},
-  history: {title: '阅读记录', category: '词汇与记忆', stage: '阅读积累', desc: '安全留存查词上下文与阅读轨迹，完全储存在本机，不包含整篇正文。'},
-  privacy: {title: '数据与隐私', category: '词汇与记忆', stage: '数据与隐私', desc: '个人词档案只保存在本机，不含原句或来源网址。支持一键导出、清理与权限管理。'},
-  service: {title: '模型服务', category: '服务与诊断', stage: '模型与连接', desc: '配置 Codex 订阅或第三方 AI 模型接口，驱动高质量上下文理解与重组。'},
-  diagnostics: {title: '运行诊断', category: '服务与诊断', stage: '运行状态', desc: '查看运行异常并导出排查信息。诊断只保存在本机，不包含原文或密钥。'},
-  guide: {title: '快捷键与使用手册', category: '帮助与说明', stage: '使用手册', desc: '从你读不顺的地方开始，不必先记住一套功能名。掌握解构、词注与母语脱敏流。'},
+  assistance: {title: 'opt.meta.assistance.title', category: 'opt.group.reading', stage: 'opt.meta.assistance.stage', desc: 'opt.meta.assistance.desc'},
+  appearance: {title: 'opt.meta.appearance.title', category: 'opt.group.reading', stage: 'opt.meta.appearance.stage', desc: 'opt.meta.appearance.desc'},
+  sites: {title: 'opt.meta.sites.title', category: 'opt.group.reading', stage: 'opt.meta.sites.stage', desc: 'opt.meta.sites.desc'},
+  advanced: {title: 'opt.meta.advanced.title', category: 'opt.group.reading', stage: 'opt.meta.advanced.stage', desc: 'opt.meta.advanced.desc'},
+  terms: {title: 'opt.meta.terms.title', category: 'opt.group.memory', stage: 'opt.meta.terms.stage', desc: 'opt.meta.terms.desc'},
+  personalization: {title: 'opt.meta.personalization.title', category: 'opt.group.memory', stage: 'opt.meta.personalization.stage', desc: 'opt.meta.personalization.desc'},
+  history: {title: 'opt.meta.history.title', category: 'opt.group.memory', stage: 'opt.meta.history.stage', desc: 'opt.meta.history.desc'},
+  privacy: {title: 'opt.meta.privacy.title', category: 'opt.group.memory', stage: 'opt.meta.privacy.stage', desc: 'opt.meta.privacy.desc'},
+  service: {title: 'opt.meta.service.title', category: 'opt.group.system', stage: 'opt.meta.service.stage', desc: 'opt.meta.service.desc'},
+  diagnostics: {title: 'opt.meta.diagnostics.title', category: 'opt.group.system', stage: 'opt.meta.diagnostics.stage', desc: 'opt.meta.diagnostics.desc'},
+  shortcuts: {title: 'opt.meta.shortcuts.title', category: 'opt.group.help', stage: 'opt.meta.shortcuts.stage', desc: 'opt.meta.shortcuts.desc'},
+  guide: {title: 'opt.meta.guide.title', category: 'opt.group.help', stage: 'opt.meta.guide.stage', desc: 'opt.meta.guide.desc'},
 };
 const BREADCRUMBS = {
-  assistance: ['阅读设置', '阅读偏好'], appearance: ['阅读设置', '显示与解构'],
-  sites: ['阅读设置', '网站规则'], advanced: ['阅读设置', '领域识别'],
-  terms: ['词汇与记忆', '生词记忆'], personalization: ['词汇与记忆', '自适应偏好'],
-  history: ['词汇与记忆', '阅读记录'], privacy: ['词汇与记忆', '数据与隐私'],
-  service: ['服务与诊断', '模型服务'], diagnostics: ['服务与诊断', '运行诊断'],
-  guide: ['帮助与说明', '使用手册'],
+  assistance: ['opt.group.reading', 'opt.nav.assist'], appearance: ['opt.group.reading', 'opt.nav.appearance'],
+  sites: ['opt.group.reading', 'opt.nav.sites'], advanced: ['opt.group.reading', 'opt.nav.advanced'],
+  terms: ['opt.group.memory', 'opt.meta.terms.crumb'], personalization: ['opt.group.memory', 'opt.meta.personalization.crumb'],
+  history: ['opt.group.memory', 'opt.nav.history'], privacy: ['opt.group.memory', 'opt.nav.privacy'],
+  service: ['opt.group.system', 'opt.nav.model'], diagnostics: ['opt.group.system', 'opt.nav.diagnostics'],
+  shortcuts: ['opt.group.help', 'opt.meta.shortcuts.crumb'],
+  guide: ['opt.group.help', 'opt.meta.guide.crumb'],
 };
 const THEMES = ['auto', 'dark', 'light'];
-const THEME_LABELS = {auto: '跟随系统', dark: '深色模式', light: '浅色模式'};
+const THEME_LABELS = {auto: 'opt.themeAuto', dark: 'opt.themeDark', light: 'opt.themeLight'};
 const THEME_ICONS = {
   auto: '<rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line>',
   dark: '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>',
@@ -81,6 +85,7 @@ class RoamcatOptions extends LitElement {
       return;
     }
     if (event.target.closest('#theme-toggle-btn')) { this.#cycleTheme(); return; }
+    if (event.target.closest('#lang-toggle-btn')) { this.#cycleUiLang(); return; }
     const pwBtn = event.target.closest('.toggle-password-btn');
     if (pwBtn) { this.#togglePassword(pwBtn); return; }
     const stampCard = event.target.closest('#sidebar-stamp-card');
@@ -115,6 +120,7 @@ class RoamcatOptions extends LitElement {
   };
   #onChange = event => {
     if (event.target.matches?.('input[type="radio"]')) this.#syncChoiceCards();
+    if (event.target.matches?.('input[name="ui-lang"]')) this.#setUiLang(event.target.value);
   };
 
   render() {
@@ -151,6 +157,7 @@ class RoamcatOptions extends LitElement {
   }
 
   async firstUpdated() {
+    this.#syncUiLangChoice();
     this.#applyRoute({initial: true});
     // 控制器与阅读记录模块在顶层执行 querySelector 契约绑定，必须在首帧渲染后加载。
     const [{optionsInit, optionsSectionEnter}] = await Promise.all([
@@ -191,16 +198,16 @@ class RoamcatOptions extends LitElement {
 
   #syncChrome(section) {
     const meta = SECTION_META[section] || SECTION_META.assistance;
-    setText('section-title', meta.title);
-    setText('hero-category-badge', meta.category);
-    setText('hero-stage-badge', meta.stage);
-    setText('hero-desc', meta.desc);
-    const [category, code] = BREADCRUMBS[section] || ['设置', '偏好'];
-    setText('toolbar-category-title', category);
-    setText('toolbar-breadcrumb-title', code);
+    setText('section-title', t(meta.title));
+    setText('hero-category-badge', t(meta.category));
+    setText('hero-stage-badge', t(meta.stage));
+    setText('hero-desc', t(meta.desc));
+    const [category, code] = BREADCRUMBS[section] || ['opt.toolbarRoot', 'opt.nav.assist'];
+    setText('toolbar-category-title', t(category));
+    setText('toolbar-breadcrumb-title', t(code));
     const readout = document.querySelector('.hero-right-card.reading-readout');
     if (readout) readout.hidden = section !== 'assistance';
-    document.title = `RoamCat · 随心阅 · ${LABELS[section]}`;
+    document.title = `${t('common.brand')} · ${t(LABELS[section])}`;
     document.querySelectorAll('[data-section]').forEach(link => {
       const active = link.dataset.section === section;
       link.classList.toggle('active', active);
@@ -228,15 +235,47 @@ class RoamcatOptions extends LitElement {
     if (theme === 'auto') document.documentElement.removeAttribute('data-theme');
     else document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('roamcat_ui_theme', theme);
-    setText('theme-toggle-label', THEME_LABELS[theme] || theme);
+    const i18n = globalThis.RoamCatI18n;
+    const themeLabel = i18n ? i18n.t(THEME_LABELS[theme] || 'opt.themeAuto') : theme;
+    setText('theme-toggle-label', i18n ? i18n.t('opt.themeBtnLabel', {label: themeLabel}) : themeLabel);
     const svgEl = $('theme-icon-svg');
     if (svgEl && THEME_ICONS[theme]) svgEl.innerHTML = THEME_ICONS[theme];
     const btn = $('theme-toggle-btn');
-    if (btn) btn.title = `当前主题: ${THEME_LABELS[theme]} (点击切换)`;
+    if (btn) btn.title = i18n ? i18n.t('opt.themeToggleTitle', { theme: themeLabel }) : themeLabel;
   }
 
   #cycleTheme() {
     this.#applyTheme(THEMES[(THEMES.indexOf(this.#theme) + 1) % THEMES.length]);
+  }
+
+  #syncUiLangChoice() {
+    const i18n = globalThis.RoamCatI18n;
+    const pref = i18n?.pref?.() || 'auto';
+    document.querySelectorAll('input[name="ui-lang"]').forEach(input => {
+      input.checked = input.value === pref;
+    });
+    const label = $('lang-toggle-label');
+    const langName = i18n?.t(`common.lang${pref === 'auto' ? 'Auto' : pref === 'zh' ? 'Zh' : 'En'}`);
+    if (label && i18n) label.textContent = i18n.t('opt.langBtnLabel', {label: langName});
+    const langBtn = $('lang-toggle-btn');
+    if (langBtn && i18n) langBtn.title = i18n.t('opt.langToggleTitle', { lang: langName || pref });
+    this.#syncChoiceCards();
+  }
+
+  #cycleUiLang() {
+    const i18n = globalThis.RoamCatI18n;
+    if (!i18n) return;
+    const order = ['auto', 'zh', 'en'];
+    const next = order[(order.indexOf(i18n.pref()) + 1) % order.length];
+    this.#setUiLang(next);
+  }
+
+  #setUiLang(value) {
+    const i18n = globalThis.RoamCatI18n;
+    if (!i18n || i18n.pref() === value) return;
+    i18n.setPref(value);
+    // 等 chrome.storage.local 异步写入落地后再刷新，保证其他界面同步到
+    setTimeout(() => location.reload(), 120);
   }
 
   #setCollapsed(collapsed, {silent = false} = {}) {
@@ -247,7 +286,7 @@ class RoamcatOptions extends LitElement {
     else localStorage.setItem('roamcat_sidebar_collapsed', String(collapsed));
     const btn = $('sidebar-collapse-btn');
     if (btn) {
-      const title = collapsed ? '展开侧边栏' : '折叠侧边栏';
+      const title = collapsed ? t('opt.expandSidebar') : t('opt.collapseSidebar');
       btn.title = title;
       btn.setAttribute('aria-label', title);
     }
@@ -255,15 +294,22 @@ class RoamcatOptions extends LitElement {
 
   #togglePassword(btn) {
     const targetId = btn.dataset.toggleTarget;
-    const input = targetId ? $(targetId) : btn.parentElement?.querySelector('input');
+    const input = targetId ? $(targetId) : btn.parentElement?.querySelector('input,textarea');
     if (!input) return;
-    const isPassword = input.type === 'password';
-    input.type = isPassword ? 'text' : 'password';
+    let revealed;
+    if (input.tagName === 'TEXTAREA') {
+      // textarea 没有 type=password，用 -webkit-text-security 类遮罩。
+      revealed = input.classList.toggle('key-pool-revealed');
+    } else {
+      const isPassword = input.type === 'password';
+      input.type = isPassword ? 'text' : 'password';
+      revealed = isPassword;
+    }
     const show = btn.querySelector('.eye-show');
     const hide = btn.querySelector('.eye-hide');
-    if (show) show.hidden = isPassword;
-    if (hide) hide.hidden = !isPassword;
-    btn.title = isPassword ? '隐藏密钥' : '显示密钥';
+    if (show) show.hidden = revealed;
+    if (hide) hide.hidden = !revealed;
+    btn.title = revealed ? t('opt.hideKey') : t('opt.showKey');
     btn.setAttribute('aria-label', btn.title);
   }
 

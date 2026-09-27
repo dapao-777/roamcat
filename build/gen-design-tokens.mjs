@@ -101,7 +101,7 @@ ${dark}
     }
     return css;
   };
-  const structureRoles = Object.freeze({clause:Object.freeze(['原句','neutral']),subject:Object.freeze(['主语','subject']),predicate:Object.freeze(['谓语','predicate']),object:Object.freeze(['宾语','object']),predicative:Object.freeze(['表语','object']),complement:Object.freeze(['补语','object']),adverbial:Object.freeze(['状语','adverbial']),attributive:Object.freeze(['定语','attributive'])});
+  const structureRoles = Object.freeze({clause:Object.freeze(['design.role.clause','neutral']),subject:Object.freeze(['design.role.subject','subject']),predicate:Object.freeze(['design.role.predicate','predicate']),object:Object.freeze(['design.role.object','object']),predicative:Object.freeze(['design.role.predicative','object']),complement:Object.freeze(['design.role.complement','object']),adverbial:Object.freeze(['design.role.adverbial','adverbial']),attributive:Object.freeze(['design.role.attributive','attributive'])});
   const structureColors = Object.freeze({subject:Object.freeze(['#1d4ed8','#38bdf8']),predicate:Object.freeze(['#d97706','#fbbf24']),object:Object.freeze(['#0f766e','#2dd4bf']),attributive:Object.freeze(['#7c3aed','#a78bfa']),adverbial:Object.freeze(['#64748b','#94a3b8']),neutral:Object.freeze(['#94a3b8','#64748b'])});
   globalThis.RoamCatDesign = Object.freeze({cssFor,structureRoles,structureColors});
 

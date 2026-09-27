@@ -12,34 +12,35 @@
 
  */
 import {html} from 'lit';
+import {t} from '../../../i18n-runtime.js';
 
 export const termsSection = html`
 <section id="terms" class="settings-section" aria-labelledby="terms-heading" hidden="">
 <div class="section-intro">
-<h2 id="terms-heading" class="sr-only">固定术语</h2>
-<p>保存你希望沿用的参考译法，按领域管理。</p>
+<h2 id="terms-heading" class="sr-only">${t('sec.terms.title')}</h2>
+<p>${t('sec.terms.desc')}</p>
 </div>
 <div class="paper-card">
 <form id="term-form" class="inline-form">
 <label class="field">
-<span>英文术语</span>
+<span>${t('sec.terms.en')}</span>
 <input id="term-source" required="" autocomplete="off">
 </label>
 <label class="field">
-<span>参考译法</span>
+<span>${t('sec.terms.gloss')}</span>
 <input id="term-translation" required="" autocomplete="off">
 </label>
 <label class="field">
-<span>领域</span>
+<span>${t('sec.terms.domain')}</span>
 <select id="term-domain">
 </select>
 </label>
-<button class="primary-action narrow" type="submit">添加术语</button>
+<button class="primary-action narrow" type="submit">${t('sec.terms.add')}</button>
 </form>
 <div id="term-list" class="term-list">
 </div>
 <div id="term-empty" class="empty-state compact-empty" hidden="">
-<h3>还没有自定义术语</h3>
+<h3>${t('sec.terms.empty')}</h3>
 </div>
 </div>
 </section>

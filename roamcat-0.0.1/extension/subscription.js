@@ -19,6 +19,8 @@ import {sanitizeDiagnostic,diagnosticError,validTraceId} from './diagnostics.mjs
 import {normalizeSentenceGroupItems,normalizeSentenceGroupsResult} from './sentence-groups.mjs';
 import {normalizeTranslationProgress} from './assistance-stream.mjs';
 
+const M=(zh,en)=>globalThis.RoamCatI18n?.lang?.()==='en'?en:zh;
+
 export const SUBSCRIPTION_KINDS = Object.freeze(['chatgpt','grok','antigravity']);
 export function isSubscriptionKind(kind) { return kind === 'chatgpt' || kind === 'grok' || kind === 'antigravity'; }
 export function nativeKind(settings) { return settings?.providerKind === 'grok' ? 'grok' : settings?.providerKind === 'antigravity' ? 'antigravity' : 'chatgpt'; }
@@ -76,8 +78,8 @@ function createConnector({host,label,cliName,loginHosts}) {
       const reason = chrome.runtime.lastError?.message || '';
       const missing = /not found|not registered|forbidden/i.test(reason);
       disconnect(current,new Error(missing
-        ? `未找到或未授权本地 ${label} 连接器。请按安装说明安装，然后点击“刷新连接”。`
-        : `本地 ${label} 连接器已断开。请确认 Node.js 和 ${cliName} 可用，再点击“刷新连接”。`));
+        ? M(`未找到或未授权本地 ${label} 连接器。请按安装说明安装，然后点击“刷新连接”。`,`No authorized local ${label} connector found. Install it per the instructions, then click "Refresh connection".`)
+        : M(`本地 ${label} 连接器已断开。请确认 Node.js 和 ${cliName} 可用，再点击“刷新连接”。`,`The local ${label} connector is disconnected. Make sure Node.js and ${cliName} are available, then click "Refresh connection".`)));
     });
     current.onMessage.addListener(message => {
       if (state.port !== current) return;
@@ -95,8 +97,8 @@ function createConnector({host,label,cliName,loginHosts}) {
       state.pending.delete(message.id);
       if (message.ok === true) request.resolve(message.data);
       else {
-        const error = typeof message.error === 'string' ? message.error.slice(0,600) : '本地连接器返回了无效响应。';
-        const reported=new Error(/不支持的连接器请求|unsupported request/i.test(error)?'本地连接器版本过旧，请重新运行安装命令后刷新连接。':error);
+        const error = typeof message.error === 'string' ? message.error.slice(0,600) : M('本地连接器返回了无效响应。','The local connector returned an invalid response.');
+        const reported=new Error(/不支持的连接器请求|unsupported request/i.test(error)?M('本地连接器版本过旧，请重新运行安装命令后刷新连接。','The local connector is outdated; rerun the install command, then refresh the connection.'):error);
         const detail=diagnosticError({code:message.code,detail:message.detail,message:error});reported.code=detail.code;reported.detail=detail;request.reject(reported);
       }
     });
@@ -104,18 +106,18 @@ function createConnector({host,label,cliName,loginHosts}) {
   }
   function send(type,payload = {},traceId,onProgress) {
     return new Promise((resolve,reject) => {
-      if (state.pending.size >= 16) { reject(new Error(`本地 ${label} 连接器正忙，请稍后再试。`)); return; }
+      if (state.pending.size >= 16) { reject(new Error(M(`本地 ${label} 连接器正忙，请稍后再试。`,`The local ${label} connector is busy; please retry shortly.`))); return; }
       let current;
-      try { current = connection(); } catch { reject(new Error(`无法启动本地 ${label} 连接器，请检查安装。`)); return; }
+      try { current = connection(); } catch { reject(new Error(M(`无法启动本地 ${label} 连接器，请检查安装。`,`Cannot start the local ${label} connector; please check the installation.`))); return; }
       const id = ++state.sequence;
       const timer = setTimeout(() => {
-        disconnect(current,new Error(type === 'assist' ? `${label} 订阅帮助超时，已断开连接并停止请求。请刷新连接后重试。` : type === 'emergencyTranslate' ? `${label} 订阅翻译超时，已断开连接并停止请求。请刷新连接后重试。` : `本地 ${label} 连接器没有及时响应，请刷新连接后重试。`));
+        disconnect(current,new Error(type === 'assist' ? M(`${label} 订阅帮助超时，已断开连接并停止请求。请刷新连接后重试。`,`${label} subscription help timed out; disconnected and request stopped. Refresh the connection and retry.`) : type === 'emergencyTranslate' ? M(`${label} 订阅翻译超时，已断开连接并停止请求。请刷新连接后重试。`,`${label} subscription translation timed out; disconnected and request stopped. Refresh the connection and retry.`) : M(`本地 ${label} 连接器没有及时响应，请刷新连接后重试。`,`The local ${label} connector did not respond in time; refresh the connection and retry.`)));
         current.disconnect();
       },['assist','emergencyTranslate','summarize'].includes(type) ? 120000 : 45000);
       state.pending.set(id,{resolve,reject,timer,type,onProgress});
       try { current.postMessage({id,type,payload,...(validTraceId(traceId)?{traceId}:{})}); }
       catch {
-        disconnect(current,new Error(`无法向本地 ${label} 连接器发送消息，请刷新连接后重试。`));
+        disconnect(current,new Error(M(`无法向本地 ${label} 连接器发送消息，请刷新连接后重试。`,`Cannot send messages to the local ${label} connector; refresh the connection and retry.`)));
         current.disconnect();
       }
     });
@@ -126,7 +128,7 @@ function createConnector({host,label,cliName,loginHosts}) {
     state.refreshInFlight = (async () => {
       const previous = state.port;
       if (previous) {
-        disconnect(previous,new Error('连接已刷新，请重新求助。'));
+        disconnect(previous,new Error(M('连接已刷新，请重新求助。','The connection was refreshed; please ask again.')));
         previous.disconnect();
       }
       try { update(await send('status')); }
@@ -143,13 +145,13 @@ function createConnector({host,label,cliName,loginHosts}) {
   async function login() {
     const result = await send('login');
     let url;
-    try { url = new URL(result?.authUrl); } catch { throw new Error('连接器未返回有效的官方登录地址。'); }
+    try { url = new URL(result?.authUrl); } catch { throw new Error(M('连接器未返回有效的官方登录地址。','The connector did not return a valid official login URL.')); }
     if (url.protocol !== 'https:' || !loginHosts.has(url.hostname) || url.port || url.username || url.password) {
       await send('cancel');
-      throw new Error('已拒绝非官方登录地址。');
+      throw new Error(M('已拒绝非官方登录地址。','A non-official login URL was rejected.'));
     }
     try { await chrome.tabs.create({url:url.href}); }
-    catch { await send('cancel'); throw new Error('无法打开登录页面，请重试。'); }
+    catch { await send('cancel'); throw new Error(M('无法打开登录页面，请重试。','Could not open the login page; please retry.')); }
     if (typeof result?.userCode === 'string' && result.userCode) update({...state.status, loginPending:true, userCode:result.userCode});
     return snapshot();
   }
@@ -199,12 +201,12 @@ export async function logoutSubscription(kind) { return connector(kind).logout()
 
 export async function listSubscriptionModels(refresh = false, kind) {
   const result = await connector(kind).send('models',{refresh:refresh === true});
-  if (!Array.isArray(result?.models) || result.models.length > 256) throw new Error('订阅服务没有返回有效模型列表。');
+  if (!Array.isArray(result?.models) || result.models.length > 256) throw new Error(M('订阅服务没有返回有效模型列表。','The subscription service did not return a valid model list.'));
   return result.models.map(model => {
-    if (!model || typeof model.id !== 'string' || !model.id || typeof model.name !== 'string' || !model.name) throw new Error('订阅服务返回的模型信息无效。');
+    if (!model || typeof model.id !== 'string' || !model.id || typeof model.name !== 'string' || !model.name) throw new Error(M('订阅服务返回的模型信息无效。','The subscription service returned invalid model info.'));
     const item = {id:model.id,name:model.name,isDefault:model.isDefault === true};
     if (model.supportedReasoningEfforts !== undefined) {
-      if (!Array.isArray(model.supportedReasoningEfforts) || model.supportedReasoningEfforts.some(value => typeof value !== 'string')) throw new Error('订阅服务返回的模型信息无效。');
+      if (!Array.isArray(model.supportedReasoningEfforts) || model.supportedReasoningEfforts.some(value => typeof value !== 'string')) throw new Error(M('订阅服务返回的模型信息无效。','The subscription service returned invalid model info.'));
       item.supportedReasoningEfforts = [...model.supportedReasoningEfforts];
     }
     return item;
@@ -213,12 +215,12 @@ export async function listSubscriptionModels(refresh = false, kind) {
 export async function classifySubscription(text,title,model,traceId,kind) {
   const expected = kind === 'grok' ? 'grok' : kind === 'antigravity' ? 'antigravity' : 'chatgpt';
   const result = await connector(kind).send('classify',{text,title,model},traceId);
-  if (!['general','tech','data','finance','medical','legal','design'].includes(result?.domain) || result?.source !== expected) throw new Error('订阅服务没有返回有效领域分类。');
+  if (!['general','tech','data','finance','medical','legal','design'].includes(result?.domain) || result?.source !== expected) throw new Error(M('订阅服务没有返回有效领域分类。','The subscription service did not return a valid domain classification.'));
   return {domain:result.domain,source:expected};
 }
 function normalizePreferences(value){
   if(value===undefined||value===null)return null;
-  if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).length!==3||!['detail','terminology','focus'].every(key=>Object.hasOwn(value,key))||!['concise','standard'].includes(value.detail)||!['consistent','contextual'].includes(value.terminology)||!['meaning','usage'].includes(value.focus))throw new Error('个性化翻译偏好无效。');
+  if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).length!==3||!['detail','terminology','focus'].every(key=>Object.hasOwn(value,key))||!['concise','standard'].includes(value.detail)||!['consistent','contextual'].includes(value.terminology)||!['meaning','usage'].includes(value.focus))throw new Error(M('个性化翻译偏好无效。','Invalid personalized-translation preference.'));
   return {detail:value.detail,terminology:value.terminology,focus:value.focus};
 }
 export async function supportSubscription(items,model='',article,traceId,preferences,corrections=[],kind) {
@@ -244,16 +246,16 @@ export async function assistSubscription(request,model='',traceId,preferences,on
   return normalizeAssistanceResult(await connector(kind).send('assist',{...selected,model,...(personalization?{personalization}:{})},traceId,progress),selected);
 }
 export async function emergencyTranslateSubscription({scope,items,model='',traceId,preferences,onProgress,kind}) {
-  if(scope!=='page'&&scope!=='passage')throw new Error('翻译范围无效。');
+  if(scope!=='page'&&scope!=='passage')throw new Error(M('翻译范围无效。','Invalid translation scope.'));
   const selected=scope==='page'?normalizePageTranslationItems(items):normalizeEmergencyItems(items),personalization=normalizePreferences(preferences);
   const progress=typeof onProgress==='function'?value=>{const normalized=normalizeTranslationProgress(value,selected)||normalizeTranslationProgress(value?.items?{items:value.items.filter(item=>item&&typeof item.translation==='string').map(item=>({id:item.id,translation:item.translation}))}:null,selected);if(normalized)return onProgress(normalized);}:undefined;
   const result=await connector(kind).send('emergencyTranslate',{scope,items:selected,model,...(personalization?{personalization}:{})},traceId,progress);
   return scope==='page'?normalizePageTranslationResult(result,selected):normalizeEmergencyResult(result,selected);
 }
 export async function sentenceGroupsSubscription(items,model='',traceId,kind) { const selected=normalizeSentenceGroupItems(items); const value=await connector(kind).send('sentenceGroups',{items:selected,model},traceId); return normalizeSentenceGroupsResult(value,selected); }
-export async function historyModelSubscription(kind,payload,model='',traceId,backend) { if(!['summary','personalization'].includes(kind)||!payload||typeof payload!=='object'||Array.isArray(payload))throw new Error('历史模型请求无效。');
+export async function historyModelSubscription(kind,payload,model='',traceId,backend) { if(!['summary','personalization'].includes(kind)||!payload||typeof payload!=='object'||Array.isArray(payload))throw new Error(M('历史模型请求无效。','Invalid history-model request.'));
 const result=await connector(backend).send('historyModel',{kind,payload,model},traceId);
-if(!result||typeof result!=='object'||Array.isArray(result))throw new Error('历史模型没有返回有效对象。');
+if(!result||typeof result!=='object'||Array.isArray(result))throw new Error(M('历史模型没有返回有效对象。','The history model did not return a valid object.'));
 return result; }
 export async function summarizeSubscription({title='',text='',url='',model=''},traceId,kind) {
   const result = await connector(kind).send('summarize',{title,text,url,model},traceId);

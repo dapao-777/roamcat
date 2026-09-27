@@ -14,7 +14,7 @@ export function createProviderPicker(select,providers) {
   const root=select.parentElement,button=root.querySelector('[role="combobox"]'),list=root.querySelector('[role="listbox"]');
   const currentLogo=button.querySelector('img'),currentName=button.querySelector('span');
   let active=0,search='',typedAt=0;
-  const iconPath=id=>'../icons/providers/'+(['openai-compatible','open-responses','requesty','stepfun'].includes(id)?'custom-api':id)+'.svg';
+  const iconPath=id=>'../icons/providers/'+(['openai-compatible','open-responses','requesty','stepfun','opencode','commandcode'].includes(id)?'custom-api':id)+'.svg';
   const choices=providers.map(provider=>{
     select.append(new Option(provider.name,provider.id));
     const row=document.createElement('div');row.id='provider-option-'+provider.id;row.className='provider-option';row.setAttribute('role','option');row.dataset.value=provider.id;

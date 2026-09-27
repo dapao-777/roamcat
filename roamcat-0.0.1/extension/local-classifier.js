@@ -9,6 +9,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
  */
+
+const M=(zh,en)=>globalThis.RoamCatI18n?.lang?.()==='en'?en:zh;
 const OFFSCREEN_URL = 'local-inference/offscreen.html';
 const MAX_TEXT_LENGTH = 6000;
 const MAX_TITLE_LENGTH = 240;
@@ -34,7 +36,7 @@ async function ensureOffscreenDocument() {
   creatingDocument ??= chrome.offscreen.createDocument({
     url: OFFSCREEN_URL,
     reasons: ['WORKERS'],
-    justification: '在独立线程中运行打包的本地 ONNX 领域分类模型',
+    justification: M('在独立线程中运行打包的本地 ONNX 领域分类模型','Run the bundled local ONNX domain classifier in a worker thread'),
   }).finally(() => { creatingDocument = undefined; });
   await creatingDocument;
 }
@@ -47,7 +49,7 @@ async function performClassification(text, title) {
     text: bounded(text, MAX_TEXT_LENGTH),
     title: bounded(title, MAX_TITLE_LENGTH),
   });
-  if (!response?.ok) throw new Error(response?.error || '本地领域识别没有返回结果');
+  if (!response?.ok) throw new Error(response?.error || M('本地领域识别没有返回结果','Local domain detection returned no result'));
   return response.data;
 }
 

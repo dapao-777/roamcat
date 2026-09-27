@@ -1,0 +1,18 @@
+<!doctype html><html lang="en"><head><title>node-report: meld into core by gireeshpunathil · Pull Request #22712 · nodejs/node</title></head>
+<body class="logged-out env-production page-responsive">
+<div class="application-main"><div id="js-repo-pjax-container"><main>
+<nav class="tabnav"><a>Conversation</a><a>Commits</a><a>Checks</a><a class="js-selected">Files changed</a></nav>
+<div class="pr-description comment-body"><p>This pull request adds the process report tool so that node can generate human readable diagnostic reports whenever a fatal error, signal, or explicit API call requires a snapshot of the runtime state.</p>
+<p>The report helps support teams diagnose user problems in the field without asking them to reproduce a crash under a debugger, and it stays opt in so unaffected programs see no change in behaviour.</p></div>
+<div id="diff-view"><div class="js-file"><div class="file-header" data-tagsearch-path="src/node_report.cc"><span>src/node_report.cc</span> <span class="diffstat">@@ -493,6 +493,22 @@</span></div>
+<table class="diff-table"><tbody>
+<tr><td class="blob-num">493</td><td class="blob-code"><span class="pl-c">// write human readable diagnostic report</span></td></tr>
+<tr><td class="blob-num">494</td><td class="blob-code"><span class="pl-k">static</span> <span class="pl-k">void</span> <span class="pl-en">WriteReport</span><span class="pl-p">(</span><span class="pl-k">const</span> <span class="pl-k">char</span><span class="pl-p">*</span><span class="pl-p">)</span><span class="pl-p">;</span></td></tr>
+<tr><td class="blob-num">495</td><td class="blob-code">  <span class="pl-en">report</span><span class="pl-p">.</span><span class="pl-c1">WriteString</span><span class="pl-p">(</span><span class="pl-s">"header"</span><span class="pl-p">)</span><span class="pl-p">;</span></td></tr>
+<tr><td class="blob-num">496</td><td class="blob-code">  <span class="pl-c1">fflush</span><span class="pl-p">(</span><span class="pl-c1">fp</span><span class="pl-p">)</span><span class="pl-p">;</span></td></tr>
+</tbody></table></div></div>
+<nav id="repos-file-tree"><ul role="tree"><li role="treeitem"><span class="PRIVATE_TreeView-item-content-text">src/node_report.cc</span></li><li role="treeitem"><span class="PRIVATE_TreeView-item-content-text">lib/internal/process/report.js</span></li></ul></nav>
+<aside id="pr-conversation-sidebar"><div class="Layout-sidebar"><h2>Reviewers</h2><p>Sidebar reviewer wording goes here.</p></div></aside>
+<div data-testid="breadcrumbs">nodejs / node / Pull requests / 22712</div>
+</main></div></div>
+</body></html>

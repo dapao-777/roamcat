@@ -73,8 +73,8 @@ emboss / engrave / lacquer / key-* / brass / track / knob / grain`）。
 `data-theme="light|dark"` 显式覆盖（`theme-init.js` 在绘制前写入，防闪烁）。
 别名在 `common` 段以 `var(--rc-*)` 定义，use-site 解析自动跟随主题。
 
-亮色主题是「纸墨」本体；暗色主题是「石墨漆面」——accent 从暖黑切换为琥珀金
-`#f59e0b`，材质渐变随之换成近中性面 + 细高光刃口。
+亮色主题是「纸墨」本体；暗色主题是「砚台石墨漆面」——accent 从暖黑切换为琥珀金
+`#f0a63c`，材质渐变随之换成近中性面 + 细高光刃口。
 
 ### 3.3 拟物材质层（可选装饰，缺省即退化为扁平）
 
@@ -116,14 +116,14 @@ emboss / engrave / lacquer / key-* / brass / track / knob / grain`）。
 
 | 语义 | 亮色 | 暗色 |
 |---|---|---|
-| 页面底 `--rc-canvas` | `#efeee6` 米灰 | `#0f0f10` |
-| 卡片 `--rc-paper` | `#faf9f4` 米白 | `#1b1b1d` |
-| 主墨色 `--rc-ink` | `#161511` 暖黑 | `#f2f1ee` |
-| 主 accent | `#161511`（墨色即强调） | `#f59e0b` 琥珀金 |
-| 辅助强调 `--rc-amber / teal` | `#c26a1b` 赭石 | `#f59e0b` |
-| 成功 `--rc-green` | `#8a5a17` | `#10b981` |
-| 警示 `--rc-danger` | `#b3261e` | `#f87171` |
-| 阅读标记 `--rc-reading-mark` | `#f0e8d2` 纸色高亮 | `rgba(245,158,11,.18)` |
+| 页面底 `--rc-canvas` | `#efeee6` 米灰 | `#0b0e13` 砚台深墨（微蓝） |
+| 卡片 `--rc-paper` | `#faf9f4` 米白 | `#10141b` |
+| 主墨色 `--rc-ink` | `#161511` 暖黑 | `#ece7d9` 暖象牙 |
+| 主 accent | `#161511`（墨色即强调） | `#f0a63c` 琥珀金 |
+| 辅助强调 `--rc-amber / teal` | `#c26a1b` 赭石 | `#f0a63c` / `#d9ae6a` |
+| 成功 `--rc-green` | `#8a5a17` | `#3ecf96` |
+| 警示 `--rc-danger` | `#b3261e` | `#f0756a` |
+| 阅读标记 `--rc-reading-mark` | `#f0e8d2` 纸色高亮 | `rgba(240,166,60,.16)` |
 
 亮色下「墨色即强调」是有意选择：主按钮是漆面黑键，琥珀/赭石只留给
 阅读标记、激活态与数据点缀。

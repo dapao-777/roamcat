@@ -1,0 +1,118 @@
+/* @file 阅读器页样式：PDF/EPUB 正文流、目录侧栏、工具栏；材质沿用 tokens.css 键帽/瓷面体系。 */
+
+html, body { margin: 0; padding: 0; min-height: 100vh; }
+body {
+  background: var(--canvas);
+  color: var(--ink);
+  font: var(--weight-regular) var(--type-body)/var(--leading-body) var(--sans);
+}
+
+.reader-shell { min-height: 100vh; display: flex; flex-direction: column; }
+
+.reader-toolbar {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  background: var(--toolbar-bg, var(--surface));
+  backdrop-filter: saturate(1.1) blur(10px);
+  -webkit-backdrop-filter: saturate(1.1) blur(10px);
+  border-bottom: 1px solid var(--rim-soft, var(--line));
+  box-shadow: var(--edge-hi, none), var(--cast, var(--shadow-low));
+}
+.reader-brand { display: flex; align-items: baseline; gap: var(--space-2); min-width: 0; }
+.reader-logo { font-family: var(--font-display); font-weight: var(--weight-regular); font-size: 15px; letter-spacing: .05em; color: var(--ink); }
+.reader-title { max-width: 42vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: var(--type-support, 13px); }
+.reader-actions { display: flex; align-items: center; gap: var(--space-2); flex-shrink: 0; }
+.reader-progress { font-size: var(--type-support, 13px); color: var(--muted); }
+.reader-bilingual { display: inline-flex; align-items: center; gap: var(--space-2); margin-inline-end: var(--space-1); font-size: var(--type-support, 13px); color: var(--muted-strong, var(--ink)); }
+
+/* —— 控件：键帽/漆面按钮（与页面内 HUD 同一材质语言） —— */
+.rc-button {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1, 4px);
+  min-height: 32px; padding: 0 var(--space-3); border-radius: var(--radius-control);
+  border: 1px solid var(--rim-soft, var(--line));
+  background-color: var(--surface); background-image: var(--key-face, var(--face, none));
+  box-shadow: var(--key-skirt, var(--inset-soft, none));
+  color: var(--ink); font: var(--weight-medium) var(--type-support, 13px)/1 var(--sans);
+  text-decoration: none; white-space: nowrap; cursor: pointer;
+  transition: box-shadow var(--rc-dur-fast, .16s) var(--rc-ease-standard, ease), transform var(--rc-dur-instant, .08s) ease, border-color var(--rc-dur-fast, .16s) ease;
+}
+.rc-button:hover { border-color: var(--rim, var(--line-dark)); box-shadow: var(--key-skirt-hover, var(--key-skirt, var(--inset-soft, none))); }
+.rc-button:active { transform: translateY(2px); box-shadow: var(--key-press, var(--press, none)); }
+.rc-button:focus-visible { outline: var(--focus-ring); outline-offset: var(--focus-offset); }
+.rc-button:disabled { color: var(--on-action-disabled); background-color: var(--action-disabled); background-image: none; box-shadow: none; transform: none; cursor: default; }
+.rc-button.rc-primary {
+  background-color: var(--accent); background-image: var(--lacquer, none);
+  border-color: var(--accent); color: var(--on-action);
+  box-shadow: var(--lacquer-skirt, var(--lacquer-inset, var(--key-skirt, none)));
+}
+.rc-button.rc-primary:hover { border-color: var(--accent); background-color: var(--accent-hover); box-shadow: var(--lacquer-skirt, var(--lacquer-inset, var(--key-skirt-hover, none))); }
+.rc-button.rc-primary:active { box-shadow: var(--lacquer-press, var(--press, none)); }
+.rc-button.rc-primary:disabled { background-color: var(--action-disabled); border-color: transparent; box-shadow: none; color: var(--on-action-disabled); }
+
+.reader-main { flex: 1; display: grid; place-items: center; padding: var(--space-6) var(--space-4); }
+.reader-status-card {
+  max-width: 480px; width: min(480px, 100%); padding: var(--space-8) var(--space-6); text-align: center;
+  background-color: var(--surface); background-image: var(--face-raised, var(--face, none));
+  border: 1px solid var(--rim-soft, var(--line)); border-radius: var(--radius-card, 12px);
+  box-shadow: var(--edge-hi, none), var(--inset-soft, none), var(--cast, var(--shadow-high));
+  animation: rc-enter-pop var(--rc-dur-med, .28s) var(--rc-spring-soft, ease) both;
+}
+.reader-hero-art { width: 128px; margin: 0 auto var(--space-4); color: var(--ink); }
+.reader-hero-art svg { display: block; width: 100%; height: auto; }
+.reader-status-card h1 { margin: 0 0 var(--space-3); font: var(--weight-semibold) var(--type-section-title)/1.35 var(--sans); }
+.reader-status-card p { margin: 0 0 var(--space-4); color: var(--muted-strong, var(--ink)); }
+.reader-format-chips { display: flex; justify-content: center; flex-wrap: wrap; gap: var(--space-2); margin: 0 0 var(--space-5); }
+.reader-format-chips span { padding: 3px 10px; border: 1px solid var(--rim-soft, var(--line)); border-radius: var(--radius-pill); background-color: var(--surface-subtle); background-image: var(--face-well, none); box-shadow: var(--well-shadow, none); font: var(--weight-medium) 11px/1.5 var(--mono); color: var(--muted-strong, var(--ink)); }
+.reader-status-card .rc-button { min-height: 36px; padding-inline: var(--space-5); }
+.reader-hint { margin: var(--space-4) 0 0 !important; font-size: var(--type-support, 13px); color: var(--muted) !important; }
+.reader-error p { color: var(--danger, var(--accent)); }
+.reader-error .rc-button { margin-top: var(--space-2); }
+
+.reader-body { flex: 1; display: flex; min-height: 0; }
+.reader-sidebar {
+  width: 216px; flex-shrink: 0; overflow-y: auto;
+  padding: var(--space-3) var(--space-2);
+  border-right: 1px solid var(--rim-soft, var(--line));
+  background: color-mix(in srgb, var(--surface) 55%, var(--canvas));
+  position: sticky; top: 53px; height: calc(100vh - 53px); box-sizing: border-box;
+}
+.reader-nav-item {
+  display: block; width: 100%; text-align: left; box-sizing: border-box;
+  padding: 6px 10px; margin: 1px 0; border: 0; border-radius: 8px;
+  background: transparent; color: var(--ink); font: inherit; font-size: var(--type-support, 13px);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer;
+}
+.reader-nav-item:hover { background: color-mix(in srgb, var(--accent) 9%, transparent); }
+
+.reader-flow {
+  flex: 1; max-width: 720px; margin: 0 auto;
+  padding: var(--space-5) var(--space-6) 40vh;
+  font-family: var(--serif, Georgia, 'Times New Roman', serif);
+  font-size: var(--type-reading, 17px); line-height: var(--leading-reading, 1.72);
+}
+.reader-anchor { display: block; position: relative; top: -60px; visibility: hidden; }
+.reader-block { margin: 0 0 .35em; }
+.reader-role-h1, .reader-role-h2, .reader-role-h3 { font-weight: var(--weight-semibold, 600); line-height: 1.35; margin: 1.4em 0 .5em; }
+.reader-role-h1 { font-size: 1.5em; } .reader-role-h2 { font-size: 1.28em; } .reader-role-h3 { font-size: 1.12em; }
+.reader-role-h4, .reader-role-h5, .reader-role-h6 { font-weight: var(--weight-medium, 500); margin: 1.2em 0 .4em; }
+.reader-role-blockquote { margin-inline: 1.2em; padding-inline-start: .9em; border-inline-start: 3px solid var(--rim-soft, var(--line)); opacity: .88; }
+.reader-role-li { margin-inline-start: 1.4em; list-style: none; }
+.reader-role-li::before { content: "·"; margin-inline-end: .5em; opacity: .5; }
+
+.reader-block:has(+ .reader-translation) { margin-bottom: .12em; }
+.reader-translation {
+  margin: 0 0 1em; padding: .5em .9em;
+  font-family: var(--sans); font-size: .9em; line-height: 1.65;
+  color: var(--muted-strong, var(--ink));
+  background-color: var(--surface-subtle); background-image: var(--face-well, none);
+  border: 1px solid var(--rim-soft, var(--line));
+  border-inline-start: 3px solid var(--teal-line, var(--accent-line, var(--line)));
+  border-radius: var(--radius-panel, 10px);
+  box-shadow: var(--well-shadow, var(--inset-soft, none));
+}
+
+@media (max-width: 760px) {
+  .reader-sidebar { display: none; }
+  .reader-flow { padding: var(--space-4) var(--space-4) 30vh; }
+}

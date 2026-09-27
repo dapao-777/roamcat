@@ -129,6 +129,16 @@ function* walkFiles(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:tr
      return {sandbox:'card/ruby/structure'};
    });
 
+   await check('Reader page renders in built extension',async()=>{
+     await page.goto(`chrome-extension://${id}/ui/reader.html`);
+     await page.locator('.reader-status-card').waitFor();
+     assert.match(await page.locator('.reader-status-card h1').textContent(),/阅读器/u);
+     assert.equal(await page.locator('#reader-file').count(),1,'文件选择器缺失');
+     assert.ok(await page.locator('.reader-toolbar .rc-button').count()>=2,'工具栏按钮缺失');
+     await page.screenshot({path:path.join(out,'build-reader.png')});
+     return {view:'empty'};
+   });
+
    await check('content-ui.js loads and factories return refs',async()=>{
      await page.goto(`chrome-extension://${id}/ui/popup.html`);
      await page.addScriptTag({url:`chrome-extension://${id}/content-ui.js`});

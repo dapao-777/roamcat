@@ -77,7 +77,7 @@ function createChromeMock() {
     },
     tts: {},
     offscreen: {hasDocument: async () => false, createDocument: async () => {}},
-    webNavigation: {getFrame: async () => null, onHistoryStateUpdated: {addListener() {}}},
+    webNavigation: {getFrame: async () => null, onHistoryStateUpdated: {addListener() {}}, onBeforeNavigate: {addListener() {}}},
   };
   return {chrome, listeners, openedOptions, registeredScripts};
 }

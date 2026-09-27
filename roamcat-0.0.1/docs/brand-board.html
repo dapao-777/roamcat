@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RoamCat · 随心阅 — 品牌板 Brand Board</title>
+<style>
+  @font-face {
+    font-family: "Silkscreen";
+    src: url("../extension/fonts/slk-400.woff2") format("woff2");
+    font-weight: 400;
+  }
+  @font-face {
+    font-family: "Silkscreen";
+    src: url("../extension/fonts/slk-700.woff2") format("woff2");
+    font-weight: 700;
+  }
+
+  :root {
+    --canvas: #efeee6;
+    --paper: #faf9f4;
+    --surface-subtle: #f1f0e8;
+    --ink: #161511;
+    --ink-2: #4c4a41;
+    --ink-3: #6f6c5e;
+    --ink-faint: #9b9889;
+    --line: #dbd8c6;
+    --line-mid: #c2bea8;
+    --amber: #c26a1b;
+    --amber-brand: #d97a2b;
+    --amber-gold: #f0a63c;
+    --ochre: #8a5a17;
+    --violet: #70509c;
+    --danger: #b3261e;
+    --reading-mark: #f0e8d2;
+    --d-canvas: #0b0e13;
+    --d-paper: #10141b;
+    --d-surface: #161d27;
+    --d-ink: #ece7d9;
+    --d-ink-2: #bcb6a5;
+    --d-emerald: #3ecf96;
+    --d-danger: #f0756a;
+    --d-violet: #a99af2;
+    --face-raised: radial-gradient(135% 135% at 28% 12%, #fffef9 0%, rgba(255, 254, 249, 0) 60%), linear-gradient(180deg, #fdfcf8 0%, #f8f4e9 65%, #f2ecda 100%);
+    --key-face: radial-gradient(120% 140% at 50% 0%, #fffef9 0%, rgba(255, 254, 249, 0) 62%), linear-gradient(180deg, #fbf8ef 0%, #f2ecdc 68%, #eae2cc 100%);
+    --key-skirt: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 -1px 0 rgba(122, 95, 49, 0.12), 0 2px 0 #d5cdb6, 0 4px 8px rgba(64, 48, 21, 0.13);
+    --key-press: inset 0 2px 3px rgba(88, 64, 26, 0.22), inset 0 -1px 0 rgba(255, 255, 255, 0.5), 0 0.5px 0 #d5cdb6, 0 1px 2px rgba(64, 48, 21, 0.1);
+    --lacquer: radial-gradient(135% 135% at 30% 12%, rgba(255, 255, 255, 0.26) 0%, rgba(255, 255, 255, 0) 46%), linear-gradient(180deg, #302c25 0%, #1d1b16 55%, #131110 100%);
+    --lacquer-inset: inset 0 1px 0 rgba(255, 248, 232, 0.25), inset 0 -1.5px 2px rgba(0, 0, 0, 0.5);
+    --lacquer-skirt: inset 0 1px 0 rgba(255, 248, 232, 0.25), inset 0 -1.5px 2px rgba(0, 0, 0, 0.5), 0 2px 0 #0d0c0a, 0 4px 10px rgba(19, 17, 16, 0.35);
+    --porcelain: radial-gradient(135% 135% at 30% 12%, rgba(255, 255, 250, 0.95) 0%, rgba(255, 255, 250, 0) 46%), linear-gradient(180deg, #f6f0e0 0%, #e7dcc3 55%, #cfc2a4 100%);
+    --brass: linear-gradient(180deg, #f2c66d 0%, #d9a02e 60%, #b57f1e 100%);
+    --track: inset 0 1.5px 3px rgba(88, 64, 26, 0.3), inset 0 -1px 0 rgba(255, 255, 255, 0.65);
+    --knob: radial-gradient(120% 120% at 32% 22%, #fffef9 0%, #f6f0e0 55%, #e8dfc8 100%);
+    --grain: repeating-linear-gradient(0deg, rgba(122, 95, 49, 0.028) 0 1px, transparent 1px 3px);
+    --cast: 0 1px 1.5px rgba(64, 48, 21, 0.22), 0 4px 12px rgba(64, 48, 21, 0.1);
+    --inset: inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 -1.5px 2.5px rgba(122, 95, 49, 0.26);
+    --serif: "Noto Serif SC", "Source Han Serif SC", "STSong", "SimSun", "Songti SC", Georgia, "Times New Roman", serif;
+    --ui: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    --display: "Silkscreen", "JetBrains Mono", "Courier New", monospace;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--canvas);
+    background-image: var(--grain);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 15px;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 48px 32px 80px; }
+
+  /* —— Hero —— */
+  .hero { text-align: center; padding: 40px 0 24px; }
+  .hero img.mark { width: 104px; height: 104px; }
+  .wordmark {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 46px;
+    letter-spacing: 4px;
+    margin: 20px 0 4px;
+  }
+  .wordmark .cn { font-family: var(--serif); font-weight: 600; font-size: 24px; letter-spacing: 2px; color: var(--ink-2); }
+  .taglines { color: var(--ink-3); margin: 10px 0 0; }
+  .taglines em { font-style: normal; color: var(--amber); }
+  .hero-badges { margin-top: 18px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .chip {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .4px;
+    padding: 3px 10px; border: 1px solid var(--line-mid); border-radius: 999px;
+    background: var(--paper); color: var(--ink-2);
+  }
+
+  /* —— Sections —— */
+  section { margin-top: 64px; }
+  .eyebrow {
+    font-family: var(--display); font-size: 13px; font-weight: 700;
+    letter-spacing: 2px; color: var(--amber); margin: 0;
+  }
+  h2 {
+    font-family: var(--display); font-weight: 700; font-size: 22px;
+    letter-spacing: 1.5px; margin: 6px 0 4px;
+  }
+  h2 .cn { font-family: var(--serif); font-size: 18px; font-weight: 600; color: var(--ink-2); letter-spacing: 1px; }
+  .section-desc { color: var(--ink-3); margin: 0 0 24px; max-width: 640px; }
+  hr.rule { border: 0; border-top: 1px solid var(--line); margin: 64px 0 0; }
+
+  /* —— Marks —— */
+  .mark-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+  .mark-card {
+    border: 1px solid var(--line); border-radius: 9px; background: var(--paper);
+    padding: 24px; text-align: center; box-shadow: 0 1px 2px rgba(22, 21, 17, 0.05);
+  }
+  .mark-card.dark { background: var(--d-surface); border-color: rgba(237, 231, 214, 0.1); color: var(--d-ink); }
+  .mark-card .stage { height: 120px; display: flex; align-items: center; justify-content: center; }
+  .mark-card figcaption, .mark-card .cap {
+    margin-top: 14px; font-family: var(--mono); font-size: 11px; color: var(--ink-faint);
+  }
+  .mark-card.dark .cap { color: var(--d-ink-2); }
+  .cat-ink {
+    width: 110px; height: 118px;
+    background: var(--ink);
+    -webkit-mask: url("../extension/icons/roamcat-cat-ink.svg") center / contain no-repeat;
+    mask: url("../extension/icons/roamcat-cat-ink.svg") center / contain no-repeat;
+  }
+  .cat-ink.ivory { background: var(--d-ink); }
+  .cat-ink.amber { background: var(--amber-gold); }
+  .spark {
+    width: 28px; height: 28px; display: inline-block; margin: 0 10px;
+    -webkit-mask: url("../extension/icons/roamcat-spark.svg") center / contain no-repeat;
+    mask: url("../extension/icons/roamcat-spark.svg") center / contain no-repeat;
+  }
+  .wave-band { margin-top: 16px; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
+  .wave-band img { display: block; width: 100%; }
+  .wave-band.dark { background: var(--d-canvas); border-color: rgba(237, 231, 214, 0.1); }
+
+  /* —— Color —— */
+  .core-trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  /* 潘通式色票：上 ~2/3 纯色面 + 下部纸白签条（字标 / 编目号 RC-xxx / 色名 / 色值）。
+     签条恒为纸面——色再深，签条也是纸白，这是 Pantone chip 的辨识度来源。 */
+  .swatch, .swatch-lg {
+    border: 1px solid var(--line); border-radius: 7px; overflow: hidden;
+    background: var(--paper);
+  }
+  .swatch-lg { box-shadow: var(--cast); }
+  .swatch .fill { height: 80px; }
+  .swatch-lg .fill { height: 132px; }
+  .swatch .meta, .swatch-lg .meta {
+    background: var(--paper); border-top: 1px solid var(--line);
+    padding: 8px 10px 9px;
+  }
+  .swatch-lg .meta { padding: 12px 15px 14px; }
+  .wm { font-family: var(--display); font-weight: 700; font-size: 8px; letter-spacing: 1.8px; color: var(--ink-faint); }
+  .swatch-lg .wm { font-size: 10px; }
+  .code { font-family: var(--display); font-weight: 700; font-size: 13px; letter-spacing: 1px; margin-top: 1px; }
+  .swatch-lg .code { font-size: 17px; letter-spacing: 1.5px; }
+  .nm { font-size: 11.5px; color: var(--ink-2); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .swatch-lg .nm { font-size: 13px; }
+  .sub { font-family: var(--mono); font-size: 9.5px; color: var(--ink-3); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .swatch-lg .sub { font-size: 11px; }
+  .use { font-size: 12px; color: var(--ink-3); margin-top: 4px; }
+  .palette-title { font-family: var(--display); font-size: 13px; letter-spacing: 1.5px; margin: 28px 0 10px; color: var(--ink-2); }
+  .palette { display: grid; grid-template-columns: repeat(auto-fill, minmax(152px, 1fr)); gap: 10px; }
+  .palette.on-dark { background: var(--d-canvas); padding: 16px; border-radius: 9px; border: 1px solid rgba(237,231,214,.1); }
+  .note { font-size: 13px; color: var(--ink-3); margin-top: 12px; }
+  .note strong { color: var(--amber); }
+
+  /* —— Type —— */
+  .type-grid { display: grid; gap: 14px; }
+  .type-card {
+    border: 1px solid var(--line); border-radius: 9px; background: var(--paper);
+    padding: 20px 24px; box-shadow: 0 1px 2px rgba(22,21,17,.05);
+  }
+  .type-card .role { font-family: var(--display); font-size: 12px; font-weight: 700; letter-spacing: 1.5px; color: var(--amber); }
+  .type-card .stack { font-family: var(--mono); font-size: 11px; color: var(--ink-faint); margin: 2px 0 12px; }
+  .type-card .sample-l { font-size: 22px; line-height: 1.35; }
+  .type-card .sample-s { font-size: 15px; color: var(--ink-2); margin-top: 6px; }
+  .type-card .sample-l.display { font-family: var(--display); letter-spacing: 2px; }
+  .type-card .sample-s.display { font-family: var(--display); font-size: 13px; }
+  .type-card .sample-l.mono, .type-card .sample-s.mono { font-family: var(--mono); }
+  .type-card .sample-l.ui, .type-card .sample-s.ui { font-family: var(--ui); }
+
+  /* —— Material —— */
+  .mat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
+  .mat-card { border: 1px solid var(--line); border-radius: 9px; background: var(--paper); padding: 22px; }
+  .mat-card h3 { font-family: var(--display); font-size: 13px; letter-spacing: 1px; margin: 0 0 14px; }
+  .mat-card .demo { display: flex; align-items: center; justify-content: center; min-height: 84px; gap: 14px; }
+  .mat-card .cap { font-family: var(--mono); font-size: 10.5px; color: var(--ink-faint); margin-top: 12px; }
+  .keycap-demo {
+    font-family: var(--display); font-weight: 700; font-size: 14px;
+    padding: 10px 22px; border-radius: 6px; cursor: default; user-select: none;
+    background: var(--key-face); border: 1px solid var(--line-mid);
+    box-shadow: var(--key-skirt); color: var(--ink);
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .keycap-demo:hover { transform: translateY(-1px); }
+  .keycap-demo:active { transform: translateY(1.5px); box-shadow: var(--key-press); }
+  .lacquer-btn {
+    font-family: var(--display); font-weight: 700; font-size: 13px; letter-spacing: 1px;
+    padding: 10px 22px; border-radius: 6px; cursor: default; user-select: none;
+    background: var(--lacquer); border: 1px solid #000;
+    box-shadow: var(--lacquer-skirt); color: #f5f4ee;
+    transition: transform .12s ease;
+  }
+  .lacquer-btn:active { transform: translateY(1.5px); box-shadow: var(--lacquer-inset); }
+  .porcelain-btn {
+    font-family: var(--display); font-weight: 700; font-size: 13px; letter-spacing: 1px;
+    padding: 10px 22px; border-radius: 6px; user-select: none;
+    background: var(--porcelain); border: 1px solid #cfc2a4; color: #1d180e;
+    box-shadow: inset 0 1px 0 rgba(255,255,250,.9), inset 0 -1.5px 2px rgba(122,95,49,.35), 0 2px 0 #9c8f6d, 0 5px 12px rgba(0,0,0,.45);
+  }
+  .toggle { width: 52px; height: 28px; border-radius: 999px; position: relative; background: var(--surface-subtle); box-shadow: var(--track); border: 1px solid var(--line-mid); }
+  .toggle .knob { position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; border-radius: 50%; background: var(--knob); box-shadow: 0 1px 2px rgba(64,48,21,.3); }
+  .toggle.on { background: var(--brass); border-color: #b57f1e; }
+  .toggle.on .knob { left: 26px; }
+  .badge-plate {
+    font-family: var(--display); font-size: 12px; font-weight: 700; letter-spacing: 1px;
+    padding: 7px 16px; border-radius: 5px; background: #ecebe0;
+    border: 1px solid var(--line); color: var(--ink-2);
+    text-shadow: 0 1px 0 rgba(255,255,255,.8), 0 -1px 0 rgba(122,95,49,.22);
+    box-shadow: var(--inset);
+  }
+  .grain-demo { width: 100%; height: 84px; border-radius: 6px; border: 1px solid var(--line); background: var(--paper); background-image: var(--grain); }
+  .mat-card.dark { background: var(--d-surface); border-color: rgba(237,231,214,.1); }
+  .mat-card.dark h3 { color: var(--d-ink); }
+  .mat-card.dark .cap { color: var(--d-ink-2); }
+
+  /* —— Motion —— */
+  table.spec { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.spec th, table.spec td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+  table.spec th { font-family: var(--display); font-size: 11.5px; letter-spacing: 1px; color: var(--ink-3); font-weight: 700; }
+  table.spec td:first-child { font-family: var(--mono); font-size: 12.5px; }
+  .dot-row { display: flex; gap: 10px; margin-top: 18px; }
+  .dot-row span { width: 10px; height: 10px; border-radius: 50%; background: var(--amber-brand); animation: bob 1.6s cubic-bezier(.16,1,.3,1) infinite; }
+  .dot-row span:nth-child(2) { animation-delay: .08s; } .dot-row span:nth-child(3) { animation-delay: .16s; }
+  .dot-row span:nth-child(4) { animation-delay: .24s; } .dot-row span:nth-child(5) { animation-delay: .32s; }
+  @keyframes bob { 0%, 100% { transform: translateY(0); opacity: .5; } 40% { transform: translateY(-8px); opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .dot-row span { animation: none; } }
+
+  /* —— Voice —— */
+  .voice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .voice-card { border: 1px solid var(--line); border-radius: 9px; padding: 20px 22px; background: var(--paper); }
+  .voice-card h3 { font-family: var(--display); font-size: 13px; letter-spacing: 1px; margin: 0 0 12px; }
+  .voice-card.do h3 { color: var(--ochre); }
+  .voice-card.dont h3 { color: var(--danger); }
+  .voice-card ul { margin: 0; padding-left: 18px; color: var(--ink-2); }
+  .voice-card li { margin: 6px 0; }
+
+  /* —— Rules —— */
+  .rules { columns: 2; column-gap: 32px; }
+  .rules li { break-inside: avoid; margin: 0 0 10px; color: var(--ink-2); }
+  .rules code { font-family: var(--mono); font-size: 12px; background: var(--surface-subtle); padding: 1px 5px; border-radius: 4px; }
+
+  footer { margin-top: 80px; padding-top: 24px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+  footer .f-mark { font-family: var(--display); font-weight: 700; font-size: 13px; letter-spacing: 2px; }
+  footer .f-note { font-family: var(--mono); font-size: 11px; color: var(--ink-faint); }
+
+  @media (max-width: 720px) {
+    .core-trio, .voice-grid, .rules { grid-template-columns: 1fr; columns: 1; }
+    .wordmark { font-size: 32px; }
+    .wrap { padding: 32px 18px 60px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ======================= HERO ======================= -->
+  <header class="hero">
+    <img class="mark" src="../extension/icons/roamcat.svg" alt="RoamCat icon">
+    <h1 class="wordmark">ROAMCAT<br><span class="cn">· 随 心 阅 ·</span></h1>
+    <p class="taglines">少一点依赖，多一点直接读懂。<br><em>Roam the English web like a cat.</em></p>
+    <div class="hero-badges">
+      <span class="chip">BRAND BOARD</span>
+      <span class="chip">v0.0.1</span>
+      <span class="chip">PAPER · INK · PIXEL</span>
+      <span class="chip">LOCAL-FIRST</span>
+    </div>
+  </header>
+
+  <!-- ======================= 01 MARKS ======================= -->
+  <section id="marks">
+    <p class="eyebrow">01 / MARKS</p>
+    <h2>标志系统 <span class="cn">扫描线漫游猫</span></h2>
+    <p class="section-desc">猫由水平扫描线条切片拼成——既是猫，也是「在网页上逐行扫描英文」的动作本身。下面是全套资产的实际渲染。</p>
+
+    <div class="mark-grid">
+      <figure class="mark-card">
+        <div class="stage"><img src="../extension/icons/roamcat.svg" width="110" height="110" alt="app icon"></div>
+        <figcaption>APP ICON · icons/roamcat.svg</figcaption>
+      </figure>
+      <figure class="mark-card">
+        <div class="stage"><div class="cat-ink"></div></div>
+        <figcaption>INK CAT · roamcat-cat-ink.svg</figcaption>
+      </figure>
+      <figure class="mark-card dark">
+        <div class="stage"><div class="cat-ink ivory"></div></div>
+        <figcaption class="cap">INK CAT · IVORY ON GRAPHITE</figcaption>
+      </figure>
+      <figure class="mark-card dark">
+        <div class="stage"><div class="cat-ink amber"></div></div>
+        <figcaption class="cap">INK CAT · AMBER ACCENT</figcaption>
+      </figure>
+      <figure class="mark-card">
+        <div class="stage">
+          <span class="spark" style="background:#161511"></span>
+          <span class="spark" style="background:#d97a2b"></span>
+          <span class="spark" style="background:#70509c"></span>
+        </div>
+        <figcaption>PIXEL SPARK · roamcat-spark.svg</figcaption>
+      </figure>
+      <figure class="mark-card">
+        <div class="stage"><span class="badge-plate">MPL-2.0</span></div>
+        <figcaption>ENGRAVED PLATE · 凹刻铭牌用法</figcaption>
+      </figure>
+    </div>
+
+    <div class="wave-band"><img src="../extension/icons/dot-wave.svg" alt="dot wave — light"></div>
+    <div class="wave-band dark"><img src="../extension/icons/dot-wave-dark.svg" alt="dot wave — dark"></div>
+    <p class="note">装饰带 <strong>dot-wave</strong>：墨点 + 签名琥 <code>#d97a2b</code> 点，用于页头/页脚与加载过渡。</p>
+  </section>
+
+  <hr class="rule">
+
+  <!-- ======================= 02 COLOR ======================= -->
+  <section id="color">
+    <p class="eyebrow">02 / COLOR</p>
+    <h2>品牌色板 <span class="cn">纸 · 墨 · 琥</span></h2>
+    <p class="section-desc">色卡采用潘通式色票形制：上部色面、下部纸白签条（字标 + 编目号 + 色名 + 色值），悬停芯片可见对应 <code>--rc-*</code> token。用量仍是 70% 底 / 25% 墨 / 5% 琥——「墨色即强调」，琥珀越少越贵。</p>
+
+    <div class="core-trio">
+      <div class="swatch-lg" title="--rc-paper"><div class="fill" style="background:#faf9f4"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-001</div><div class="nm">PAPER · 纸</div><div class="sub">#FAF9F4 · --rc-paper</div><div class="use">米白纸面 · 浅色卡片与浮层底</div></div></div>
+      <div class="swatch-lg" title="--rc-ink"><div class="fill" style="background:#161511"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-002</div><div class="nm">INK · 墨</div><div class="sub">#161511 · --rc-ink</div><div class="use">暖黑墨色 · 正文兼浅色主强调</div></div></div>
+      <div class="swatch-lg" title="--rc-accent"><div class="fill" style="background:#f0a63c"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-003</div><div class="nm">AMBER · 琥</div><div class="sub">#F0A63C · --rc-accent</div><div class="use">琥珀金 · 深色强调 / 品牌点缀</div></div></div>
+    </div>
+
+    <p class="palette-title">LIGHT · 纸墨 — RC-1xx</p>
+    <div class="palette">
+      <div class="swatch" title="--rc-canvas"><div class="fill" style="background:#efeee6"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-101</div><div class="nm">CANVAS · 米灰</div><div class="sub">#EFEEE6 · canvas</div></div></div>
+      <div class="swatch" title="--rc-paper"><div class="fill" style="background:#faf9f4"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-102</div><div class="nm">PAPER · 米白</div><div class="sub">#FAF9F4 · paper</div></div></div>
+      <div class="swatch" title="--rc-ink"><div class="fill" style="background:#161511"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-103</div><div class="nm">INK · 暖黑</div><div class="sub">#161511 · ink / accent</div></div></div>
+      <div class="swatch" title="--rc-ink-secondary"><div class="fill" style="background:#4c4a41"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-104</div><div class="nm">INK II · 次墨</div><div class="sub">#4C4A41 · ink-secondary</div></div></div>
+      <div class="swatch" title="--rc-ink-tertiary"><div class="fill" style="background:#6f6c5e"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-105</div><div class="nm">INK III · 淡墨</div><div class="sub">#6F6C5E · ink-tertiary</div></div></div>
+      <div class="swatch" title="--rc-ink-faint"><div class="fill" style="background:#9b9889"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-106</div><div class="nm">INK IV · 灰墨</div><div class="sub">#9B9889 · ink-faint</div></div></div>
+      <div class="swatch" title="--rc-line"><div class="fill" style="background:#dbd8c6"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-107</div><div class="nm">LINE · 纸线</div><div class="sub">#DBD8C6 · line</div></div></div>
+      <div class="swatch" title="--rc-amber"><div class="fill" style="background:#c26a1b"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-108</div><div class="nm">OCHRE · 赭石</div><div class="sub">#C26A1B · amber</div></div></div>
+      <div class="swatch" title="dot-wave / 营销图形"><div class="fill" style="background:#d97a2b"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-109</div><div class="nm">SIGNATURE · 签名琥</div><div class="sub">#D97A2B · graphics</div></div></div>
+      <div class="swatch" title="--rc-teal / --rc-green"><div class="fill" style="background:#8a5a17"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-110</div><div class="nm">TEAL · 暖棕</div><div class="sub">#8A5A17 · teal / green</div></div></div>
+      <div class="swatch" title="--rc-violet"><div class="fill" style="background:#70509c"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-111</div><div class="nm">VIOLET · 堇紫</div><div class="sub">#70509C · violet</div></div></div>
+      <div class="swatch" title="--rc-danger"><div class="fill" style="background:#b3261e"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-112</div><div class="nm">DANGER · 绛红</div><div class="sub">#B3261E · danger</div></div></div>
+      <div class="swatch" title="--rc-reading-mark"><div class="fill" style="background:#f0e8d2"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-113</div><div class="nm">MARK · 阅读标记</div><div class="sub">#F0E8D2 · reading-mark</div></div></div>
+    </div>
+
+    <p class="palette-title">DARK · 砚台墨 — RC-2xx</p>
+    <div class="palette on-dark">
+      <div class="swatch" title="--rc-canvas"><div class="fill" style="background:#0b0e13"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-201</div><div class="nm">INKSTONE · 砚台底</div><div class="sub">#0B0E13 · canvas</div></div></div>
+      <div class="swatch" title="--rc-paper"><div class="fill" style="background:#10141b"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-202</div><div class="nm">PAPER D · 墨纸</div><div class="sub">#10141B · paper</div></div></div>
+      <div class="swatch" title="--rc-surface"><div class="fill" style="background:#161d27"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-203</div><div class="nm">SURFACE D · 浮层</div><div class="sub">#161D27 · surface</div></div></div>
+      <div class="swatch" title="--rc-ink"><div class="fill" style="background:#ece7d9"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-204</div><div class="nm">IVORY · 暖象牙</div><div class="sub">#ECE7D9 · ink</div></div></div>
+      <div class="swatch" title="--rc-ink-secondary"><div class="fill" style="background:#bcb6a5"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-205</div><div class="nm">IVORY II · 次象牙</div><div class="sub">#BCB6A5 · ink-secondary</div></div></div>
+      <div class="swatch" title="--rc-accent"><div class="fill" style="background:#f0a63c"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-206</div><div class="nm">AMBER · 琥珀金</div><div class="sub">#F0A63C · accent</div></div></div>
+      <div class="swatch" title="--rc-teal"><div class="fill" style="background:#d9ae6a"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-207</div><div class="nm">TEAL D · 淡金</div><div class="sub">#D9AE6A · teal</div></div></div>
+      <div class="swatch" title="--rc-violet"><div class="fill" style="background:#a99af2"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-208</div><div class="nm">VIOLET D · 兰紫</div><div class="sub">#A99AF2 · violet</div></div></div>
+      <div class="swatch" title="--rc-emerald"><div class="fill" style="background:#3ecf96"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-209</div><div class="nm">EMERALD · 翠绿</div><div class="sub">#3ECF96 · emerald</div></div></div>
+      <div class="swatch" title="--rc-danger"><div class="fill" style="background:#f0756a"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-210</div><div class="nm">DANGER D · 朱红</div><div class="sub">#F0756A · danger</div></div></div>
+      <div class="swatch" title="--rc-warning"><div class="fill" style="background:#eab23d"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-211</div><div class="nm">WARNING · 杏黄</div><div class="sub">#EAB23D · warning</div></div></div>
+      <div class="swatch" title="--rc-action"><div class="fill" style="background:#eae3d0"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-212</div><div class="nm">PORCELAIN · 瓷白键</div><div class="sub">#EAE3D0 · action</div></div></div>
+    </div>
+
+    <p class="palette-title">PET · 伴读猫专属 — RC-3xx</p>
+    <div class="palette">
+      <div class="swatch" title="--pet-primary (light)"><div class="fill" style="background:#d97706"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-301</div><div class="nm">PET AMBER · 猫琥</div><div class="sub">#D97706 · pet-primary (L)</div></div></div>
+      <div class="swatch" title="--pet-cat-color (light)"><div class="fill" style="background:#241f18"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-302</div><div class="nm">PET INK · 猫墨</div><div class="sub">#241F18 · pet-cat (L)</div></div></div>
+      <div class="swatch" title="--pet-ink (light)"><div class="fill" style="background:#0f172a"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-303</div><div class="nm">SLATE · 石板墨</div><div class="sub">#0F172A · pet-ink (L)</div></div></div>
+      <div class="swatch" title="--pet-primary (dark)"><div class="fill" style="background:#f0a63c"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-304</div><div class="nm">PET GOLD · 猫金</div><div class="sub">#F0A63C · pet-primary (D)</div></div></div>
+      <div class="swatch" title="--pet-cat-color / --pet-ink (dark)"><div class="fill" style="background:#ece7d9"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-305</div><div class="nm">PET IVORY · 猫象牙</div><div class="sub">#ECE7D9 · pet-cat / ink (D)</div></div></div>
+    </div>
+    <p class="note">伴读猫（正面坐姿 + 风线拖尾）是图标侧影猫的<strong>另一种演绎</strong>，共享琥珀主色。编目号 RC-xxx 仅作品牌图形沟通用，工程引用仍以 <code>--rc-*</code> / <code>--pet-*</code> token 为准。</p>
+  </section>
+
+  <hr class="rule">
+
+  <!-- ======================= 03 TYPE ======================= -->
+  <section id="type">
+    <p class="eyebrow">03 / TYPE</p>
+    <h2>字体系统 <span class="cn">四种角色</span></h2>
+    <p class="section-desc">Silkscreen 只用在短而响的位置；阅读文本走宋体栈；界面控件走系统无衬线；技术标签走等宽。</p>
+
+    <div class="type-grid">
+      <div class="type-card">
+        <div class="role">DISPLAY · 品牌/数字/键帽</div>
+        <div class="stack">Silkscreen → JetBrains Mono → Courier（woff2 内置，SIL OFL 1.1）</div>
+        <div class="sample-l display">ROAMCAT 0123456789</div>
+        <div class="sample-s display">ALT+SHIFT+T · MPL-2.0 · V0.0.1</div>
+      </div>
+      <div class="type-card">
+        <div class="role">READING · 阅读正文与标题</div>
+        <div class="stack">Noto Serif SC → Source Han Serif → 宋体 → Georgia · 15px / 1.6</div>
+        <div class="sample-l">像猫一样漫游英文世界</div>
+        <div class="sample-s">双语翻译把页面英文原位译成中英对照；阅读辅助保留原文，只给稀疏提示与按需救援。The quick brown fox jumps over the lazy dog.</div>
+      </div>
+      <div class="type-card">
+        <div class="role">UI · 界面功能字</div>
+        <div class="stack">Segoe UI → PingFang SC → Microsoft YaHei · 14px / 1.4</div>
+        <div class="sample-l ui">设置 · 模型服务 · 阅读辅助</div>
+        <div class="sample-s ui">控件、说明文字与表单标签使用系统无衬线，保证高密度信息下的清晰度。</div>
+      </div>
+      <div class="type-card">
+        <div class="role">MONO · 技术标签</div>
+        <div class="stack">ui-monospace → SFMono → Menlo → Consolas · 13px</div>
+        <div class="sample-l mono">n. · v. · POS · ERR_TIMEOUT</div>
+        <div class="sample-s mono">gloss.mjs · Alt+Shift+S · 2026-09-26T12:00:00Z</div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <!-- ======================= 04 MATERIAL ======================= -->
+  <section id="material">
+    <p class="eyebrow">04 / MATERIAL</p>
+    <h2>材质语言 <span class="cn">轻拟物 · 左上光源</span></h2>
+    <p class="section-desc">所有材质都是 token 化的 CSS 渐变与阴影，零图片。下面的控件是可直接按下/悬停的活样张。</p>
+
+    <div class="mat-grid">
+      <div class="mat-card">
+        <h3>KEYCAP 键帽</h3>
+        <div class="demo"><span class="keycap-demo">D</span><span class="keycap-demo">ALT</span><span class="keycap-demo">ESC</span></div>
+        <div class="cap">穹顶受光面 + 底沿裙边；按下裙边塌陷、整体下沉 —— 试一试</div>
+      </div>
+      <div class="mat-card">
+        <h3>LACQUER 黑漆主键</h3>
+        <div class="demo"><span class="lacquer-btn">翻译本页</span></div>
+        <div class="cap">浅色主题的主按钮 = 墨色漆面，顶缘一道暖高光</div>
+      </div>
+      <div class="mat-card dark">
+        <h3>PORCELAIN 瓷白主键</h3>
+        <div class="demo"><span class="porcelain-btn">翻译本页</span></div>
+        <div class="cap">深色主题主键 = 浅色黑漆的镜像反转</div>
+      </div>
+      <div class="mat-card">
+        <h3>TRACK + KNOB 开关</h3>
+        <div class="demo"><span class="toggle"><span class="knob"></span></span><span class="toggle on"><span class="knob"></span></span></div>
+        <div class="cap">铣槽轨道 + 瓷珠旋钮；黄铜只留给激活态点缀</div>
+      </div>
+      <div class="mat-card">
+        <h3>GRAIN 纸纹</h3>
+        <div class="demo" style="padding:0"><span class="grain-demo"></span></div>
+        <div class="cap">1px 低透明横纹，若有似无的纸面质地</div>
+      </div>
+      <div class="mat-card">
+        <h3>FACE 瓷面卡片</h3>
+        <div class="demo"><span style="width:100%;height:84px;border-radius:9px;border:1px solid var(--line-mid);background:var(--face-raised);box-shadow:var(--cast)"></span></div>
+        <div class="cap">象牙瓷面：左上径向高光 + 三段纵向渐变</div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <!-- ======================= 05 MOTION ======================= -->
+  <section id="motion">
+    <p class="eyebrow">05 / MOTION</p>
+    <h2>动效语气 <span class="cn">礼貌，不是表演</span></h2>
+    <table class="spec">
+      <tr><th>TOKEN</th><th>值</th><th>用途</th></tr>
+      <tr><td>--rc-dur-instant / fast / med / slow</td><td>80 / 160 / 280 / 440ms</td><td>四档时长</td></tr>
+      <tr><td>--rc-stagger-step</td><td>32ms</td><td>列表交错入场步距</td></tr>
+      <tr><td>--rc-spring-soft / -pop</td><td>linear() 弹簧曲线</td><td>旋钮、卡片入场；不走匀速 ease</td></tr>
+      <tr><td>顶层弹层协议</td><td>allow-discrete + @starting-style</td><td>dialog / popover 统一进出</td></tr>
+      <tr><td>prefers-reduced-motion</td><td>全局收缩</td><td>弹层保留 80ms 淡入兜底</td></tr>
+    </table>
+    <div class="dot-row"><span></span><span></span><span></span><span></span><span></span></div>
+  </section>
+
+  <hr class="rule">
+
+  <!-- ======================= 06 VOICE ======================= -->
+  <section id="voice">
+    <p class="eyebrow">06 / VOICE</p>
+    <h2>语气 <span class="cn">诚实 · 克制 · 把选择权交给用户</span></h2>
+    <div class="voice-grid">
+      <div class="voice-card do">
+        <h3>WRITE 这样写</h3>
+        <ul>
+          <li>「翻译本页」「返回英文」</li>
+          <li>「按需求助」「稀疏提示」</li>
+          <li>「本地优先」「数据去向说清楚」</li>
+          <li>「可能超时、失败或不完整」</li>
+        </ul>
+      </div>
+      <div class="voice-card dont">
+        <h3>AVOID 不写</h3>
+        <ul>
+          <li>「一键全译」「AI 智能翻译」</li>
+          <li>「沉浸式学习」「高效背单词」</li>
+          <li>「完全离线」「绝对隐私」</li>
+          <li>任何对学习效果的承诺</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <!-- ======================= 07 RULES ======================= -->
+  <section id="rules">
+    <p class="eyebrow">07 / RULES</p>
+    <h2>落地规则 <span class="cn">速查</span></h2>
+    <ul class="rules">
+      <li>字标写法：<code>ROAMCAT</code>（Silkscreen 全大写）或 <code>RoamCat · 随心阅</code>；不写 “Roam Cat”。</li>
+      <li>标志留白 ≥ 图形高度 1/4；图形版最小 24px，应用图标最小 16px。</li>
+      <li>亮底猫体 <code>#161511</code>，暗底 <code>#ece7d9</code> 或 <code>#f0a63c</code>；不套渐变/阴影，不拉伸，旋转 ≤ ±15°。</li>
+      <li>对外图形配方：纸底 <code>#faf9f4</code> + 墨猫 + 签名琥 <code>#d97a2b</code> 点缀。</li>
+      <li>语义色（绿/红/黄/紫）只在语义位出现，不做装饰。</li>
+      <li>新色只进 <code>src/styles/tokens.css</code>，然后 <code>npm run gen:tokens</code>；页面样式不覆写主题 token。</li>
+      <li>伴读猫 <code>--pet-*</code> 在 floating-pet.js 有两处内联定义（data-theme + media 兜底），需同步改。</li>
+      <li> Silkscreen 不排段落、不排中文；中英混排中文走宋体栈、拉丁/数字走 Silkscreen。</li>
+      <li>拒绝玻璃拟态、霓虹渐变、3D 贴图；图形元素只用扫描线 / 圆点 / 像素三件套。</li>
+    </ul>
+  </section>
+
+  <footer>
+    <span class="f-mark">ROAMCAT · 随心阅</span>
+    <span class="f-note">brand board · docs/brand-board.html · 色值以 src/styles/tokens.css 为准</span>
+  </footer>
+
+</div>
+</body>
+</html>

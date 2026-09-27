@@ -12,8 +12,11 @@
 import './reading-style.js';
 import {normalizeApiService} from './api-providers.mjs';
 
+const M=(zh,en)=>globalThis.RoamCatI18n?.lang?.()==='en'?en:zh;
+
 export const DOMAINS = {auto:'自动识别',general:'通用阅读',tech:'软件与 AI',data:'数据工程',finance:'金融与商业',medical:'医学与生命科学',legal:'法律',design:'设计与产品'};
-export const DEFAULT_SETTINGS = {assistanceMode:'ambient',rememberSupport:true,helpLanguage:'zh',lookupKey:'D',lookupDisplay:'card',readingStyle:globalThis.RoamCatReadingStyle.defaults,domain:'auto',providerKind:'chatgpt',subscriptionModel:'',apiServices:[],activeApiServiceId:'',domainRules:[],domainDetection:{mode:'local',subscriptionModel:'',apiModel:'',useTranslationApi:true,api:{baseUrl:'https://api.openai.com/v1',apiKey:''},jevModel:'typesafe/jev-1.13.0',jevApiKey:'',jevBaseUrl:'https://router.requesty.ai/v1'},customTerms:[],automation:{allSites:false,sentenceGroupsAllSites:false,sites:[],videoSites:false},video:{fontSize:20,theme:'auto'},floatingPet:{enabled:true,position:{right:24,bottom:84},themeMode:'auto',scale:1,quotes:{enabled:true,intervalMin:15}}};
+export const API_TASKS = Object.freeze(['assist','support','groups','translate','summary']);
+export const DEFAULT_SETTINGS = {assistanceMode:'ambient',rememberSupport:true,helpLanguage:'zh',lookupKey:'D',lookupDisplay:'card',readingStyle:globalThis.RoamCatReadingStyle.defaults,domain:'auto',providerKind:'chatgpt',subscriptionModel:'',apiServices:[],activeApiServiceId:'',apiRouting:{assist:'',support:'',groups:'',translate:'',summary:''},domainRules:[],domainDetection:{mode:'local',subscriptionModel:'',apiModel:'',useTranslationApi:true,api:{baseUrl:'https://api.openai.com/v1',apiKey:''},jevModel:'typesafe/jev-1.13.0',jevApiKey:'',jevBaseUrl:'https://router.requesty.ai/v1'},customTerms:[],automation:{allSites:false,sentenceGroupsAllSites:false,sites:[],videoSites:false},video:{fontSize:20,theme:'auto'},complexSentenceAssist:true,formulaAssist:true,pdfReader:true,floatingPet:{enabled:true,position:{right:24,bottom:84},themeMode:'auto',scale:1,quotes:{enabled:true,intervalMin:15}}};
 // Removed settings must not revive through a spread of an older configuration.
 export function normalizeSettings(value = {}) {
   const pick = (defaults, source) => Object.fromEntries(Object.entries(defaults).map(([key, fallback]) => [key, source?.[key] ?? fallback]));
@@ -26,14 +29,20 @@ export function normalizeSettings(value = {}) {
   settings.readingStyle = globalThis.RoamCatReadingStyle.normalize(value.readingStyle);
   settings.providerKind = ['chatgpt','grok','antigravity','api'].includes(value.providerKind) ? value.providerKind : (value.provider?.apiKey ? 'api' : 'chatgpt');
   const legacyProvider = !Array.isArray(value.apiServices) && Object.hasOwn(value,'provider');
-  const rows = Array.isArray(value.apiServices) ? value.apiServices : (legacyProvider ? [{id:'legacy-api',name:'原有 API 服务',baseUrl:value.provider?.baseUrl,model:value.provider?.model,apiKey:value.provider?.apiKey}] : []);
+  const rows = Array.isArray(value.apiServices) ? value.apiServices : (legacyProvider ? [{id:'legacy-api',name:M('原有 API 服务','Legacy API service'),baseUrl:value.provider?.baseUrl,model:value.provider?.model,apiKey:value.provider?.apiKey}] : []);
   const seen=new Set();settings.apiServices=rows.flatMap(row=>{try{const service=normalizeApiService(row);if(!service.id||seen.has(service.id))return [];seen.add(service.id);return [service];}catch{return [];}});
   settings.activeApiServiceId = settings.apiServices.some(service=>service.id===value.activeApiServiceId) ? value.activeApiServiceId : (legacyProvider&&settings.apiServices.some(service=>service.id==='legacy-api')?'legacy-api':'');
+  // 任务路由：仅保留已知任务且指向现存服务的条目；失效引用静默回落到默认服务。
+  const routingSource=value.apiRouting&&typeof value.apiRouting==='object'&&!Array.isArray(value.apiRouting)?value.apiRouting:{};
+  settings.apiRouting=Object.fromEntries(API_TASKS.map(task=>[task,settings.apiServices.some(service=>service.id===routingSource[task])?routingSource[task]:'']));
   settings.domainDetection = pick(DEFAULT_SETTINGS.domainDetection,value.domainDetection);
   settings.domainDetection.api = pick(DEFAULT_SETTINGS.domainDetection.api,value.domainDetection?.api);
   settings.automation = pick(DEFAULT_SETTINGS.automation,value.automation);
   settings.automation.sites = Array.isArray(value.automation?.sites) ? value.automation.sites.map(({origin,enabled}) => ({origin,enabled})) : [];
   settings.video = pick(DEFAULT_SETTINGS.video,value.video);
+  settings.complexSentenceAssist = value.complexSentenceAssist !== false;
+  settings.formulaAssist = value.formulaAssist !== false;
+  settings.pdfReader = value.pdfReader !== false;
   const fp = value.floatingPet;
   settings.floatingPet = {
     enabled: fp?.enabled !== false,
@@ -51,10 +60,12 @@ export function normalizeSettings(value = {}) {
   return settings;
 }
 export function activeApiProvider(settings) { return settings?.apiServices?.find(service=>service.id===settings.activeApiServiceId) || null; }
+// 按任务路由解析 API 服务：路由命中已保存服务则用其，否则回落默认服务。
+export function apiProviderForTask(settings,task) { const id=settings?.apiRouting?.[task];return (id&&settings.apiServices.find(service=>service.id===id))||activeApiProvider(settings); }
 export const wordId = (term, domain = 'general') => `${domain}:${term.normalize('NFKC').trim().replace(/\s+/g,' ').toLowerCase()}`;
 // 后台侧上限：订阅 assist/翻译/总结 120s，其余 45s，自备 API 25s（阶跃星辰 60s）。
 // 内容侧超时必须留出余量，只在响应丢失时触发（如 SW 被回收、连接器静默），正常流程永远碰不到。
-const LONG_REQUEST_TYPES = new Set(['ASSIST','EMERGENCY_BEGIN','EMERGENCY_TRANSLATE','PASSAGE_TRANSLATE','PAGE_SUMMARY','SENTENCE_GROUPS_BATCH','SUPPORT_BATCH']);
+const LONG_REQUEST_TYPES = new Set(['READER_TRANSLATE','ASSIST','EMERGENCY_BEGIN','EMERGENCY_TRANSLATE','PASSAGE_TRANSLATE','PAGE_SUMMARY','SENTENCE_GROUPS_BATCH','SUPPORT_BATCH']);
 const LONG_REQUEST_TIMEOUT = 150000;
 const DEFAULT_REQUEST_TIMEOUT = 60000;
 export async function request(type, payload = {}) {
@@ -64,10 +75,10 @@ export async function request(type, payload = {}) {
     const response = await Promise.race([
       chrome.runtime.sendMessage({type,...payload}),
       new Promise((_,reject) => {
-        timer = setTimeout(() => reject(new Error('请求超时，后台可能正忙或已被浏览器回收，请重试。')), timeoutMs);
+        timer = setTimeout(() => reject(new Error(M('请求超时，后台可能正忙或已被浏览器回收，请重试。','Request timed out; the background may be busy or was reclaimed by the browser. Please retry.'))), timeoutMs);
       }),
     ]);
-    if (!response?.ok) throw new Error(response?.error || '插件连接已断开，请刷新页面后重试。');
+    if (!response?.ok) throw new Error(response?.error || M('插件连接已断开，请刷新页面后重试。','The extension connection dropped; refresh the page and retry.'));
     return response.data;
   } finally {
     clearTimeout(timer);

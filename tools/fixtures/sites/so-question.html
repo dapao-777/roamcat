@@ -1,0 +1,33 @@
+<!doctype html><html lang="en"><head><title>Why is processing sorted faster? - Stack Overflow</title></head>
+<body>
+<header class="s-topbar"><div>Stack Overflow top bar chrome wording</div></header>
+<div id="left-sidebar"><nav>Home Questions Tags Users sidebar chrome wording</nav></header></div>
+<div class="container"><div id="content"><div class="inner-content clearfix">
+<div id="question-header" class="d-flex sm:fd-column"><h1 class="fs-headline1">Why is conditional processing of a sorted array faster than of an unsorted array?</h1></div>
+<div class="d-flex ai-center fw-wrap"><div class="flex--item ws-nowrap mr16">Asked 14 years, 3 months ago</div><div class="flex--item ws-nowrap mr16">Modified 21 days ago</div><div class="flex--item ws-nowrap mb8">Viewed 2.0m times</div></div>
+<div id="question" class="question js-question"><div class="post-layout">
+<div class="votecell post-layout--left"><div class="js-voting-container"><div class="js-vote-count">27000</div></div></div>
+<div class="postcell post-layout--right"><div class="s-prose js-post-body">
+<p>In this C++ code, sorting the data before the timed region makes the primary loop roughly six times faster than leaving the array unsorted, and the cause turns out to be branch prediction rather than anything the sort itself does.</p>
+<p>At first I assumed this must be a language or compiler anomaly, so I tried equivalent code in another language and it produced a similar but less extreme result.</p>
+<pre>for (unsigned i = 0; i &lt; 100000; ++i) { if (data[c] &gt;= 128) sum += data[c]; }</pre>
+</div>
+<div class="post-taglist"><a class="post-tag">c++</a><a class="post-tag">performance</a><a class="post-tag">branch-prediction</a></div>
+<div class="mt16"><div class="js-post-menu"><div class="d-flex gs8 s-anchors"><div class="flex--item">Share</div><div class="flex--item">Improve this question</div><div class="flex--item">Follow</div></div></div></div>
+<div class="post-signature"><div class="user-info"><a class="comment-link">G_G</a> asked <span class="relativetime">Jun 27 2012</span></div></div>
+</div></div></div>
+<div id="answer-11237235" class="answer js-answer"><div class="post-layout">
+<div class="votecell post-layout--left"><div class="js-voting-container"><div class="js-vote-count">24000</div></div></div>
+<div class="answercell post-layout--right"><div class="s-prose js-post-body">
+<p>The reason why performance improves drastically when the data is sorted is that the branch predictor can learn a simple repeating pattern instead of guessing a coin flip on every iteration of the loop.</p>
+<p>In a typical x86 processor the execution of an instruction is divided into several stages in a pipeline, and a wrongly predicted conditional jump discards all of the speculative work downstream.</p>
+</div>
+<div class="js-post-menu"><div class="d-flex gs8">Share Improve this answer Follow</div></div>
+<div class="s-user-card"><div class="s-user-card--info"><a class="comment-link">Mysticial</a><span class="s-user-card--awards"></span></div></div>
+</div></div>
+<div class="comments"><div class="comment"><span class="comment-date">Over a year ago</span><a class="comment-user">randomcommenter</a><span class="comment-score">12</span></div></div>
+</div>
+<aside id="sidebar"><div>Related questions and collectives sidebar wording.</div></aside>
+</div></div></div>
+<footer id="footer" class="site-footer"><div>Stack Exchange network footer wording.</div></footer>
+</body></html>

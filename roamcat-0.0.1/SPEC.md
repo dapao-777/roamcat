@@ -40,7 +40,7 @@
 ```
 ┌────────────────────────── 浏览器 ──────────────────────────┐
 │ content scripts（manifest 静态五件套，document_idle）         │
-│   design.js → reading-style.js → content-ui.js → pet-quotes.js → content.js │
+│   design.js → reading-style.js → content-ui.js → pet-quotes.js → complexity.js → formula.js → site-profiles.js → content.js │
 │   · content-ui.js：lit-html 页内 UI 渲染层（构建产物入库）      │
 │   · pet-quotes.js：伴读猫哲学语录库（RoamCatPetQuotes）        │
 │   · content.js：阅读区识别/标注/查词卡片/解构/整页翻译          │
@@ -49,7 +49,7 @@
 │   · auto-start.js：按站规则自动开启                           │
 ├────────────────────────────────────────────────────────────┤
 │ Service Worker（background.js，ES module）                   │
-│   · 71 种消息路由、设置校验、缓存、并发、诊断、订阅端口管理    │
+│   · 74 种消息路由、设置校验、缓存、并发、诊断、订阅端口管理    │
 ├────────────────────────────────────────────────────────────┤
 │ 扩展页面：popup.html / options.html / welcome.html           │
 │   · 三页均由 src/ 下 Lit 应用经 Vite 构建产出                 │
@@ -81,7 +81,7 @@
 ### 3.1 字段规范
 - `manifest_version: 3`；`background.service_worker = background.js`，`type: module`。
 - `minimum_chrome_version: "125"`；`content_security_policy.extension_pages = "script-src 'self' 'wasm-unsafe-eval'; object-src 'none'; base-uri 'none'"`（wasm 供本地 ONNX 推理）。
-- 内容脚本固定五件套 `design.js, reading-style.js, content-ui.js, pet-quotes.js, content.js`（`content-ui.js` 为 `src/content-ui` 经 `vite.content-ui.config.mjs` 构建的 IIFE 产物，入库、不手改），`run_at: document_idle`，`all_frames: false`；`floating-pet.js`（连同其语录库 `pet-quotes.js`）与 `auto-start.js` 改为 `chrome.scripting` 按需动态注册（同为 classic 形态，受模块图 R1 同约束）。
+- 内容脚本固定八件套 `design.js, reading-style.js, content-ui.js, pet-quotes.js, complexity.js, formula.js, site-profiles.js, content.js`（`content-ui.js` 为 `src/content-ui` 经 `vite.content-ui.config.mjs` 构建的 IIFE 产物，入库、不手改），`run_at: document_idle`，`all_frames: false`；`floating-pet.js`（连同其语录库 `pet-quotes.js`）与 `auto-start.js` 改为 `chrome.scripting` 按需动态注册（同为 classic 形态，受模块图 R1 同约束）。
 - `web_accessible_resources` 仅 `icons/roamcat.svg`（`use_dynamic_url: true`）——页面内品牌图标所需，最小暴露面。
 
 ### 3.2 权限与用途（上架时可直接引用的理由）
@@ -106,7 +106,7 @@
 ### 4.1 Service Worker
 | 文件 | 职责 | 关键约束 |
 |---|---|---|
-| `background.js` | 消息路由（71 种，与 `MESSAGE_TYPES` 一一对应）、设置校验与迁移、四大模型链路编排、缓存/并发/看门狗、订阅端口状态、诊断编排 | 无跨调用内存态假设；所有写操作串行化（`writes` 链）；长操作必须带 `guard()` |
+| `background.js` | 消息路由（74 种，与 `MESSAGE_TYPES` 一一对应）、设置校验与迁移、四大模型链路编排、缓存/并发/看门狗、订阅端口状态、诊断编排 | 无跨调用内存态假设；所有写操作串行化（`writes` 链）；长操作必须带 `guard()` |
 | `subscription.js` | 三个连接器的端口、请求-响应映射、超时（assist/翻译/总结 120s，其余 45s）、进度事件转发 | 端口单例；断开时拒绝全部在途请求 |
 | `diagnostic-service.js` / `diagnostics.mjs` | traceId 贯穿、元数据脱敏、渲染回执、连接器镜像 | 只记录结构化元数据，不记录正文/密钥 |
 | `history-service.js` / `history-store.js` | 阅读记录（IndexedDB）、摘要/个性化引擎装配 | 记录默认关闭，需显式授权 origin |
@@ -116,8 +116,9 @@
 | `activation.js` / `auto-start.js` | 自动开启策略、动态注册 content script、SPA 导航检测；`pageOrigin`/`sitePattern`/`validateAutomation`/`validateVideo`/`registrationMatches` 为纯函数（已纳入领域层 lint 与单测） | `registrationMatches()` 是权限/注册的唯一事实源 |
 | `shared.js` | `DEFAULT_SETTINGS`、`normalizeSettings`、`wordId`、`request()` | 旧配置键不得通过 spread 复活 |
 | `message-router.js` | 类型化消息路由器：注册表构造、重复类型即失败、`parse`+`handle` 两段派发 | 泛型实现，不认识任何具体消息；未知类型抛「未知请求。」 |
-| `message-protocol.js` | 消息协议唯一事实源：`MESSAGE_TYPES`（71 种）、`CONTENT_ALLOWED_TYPES`、纯载荷解析器与自 `background.js` 下沉的 `validatePatch`（设置补丁校验）、`settingsPatchEffects`（STATE_PATCH 副作用计划）、`parseAssistRequest`/`parsePassageRequestRef`（请求身份）、`onDemandSuggestionDecision`（按需建议判定）、`text`/`domain`/`customDetectionService` | 只依赖 `shared.js`、`domain-routing.js`、`api-providers.mjs`、`gloss.mjs` 等领域/协议模块；新增类型必须同步注册表与第 5 节 |
-| `api-providers.mjs` / `api-transport.mjs` | 26 家服务商目录、8 种协议适配、结构化输出能力探测、模型列表 | HTTPS only（本机回环除外）；同源重定向禁止；密钥不进内容脚本 |
+| `message-protocol.js` | 消息协议唯一事实源：`MESSAGE_TYPES`（74 种）、`CONTENT_ALLOWED_TYPES`、纯载荷解析器与自 `background.js` 下沉的 `validatePatch`（设置补丁校验）、`settingsPatchEffects`（STATE_PATCH 副作用计划）、`parseAssistRequest`/`parsePassageRequestRef`（请求身份）、`onDemandSuggestionDecision`（按需建议判定）、`text`/`domain`/`customDetectionService` | 只依赖 `shared.js`、`domain-routing.js`、`api-providers.mjs`、`gloss.mjs` 等领域/协议模块；新增类型必须同步注册表与第 5 节 |
+| `api-providers.mjs` / `api-transport.mjs` | 28 家服务商目录、8 种协议适配、结构化输出能力探测、模型列表、各协议 usage 抽取（`onUsage` 回调） | HTTPS only（本机回环除外）；同源重定向禁止；密钥不进内容脚本 |
+| `usage-stats.mjs` | 模型用量统计：调用事件规范化、按日/按服务×模型聚合（保留约 62 天、≤60 组合）、`summarizeUsage` UI 汇总 | 纯函数领域模块；只存计数与模型/服务标识，不存正文、密钥或网址；写串行化在 `background.js` |
 | `gloss.mjs` | 提示词、JSON Schema、响应校验/纠正（扩展与连接器共享） | `SUPPORT_POLICY_VERSION` 变更即使全部缓存失效 |
 | `sentence-groups.mjs` / `assistance-stream.mjs` / `personalization.mjs` | 解构协议与修复、流式进度解析、个性化策略机 | 共享文件被连接器安装副本引用，改动需双边同步 |
 
@@ -132,7 +133,7 @@
 ### 4.3 扩展页面
 - 三个扩展页均已迁移到 `src/`（Vite + Lit）：`build/extension-plugin.mjs` 的 `REPLACED_BY_BUILD` 清单使构建产物覆盖对应 `ui/` 文件；**不要直接改将由构建替代的源文件**。页内 UI（content script 一侧）为后续阶段。
 - `ui/popup.html|js`（构建产物来自 `src/pages/popup/`）：本页开关、网站自动开启、阅读解构、本页双语翻译（立即开始）、服务告警。
-- `ui/options.html|js` + `options-nav.js`（构建产物来自 `src/pages/options/`：shell + 11 分区模板，`options-controller.js` 与 `@ext/ui/history.js` 动态加载填充动态内容）：11 个设置分区（assistance/appearance/sites/advanced/terms/personalization/history/privacy/service/diagnostics/guide）。
+- `ui/options.html|js` + `options-nav.js`（构建产物来自 `src/pages/options/`：shell + 12 分区模板，`options-controller.js` 与 `@ext/ui/history.js` 动态加载填充动态内容）：12 个设置分区（assistance/appearance/sites/advanced/terms/personalization/history/privacy/service/diagnostics/shortcuts/guide）。
 - `ui/welcome.html|js` + `welcome.css`（构建产物来自 `src/pages/welcome/`）：首次安装引导与交互式演示。
 - `ui/provider-picker.js`：原生 select + Popover 自定义列表（Chrome 116+）。
 - `ui/theme-init.js`：防主题闪烁的早期脚本（外链文件，符合 CSP）。
@@ -161,7 +162,7 @@
 - 内容脚本仅可用白名单（`contentAllowed`，33 种，以 `CONTENT_ALLOWED_TYPES` 为准）：状态读取、分析、支持批次、解构、求助、翻译、历史信号、诊断回执、伴读猫位置等。
 - 数据变更类消息进入 `activeDataRequests` 集合，供清理时排空（`clearReadingData`）。
 
-### 5.2 消息分组（71 种，与 `MESSAGE_TYPES` 顺序一致）
+### 5.2 消息分组（74 种，与 `MESSAGE_TYPES` 顺序一致）
 | 分组 | 类型 |
 |---|---|
 | 状态与设置（8） | `STATE_GET` `STATE_PATCH` `AUTOMATION_GET` `AUTOMATION_PATCH` `PAGE_ACTIVITY_SET` `VIDEO_SETTINGS_PATCH` `FLOATING_PET_POSITION_SET` `OPEN_OPTIONS` |
@@ -169,9 +170,9 @@
 | 领域识别（4） | `RESOLVE_DOMAIN` `PAGE_DOMAIN_GET` `PAGE_DOMAIN_SET` `DOMAIN_TEST` |
 | 阅读辅助（12） | `ANALYZE` `SUPPORT_BATCH` `ASSIST` `ASSIST_PREVIEW` `ASSIST_COMMIT` `PREPARED_SUPPORT` `PREPARED_ASSIST` `ENCOUNTER` `INTERACT` `READING_ACTIVITY` `WORD_PREFERENCE_SET` `ON_DEMAND_SUGGESTION` |
 | 阅读解构（5） | `SENTENCE_GROUPS_GET` `SENTENCE_GROUPS_SET` `SENTENCE_GROUPS_DENSITY_SET` `SENTENCE_GROUPS_LINE_STYLE_SET` `SENTENCE_GROUPS_BATCH` |
-| 翻译（6） | `EMERGENCY_BEGIN` `EMERGENCY_TRANSLATE` `EMERGENCY_CANCEL_REQUEST` `EMERGENCY_END` `PASSAGE_TRANSLATE` `PAGE_SUMMARY` |
+| 翻译（7） | `EMERGENCY_BEGIN` `EMERGENCY_TRANSLATE` `EMERGENCY_CANCEL_REQUEST` `EMERGENCY_END` `PASSAGE_TRANSLATE` `PAGE_SUMMARY` `READER_TRANSLATE` |
 | 历史与个性化（17） | `HISTORY_GET` `HISTORY_CONFIG` `HISTORY_BEGIN` `HISTORY_TICK` `HISTORY_COMMIT` `HISTORY_ANNOTATION` `HISTORY_DELETE` `HISTORY_SUMMARY_EDIT` `HISTORY_CLEAR` `HISTORY_EXPORT` `HISTORY_RULE_SET` `PERSONALIZATION_GET` `PERSONALIZATION_ANALYZE` `PERSONALIZATION_APPLY` `PERSONALIZATION_DISMISS` `PERSONALIZATION_ROLLBACK` `PERSONALIZATION_RESET` |
-| 数据与诊断（12） | `READING_DATA_EXPORT` `MEMORY_CLEAR` `DIAGNOSTICS_GET` `DIAGNOSTICS_EXPORT` `DIAGNOSTICS_SET` `DIAGNOSTICS_CLEAR` `DIAGNOSTICS_RENDER` `POPUP_INTENT_TAKE` `PAGE_UI_INJECT` `ENSURE_PAGE_UI` `AUTO_BOOTSTRAP_CHECK` `YOUTUBE_CAPTIONS_BRIDGE` |
+| 数据与诊断（14） | `READING_DATA_EXPORT` `MEMORY_CLEAR` `DIAGNOSTICS_GET` `DIAGNOSTICS_EXPORT` `DIAGNOSTICS_SET` `DIAGNOSTICS_CLEAR` `DIAGNOSTICS_RENDER` `USAGE_STATS_GET` `USAGE_STATS_CLEAR` `POPUP_INTENT_TAKE` `PAGE_UI_INJECT` `ENSURE_PAGE_UI` `AUTO_BOOTSTRAP_CHECK` `YOUTUBE_CAPTIONS_BRIDGE` |
 
 ### 5.3 页面 → 后台 的旁路消息（`tabs.sendMessage`）
 `SS_STATUS` `SS_SET_ENABLED` `SS_REFRESH` `SS_AUTO_START` `SS_CONTEXT_HELP` `SS_SET_SENTENCE_GROUPS` `SS_SET_SENTENCE_DENSITY` `SS_SET_SENTENCE_LINE_STYLE` `SS_EMERGENCY_START/STOP/RETRY/END` `SS_HELP_LANGUAGE` `SS_READING_STYLE` `SS_VIDEO_SETTINGS` `SS_TRANSLATION_PROGRESS` `SS_ASSIST_PROGRESS` `SS_WORD_PREFERENCE`。
@@ -223,7 +224,7 @@
 ### 7.1 三种服务来源
 | 模式 | 说明 |
 |---|---|
-| `api` | 自备 API：26 家服务商、8 种协议（chat/responses/anthropic/google/bedrock/cohere/ollama/jev），每服务独立并发（默认 2，1–10 可调） |
+| `api` | 自备 API：28 家服务商、8 种协议（chat/responses/anthropic/google/bedrock/cohere/ollama/jev），每服务独立并发（默认 2，1–10 可调） |
 | `chatgpt` | 本机连接器 → 官方 Codex CLI（`app-server --stdio` JSON-RPC，隔离 config.toml 关闭全部工具/沙箱/更新） |
 | `grok` | 本机连接器 → 官方 Grok CLI（`--json-schema` + prompt 文件） |
 | `antigravity` | 本机连接器 → 官方 Antigravity CLI `agy`（`--json-schema`，剥离 RE2 不支持的 `pattern`） |
@@ -327,7 +328,7 @@
 
 | 规则 | 内容 |
 |---|---|
-| R1 | manifest content script 五件套顺序固定、文件存在、且不得包含 ESM 语法；动态注册的 classic 脚本（`pet-quotes.js`、`floating-pet.js`、`auto-start.js`）同约束 |
+| R1 | manifest content script 七件套顺序固定、文件存在、且不得包含 ESM 语法；动态注册的 classic 脚本（`pet-quotes.js`、`floating-pet.js`、`auto-start.js`）同约束 |
 | R2 | 全部相对 import 必须解析到真实文件 |
 | R3 | extension 与 connector 全图无循环依赖 |
 | R4 | connector 的 import 闭包内的 extension 文件必须属于 §4.1 共享协议清单，且能在 Node 中安全 import（顶层不触碰浏览器 API） |

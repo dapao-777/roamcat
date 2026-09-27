@@ -10,6 +10,8 @@
 
  */
 import {createDiagnosticStore,sanitizeDiagnostic,diagnosticError,validTraceId} from './diagnostics.mjs';
+
+const M=(zh,en)=>globalThis.RoamCatI18n?.lang?.()==='en'?en:zh;
 // 导出供单测做镜像校验：OPERATIONS 必须 ⊆ DIAGNOSTIC_OPERATIONS（存储白名单），且每项
 // 须为已注册消息类型或合成操作（HISTORY_SUMMARY 由 runHistoryModel 构造，仅走
 // diagnostics.run，不经消息路由）；RENDERED 必须 ⊆ OPERATIONS。
@@ -55,9 +57,9 @@ export function createDiagnostics({storage,session,sync,nativeStatus}) {
       catch(error){await event(trace,'provider','error',{...diagnosticError(error),durationMs:Date.now()-at});throw error;}
     },
     async render(message,sender){
-      if(!Number.isInteger(sender.tab?.id)||sender.frameId!==0||!validTraceId(message.traceId)||!['ok','cancelled','error'].includes(message.status))throw new Error('诊断回执无效。');
+      if(!Number.isInteger(sender.tab?.id)||sender.frameId!==0||!validTraceId(message.traceId)||!['ok','cancelled','error'].includes(message.status))throw new Error(M('诊断回执无效。','Invalid diagnostic receipt.'));
       let receipt;
-      await receiptChange(async()=>{const all=(await session.get(RECEIPTS))[RECEIPTS]||{};receipt=all[message.traceId];if(!receipt||receipt.at<Date.now()-600000||receipt.tabId!==sender.tab.id||(receipt.documentId&&receipt.documentId!==sender.documentId))throw new Error('诊断回执已过期。');delete all[message.traceId];await session.set({[RECEIPTS]:all});});
+      await receiptChange(async()=>{const all=(await session.get(RECEIPTS))[RECEIPTS]||{};receipt=all[message.traceId];if(!receipt||receipt.at<Date.now()-600000||receipt.tabId!==sender.tab.id||(receipt.documentId&&receipt.documentId!==sender.documentId))throw new Error(M('诊断回执已过期。','The diagnostic receipt has expired.'));delete all[message.traceId];await session.set({[RECEIPTS]:all});});
       await record({at:Date.now(),traceId:message.traceId,operation:receipt.operation,stage:'render',status:message.status,code:message.status==='error'?'RENDER_INVALID':message.status==='cancelled'?'STALE':'OK',durationMs:Date.now()-receipt.at});
       return {recorded:true};
     },

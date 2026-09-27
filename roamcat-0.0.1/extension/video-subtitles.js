@@ -12,6 +12,8 @@
 (() => {
   'use strict';
 
+  const T=(k,v)=>globalThis.RoamCatI18n?.t?.(k,v)??k;
+
   const GLOBAL_NAME = 'RoamCatVideoSubtitles';
   if (globalThis[GLOBAL_NAME]) return;
 
@@ -58,8 +60,8 @@
         :host([data-youtube="true"]) button:hover{background:var(--action)}
         :host([data-youtube="true"]) button[aria-pressed="true"]{box-shadow:inset 0 -3px var(--on-action)}
       </style>
-      <button class="assist" type="button" aria-label="帮助理解当前字幕">这句</button>
-      <button class="transcript" type="button" aria-label="展开英文原文稿" aria-pressed="false">原文</button>`;
+      <button class="assist" type="button" aria-label="${T('vid.assistAria')}">${T('vid.assistBtn')}</button>
+      <button class="transcript" type="button" aria-label="${T('vid.transcriptOpenAria')}" aria-pressed="false">${T('vid.transcriptBtn')}</button>`;
     const assistButton = controlShadow.querySelector('.assist');
     const transcriptButton = controlShadow.querySelector('.transcript');
 
@@ -94,9 +96,9 @@
         @media(max-width:640px){header{align-items:flex-start}.cue{grid-template-columns:56px minmax(0,1fr)}label{width:calc(50% - 8px)}}
       </style>
       <div class="panel"><header><h2>英文原文稿</h2><span class="progress">正在读取字幕…</span>
-        <label>字号<select data-setting="fontSize"><option value="16">16</option><option value="20">20</option><option value="24">24</option><option value="28">28</option></select></label>
-        <label>主题<select data-setting="theme"><option value="auto">跟随系统</option><option value="light">明亮</option><option value="dark">深色</option></select></label>
-        <button class="close" type="button">关闭</button>
+        <label>${T('vid.fontSize')}<select data-setting="fontSize"><option value="16">16</option><option value="20">20</option><option value="24">24</option><option value="28">28</option></select></label>
+        <label>主题<select data-setting="theme"><option value="auto">${T('vid.themeAuto')}</option><option value="light">${T('vid.themeLight')}</option><option value="dark">${T('vid.themeDark')}</option></select></label>
+        <button class="close" type="button">${T('vid.close')}</button>
       </header><div class="notice" role="status" aria-live="polite"></div><div class="list"></div></div>`;
     const list = transcriptShadow.querySelector('.list');
     const progress = transcriptShadow.querySelector('.progress');
@@ -362,7 +364,7 @@
       if (!next) next = htmlTrackSource();
       if (next.state !== 'ready') {
         if (source) clearSource();
-        const messages = {none:['未找到可用英文字幕','warning'],loading:['正在读取英文字幕…',''],unavailable:['英文字幕时间轴不可获得','error'],'bridge-unavailable':['YouTube 字幕读取组件未就绪','error']};
+        const messages = {none:[T('vid.noCaptions'),'warning'],loading:[T('vid.loadingCaptions'),''],unavailable:[T('vid.timelineUnavailable'),'error'],'bridge-unavailable':[T('vid.componentNotReady'),'error']};
         const [message, kind] = messages[next.state] || messages.unavailable;
         showNotice(message, kind);
         progress.textContent = message;
@@ -404,10 +406,10 @@
       return parts.join(' ');
     }
     function requestAssist(index, anchor) {
-      if (!source || !video || index < 0 || index >= source.cues.length) { showNotice('未找到可用英文字幕', 'warning'); return; }
+      if (!source || !video || index < 0 || index >= source.cues.length) { showNotice(T('vid.noCaptions'), 'warning'); return; }
       const cue = source.cues[index];
       const context = contextForCue(index);
-      if (!context) { showNotice('请只选择一个句子或短段（最多 3 句、600 字符）', 'error'); return; }
+      if (!context) { showNotice(T('vid.selTooLong'), 'error'); return; }
       closeActiveAssist();
       const assistVideo = video;
       const assistSourceKey = source.key;
@@ -433,7 +435,7 @@
         assist.controller = controller && typeof controller.close === 'function' ? controller : null;
       } catch {
         finishAssist(assist);
-        showNotice('暂时无法打开字幕帮助', 'error');
+        showNotice(T('vid.assistFail'), 'error');
       }
     }
 
@@ -444,14 +446,14 @@
       row.dataset.active = String(index === currentCueIndex());
     }
     function renderTranscript(reset = false) {
-      if (!source) { list.replaceChildren(); progress.textContent = '正在读取字幕…'; return; }
+      if (!source) { list.replaceChildren(); progress.textContent = T('vid.readingCues'); return; }
       const previousScroll = list.scrollTop;
       if (reset) list.replaceChildren();
       const limit = Math.min(renderedCount || RENDER_PAGE_SIZE, source.cues.length);
       for (let index = list.querySelectorAll('.cue').length; index < limit; index += 1) {
         const row = document.createElement('div');
         row.className = 'cue'; row.dataset.index = String(index);
-        row.innerHTML = '<button class="time" type="button" aria-label="跳转到字幕时间"></button><button class="text" type="button" aria-label="帮助理解这句字幕"></button>';
+        row.innerHTML = `<button class="time" type="button" aria-label="${T('vid.seekAria')}"></button><button class="text" type="button" aria-label="${T('vid.cueAssistAria')}"></button>`;
         populateCue(row, index); list.append(row);
       }
       let more = list.querySelector('.more');
@@ -460,10 +462,10 @@
           more = document.createElement('button'); more.type = 'button'; more.className = 'more';
           more.addEventListener('click', () => { renderedCount = Math.min(source.cues.length, renderedCount + RENDER_PAGE_SIZE); renderTranscript(); });
         }
-        more.textContent = `继续显示（剩余 ${source.cues.length - limit} 条）`; list.append(more);
+        more.textContent = T('vid.moreCues',{n:source.cues.length - limit}); list.append(more);
       } else more?.remove();
       if (reset) list.scrollTop = previousScroll;
-      progress.textContent = `${source.cues.length} 条英文字幕`;
+      progress.textContent = T('vid.cueCount',{n:source.cues.length});
     }
     function updateActiveCue() {
       if (!source) return;
@@ -494,7 +496,7 @@
     function setTranscriptOpen(next) {
       transcriptOpen = Boolean(next);
       transcriptButton.setAttribute('aria-pressed', String(transcriptOpen));
-      transcriptButton.setAttribute('aria-label', transcriptOpen ? '收起英文原文稿' : '展开英文原文稿');
+      transcriptButton.setAttribute('aria-label', transcriptOpen ? T('vid.collapseTranscript') : T('vid.transcriptOpenAria'));
       transcriptHost.style.setProperty('display', transcriptOpen ? 'block' : 'none', 'important');
       placeUi(); if (transcriptOpen) { renderTranscript(true); void refreshSource(); }
     }
@@ -514,12 +516,12 @@
         const previous = settings;
         const candidate = normalizedSettings({...settings, [key]: key === 'fontSize' ? Number(select.value) : select.value});
         settings = candidate; applySettingsToUi(); showNotice('');
-        if (typeof currentCallbacks.onSettingsChange !== 'function') { showNotice('设置仅在当前页面生效', 'warning'); return; }
+        if (typeof currentCallbacks.onSettingsChange !== 'function') { showNotice(T('vid.pageOnlySettings'), 'warning'); return; }
         try {
           const result = await currentCallbacks.onSettingsChange({[key]: candidate[key]});
           settings = normalizedSettings(result?.video); applySettingsToUi();
         } catch {
-          settings = previous; applySettingsToUi(); showNotice('设置保存失败，已恢复原设置', 'error');
+          settings = previous; applySettingsToUi(); showNotice(T('vid.saveFailRevert'), 'error');
         }
       });
     }

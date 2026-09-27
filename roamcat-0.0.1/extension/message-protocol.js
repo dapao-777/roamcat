@@ -16,10 +16,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
  */
-import {DOMAINS, DEFAULT_SETTINGS, wordId, activeApiProvider} from './shared.js';
+import {DOMAINS, DEFAULT_SETTINGS, API_TASKS, wordId, activeApiProvider} from './shared.js';
 import {normalizeDomainRules} from './domain-routing.js';
 import {getApiProvider, normalizeApiService, apiServiceOrigins} from './api-providers.mjs';
 import {normalizeAssistanceCommand} from './gloss.mjs';
+
+const M=(zh,en)=>globalThis.RoamCatI18n?.lang?.()==='en'?en:zh;
 
 // 与 subscription.js 的 SUBSCRIPTION_KINDS 对应的协议层副本；领域层不得反向依赖应用层，
 // 一致性由 tools/unit 的镜像断言测试保证。
@@ -32,6 +34,7 @@ export const MESSAGE_TYPES = Object.freeze([
   'PERSONALIZATION_GET', 'PERSONALIZATION_ANALYZE', 'PERSONALIZATION_APPLY', 'PERSONALIZATION_DISMISS',
   'PERSONALIZATION_ROLLBACK', 'PERSONALIZATION_RESET', 'HISTORY_RULE_SET',
   'DIAGNOSTICS_GET', 'DIAGNOSTICS_EXPORT', 'DIAGNOSTICS_SET', 'DIAGNOSTICS_CLEAR', 'DIAGNOSTICS_RENDER',
+  'USAGE_STATS_GET', 'USAGE_STATS_CLEAR',
   'POPUP_INTENT_TAKE', 'PAGE_UI_INJECT', 'ENSURE_PAGE_UI',
   'SENTENCE_GROUPS_GET', 'SENTENCE_GROUPS_SET', 'SENTENCE_GROUPS_DENSITY_SET', 'SENTENCE_GROUPS_LINE_STYLE_SET',
   'AUTO_BOOTSTRAP_CHECK', 'AUTOMATION_GET', 'AUTOMATION_PATCH', 'PAGE_ACTIVITY_SET',
@@ -42,6 +45,7 @@ export const MESSAGE_TYPES = Object.freeze([
   'ASSIST_PREVIEW', 'EMERGENCY_BEGIN', 'PASSAGE_TRANSLATE', 'EMERGENCY_TRANSLATE', 'EMERGENCY_CANCEL_REQUEST',
   'EMERGENCY_END', 'ASSIST', 'ASSIST_COMMIT', 'PROVIDER_TEST', 'ENCOUNTER', 'INTERACT', 'READING_ACTIVITY',
   'READING_DATA_EXPORT', 'ON_DEMAND_SUGGESTION', 'MEMORY_CLEAR', 'PAGE_SUMMARY', 'OPEN_OPTIONS',
+  'READER_TRANSLATE',
 ]);
 
 /**
@@ -61,22 +65,22 @@ export const CONTENT_ALLOWED_TYPES = Object.freeze([
 /** 字符串载荷校验：必填、去首尾空白、长度上限；错误信息面向用户可操作。 */
 export function text(value, name, max, required = true) {
   if (typeof value !== 'string' || value.length > max || (required && !value.trim())) {
-    throw new Error(name + '不能为空，且不能超过 ' + max + ' 个字符。');
+    throw new Error(name + M('不能为空，且不能超过 ',' must be non-empty and at most ') + max + M(' 个字符。',' characters.'));
   }
   return value.trim();
 }
 
 /** 领域标识校验：只接受设置里登记的领域（含 auto 之外的固定集合）。 */
 export function domain(value) {
-  if (!Object.hasOwn(DOMAINS, value)) throw new Error('不支持的领域。');
+  if (!Object.hasOwn(DOMAINS, value)) throw new Error(M('不支持的领域。','Unsupported domain.'));
   return value;
 }
 
 /** DOMAIN_TEST 载荷：正文必填且限长，标题可选。 */
 export function parseDomainTest(message) {
   return {
-    text: text(message?.text, '测试正文', 40000),
-    title: text(message?.title || '', '标题', 500, false),
+    text: text(message?.text, M('测试正文','Test body'), 40000),
+    title: text(message?.title || '', M('标题','Title'), 500, false),
   };
 }
 
@@ -91,18 +95,18 @@ export function parseFloatingPetPatch(message) {
   const hasPosition = Boolean(message?.position);
   const hasTheme = typeof message?.themeMode === 'string';
   const hasScale = message?.scale !== undefined;
-  if (!hasPosition && !hasTheme && !hasScale) throw new Error('伴读猫位置无效。');
+  if (!hasPosition && !hasTheme && !hasScale) throw new Error(M('伴读猫位置无效。','Invalid companion-pet position.'));
   const floatingPet = {};
   if (hasPosition) {
     const position = message.position;
     if (typeof position !== 'object' || Array.isArray(position)
       || Object.keys(position).some(key => !['right', 'bottom'].includes(key))
-      || !Object.hasOwn(position, 'right') || !Object.hasOwn(position, 'bottom')) throw new Error('伴读猫位置无效。');
+      || !Object.hasOwn(position, 'right') || !Object.hasOwn(position, 'bottom')) throw new Error(M('伴读猫位置无效。','Invalid companion-pet position.'));
     floatingPet.position = position;
   }
   if (hasTheme) floatingPet.themeMode = message.themeMode;
   if (hasScale) {
-    if (!PET_SCALE_STEPS.includes(message.scale)) throw new Error('伴读猫缩放无效。');
+    if (!PET_SCALE_STEPS.includes(message.scale)) throw new Error(M('伴读猫缩放无效。','Invalid companion-pet scale.'));
     floatingPet.scale = message.scale;
   }
   return floatingPet;
@@ -110,7 +114,7 @@ export function parseFloatingPetPatch(message) {
 
 /** POPUP_INTENT_TAKE 载荷：目标标签页与网址必须完整。 */
 export function parsePopupIntentTake(message) {
-  if (!Number.isInteger(message?.tabId) || typeof message?.url !== 'string') throw new Error('快捷键操作无效。');
+  if (!Number.isInteger(message?.tabId) || typeof message?.url !== 'string') throw new Error(M('快捷键操作无效。','Invalid shortcut action.'));
   return {tabId: message.tabId, url: message.url};
 }
 
@@ -118,7 +122,7 @@ export function parsePopupIntentTake(message) {
  * 领域识别自定义 API 的协议描述（原 background.js 私有助手，随 validatePatch 一并下沉）。
  */
 export function customDetectionService(api, model = '') {
-  return {id: 'domain-detection', name: '领域识别 API', providerId: 'openai-compatible', baseUrl: api.baseUrl, model, apiKey: api.apiKey, options: {}};
+  return {id: 'domain-detection', name: M('领域识别 API','Domain-detection API'), providerId: 'openai-compatible', baseUrl: api.baseUrl, model, apiKey: api.apiKey, options: {}};
 }
 
 /**
@@ -129,76 +133,91 @@ export function customDetectionService(api, model = '') {
  * @param {object} currentSettings 当前规范化设置（用于默认值与引用校验）
  */
 export function validatePatch(patch, currentSettings) {
-  if (!patch || typeof patch !== 'object' || Array.isArray(patch)) throw new Error('无效设置。');
+  if (!patch || typeof patch !== 'object' || Array.isArray(patch)) throw new Error(M('无效设置。','Invalid settings.'));
   const result = {};
-  for (const key of Object.keys(patch)) if (!Object.hasOwn(DEFAULT_SETTINGS, key)) throw new Error('未知设置项。');
-  if (patch.automation !== undefined || patch.video !== undefined) throw new Error('请使用对应的自动开启或视频设置接口。');
-  if (patch.assistanceMode !== undefined) { if (!['ambient', 'on-demand'].includes(patch.assistanceMode)) throw new Error('无效辅助模式。'); result.assistanceMode = patch.assistanceMode; }
-  if (patch.lookupDisplay !== undefined) { if (!['card', 'annotation'].includes(patch.lookupDisplay)) throw new Error('无效查词展示方式。'); result.lookupDisplay = patch.lookupDisplay; }
-  if (patch.helpLanguage !== undefined) { if (!['zh', 'en'].includes(patch.helpLanguage)) throw new Error('无效的帮助语言。'); result.helpLanguage = patch.helpLanguage; }
-  if (patch.lookupKey !== undefined) { if (typeof patch.lookupKey !== 'string' || !/^[A-Z]$/.test(patch.lookupKey)) throw new Error('查词键必须是大写 A-Z 单字符。'); result.lookupKey = patch.lookupKey; }
+  for (const key of Object.keys(patch)) if (!Object.hasOwn(DEFAULT_SETTINGS, key)) throw new Error(M('未知设置项。','Unknown setting key.'));
+  if (patch.automation !== undefined || patch.video !== undefined) throw new Error(M('请使用对应的自动开启或视频设置接口。','Please use the dedicated auto-enable or video-settings API.'));
+  if (patch.assistanceMode !== undefined) { if (!['ambient', 'on-demand'].includes(patch.assistanceMode)) throw new Error(M('无效辅助模式。','Invalid assist mode.')); result.assistanceMode = patch.assistanceMode; }
+  if (patch.lookupDisplay !== undefined) { if (!['card', 'annotation'].includes(patch.lookupDisplay)) throw new Error(M('无效查词展示方式。','Invalid lookup display mode.')); result.lookupDisplay = patch.lookupDisplay; }
+  if (patch.helpLanguage !== undefined) { if (!['zh', 'en'].includes(patch.helpLanguage)) throw new Error(M('无效的帮助语言。','Invalid help language.')); result.helpLanguage = patch.helpLanguage; }
+  if (patch.lookupKey !== undefined) { if (typeof patch.lookupKey !== 'string' || !/^[A-Z]$/.test(patch.lookupKey)) throw new Error(M('查词键必须是大写 A-Z 单字符。','The lookup key must be a single uppercase A-Z character.')); result.lookupKey = patch.lookupKey; }
   if (patch.readingStyle !== undefined) result.readingStyle = globalThis.RoamCatReadingStyle.validate(patch.readingStyle);
-  if (patch.rememberSupport !== undefined) { if (typeof patch.rememberSupport !== 'boolean') throw new Error('无效记忆设置。'); result.rememberSupport = patch.rememberSupport; }
+  if (patch.rememberSupport !== undefined) { if (typeof patch.rememberSupport !== 'boolean') throw new Error(M('无效记忆设置。','Invalid memory setting.')); result.rememberSupport = patch.rememberSupport; }
   if (patch.domain !== undefined) result.domain = domain(patch.domain);
-  if (patch.subscriptionModel !== undefined) result.subscriptionModel = text(patch.subscriptionModel, '订阅模型', 150, false);
+  if (patch.subscriptionModel !== undefined) result.subscriptionModel = text(patch.subscriptionModel, M('订阅模型','Subscription model'), 150, false);
   if (patch.domainRules !== undefined) result.domainRules = normalizeDomainRules(patch.domainRules);
   if (patch.domainDetection !== undefined) {
     const d = patch.domainDetection;
-    if (!d || !['local', 'chatgpt', 'grok', 'antigravity', 'api', 'jev'].includes(d.mode) || typeof d.useTranslationApi !== 'boolean') throw new Error('无效的领域识别配置。');
-    const api = {baseUrl: text(d.api?.baseUrl, '识别 API 地址', 2048), apiKey: text(d.api?.apiKey ?? '', '识别 API Key', 4096, false)};
+    if (!d || !['local', 'chatgpt', 'grok', 'antigravity', 'api', 'jev'].includes(d.mode) || typeof d.useTranslationApi !== 'boolean') throw new Error(M('无效的领域识别配置。','Invalid domain-detection configuration.'));
+    const api = {baseUrl: text(d.api?.baseUrl, M('识别 API 地址','Detection API URL'), 2048), apiKey: text(d.api?.apiKey ?? '', M('识别 API Key','Detection API key'), 4096, false)};
     apiServiceOrigins(customDetectionService(api));
-    let jevBaseUrl = text(d.jevBaseUrl ?? 'https://router.requesty.ai/v1', 'Jev 接口地址', 2048, false) || 'https://router.requesty.ai/v1';
-    try { const parsedUrl = new URL(jevBaseUrl); if (!['http:', 'https:'].includes(parsedUrl.protocol)) throw new Error(); } catch { throw new Error('Jev 接口地址必须是有效的 HTTP 或 HTTPS 完整地址。'); }
-    result.domainDetection = {mode: d.mode, subscriptionModel: text(d.subscriptionModel ?? '', '识别订阅模型', 150, CONNECTOR_KINDS.includes(d.mode)), apiModel: text(d.apiModel ?? '', '识别 API 模型', 150, d.mode === 'api'), useTranslationApi: d.useTranslationApi, api, jevModel: text(d.jevModel ?? '', 'Jev 模型', 150, false), jevApiKey: text(d.jevApiKey ?? '', 'Jev API Key', 4096, false), jevBaseUrl};
+    let jevBaseUrl = text(d.jevBaseUrl ?? 'https://router.requesty.ai/v1', M('Jev 接口地址','Jev endpoint URL'), 2048, false) || 'https://router.requesty.ai/v1';
+    try { const parsedUrl = new URL(jevBaseUrl); if (!['http:', 'https:'].includes(parsedUrl.protocol)) throw new Error(); } catch { throw new Error(M('Jev 接口地址必须是有效的 HTTP 或 HTTPS 完整地址。','The Jev endpoint must be a full valid HTTP or HTTPS URL.')); }
+    result.domainDetection = {mode: d.mode, subscriptionModel: text(d.subscriptionModel ?? '', M('识别订阅模型','Detection subscription model'), 150, CONNECTOR_KINDS.includes(d.mode)), apiModel: text(d.apiModel ?? '', M('识别 API 模型','Detection API model'), 150, d.mode === 'api'), useTranslationApi: d.useTranslationApi, api, jevModel: text(d.jevModel ?? '', M('Jev 模型','Jev model'), 150, false), jevApiKey: text(d.jevApiKey ?? '', 'Jev API Key', 4096, false), jevBaseUrl};
   }
-  if (patch.providerKind !== undefined) { if (!['chatgpt', 'grok', 'antigravity', 'api'].includes(patch.providerKind)) throw new Error('不支持的服务类型。'); result.providerKind = patch.providerKind; }
+  if (patch.providerKind !== undefined) { if (!['chatgpt', 'grok', 'antigravity', 'api'].includes(patch.providerKind)) throw new Error(M('不支持的服务类型。','Unsupported service type.')); result.providerKind = patch.providerKind; }
   if (patch.apiServices !== undefined) {
-    if (!Array.isArray(patch.apiServices) || patch.apiServices.length > 20) throw new Error('API 服务最多保存 20 个。');
+    if (!Array.isArray(patch.apiServices) || patch.apiServices.length > 20) throw new Error(M('API 服务最多保存 20 个。','At most 20 API services can be saved.'));
     const ids = new Set();
     result.apiServices = patch.apiServices.map(value => {
       const service = normalizeApiService(value);
-      service.id = text(service.id, '服务编号', 128); service.name = text(service.name, '服务名称', 60); service.baseUrl = text(service.baseUrl, 'API 地址', 2048); service.model = text(service.model, '模型', 150); service.apiKey = text(service.apiKey, 'API Key', 4096, false);
-      if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(service.id) || ids.has(service.id)) throw new Error('API 服务编号必须安全且唯一。');
-      if (!getApiProvider(service.providerId).keyOptional && !service.apiKey) throw new Error('API Key 不能为空。');
+      service.id = text(service.id, M('服务编号','Service ID'), 128); service.name = text(service.name, M('服务名称','Service name'), 60); service.baseUrl = text(service.baseUrl, M('API 地址','API URL'), 2048); service.model = text(service.model, M('模型','Model'), 150); service.apiKey = text(service.apiKey, 'API Key', 4096, false);
+      if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(service.id) || ids.has(service.id)) throw new Error(M('API 服务编号必须安全且唯一。','The API service ID must be safe and unique.'));
+      if (!getApiProvider(service.providerId).keyOptional && !service.apiKey) throw new Error(M('API Key 不能为空。','The API key must not be empty.'));
       apiServiceOrigins(service); ids.add(service.id); return service;
     });
   }
-  if (patch.activeApiServiceId !== undefined) result.activeApiServiceId = text(patch.activeApiServiceId, '当前 API 服务', 128, false);
+  if (patch.activeApiServiceId !== undefined) result.activeApiServiceId = text(patch.activeApiServiceId, M('当前 API 服务','Active API service'), 128, false);
   const services = result.apiServices ?? currentSettings.apiServices, active = result.activeApiServiceId ?? currentSettings.activeApiServiceId;
-  if (result.apiServices && currentSettings.activeApiServiceId && !result.apiServices.some(service => service.id === currentSettings.activeApiServiceId) && patch.activeApiServiceId === undefined) throw new Error('移除当前 API 服务时必须同时选择替代服务。');
-  if (services.length === 0) { if (active) throw new Error('没有 API 服务时当前服务必须为空。'); }
-  else if (!active || !services.some(service => service.id === active)) throw new Error('当前 API 服务必须引用已保存的服务。');
+  if (result.apiServices && currentSettings.activeApiServiceId && !result.apiServices.some(service => service.id === currentSettings.activeApiServiceId) && patch.activeApiServiceId === undefined) throw new Error(M('移除当前 API 服务时必须同时选择替代服务。','Removing the active API service requires choosing a replacement.'));
+  if (services.length === 0) { if (active) throw new Error(M('没有 API 服务时当前服务必须为空。','With no API services, the active service must be empty.')); }
+  else if (!active || !services.some(service => service.id === active)) throw new Error(M('当前 API 服务必须引用已保存的服务。','The active API service must reference a saved service.'));
+  if (patch.apiRouting !== undefined) {
+    const routing = patch.apiRouting;
+    if (!routing || typeof routing !== 'object' || Array.isArray(routing)) throw new Error(M('无效的任务路由配置。','Invalid task routing configuration.'));
+    const tasks = new Set(API_TASKS), normalized = {...currentSettings.apiRouting};
+    for (const [task, id] of Object.entries(routing)) {
+      if (!tasks.has(task)) throw new Error(M('任务路由包含未知任务。','Task routing contains an unknown task.'));
+      const serviceId = text(id ?? '', M('任务路由服务','Routed service'), 128, false);
+      if (serviceId && !services.some(service => service.id === serviceId)) throw new Error(M('任务路由必须引用已保存的服务。','Task routing must reference a saved service.'));
+      normalized[task] = serviceId;
+    }
+    result.apiRouting = normalized;
+  }
   if (patch.customTerms !== undefined) {
-    if (!Array.isArray(patch.customTerms) || patch.customTerms.length > 1000) throw new Error('术语表最多保存 1000 条。');
+    if (!Array.isArray(patch.customTerms) || patch.customTerms.length > 1000) throw new Error(M('术语表最多保存 1000 条。','At most 1000 custom terms can be saved.'));
     const seen = new Set();
     result.customTerms = patch.customTerms.map(entry => {
-      const row = {term: text(entry.term, '术语', 100), translation: text(entry.translation, '译法', 300), domain: domain(entry.domain)};
-      if (row.domain === 'auto') throw new Error('个人术语需要指定领域，或选择通用阅读。');
+      const row = {term: text(entry.term, M('术语','Term'), 100), translation: text(entry.translation, M('译法','Translation'), 300), domain: domain(entry.domain)};
+      if (row.domain === 'auto') throw new Error(M('个人术语需要指定领域，或选择通用阅读。','Custom terms need a specific domain, or choose General reading.'));
       const id = wordId(row.term, row.domain);
-      if (seen.has(id)) throw new Error('同一领域不能重复添加相同术语。');
+      if (seen.has(id)) throw new Error(M('同一领域不能重复添加相同术语。','The same term cannot be added twice in one domain.'));
       seen.add(id); return row;
     });
   }
   if (patch.floatingPet !== undefined) {
     const fp = patch.floatingPet;
-    if (!fp || typeof fp !== 'object' || Array.isArray(fp)) throw new Error('无效的伴读猫设置。');
-    if (fp.enabled !== undefined && typeof fp.enabled !== 'boolean') throw new Error('无效的伴读猫开关。');
+    if (!fp || typeof fp !== 'object' || Array.isArray(fp)) throw new Error(M('无效的伴读猫设置。','Invalid companion-pet settings.'));
+    if (fp.enabled !== undefined && typeof fp.enabled !== 'boolean') throw new Error(M('无效的伴读猫开关。','Invalid companion-pet toggle.'));
     const position = fp.position ?? currentSettings.floatingPet?.position ?? {};
     const right = position.right ?? 24, bottom = position.bottom ?? 84;
-    for (const value of [right, bottom]) if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > 10000) throw new Error('伴读猫位置无效。');
+    for (const value of [right, bottom]) if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > 10000) throw new Error(M('伴读猫位置无效。','Invalid companion-pet position.'));
     const themeMode = ['auto', 'dark', 'light'].includes(fp.themeMode) ? fp.themeMode : (currentSettings.floatingPet?.themeMode || 'auto');
-    if (fp.scale !== undefined && !PET_SCALE_STEPS.includes(fp.scale)) throw new Error('伴读猫缩放无效。');
+    if (fp.scale !== undefined && !PET_SCALE_STEPS.includes(fp.scale)) throw new Error(M('伴读猫缩放无效。','Invalid companion-pet scale.'));
     const scale = fp.scale ?? currentSettings.floatingPet?.scale ?? 1;
     if (fp.quotes !== undefined) {
       const quotes = fp.quotes;
-      if (!quotes || typeof quotes !== 'object' || Array.isArray(quotes)) throw new Error('无效的伴读猫语录设置。');
-      if (quotes.enabled !== undefined && typeof quotes.enabled !== 'boolean') throw new Error('无效的伴读猫语录开关。');
-      if (quotes.intervalMin !== undefined && ![15, 30, 60].includes(quotes.intervalMin)) throw new Error('无效的伴读猫语录间隔。');
+      if (!quotes || typeof quotes !== 'object' || Array.isArray(quotes)) throw new Error(M('无效的伴读猫语录设置。','Invalid companion-pet quote settings.'));
+      if (quotes.enabled !== undefined && typeof quotes.enabled !== 'boolean') throw new Error(M('无效的伴读猫语录开关。','Invalid companion-pet quote toggle.'));
+      if (quotes.intervalMin !== undefined && ![15, 30, 60].includes(quotes.intervalMin)) throw new Error(M('无效的伴读猫语录间隔。','Invalid companion-pet quote interval.'));
     }
     const currentQuotes = currentSettings.floatingPet?.quotes ?? {enabled: true, intervalMin: 15};
     const quotes = {enabled: fp.quotes?.enabled ?? currentQuotes.enabled ?? true, intervalMin: fp.quotes?.intervalMin ?? currentQuotes.intervalMin ?? 15};
     result.floatingPet = {enabled: fp.enabled ?? currentSettings.floatingPet?.enabled ?? true, position: {right: Math.round(right), bottom: Math.round(bottom)}, themeMode, scale, quotes};
   }
+  if (patch.complexSentenceAssist !== undefined) { if (typeof patch.complexSentenceAssist !== 'boolean') throw new Error(M('无效的长难句高亮设置。','Invalid complex-sentence highlight setting.')); result.complexSentenceAssist = patch.complexSentenceAssist; }
+  if (patch.formulaAssist !== undefined) { if (typeof patch.formulaAssist !== 'boolean') throw new Error(M('无效的公式识别设置。','Invalid formula-recognition setting.')); result.formulaAssist = patch.formulaAssist; }
+  if (patch.pdfReader !== undefined) { if (typeof patch.pdfReader !== 'boolean') throw new Error(M('无效的 PDF 阅读器设置。','Invalid PDF reader setting.')); result.pdfReader = patch.pdfReader; }
   return result;
 }
 
@@ -214,9 +233,10 @@ export function settingsPatchEffects(beforeSettings, patch) {
   const providerChanged = patch.providerKind !== undefined && patch.providerKind !== beforeSettings.providerKind
     || patch.subscriptionModel !== undefined && patch.subscriptionModel !== beforeSettings.subscriptionModel
     || beforeSettings.activeApiServiceId !== nextSettings.activeApiServiceId
-    || JSON.stringify(beforeProvider) !== JSON.stringify(afterProvider);
+    || JSON.stringify(beforeProvider) !== JSON.stringify(afterProvider)
+    || patch.apiRouting !== undefined && JSON.stringify({...beforeSettings.apiRouting, ...patch.apiRouting}) !== JSON.stringify(beforeSettings.apiRouting || {});
   const classificationChanged = providerChanged || patch.domainDetection !== undefined || patch.domainRules !== undefined || patch.domain !== undefined;
-  const genericChanged = Object.keys(patch).some(key => !['readingStyle', 'helpLanguage', 'apiServices', 'activeApiServiceId'].includes(key)) || providerChanged;
+  const genericChanged = Object.keys(patch).some(key => !['readingStyle', 'helpLanguage', 'apiServices', 'activeApiServiceId', 'apiRouting'].includes(key)) || providerChanged;
   // 伴读猫开关切换需要重跑 reconcileAutomation：注册/注销动态脚本并对已开标签补注入。
   const petEnabledChanged = patch.floatingPet !== undefined && (patch.floatingPet.enabled !== false) !== (beforeSettings.floatingPet?.enabled !== false);
   return {nextSettings, rememberChanged, providerChanged, classificationChanged, genericChanged, petEnabledChanged};
@@ -225,25 +245,25 @@ export function settingsPatchEffects(beforeSettings, patch) {
 /** ANALYZE 载荷：正文限长 20 万字符，领域可选。 */
 export function parseAnalyze(message) {
   return {
-    source: text(message?.text, '正文', 200000, false),
+    source: text(message?.text, M('正文','Body'), 200000, false),
     ...(message?.domain === undefined ? {} : {domain: domain(message.domain)}),
   };
 }
 
 /** HISTORY_RULE_SET 载荷：阶段与锁定开关先行校验，编号由调用方核对存在性。 */
 export function parseHistoryRuleSet(message) {
-  if (![null, 'hint', 'mark', 'quiet'].includes(message?.stage) || typeof message?.locked !== 'boolean') throw new Error('提示选择无效。');
-  return {wordId: text(message.wordId, '词条编号', 160), senseKey: text(message.senseKey, '义项编号', 160), stage: message.stage, locked: message.locked};
+  if (![null, 'hint', 'mark', 'quiet'].includes(message?.stage) || typeof message?.locked !== 'boolean') throw new Error(M('提示选择无效。','Invalid hint choice.'));
+  return {wordId: text(message.wordId, M('词条编号','Entry ID'), 160), senseKey: text(message.senseKey, M('义项编号','Sense ID'), 160), stage: message.stage, locked: message.locked};
 }
 
 /** HISTORY_DELETE 载荷：记录编号。 */
 export function parseHistoryRecordRef(message) {
-  return {id: text(message?.id, '记录编号', 160)};
+  return {id: text(message?.id, M('记录编号','Record ID'), 160)};
 }
 
 /** HISTORY_SUMMARY_EDIT 载荷：记录编号与摘要正文。 */
 export function parseHistorySummaryEdit(message) {
-  return {id: text(message?.id, '记录编号', 160), summary: text(message?.summary, '摘要', 600)};
+  return {id: text(message?.id, M('记录编号','Record ID'), 160), summary: text(message?.summary, M('摘要','Summary'), 600)};
 }
 
 /**
@@ -253,14 +273,14 @@ export function parseHistorySummaryEdit(message) {
  */
 export function parseAssistRequest(message) {
   const {type: _type, articleKey = '', ...payload} = message ?? {};
-  if (typeof articleKey !== 'string' || articleKey.length > 128) throw new Error('文章准备标识无效。');
+  if (typeof articleKey !== 'string' || articleKey.length > 128) throw new Error(M('文章准备标识无效。','Invalid article-prep key.'));
   return {articleKey, command: normalizeAssistanceCommand(payload)};
 }
 
 /** PASSAGE_TRANSLATE 载荷：段落翻译请求编号（与 gloss.mjs IDENTIFIER 一致）。 */
 export function parsePassageRequestRef(message) {
   const requestId = message?.requestId;
-  if (typeof requestId !== 'string' || !requestId.length || requestId.length > 128 || !/^[A-Za-z0-9._:-]+$/.test(requestId)) throw new Error('无效的段落翻译请求编号。');
+  if (typeof requestId !== 'string' || !requestId.length || requestId.length > 128 || !/^[A-Za-z0-9._:-]+$/.test(requestId)) throw new Error(M('无效的段落翻译请求编号。','Invalid passage-translation request number.'));
   return {requestId};
 }
 

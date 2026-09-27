@@ -27,6 +27,7 @@
   }
   window.__ROAMCAT_PET_INSTALLED__ = true;
 
+  const T = (k, v) => globalThis.RoamCatI18n?.t?.(k, v) ?? k;
   let hostEl = null;
   let shadowRoot = null;
   let currentSettings = null;
@@ -49,15 +50,15 @@
 
   function domainName(key) {
     const map = {
-      general: '通用阅读',
-      tech: '软件与 AI',
-      data: '数据工程',
-      finance: '商业与金融',
-      medical: '医学健康',
-      legal: '法律与合规',
-      design: '设计与产品'
+      general: 'domain.general',
+      tech: 'domain.tech',
+      data: 'domain.data',
+      finance: 'domain.finance',
+      medical: 'domain.medical',
+      legal: 'domain.legal',
+      design: 'domain.design'
     };
-    return map[key] || '全篇精炼';
+    return T(map[key] || '') || T('fp.domainFallback');
   }
 
   // escapeHtml/formatHighlight 已由 content-ui 渲染层的文本绑定与 highlightParts 取代。
@@ -242,7 +243,7 @@
       :host, :host([data-theme="light"]) {
         color-scheme: light;
         color: var(--pet-ink, #0f172a);
-        --pet-cat-color: #1e293b;
+        --pet-cat-color: #241f18;
         --pet-cat-hover: #d97706;
         --pet-cat-glow: drop-shadow(0 0 1px rgba(255, 255, 255, 0.9)) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.18));
         --pet-cat-glow-hover: drop-shadow(0 0 2px rgba(255, 255, 255, 0.95)) drop-shadow(0 4px 14px rgba(217, 119, 6, 0.4));
@@ -273,88 +274,88 @@
         --pet-btn-active-ink: #5d3d0c;
         --pet-glyph: #463b28;
         --pet-glyph-emboss: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.72));
-        --pet-coin-edge: repeating-conic-gradient(from 0deg, #e2bc6d 0deg 9deg, #a37d2e 9deg 18deg);
+        --pet-coin-edge: repeating-conic-gradient(from 0deg, #e2bc6d 0deg 6deg, #a37d2e 6deg 12deg);
         --pet-coin-face: radial-gradient(circle at 32% 26%, #fff8e1 0%, #f6dd9f 40%, #e0b459 76%, #bf9134 100%);
         --pet-coin-face-back: radial-gradient(circle at 32% 26%, #ffe3a6 0%, #f0bd55 45%, #d9a02e 80%, #b07f22 100%);
-        --pet-coin-inset: inset 0 1px 1px rgba(255, 255, 255, 0.75), inset 0 -1px 2px rgba(119, 84, 23, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+        --pet-coin-inset: inset 0 1px 1px rgba(255, 255, 255, 0.75), inset 0 -1px 2px rgba(119, 84, 23, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.28), inset 0 0 0 2.5px rgba(122, 86, 24, 0.32);
         --pet-coin-emboss: 0 1px 0 rgba(255, 255, 255, 0.55);
       }
 
       :host([data-theme="dark"]) {
         color-scheme: dark;
-        color: #f8fafc;
-        --pet-cat-color: #f8fafc;
-        --pet-cat-hover: #fbbf24;
-        --pet-cat-glow: drop-shadow(0 0 1.5px rgba(255, 255, 255, 0.8)) drop-shadow(0 2px 10px rgba(0, 0, 0, 0.95)) drop-shadow(0 0 8px rgba(245, 158, 11, 0.35));
-        --pet-cat-glow-hover: drop-shadow(0 0 2px rgba(255, 255, 255, 0.95)) drop-shadow(0 4px 20px rgba(245, 158, 11, 0.65)) drop-shadow(0 0 14px rgba(251, 191, 36, 0.5));
-        --pet-primary: #f59e0b;
-        --pet-primary-soft: rgba(245, 158, 11, 0.16);
-        --pet-primary-hover: #fbbf24;
-        --pet-accent: #f8fafc;
-        --pet-surface: #18181b;
-        --pet-surface-elevated: #27272a;
-        --pet-line: rgba(255, 255, 255, 0.12);
-        --pet-line-subtle: rgba(255, 255, 255, 0.07);
-        --pet-ink: #f8fafc;
-        --pet-muted: #94a3b8;
-        --pet-tag-bg: rgba(255, 255, 255, 0.08);
+        color: #ece7d9;
+        --pet-cat-color: #ece7d9;
+        --pet-cat-hover: #f0a63c;
+        --pet-cat-glow: drop-shadow(0 0 1.5px rgba(236, 231, 217, 0.7)) drop-shadow(0 2px 10px rgba(0, 0, 0, 0.95)) drop-shadow(0 0 8px rgba(240, 166, 60, 0.3));
+        --pet-cat-glow-hover: drop-shadow(0 0 2px rgba(236, 231, 217, 0.85)) drop-shadow(0 4px 20px rgba(240, 166, 60, 0.6)) drop-shadow(0 0 14px rgba(247, 188, 85, 0.45));
+        --pet-primary: #f0a63c;
+        --pet-primary-soft: rgba(240, 166, 60, 0.16);
+        --pet-primary-hover: #f7bc55;
+        --pet-accent: #ece7d9;
+        --pet-surface: #161d27;
+        --pet-surface-elevated: #222b39;
+        --pet-line: rgba(237, 231, 214, 0.13);
+        --pet-line-subtle: rgba(237, 231, 214, 0.08);
+        --pet-ink: #ece7d9;
+        --pet-muted: #908b7c;
+        --pet-tag-bg: rgba(237, 231, 214, 0.09);
         --pet-shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.5);
         --pet-shadow-md: 0 12px 36px rgba(0, 0, 0, 0.6);
         --pet-shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.7);
-        /* 暗色拟物：胡桃木烤漆扣。棱线高光减弱、接触影加深、字形改凹版压印。 */
-        --pet-btn-face: radial-gradient(135% 135% at 30% 18%, #57524a 0%, rgba(87, 82, 74, 0) 55%), linear-gradient(180deg, #403a32 0%, #322d27 58%, #241f1a 100%);
+        /* 暗色拟物：砚台石墨扣 + 暖瓷刃口。棱线高光减弱、接触影加深、字形改凹版压印。 */
+        --pet-btn-face: radial-gradient(135% 135% at 30% 18%, rgba(255, 240, 214, 0.09) 0%, rgba(255, 240, 214, 0) 55%), linear-gradient(180deg, #333d4c 0%, #262e3b 58%, #1b222d 100%);
         --pet-btn-rim: rgba(0, 0, 0, 0.62);
-        --pet-btn-inset: inset 0 1px 0 rgba(255, 248, 232, 0.16), inset 0 -1.5px 2.5px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(255, 248, 232, 0.06);
+        --pet-btn-inset: inset 0 1px 0 rgba(255, 240, 214, 0.18), inset 0 -1.5px 2.5px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(255, 240, 214, 0.05);
         --pet-btn-cast: 0 1px 1.5px rgba(0, 0, 0, 0.6), 0 5px 12px rgba(0, 0, 0, 0.45);
-        --pet-btn-press: inset 0 2px 5px rgba(0, 0, 0, 0.65), inset 0 -1px 0 rgba(255, 248, 232, 0.08);
-        --pet-btn-glow: inset 0 0 8px rgba(245, 158, 11, 0.35);
-        --pet-btn-active-face: radial-gradient(135% 135% at 30% 18%, #f2b84e 0%, rgba(242, 184, 78, 0) 55%), linear-gradient(180deg, #d99a26 0%, #b57708 62%, #93600a 100%);
+        --pet-btn-press: inset 0 2px 5px rgba(0, 0, 0, 0.65), inset 0 -1px 0 rgba(255, 240, 214, 0.08);
+        --pet-btn-glow: inset 0 0 8px rgba(240, 166, 60, 0.32);
+        --pet-btn-active-face: radial-gradient(135% 135% at 30% 18%, #f7bc55 0%, rgba(247, 188, 85, 0) 55%), linear-gradient(180deg, #e0a63a 0%, #bc8410 62%, #97680a 100%);
         --pet-btn-active-ink: #241703;
-        --pet-glyph: #ede3cd;
+        --pet-glyph: #ece7d9;
         --pet-glyph-emboss: drop-shadow(0 -1px 1px rgba(0, 0, 0, 0.75));
-        --pet-coin-edge: repeating-conic-gradient(from 0deg, #8a6a24 0deg 9deg, #54400f 9deg 18deg);
+        --pet-coin-edge: repeating-conic-gradient(from 0deg, #8a6a24 0deg 6deg, #54400f 6deg 12deg);
         --pet-coin-face: radial-gradient(circle at 32% 26%, #6e5c33 0%, #54431f 45%, #3a2f15 80%, #2b2210 100%);
         --pet-coin-face-back: radial-gradient(circle at 32% 26%, #c99622 0%, #a97c15 45%, #7d5a0b 82%, #5f430a 100%);
-        --pet-coin-inset: inset 0 1px 1px rgba(255, 244, 214, 0.22), inset 0 -1px 2px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(255, 244, 214, 0.08);
+        --pet-coin-inset: inset 0 1px 1px rgba(255, 244, 214, 0.22), inset 0 -1px 2px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(255, 244, 214, 0.08), inset 0 0 0 2.5px rgba(0, 0, 0, 0.35);
         --pet-coin-emboss: 0 -1px 1px rgba(0, 0, 0, 0.6);
       }
 
       @media (prefers-color-scheme: dark) {
         :host(:not([data-theme])) {
           color-scheme: dark;
-          color: #f8fafc;
-          --pet-cat-color: #f8fafc;
-          --pet-cat-hover: #fbbf24;
-          --pet-cat-glow: drop-shadow(0 0 1.5px rgba(255, 255, 255, 0.8)) drop-shadow(0 2px 10px rgba(0, 0, 0, 0.95)) drop-shadow(0 0 8px rgba(245, 158, 11, 0.35));
-          --pet-cat-glow-hover: drop-shadow(0 0 2px rgba(255, 255, 255, 0.95)) drop-shadow(0 4px 20px rgba(245, 158, 11, 0.65)) drop-shadow(0 0 14px rgba(251, 191, 36, 0.5));
-          --pet-primary: #f59e0b;
-          --pet-primary-soft: rgba(245, 158, 11, 0.16);
-          --pet-primary-hover: #fbbf24;
-          --pet-accent: #f8fafc;
-          --pet-surface: #18181b;
-          --pet-surface-elevated: #27272a;
-          --pet-line: rgba(255, 255, 255, 0.12);
-          --pet-line-subtle: rgba(255, 255, 255, 0.07);
-          --pet-ink: #f8fafc;
-          --pet-muted: #94a3b8;
-          --pet-tag-bg: rgba(255, 255, 255, 0.08);
+          color: #ece7d9;
+          --pet-cat-color: #ece7d9;
+          --pet-cat-hover: #f0a63c;
+          --pet-cat-glow: drop-shadow(0 0 1.5px rgba(236, 231, 217, 0.7)) drop-shadow(0 2px 10px rgba(0, 0, 0, 0.95)) drop-shadow(0 0 8px rgba(240, 166, 60, 0.3));
+          --pet-cat-glow-hover: drop-shadow(0 0 2px rgba(236, 231, 217, 0.85)) drop-shadow(0 4px 20px rgba(240, 166, 60, 0.6)) drop-shadow(0 0 14px rgba(247, 188, 85, 0.45));
+          --pet-primary: #f0a63c;
+          --pet-primary-soft: rgba(240, 166, 60, 0.16);
+          --pet-primary-hover: #f7bc55;
+          --pet-accent: #ece7d9;
+          --pet-surface: #161d27;
+          --pet-surface-elevated: #222b39;
+          --pet-line: rgba(237, 231, 214, 0.13);
+          --pet-line-subtle: rgba(237, 231, 214, 0.08);
+          --pet-ink: #ece7d9;
+          --pet-muted: #908b7c;
+          --pet-tag-bg: rgba(237, 231, 214, 0.09);
           --pet-shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.5);
           --pet-shadow-md: 0 12px 36px rgba(0, 0, 0, 0.6);
           --pet-shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.7);
-          --pet-btn-face: radial-gradient(135% 135% at 30% 18%, #57524a 0%, rgba(87, 82, 74, 0) 55%), linear-gradient(180deg, #403a32 0%, #322d27 58%, #241f1a 100%);
+          --pet-btn-face: radial-gradient(135% 135% at 30% 18%, rgba(255, 240, 214, 0.09) 0%, rgba(255, 240, 214, 0) 55%), linear-gradient(180deg, #333d4c 0%, #262e3b 58%, #1b222d 100%);
           --pet-btn-rim: rgba(0, 0, 0, 0.62);
-          --pet-btn-inset: inset 0 1px 0 rgba(255, 248, 232, 0.16), inset 0 -1.5px 2.5px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(255, 248, 232, 0.06);
+          --pet-btn-inset: inset 0 1px 0 rgba(255, 240, 214, 0.18), inset 0 -1.5px 2.5px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(255, 240, 214, 0.05);
           --pet-btn-cast: 0 1px 1.5px rgba(0, 0, 0, 0.6), 0 5px 12px rgba(0, 0, 0, 0.45);
-          --pet-btn-press: inset 0 2px 5px rgba(0, 0, 0, 0.65), inset 0 -1px 0 rgba(255, 248, 232, 0.08);
-          --pet-btn-glow: inset 0 0 8px rgba(245, 158, 11, 0.35);
-          --pet-btn-active-face: radial-gradient(135% 135% at 30% 18%, #f2b84e 0%, rgba(242, 184, 78, 0) 55%), linear-gradient(180deg, #d99a26 0%, #b57708 62%, #93600a 100%);
+          --pet-btn-press: inset 0 2px 5px rgba(0, 0, 0, 0.65), inset 0 -1px 0 rgba(255, 240, 214, 0.08);
+          --pet-btn-glow: inset 0 0 8px rgba(240, 166, 60, 0.32);
+          --pet-btn-active-face: radial-gradient(135% 135% at 30% 18%, #f7bc55 0%, rgba(247, 188, 85, 0) 55%), linear-gradient(180deg, #e0a63a 0%, #bc8410 62%, #97680a 100%);
           --pet-btn-active-ink: #241703;
-          --pet-glyph: #ede3cd;
+          --pet-glyph: #ece7d9;
           --pet-glyph-emboss: drop-shadow(0 -1px 1px rgba(0, 0, 0, 0.75));
-          --pet-coin-edge: repeating-conic-gradient(from 0deg, #8a6a24 0deg 9deg, #54400f 9deg 18deg);
+          --pet-coin-edge: repeating-conic-gradient(from 0deg, #8a6a24 0deg 6deg, #54400f 6deg 12deg);
           --pet-coin-face: radial-gradient(circle at 32% 26%, #6e5c33 0%, #54431f 45%, #3a2f15 80%, #2b2210 100%);
           --pet-coin-face-back: radial-gradient(circle at 32% 26%, #c99622 0%, #a97c15 45%, #7d5a0b 82%, #5f430a 100%);
-          --pet-coin-inset: inset 0 1px 1px rgba(255, 244, 214, 0.22), inset 0 -1px 2px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(255, 244, 214, 0.08);
+          --pet-coin-inset: inset 0 1px 1px rgba(255, 244, 214, 0.22), inset 0 -1px 2px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(255, 244, 214, 0.08), inset 0 0 0 2.5px rgba(0, 0, 0, 0.35);
           --pet-coin-emboss: 0 -1px 1px rgba(0, 0, 0, 0.6);
         }
       }
@@ -424,10 +425,10 @@
         width: 20px;
         height: 48px;
         border-radius: 12px 0 0 12px;
-        background: var(--pet-surface-elevated, #ffffff);
-        border: 1.5px solid var(--pet-line, #e2e8f0);
+        background: var(--pet-btn-face, var(--pet-surface-elevated, #ffffff));
+        border: 1.5px solid var(--pet-btn-rim, var(--pet-line, #e2e8f0));
         border-right: none;
-        box-shadow: -2px 3px 12px rgba(0, 0, 0, 0.08);
+        box-shadow: var(--pet-btn-inset, none), var(--pet-btn-cast, -2px 3px 12px rgba(0, 0, 0, 0.08));
         display: none;
         align-items: center;
         justify-content: center;
@@ -559,14 +560,13 @@
         width: 100%;
         height: 100%;
         position: relative;
-        transform-style: preserve-3d;
-        transition: transform 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
         display: flex;
         align-items: center;
         justify-content: center;
       }
 
-      /* Coin Faces：币面内缩露出铣边轮圈，径向渐变做凸面受光 */
+      /* Coin Face：币面内缩露出铣边轮圈，径向渐变做凸面受光；
+         单面按钮——双语开启只换配色，不再翻面 */
       .coin-face {
         position: absolute;
         inset: 2.5px;
@@ -574,21 +574,16 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        backface-visibility: hidden;
-        -webkit-backface-visibility: hidden;
         background: var(--pet-coin-face, var(--pet-surface-elevated, #ffffff));
         box-shadow: var(--pet-coin-inset, none);
         text-shadow: var(--pet-coin-emboss, none);
+        transition: background 0.25s ease;
       }
 
       .coin-face-front {
-        transform: rotateY(0deg);
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
         letter-spacing: -0.3px;
         line-height: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
       }
 
       .coin-glyph-bilingual {
@@ -613,33 +608,6 @@
       .glyph-sub {
         font-size: 9px;
         color: var(--pet-glyph, var(--pet-ink, #161511));
-      }
-
-      .coin-face-back {
-        transform: rotateY(180deg);
-        background: var(--pet-coin-face-back, var(--pet-primary-soft, rgba(245, 158, 11, 0.14)));
-      }
-
-      .coin-glyph-active-box {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 2px;
-      }
-
-      .coin-active-dot {
-        width: 4px;
-        height: 4px;
-        border-radius: 50%;
-        background: var(--pet-primary, #f59e0b);
-        box-shadow: 0 0 5px var(--pet-primary, #f59e0b);
-      }
-
-      .coin-glyph-active {
-        font-size: 10px;
-        font-weight: 700;
-        color: var(--pet-primary, #f59e0b);
-        letter-spacing: -0.2px;
       }
 
       /* Orbit SVG Spinner Ring */
@@ -670,14 +638,24 @@
         transform-origin: center;
       }
 
-      /* ACTIVE STATE (双语翻译已开启) */
+      /* ACTIVE STATE (双语翻译已开启)：币面换深金色 + 字形提亮，不翻面 */
       .roamcat-flip-btn.is-active {
         border-color: var(--pet-primary, #f59e0b);
         box-shadow: 0 0 0 1px var(--pet-primary, #f59e0b), var(--pet-shadow-sm);
       }
 
-      .roamcat-flip-btn.is-active .flip-coin {
-        transform: rotateY(180deg);
+      .roamcat-flip-btn.is-active .coin-face-front {
+        background: var(--pet-coin-face-back, var(--pet-primary-soft, rgba(245, 158, 11, 0.14)));
+      }
+
+      .roamcat-flip-btn.is-active .coin-glyph-bilingual .glyph-main,
+      .roamcat-flip-btn.is-active .coin-glyph-bilingual .glyph-sub {
+        color: #fff8e1;
+      }
+
+      .roamcat-flip-btn.is-active .coin-glyph-bilingual .glyph-sep {
+        color: rgba(255, 248, 225, 0.55);
+        opacity: 1;
       }
 
       /* TRANSLATING STATE (正在逐段翻译中) */
@@ -695,32 +673,22 @@
         to { transform: rotate(360deg); }
       }
 
-      /* Micro-flip trigger animation when clicked */
-      .roamcat-flip-btn.flip-trigger {
-        animation: flip-pop 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
-      }
-
-      @keyframes flip-pop {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.14) rotate(180deg); }
-        100% { transform: scale(1); }
-      }
-
       /* Tooltip for the flip button：与 .quick-tooltip 一致，向带内方向弹出 */
       .flip-tooltip {
         position: absolute;
         right: calc(100% + 6px);
         top: 50%;
         transform: translateY(-50%) translateX(4px);
-        background: var(--pet-surface-elevated, #ffffff);
-        color: var(--pet-ink, #161511);
-        border: 1px solid var(--pet-line, #e2ded4);
+        background: var(--pet-btn-face, var(--pet-surface-elevated, #ffffff));
+        color: var(--pet-glyph, var(--pet-ink, #161511));
+        border: 1px solid var(--pet-btn-rim, var(--pet-line, #e2ded4));
         border-radius: 999px;
         padding: 3px 9px;
         font-size: 11px;
         font-weight: 600;
         white-space: nowrap;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+        box-shadow: var(--pet-btn-inset, none), var(--pet-btn-cast, 0 4px 12px rgba(0,0,0,0.12));
         pointer-events: none;
         opacity: 0;
         visibility: hidden;
@@ -849,6 +817,13 @@
           opacity 0.18s ease calc(var(--i, 0) * 35ms),
           translate 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--i, 0) * 35ms),
           scale 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--i, 0) * 35ms);
+      }
+
+      /* 悬停/聚焦的子按钮整体抬到兄弟之上：dock 子项各经 scale/translate 建立
+         独立层叠上下文，其内部 tooltip 的 z-index 只在本按钮上下文内生效——
+         不抬父级，向左弹出的提示会被相邻按钮（尤其 z-index:12 的旋旋翻币）盖住。 */
+      .roamcat-quick-dock > *:is(:hover, :focus-within) {
+        z-index: 16;
       }
 
       /* 快捷坞展开时气泡抬高，避开缩放胶囊 */
@@ -1056,6 +1031,13 @@
         color: var(--pet-btn-active-ink, var(--pet-primary, #f59e0b));
       }
 
+      /* 切换进行中：压暗 + 琥珀细环脉冲，并屏蔽连点 */
+      .roamcat-quick-btn.is-pending {
+        opacity: 0.55;
+        pointer-events: none;
+        box-shadow: var(--pet-btn-inset, none), 0 0 0 1px var(--pet-primary, #f59e0b);
+      }
+
       /* 贴左屏时翻转"贴边折叠"箭头朝向 */
       .roamcat-pet-widget.is-left .icon-dock-edge {
         transform: scaleX(-1);
@@ -1066,15 +1048,16 @@
         right: calc(100% + 6px);
         top: 50%;
         transform: translateY(-50%) translateX(4px);
-        background: var(--pet-surface-elevated, #ffffff);
-        color: var(--pet-ink, #161511);
-        border: 1px solid var(--pet-line, #e2ded4);
+        background: var(--pet-btn-face, var(--pet-surface-elevated, #ffffff));
+        color: var(--pet-glyph, var(--pet-ink, #161511));
+        border: 1px solid var(--pet-btn-rim, var(--pet-line, #e2ded4));
         border-radius: 999px;
         padding: 3px 9px;
         font-size: 11px;
         font-weight: 600;
         white-space: nowrap;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+        box-shadow: var(--pet-btn-inset, none), var(--pet-btn-cast, 0 4px 12px rgba(0, 0, 0, 0.12));
         opacity: 0;
         visibility: hidden;
         pointer-events: none;
@@ -1132,9 +1115,9 @@
         bottom: calc(100% + 8px + var(--zoom-offset, 0px));
         left: 50%;
         transform: translateX(calc(-50% + var(--bubble-shift-x, 0px))) translateY(4px);
-        background: var(--pet-surface-elevated, #ffffff);
+        background: var(--pet-btn-face, var(--pet-surface-elevated, #ffffff));
         color: var(--pet-ink, #111827);
-        border: 1.5px solid var(--pet-line, #e5e7eb);
+        border: 1.5px solid var(--pet-btn-rim, var(--pet-line, #e5e7eb));
         border-radius: 12px;
         padding: 6px 10px;
         font-size: 11.5px;
@@ -1143,7 +1126,8 @@
         overflow-wrap: anywhere;
         line-height: 1.35;
         text-align: left;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+        box-shadow: var(--pet-btn-inset, none), var(--pet-btn-cast, 0 4px 16px rgba(0,0,0,0.12));
         pointer-events: none;
         opacity: 0;
         transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.2, 0.9, 0.3, 1), border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
@@ -1210,9 +1194,9 @@
 
       /* Speaking default state */
       .cat-speech-bubble.speaking {
-        background: var(--pet-surface-elevated, #ffffff);
+        background: var(--pet-btn-face, var(--pet-surface-elevated, #ffffff));
         color: var(--pet-ink, #161511) !important;
-        border-color: var(--pet-line, #e5e7eb);
+        border-color: var(--pet-btn-rim, var(--pet-line, #e5e7eb));
       }
       .cat-speech-bubble.speaking .speech-text {
         color: var(--pet-ink, #161511) !important;
@@ -1250,54 +1234,54 @@
 
       /* Busy / Loading speaking - Dark theme (Relingo Obsidian + Warm Amber) */
       :host([data-theme="dark"]) .cat-speech-bubble.speaking.is-busy {
-        border-color: #f59e0b !important;
-        background: #1e2028 !important;
-        color: #fef3c7 !important;
-        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(245, 158, 11, 0.3) !important;
+        border-color: #f0a63c !important;
+        background: #1c2531 !important;
+        color: #f3e4c0 !important;
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(240, 166, 60, 0.3) !important;
       }
       :host([data-theme="dark"]) .cat-speech-bubble.speaking.is-busy .speech-text {
-        color: #fef3c7 !important;
+        color: #f3e4c0 !important;
         font-weight: 600 !important;
       }
       :host([data-theme="dark"]) .cat-speech-bubble.speaking.is-busy {
-        --tail-bg: #1e2028;
+        --tail-bg: #1c2531;
       }
       :host([data-theme="dark"]) .cat-speech-bubble.speaking.is-busy .speech-spinner {
-        border: 2px solid rgba(245, 158, 11, 0.25);
-        border-top-color: #f59e0b;
+        border: 2px solid rgba(240, 166, 60, 0.25);
+        border-top-color: #f0a63c;
       }
       :host([data-theme="dark"]) .cat-speech-bubble.speaking.is-busy .speech-close-btn {
-        color: #f59e0b;
+        color: #f0a63c;
       }
       :host([data-theme="dark"]) .cat-speech-bubble.speaking.is-busy .speech-close-btn:hover {
-        color: #fbbf24;
-        background: rgba(245, 158, 11, 0.15);
+        color: #f7bc55;
+        background: rgba(240, 166, 60, 0.15);
       }
 
       @media (prefers-color-scheme: dark) {
         :host(:not([data-theme="light"])) .cat-speech-bubble.speaking.is-busy {
-          border-color: #f59e0b !important;
-          background: #1e2028 !important;
-          color: #fef3c7 !important;
-          box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(245, 158, 11, 0.3) !important;
+          border-color: #f0a63c !important;
+          background: #1c2531 !important;
+          color: #f3e4c0 !important;
+          box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(240, 166, 60, 0.3) !important;
         }
         :host(:not([data-theme="light"])) .cat-speech-bubble.speaking.is-busy .speech-text {
-          color: #fef3c7 !important;
+          color: #f3e4c0 !important;
           font-weight: 600 !important;
         }
         :host(:not([data-theme="light"])) .cat-speech-bubble.speaking.is-busy {
-          --tail-bg: #1e2028;
+          --tail-bg: #1c2531;
         }
         :host(:not([data-theme="light"])) .cat-speech-bubble.speaking.is-busy .speech-spinner {
-          border: 2px solid rgba(245, 158, 11, 0.25);
-          border-top-color: #f59e0b;
+          border: 2px solid rgba(240, 166, 60, 0.25);
+          border-top-color: #f0a63c;
         }
         :host(:not([data-theme="light"])) .cat-speech-bubble.speaking.is-busy .speech-close-btn {
-          color: #f59e0b;
+          color: #f0a63c;
         }
         :host(:not([data-theme="light"])) .cat-speech-bubble.speaking.is-busy .speech-close-btn:hover {
-          color: #fbbf24;
-          background: rgba(245, 158, 11, 0.15);
+          color: #f7bc55;
+          background: rgba(240, 166, 60, 0.15);
         }
       }
 
@@ -1325,32 +1309,32 @@
 
       /* Error state - Dark theme */
       :host([data-theme="dark"]) .cat-speech-bubble.speaking.is-error {
-        border-color: #f87171 !important;
-        background: #201315 !important;
-        color: #fca5a5 !important;
-        box-shadow: 0 4px 18px rgba(248, 113, 113, 0.25) !important;
+        border-color: #f0756a !important;
+        background: #251719 !important;
+        color: #f7b3ad !important;
+        box-shadow: 0 4px 18px rgba(240, 117, 106, 0.25) !important;
       }
       :host([data-theme="dark"]) .cat-speech-bubble.speaking.is-error .speech-text {
-        color: #fca5a5 !important;
+        color: #f7b3ad !important;
         font-weight: 600 !important;
       }
       :host([data-theme="dark"]) .cat-speech-bubble.speaking.is-error {
-        --tail-bg: #201315;
+        --tail-bg: #251719;
       }
 
       @media (prefers-color-scheme: dark) {
         :host(:not([data-theme="light"])) .cat-speech-bubble.speaking.is-error {
-          border-color: #f87171 !important;
-          background: #201315 !important;
-          color: #fca5a5 !important;
-          box-shadow: 0 4px 18px rgba(248, 113, 113, 0.25) !important;
+          border-color: #f0756a !important;
+          background: #251719 !important;
+          color: #f7b3ad !important;
+          box-shadow: 0 4px 18px rgba(240, 117, 106, 0.25) !important;
         }
         :host(:not([data-theme="light"])) .cat-speech-bubble.speaking.is-error .speech-text {
-          color: #fca5a5 !important;
+          color: #f7b3ad !important;
           font-weight: 600 !important;
         }
         :host(:not([data-theme="light"])) .cat-speech-bubble.speaking.is-error {
-          --tail-bg: #201315;
+          --tail-bg: #251719;
         }
       }
 
@@ -1449,7 +1433,7 @@
         height: 62px;
         color: var(--pet-cat-color, #1e293b);
         filter: var(--pet-cat-glow);
-        transform-origin: 230px 450px;
+        transform-origin: 180px 466px;
         animation: cat-breathe 3.6s ease-in-out infinite;
         overflow: visible;
         display: block;
@@ -1489,7 +1473,7 @@
 
       /* 1. Tail Wagging Animation */
       .cat-tail {
-        transform-origin: 395px 250px;
+        transform-origin: 300px 316px;
         animation: cat-tail-wag 4.5s ease-in-out infinite;
       }
       @keyframes cat-tail-wag {
@@ -1512,11 +1496,11 @@
 
       /* 2. Ear Twitching Animation */
       .cat-ear-left {
-        transform-origin: 50px 50px;
+        transform-origin: 92px 96px;
         animation: cat-ear-twitch-left 6.8s ease-in-out infinite;
       }
       .cat-ear-right {
-        transform-origin: 245px 50px;
+        transform-origin: 246px 96px;
         animation: cat-ear-twitch-right 7.5s ease-in-out infinite 2s;
       }
       @keyframes cat-ear-twitch-left {
@@ -1532,7 +1516,7 @@
 
       /* 3. Eyes Expressions: Blinking & Squinting */
       .cat-eyes-open {
-        transform-origin: 125px 145px;
+        transform-origin: 168px 147px;
         animation: scan-blink 4.2s ease-in-out infinite;
         opacity: 1;
         transition: opacity 0.16s ease;
@@ -1559,6 +1543,26 @@
       .roamcat-avatar-wrap.state-happy .cat-eyes-squint,
       .roamcat-avatar-wrap.state-sleeping .cat-eyes-squint {
         opacity: 1;
+      }
+
+      /* Gaze Tracking: 眼睛跟随光标（--eye-x/--eye-y ∈ -1..1，JS 驱动） */
+      .cat-eyes-group {
+        transform: translate(calc(var(--eye-x, 0) * 14px), calc(var(--eye-y, 0) * 9px));
+        transition: transform 0.16s ease-out;
+      }
+      .cat-peeking-svg .peeking-eyes-group {
+        transform: translate(calc(var(--eye-x, 0) * 3px), calc(var(--eye-y, 0) * 2.2px));
+        transition: transform 0.16s ease-out;
+      }
+      /* 贴左边时探头猫整体 scaleX(-1) 镜像，局部 +x 在屏幕上是 -x，需取反 */
+      .roamcat-pet-widget.is-left .cat-peeking-svg .peeking-eyes-group {
+        transform: translate(calc(var(--eye-x, 0) * -3px), calc(var(--eye-y, 0) * 2.2px));
+      }
+
+      /* Pressed Squash: 按住猫猫的果冻压感（scale 属性与 transform 关键帧可复合） */
+      .roamcat-avatar-wrap.is-pressed .cat-mode-roaming,
+      .roamcat-avatar-wrap.is-pressed .cat-mode-peeking {
+        scale: 0.9 0.86;
       }
 
       /* 4. Idle Micro-actions */
@@ -1697,7 +1701,7 @@
         height: 100%;
         transform: scale(var(--pet-scale, 1));
         transform-origin: bottom center;
-        transition: opacity 0.2s ease, transform 0.25s ease;
+        transition: opacity 0.2s ease, transform 0.25s ease, scale 0.16s cubic-bezier(0.34, 1.3, 0.64, 1);
       }
       .roamcat-pet-widget.pet-away .cat-mode-roaming {
         opacity: 0;
@@ -1709,6 +1713,7 @@
         height: 100%;
         transform: scale(var(--pet-scale, 1));
         transform-origin: bottom center;
+        transition: transform 0.25s ease, scale 0.16s cubic-bezier(0.34, 1.3, 0.64, 1);
       }
 
       .roamcat-pet-widget.docked .cat-mode-roaming {
@@ -1846,6 +1851,9 @@
         .cat-speech-bubble,
         .roamcat-summary-window,
         .cat-mode-roaming,
+        .cat-mode-peeking,
+        .cat-eyes-group,
+        .peeking-eyes-group,
         .pet-car,
         .pet-car * {
           transition: none !important;
@@ -1910,10 +1918,11 @@
         width: 460px;
         max-width: calc(100vw - 32px);
         max-height: calc(100vh - 80px);
-        background: var(--pet-surface);
-        border: 1px solid var(--pet-line);
+        background-color: var(--pet-surface);
+        background-image: var(--pet-btn-face, none);
+        border: 1px solid var(--pet-btn-rim, var(--pet-line));
         border-radius: 12px;
-        box-shadow: var(--pet-shadow-lg), 0 0 0 1px color-mix(in srgb, var(--pet-primary, #f59e0b) 22%, transparent);
+        box-shadow: var(--pet-btn-inset, none), var(--pet-shadow-lg), 0 0 0 1px color-mix(in srgb, var(--pet-primary, #f59e0b) 22%, transparent);
         display: flex;
         flex-direction: column;
         overflow: hidden;
@@ -2260,8 +2269,15 @@
   function renderPeekingCatSvg() {
     return `
       <svg class="cat-peeking-svg" viewBox="0 0 160 160" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-        <title>RoamCat · 贴边探头姿态</title>
-        
+        <title>${T('fp.svgPeek')}</title>
+        <defs>
+          <linearGradient id="rc-peek-vol" x1="0" y1="0" x2="0.6" y2="1">
+            <stop offset="0" stop-color="#ffffff" stop-opacity="0.22"/>
+            <stop offset="0.5" stop-color="#ffffff" stop-opacity="0"/>
+            <stop offset="1" stop-color="#000000" stop-opacity="0.16"/>
+          </linearGradient>
+        </defs>
+
         <!-- 1. Ambient Glow Silhouette -->
         <path class="peeking-base-silhouette" d="M160,20 C130,20 102,30 84,46 C68,58 48,70 38,88 C28,106 32,125 46,138 C64,150 94,156 128,158 C144,159 156,160 160,160 Z" opacity="0.08" />
 
@@ -2304,6 +2320,9 @@
             <rect x="112" y="144" width="48" height="4.5" rx="2.2" />
           </g>
 
+          <!-- Pseudo-2D Volume Shading on head -->
+          <path class="peeking-volume" fill="url(#rc-peek-vol)" d="M160,36 C136,36 108,44 90,56 C72,68 50,78 42,94 C34,109 38,124 50,135 C66,146 94,152 128,154 L160,154 Z" />
+
           <!-- Cute Blushing Cheeks (Warm amber/rose glow) -->
           <ellipse class="peeking-blush" cx="52" cy="110" rx="10" ry="5.5" fill="var(--pet-primary, #f59e0b)" opacity="0.5" />
 
@@ -2313,14 +2332,14 @@
             <g class="peeking-eyes-open">
               <!-- Front Eye (Left, large & glossy) -->
               <ellipse cx="64" cy="86" rx="13" ry="16" fill="#ffffff" stroke="currentColor" stroke-width="2.2" />
-              <ellipse cx="61.5" cy="86" rx="8.5" ry="12" fill="currentColor" />
+              <ellipse cx="61.5" cy="86" rx="8.5" ry="12" fill="var(--pet-ink, #1c1917)" />
               <!-- Double Glossy Catchlights (✨) -->
               <circle cx="58" cy="81" r="4" fill="#ffffff" />
               <circle cx="65" cy="91" r="2.2" fill="#ffffff" />
 
               <!-- Perspective Eye (Right, slightly smaller in perspective) -->
               <ellipse cx="98" cy="78" rx="10.5" ry="13.5" fill="#ffffff" stroke="currentColor" stroke-width="2" />
-              <ellipse cx="95.5" cy="78" rx="7" ry="10" fill="currentColor" />
+              <ellipse cx="95.5" cy="78" rx="7" ry="10" fill="var(--pet-ink, #1c1917)" />
               <circle cx="93" cy="74" r="3.2" fill="#ffffff" />
               <circle cx="99" cy="82" r="1.8" fill="#ffffff" />
             </g>
@@ -2382,137 +2401,62 @@
   function renderCatSvg() {
     return `
       <svg class="cat-svg" viewBox="0 0 460 490" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-        <title>RoamCat · 扫描线漫游猫</title>
-        <!-- Soft Cat Base Silhouette -->
-        <path d="M32,12L40,12L40,20L57,20L57,30L75,30L75,42L93,42L93,55L113,55L113,66L188,66L188,53L213,53L213,37L236,37L236,20L254,20L254,8L268,8L268,25L277,25L277,74L285,74L285,119L295,119L295,178L305,178L305,213L321,213L321,225L343,225L343,237L365,237L365,249L393,249L406,240L412,221L412,194L403,178L390,169L384,149L384,123L390,102L398,99L407,110L407,139L422,151L438,168L445,193L445,223L438,246L425,269L404,285L381,294L375,325L375,426L362,426L362,454L319,454L319,398L298,398L298,412L287,412L287,461L235,461L235,398L198,398L185,405L168,405L168,466L112,466L112,407L96,407L96,453L48,453L48,401L39,380L31,346L25,308L19,279L10,256L7,228L15,201L23,181L23,157L31,133L31,91L25,91L25,48L32,48Z" opacity=".09"/>
-        
+        <title>${T('fp.svgCat')}</title>
+        <defs>
+          <linearGradient id="rc-roam-vol" x1="0" y1="0" x2="0.55" y2="1">
+            <stop offset="0" stop-color="#ffffff" stop-opacity="0.26"/>
+            <stop offset="0.45" stop-color="#ffffff" stop-opacity="0"/>
+            <stop offset="1" stop-color="#000000" stop-opacity="0.18"/>
+          </linearGradient>
+          <radialGradient id="rc-roam-ground" cx="0.5" cy="0.5" r="0.5">
+            <stop offset="0" stop-color="#000000" stop-opacity="0.3"/>
+            <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <ellipse class="cat-ground-shadow" cx="190" cy="472" rx="176" ry="13" fill="url(#rc-roam-ground)"/>
+        <path class="cat-base" d="M60,94L86,10L124,72L142,66L168,62L196,66L212,72L250,10L274,94L284,124L288,156L278,180L258,198L232,210L168,214L104,210L78,198L58,180L48,156L52,124ZM108,208L230,208L244,238L256,272L276,316L296,362L306,410L310,446L312,462L48,462L50,442L56,398L66,348L82,300L96,258L104,228ZM296,318L334,324L374,318L408,300L432,272L446,242L454,216L448,208L438,212L428,238L414,264L390,290L362,306L330,308L298,300Z" opacity=".09"/>
+
+        <!-- Wind Trail Lines（向右的风） -->
+        <g class="cat-trails" opacity=".34"><rect x="288.8" y="109" width="146.2" height="4.8"/><rect x="293.7" y="127" width="123.3" height="4.8"/><rect x="295.9" y="145" width="155.1" height="4.8"/><rect x="293.1" y="163" width="139.9" height="4.8"/><rect x="283.2" y="181" width="131.8" height="4.8"/><rect x="259.6" y="199" width="189.4" height="4.8"/><rect x="399.2" y="307" width="45.8" height="4.8"/><rect x="290.0" y="325" width="137.0" height="4.8"/><rect x="297.8" y="343" width="111.2" height="4.8"/><rect x="305.3" y="361" width="137.7" height="4.8"/><rect x="309.0" y="379" width="116.0" height="4.8"/><rect x="312.8" y="397" width="94.2" height="4.8"/><rect x="315.8" y="415" width="125.2" height="4.8"/><rect x="317.8" y="433" width="105.2" height="4.8"/><rect x="319.9" y="451" width="85.1" height="4.8"/></g>
+
         <!-- Animated Wagging Tail -->
-        <g class="cat-tail">
-          <rect x="390.0" y="102" width="10.5" height="4.8"/>
-          <rect x="387.4" y="111" width="19.6" height="4.8"/>
-          <rect x="384.9" y="120" width="22.1" height="4.8"/>
-          <rect x="384.0" y="129" width="23.0" height="4.8"/>
-          <rect x="384.0" y="138" width="23.0" height="4.8"/>
-          <rect x="384.0" y="147" width="33.0" height="4.8"/>
-          <rect x="386.1" y="156" width="40.6" height="4.8"/>
-          <rect x="388.8" y="165" width="46.4" height="4.8"/>
-          <rect x="397.2" y="174" width="42.5" height="4.8"/>
-          <rect x="405.8" y="183" width="36.4" height="4.8"/>
-          <rect x="410.9" y="192" width="33.8" height="4.8"/>
-          <rect x="412.0" y="201" width="33.0" height="4.8"/>
-          <rect x="412.0" y="210" width="33.0" height="4.8"/>
-          <rect x="412.0" y="219" width="33.0" height="4.8"/>
-          <rect x="409.8" y="228" width="33.7" height="4.8"/>
-          <rect x="406.9" y="237" width="33.8" height="4.8"/>
-          <rect x="397.3" y="246" width="40.7" height="4.8"/>
-        </g>
+        <g class="cat-tail"><rect x="442.0" y="208" width="7.8" height="4.8"/><rect x="435.2" y="217" width="17.8" height="4.8"/><rect x="431.7" y="226" width="18.5" height="4.8"/><rect x="428.2" y="235" width="19.2" height="4.8"/><rect x="423.5" y="244" width="20.5" height="4.8"/><rect x="418.6" y="253" width="21.1" height="4.8"/><rect x="413.6" y="262" width="21.9" height="4.8"/><rect x="405.3" y="271" width="25.5" height="4.8"/><rect x="397.0" y="280" width="26.1" height="4.8"/><rect x="387.6" y="289" width="27.8" height="4.8"/><rect x="298.0" y="298" width="1.6" height="4.8"/><rect x="371.8" y="298" width="35.4" height="4.8"/><rect x="297.0" y="307" width="93.3" height="4.8"/><rect x="298.5" y="316" width="72.8" height="4.8"/></g>
 
-        <!-- Left Ear with Organic Twitch Animation -->
-        <g class="cat-ear cat-ear-left">
-          <rect x="32.0" y="12" width="8.0" height="4.8"/>
-          <rect x="32.0" y="21" width="25.0" height="4.8"/>
-          <rect x="32.0" y="30" width="43.0" height="4.8"/>
-          <rect x="32.0" y="39" width="43.0" height="4.8"/>
-          <rect x="25.0" y="48" width="68.0" height="4.8"/>
-          <rect x="25.0" y="57" width="88.0" height="4.8"/>
-          <path d="M70 42h16v9h16v9H70z"/>
-        </g>
+        <g class="cat-ear cat-ear-left"><rect x="85.3" y="10" width="2.2" height="4.8"/><rect x="82.5" y="19" width="10.5" height="4.8"/><rect x="79.7" y="28" width="18.8" height="4.8"/><rect x="76.9" y="37" width="27.1" height="4.8"/><rect x="74.1" y="46" width="35.4" height="4.8"/><rect x="71.3" y="55" width="43.7" height="4.8"/><rect x="68.5" y="64" width="52.0" height="4.8"/><rect x="140.8" y="64" width="19.2" height="4.8"/><rect x="65.8" y="73" width="94.2" height="4.8"/><rect x="63.0" y="82" width="97.0" height="4.8"/><rect x="60.2" y="91" width="99.8" height="4.8"/></g>
+        <g class="cat-ear cat-ear-right"><rect x="248.5" y="10" width="2.2" height="4.8"/><rect x="243.0" y="19" width="10.2" height="4.8"/><rect x="237.5" y="28" width="18.3" height="4.8"/><rect x="232.0" y="37" width="26.4" height="4.8"/><rect x="226.5" y="46" width="34.5" height="4.8"/><rect x="220.9" y="55" width="42.6" height="4.8"/><rect x="160.0" y="64" width="37.1" height="4.8"/><rect x="215.4" y="64" width="50.7" height="4.8"/><rect x="160.0" y="73" width="108.7" height="4.8"/><rect x="160.0" y="82" width="111.3" height="4.8"/><rect x="160.0" y="91" width="113.8" height="4.8"/></g>
 
-        <!-- Right Ear with Organic Twitch Animation -->
-        <g class="cat-ear cat-ear-right">
-          <rect x="254.0" y="12" width="14.0" height="4.8"/>
-          <rect x="236.0" y="21" width="32.0" height="4.8"/>
-          <rect x="236.0" y="30" width="41.0" height="4.8"/>
-          <rect x="213.0" y="39" width="64.0" height="4.8"/>
-          <rect x="213.0" y="48" width="64.0" height="4.8"/>
-          <rect x="188.0" y="57" width="89.0" height="4.8"/>
-          <path d="M224 44h36v9h9v21h-9V62h-35z"/>
-        </g>
+        <g class="cat-inner-ears" fill="var(--pet-primary, #f59e0b)" opacity="0.55"><path d="M76,62L88,30L106,62Z"/><path d="M230,62L248,30L260,62Z"/></g>
 
         <!-- Scanline Halftone Body Bars -->
-        <g class="cat-scanlines">
-          <rect x="25.0" y="66" width="252.0" height="4.8"/>
-          <rect x="25.0" y="75" width="260.0" height="4.8"/>
-          <rect x="25.0" y="84" width="260.0" height="4.8"/>
-          <rect x="31.0" y="93" width="254.0" height="4.8"/>
-          <rect x="31.0" y="102" width="254.0" height="4.8"/>
-          <rect x="31.0" y="111" width="254.0" height="4.8"/>
-          <rect x="31.0" y="120" width="264.0" height="4.8"/>
-          <rect x="31.0" y="129" width="264.0" height="4.8"/>
-          <rect x="29.3" y="138" width="265.7" height="4.8"/>
-          <rect x="26.3" y="147" width="268.7" height="4.8"/>
-          <rect x="23.3" y="156" width="271.7" height="4.8"/>
-          <rect x="23.0" y="165" width="272.0" height="4.8"/>
-          <rect x="23.0" y="174" width="272.0" height="4.8"/>
-          <rect x="22.2" y="183" width="282.8" height="4.8"/>
-          <rect x="18.6" y="192" width="286.4" height="4.8"/>
-          <rect x="15.0" y="201" width="290.0" height="4.8"/>
-          <rect x="12.3" y="210" width="292.7" height="4.8"/>
-          <rect x="9.7" y="219" width="311.3" height="4.8"/>
-          <rect x="7.0" y="228" width="336.0" height="4.8"/>
-          <rect x="8.0" y="237" width="357.0" height="4.8"/>
-          <rect x="8.9" y="246" width="356.1" height="4.8"/>
-          <rect x="9.9" y="255" width="423.0" height="4.8"/>
-          <rect x="13.1" y="264" width="414.7" height="4.8"/>
-          <rect x="16.7" y="273" width="403.1" height="4.8"/>
-          <rect x="19.6" y="282" width="388.3" height="4.8"/>
-          <rect x="21.5" y="291" width="367.2" height="4.8"/>
-          <rect x="23.3" y="300" width="356.5" height="4.8"/>
-          <rect x="25.2" y="309" width="352.9" height="4.8"/>
-          <rect x="26.6" y="318" width="349.8" height="4.8"/>
-          <rect x="28.0" y="327" width="347.0" height="4.8"/>
-          <rect x="29.4" y="336" width="345.6" height="4.8"/>
-          <rect x="30.8" y="345" width="344.2" height="4.8"/>
-          <rect x="32.9" y="354" width="342.1" height="4.8"/>
-          <rect x="35.0" y="363" width="340.0" height="4.8"/>
-          <rect x="37.1" y="372" width="337.9" height="4.8"/>
-          <rect x="39.4" y="381" width="335.6" height="4.8"/>
-          <rect x="43.3" y="390" width="331.7" height="4.8"/>
-          <rect x="47.1" y="399" width="149.0" height="4.8"/>
-          <rect x="235.0" y="399" width="63.0" height="4.8"/>
-          <rect x="319.0" y="399" width="56.0" height="4.8"/>
-          <rect x="48.0" y="408" width="48.0" height="4.8"/>
-          <rect x="112.0" y="408" width="56.0" height="4.8"/>
-          <rect x="235.0" y="408" width="63.0" height="4.8"/>
-          <rect x="319.0" y="408" width="56.0" height="4.8"/>
-          <rect x="48.0" y="417" width="48.0" height="4.8"/>
-          <rect x="112.0" y="417" width="56.0" height="4.8"/>
-          <rect x="235.0" y="417" width="52.0" height="4.8"/>
-          <rect x="319.0" y="417" width="56.0" height="4.8"/>
-          <rect x="48.0" y="426" width="48.0" height="4.8"/>
-          <rect x="112.0" y="426" width="56.0" height="4.8"/>
-          <rect x="235.0" y="426" width="52.0" height="4.8"/>
-          <rect x="319.0" y="426" width="43.0" height="4.8"/>
-          <rect x="48.0" y="435" width="48.0" height="4.8"/>
-          <rect x="112.0" y="435" width="56.0" height="4.8"/>
-          <rect x="235.0" y="435" width="52.0" height="4.8"/>
-          <rect x="319.0" y="435" width="43.0" height="4.8"/>
-          <rect x="48.0" y="444" width="48.0" height="4.8"/>
-          <rect x="112.0" y="444" width="56.0" height="4.8"/>
-          <rect x="235.0" y="444" width="52.0" height="4.8"/>
-          <rect x="319.0" y="444" width="43.0" height="4.8"/>
-          <rect x="112.0" y="453" width="56.0" height="4.8"/>
-          <rect x="235.0" y="453" width="52.0" height="4.8"/>
-          <rect x="319.0" y="453" width="43.0" height="4.8"/>
-          <rect x="112.0" y="462" width="56.0" height="4.8"/>
-        </g>
-        
-        <!-- Eyes Group: Natural Blink + Happy/Sleeping Squint (^ ^) -->
+        <g class="cat-scanlines"><rect x="57.8" y="100" width="219.0" height="4.8"/><rect x="55.4" y="109" width="224.4" height="4.8"/><rect x="53.0" y="118" width="229.8" height="4.8"/><rect x="51.3" y="127" width="58.7" height="4.8"/><rect x="144.0" y="127" width="48.0" height="4.8"/><rect x="226.0" y="127" width="58.7" height="4.8"/><rect x="50.2" y="136" width="59.8" height="4.8"/><rect x="144.0" y="136" width="48.0" height="4.8"/><rect x="226.0" y="136" width="59.8" height="4.8"/><rect x="49.1" y="145" width="60.9" height="4.8"/><rect x="144.0" y="145" width="48.0" height="4.8"/><rect x="226.0" y="145" width="60.9" height="4.8"/><rect x="48.2" y="154" width="61.8" height="4.8"/><rect x="144.0" y="154" width="48.0" height="4.8"/><rect x="226.0" y="154" width="61.8" height="4.8"/><rect x="51.9" y="163" width="58.1" height="4.8"/><rect x="144.0" y="163" width="48.0" height="4.8"/><rect x="226.0" y="163" width="58.1" height="4.8"/><rect x="55.7" y="172" width="224.7" height="4.8"/><rect x="61.8" y="181" width="212.4" height="4.8"/><rect x="71.8" y="190" width="192.4" height="4.8"/><rect x="85.4" y="199" width="165.3" height="4.8"/><rect x="107.5" y="208" width="123.6" height="4.8"/><rect x="110.4" y="208" width="115.2" height="4.8"/><rect x="105.7" y="217" width="129.6" height="4.8"/><rect x="103.9" y="226" width="135.6" height="4.8"/><rect x="101.5" y="235" width="142.2" height="4.8"/><rect x="99.1" y="244" width="147.9" height="4.8"/><rect x="96.7" y="253" width="153.4" height="4.8"/><rect x="93.9" y="262" width="159.5" height="4.8"/><rect x="90.9" y="271" width="165.8" height="4.8"/><rect x="87.9" y="280" width="172.9" height="4.8"/><rect x="84.9" y="289" width="180.0" height="4.8"/><rect x="81.9" y="298" width="187.0" height="4.8"/><rect x="78.9" y="307" width="194.1" height="4.8"/><rect x="75.9" y="316" width="201.2" height="4.8"/><rect x="72.9" y="325" width="208.1" height="4.8"/><rect x="69.9" y="334" width="215.0" height="4.8"/><rect x="66.9" y="343" width="221.9" height="4.8"/><rect x="64.7" y="352" width="228.0" height="4.8"/><rect x="62.9" y="361" width="233.4" height="4.8"/><rect x="61.1" y="370" width="237.0" height="4.8"/><rect x="59.3" y="379" width="240.7" height="4.8"/><rect x="57.5" y="388" width="244.4" height="4.8"/><rect x="55.8" y="397" width="248.0" height="4.8"/><rect x="54.6" y="406" width="251.1" height="4.8"/><rect x="53.4" y="415" width="253.5" height="4.8"/><rect x="52.1" y="424" width="255.7" height="4.8"/><rect x="50.9" y="433" width="257.9" height="4.8"/><rect x="49.8" y="442" width="260.1" height="4.8"/><rect x="48.9" y="451" width="262.1" height="4.8"/></g>
+
+        <path class="cat-volume" fill="url(#rc-roam-vol)" d="M60,94L86,10L124,72L142,66L168,62L196,66L212,72L250,10L274,94L284,124L288,156L278,180L258,198L232,210L168,214L104,210L78,198L58,180L48,156L52,124ZM108,208L230,208L244,238L256,272L276,316L296,362L306,410L310,446L312,462L48,462L50,442L56,398L66,348L82,300L96,258L104,228ZM296,318L334,324L374,318L408,300L432,272L446,242L454,216L448,208L438,212L428,238L414,264L390,290L362,306L330,308L298,300Z"/>
+
         <g class="cat-eyes-group">
           <g class="cat-eyes-open">
-            <path d="M57 132h18v-9h20v8h-9v28h9v9H58v-9h-7v-18h6zM186 126h38v9h-8v31h9v8h-39v-9h-8v-28h8z"/>
+            <g class="cat-eye cat-eye-left"><rect x="118.0" y="134" width="20.0" height="6"/><rect x="118.0" y="143" width="20.0" height="6"/><rect x="118.0" y="152" width="20.0" height="6"/></g>
+            <g class="cat-eye cat-eye-right"><rect x="200.0" y="134" width="20.0" height="6"/><rect x="200.0" y="143" width="20.0" height="6"/><rect x="200.0" y="152" width="20.0" height="6"/></g>
           </g>
           <g class="cat-eyes-squint">
-            <path d="M55 146 c 8 -16 26 -16 34 0" fill="none" stroke="currentColor" stroke-width="8.5" stroke-linecap="round"/>
-            <path d="M184 146 c 8 -16 26 -16 34 0" fill="none" stroke="currentColor" stroke-width="8.5" stroke-linecap="round"/>
+            <rect x="110" y="145" width="30" height="7" rx="3.5"/>
+            <rect x="114" y="138" width="22" height="6" rx="3"/>
+            <rect x="196" y="145" width="30" height="7" rx="3.5"/>
+            <rect x="200" y="138" width="22" height="6" rx="3"/>
           </g>
         </g>
-        
-        <!-- Nose and Mouth -->
-        <path class="cat-muzzle" d="M125 163h17v10h-17zM119 177h9v9h-9z"/>
-        
-        <!-- Ground Walking Scratch / Trail Lines -->
-        <path class="cat-trail" d="M43 463h68m57 9h132m20-11h92m-201 19h19" fill="none" stroke="currentColor" stroke-width="2.5"/>
+
+        <g class="cat-blush" fill="var(--pet-primary, #f59e0b)" opacity="0.34">
+          <ellipse cx="72" cy="182" rx="13" ry="6.5"/>
+          <ellipse cx="262" cy="182" rx="13" ry="6.5"/>
+        </g>
+
+        <g class="cat-muzzle">
+          <path d="M159 172h18l-9 11z" fill="var(--pet-primary, #f59e0b)"/>
+          <path d="M152 188q8 8 16 0q8 8 16 0" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+        </g>
+
+        <path class="cat-trail" d="M40 468h90m40 8h140m30-9h110" fill="none" stroke="currentColor" stroke-width="2.5"/>
+
       </svg>
     `;
   }
@@ -2536,7 +2480,7 @@
       try {
         const response = await chrome.runtime.sendMessage({type:'STATE_GET'});
         if (bootId !== globalThis.__ROAMCAT_PET_GENERATION__ || this._disposed) return;
-        if(!response?.ok)throw new Error(response?.error||'无法读取伴读猫设置');
+        if(!response?.ok)throw new Error(response?.error||T('fp.settingsFail'));
         currentSettings = response.data.settings || {};
       } catch {
         if (bootId !== globalThis.__ROAMCAT_PET_GENERATION__ || this._disposed) return;
@@ -2642,33 +2586,26 @@
         const st = window.__ROAMCAT_CONTENT__?.emergencyStatus?.();
         const isActive = Boolean(st?.active || st?.displayed);
         const isTranslating = st?.phase === 'translating';
-        if (speechEl) {
-          if (isTranslating) speechEl.textContent = '旋旋翻：正在逐段翻译 喵~';
-          else if (isActive) speechEl.textContent = '旋旋翻：点击复原纯英文 喵~';
-          else speechEl.textContent = '旋旋翻：一键双语对照 喵~';
-        }
+        let hoverText = T('fp.hover.flip.idle');
+        if (isTranslating) hoverText = T('fp.hover.flip.busy');
+        else if (isActive) hoverText = T('fp.hover.flip.on');
+        this.stashSpeechForHover(hoverText);
+        if (speechEl) speechEl.textContent = hoverText;
         bubble?.classList.remove('quote');
         bubble?.classList.add('speaking');
         this.container?.classList.add('has-speech');
         this.fitSpeechBubble();
       });
 
-      this.flipBtn?.addEventListener('pointerleave', () => {
-        const bubble = this.shadowQuery('#cat-speech');
-        const speechEl = this.shadowQuery('#cat-speech .speech-text');
-        bubble?.classList.remove('speaking', 'quote');
-        this.container?.classList.remove('has-speech');
-        if (speechEl) speechEl.textContent = '漫游伴读 喵~';
-        this.fitSpeechBubble();
-      });
+      this.flipBtn?.addEventListener('pointerleave', () => this.restoreSpeechAfterHover());
 
       // 左侧快捷按钮行：悬停播报 + 点击执行（与旋旋翻一致的反馈模式）。
       // closeDock 标记的动作执行后收起快捷坞；阅读辅助/双语开关保持展开。
       const quickActions = [
-        {id: '#quick-reading', hover: '阅读辅助：点击开合本页提示 喵~', run: () => this.toggleReadingMode()},
-        {id: '#quick-summary', hover: '提炼整篇精华，喂我一下就好 喵~', closeDock: true, run: () => this.requestArticleSummary()},
-        {id: '#quick-options', hover: '打开扩展偏好设置 喵~', closeDock: true, run: () => chrome.runtime.sendMessage({ type: 'OPEN_OPTIONS' })},
-        {id: '#quick-dock', hover: '贴边折叠，需要时再戳我 喵~', closeDock: true, run: () => this.toggleDock()},
+        {id: '#quick-reading', hover: T('fp.hover.read'), run: () => this.toggleReadingMode()},
+        {id: '#quick-summary', hover: T('fp.hover.sum'), closeDock: true, run: () => this.requestArticleSummary()},
+        {id: '#quick-options', hover: T('fp.hover.opt'), closeDock: true, run: () => chrome.runtime.sendMessage({ type: 'OPEN_OPTIONS' })},
+        {id: '#quick-dock', hover: T('fp.hover.dock'), closeDock: true, run: () => this.toggleDock()},
       ];
       for (const action of quickActions) {
         const button = this.shadowQuery(action.id);
@@ -2681,6 +2618,7 @@
           action.run();
         });
         button.addEventListener('pointerenter', () => {
+          this.stashSpeechForHover(action.hover);
           const bubble = this.shadowQuery('#cat-speech');
           const speechEl = this.shadowQuery('#cat-speech .speech-text');
           if (speechEl) speechEl.textContent = action.hover;
@@ -2689,14 +2627,7 @@
           this.container?.classList.add('has-speech');
           this.fitSpeechBubble();
         });
-        button.addEventListener('pointerleave', () => {
-          const bubble = this.shadowQuery('#cat-speech');
-          bubble?.classList.remove('speaking', 'quote');
-          this.container?.classList.remove('has-speech');
-          const speechEl = this.shadowQuery('#cat-speech .speech-text');
-          if (speechEl) speechEl.textContent = '漫游伴读 喵~';
-          this.fitSpeechBubble();
-        });
+        button.addEventListener('pointerleave', () => this.restoreSpeechAfterHover());
       }
 
       // 缩放控制：步进 80%–160%，持久化到设置
@@ -2725,7 +2656,7 @@
           const speechEl = this.shadowQuery('#cat-speech .speech-text');
           const bubble = this.shadowQuery('#cat-speech');
           if (speechEl && !bubble?.classList.contains('speaking')) {
-            speechEl.textContent = '探头伴读中 喵~ (点击唤醒)';
+            speechEl.textContent = T('fp.speekPeek');
           }
         }
       });
@@ -2735,7 +2666,7 @@
           const speechEl = this.shadowQuery('#cat-speech .speech-text');
           const bubble = this.shadowQuery('#cat-speech');
           if (speechEl && !bubble?.classList.contains('speaking')) {
-            speechEl.textContent = '漫游伴读 喵~';
+            speechEl.textContent = T('pet.speechDefault');
           }
         }
       });
@@ -2802,6 +2733,27 @@
       window.addEventListener('pointerup', (e) => this.onPointerUp(e), { signal });
       window.addEventListener('pointercancel', (e) => this.releaseDrag(e), { signal });
       window.addEventListener('blur', () => this.releaseDrag(), { signal });
+
+      // Gaze Tracking: 猫眼跟随光标（rAF 节流；减弱动效 / 睡眠 / 页面隐藏时静止）
+      const gazeMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+      let gazeRaf = 0, gazeX = 0, gazeY = 0;
+      const applyGaze = () => {
+        gazeRaf = 0;
+        if (this._disposed || this._isSleeping || !this.container) return;
+        if (document.visibilityState !== 'visible' || gazeMotion.matches) return;
+        const rect = this.avatarWrap?.getBoundingClientRect();
+        if (!rect || !rect.width) return;
+        const nx = Math.max(-1, Math.min(1, (gazeX - (rect.left + rect.width / 2)) / 240));
+        const ny = Math.max(-1, Math.min(1, (gazeY - (rect.top + rect.height / 2)) / 200));
+        this.container.style.setProperty('--eye-x', nx.toFixed(3));
+        this.container.style.setProperty('--eye-y', ny.toFixed(3));
+      };
+      window.addEventListener('pointermove', (e) => {
+        if (gazeMotion.matches) return;
+        gazeX = e.clientX;
+        gazeY = e.clientY;
+        if (!gazeRaf) gazeRaf = requestAnimationFrame(applyGaze);
+      }, { signal, passive: true });
 
       // Click outside to dismiss the quick dock
       window.addEventListener('click', (e) => {
@@ -2961,6 +2913,7 @@
       initialRight = currentRight;
       initialBottom = currentBottom;
       this.container.classList.add('dragging');
+      this.avatarWrap.classList.add('is-pressed');
       this._capturedPointerId = e.pointerId;
       this.avatarWrap.setPointerCapture(e.pointerId);
     }
@@ -2986,6 +2939,7 @@
       if (!isDragging && this._capturedPointerId == null) return;
       isDragging = false;
       this.container?.classList.remove('dragging');
+      this.avatarWrap?.classList.remove('is-pressed');
       const id = e?.pointerId ?? this._capturedPointerId;
       try {
         if (id != null) this.avatarWrap?.releasePointerCapture(id);
@@ -3066,7 +3020,7 @@
     async savePosition() {
       try {
         const response = await chrome.runtime.sendMessage({type:'FLOATING_PET_POSITION_SET',position:{right:Math.round(currentRight),bottom:Math.round(currentBottom)},scale:petScale});
-        if(!response?.ok)throw new Error(response?.error||'伴读猫位置保存失败');
+        if(!response?.ok)throw new Error(response?.error||T('fp.posFail'));
       } catch (err) {
         console.warn('Failed to save pet position', err);
       }
@@ -3085,6 +3039,8 @@
       isDockOpen = true;
       this.container.classList.add('dock-open');
       this.zoomControls?.removeAttribute('inert');
+      // 卫星按钮随坞展开回到 Tab 序（收起态由模板与 closeQuickDock 置 tabindex=-1）
+      for (const btn of this.quickDock?.children || []) btn.removeAttribute('tabindex');
       this.avatarWrap?.setAttribute('aria-expanded', 'true');
       this.updateReadingStatus();
       this.fitSpeechBubble();
@@ -3095,6 +3051,7 @@
       isDockOpen = false;
       this.container?.classList.remove('dock-open');
       this.zoomControls?.setAttribute('inert', '');
+      for (const btn of this.quickDock?.children || []) btn.setAttribute('tabindex', '-1');
       this.avatarWrap?.setAttribute('aria-expanded', 'false');
       this.fitSpeechBubble();
     }
@@ -3240,7 +3197,7 @@
         this.container?.classList.remove('is-left');
       }
       if (this.avatarWrap) {
-        this.avatarWrap.title = '伴读猫正在贴边守护（点击唤醒）';
+        this.avatarWrap.title = T('fp.avatarDocked');
       }
       this.clampPosition();
       this.fitSpeechBubble();
@@ -3251,7 +3208,7 @@
       isDocked = false;
       this.container?.classList.remove('docked');
       if (this.avatarWrap) {
-        this.avatarWrap.title = 'RoamCat 随心阅伴读猫（点击展开/收起快捷按钮，双击贴边收起，按住自由拖拽）';
+        this.avatarWrap.title = T('pet.avatarTitle');
       }
       const isLeftSide = currentRight > (window.innerWidth / 2);
       if (isLeftSide) {
@@ -3413,19 +3370,22 @@
       const quickReading = this.shadowQuery('#quick-reading');
       if (quickReading) {
         quickReading.classList.toggle('is-active', readingEnabled);
-        quickReading.title = readingEnabled ? '阅读辅助进行中 · 点击暂停' : '阅读辅助已暂停 · 点击开启';
+        quickReading.title = readingEnabled ? T('fp.readingOn') : T('fp.readingOff');
       }
     }
 
     async ensurePageContent() {
       if (window.__ROAMCAT_CONTENT__?.isAlive?.()) return window.__ROAMCAT_CONTENT__;
       const response = await chrome.runtime.sendMessage({ type: 'ENSURE_PAGE_UI' });
-      if (!response?.ok) throw new Error(response?.error || '阅读功能未能注入当前网页。');
-      if (!window.__ROAMCAT_CONTENT__?.isAlive?.()) throw new Error('阅读功能未能启动，请刷新网页后重试。');
+      if (!response?.ok) throw new Error(response?.error || T('fp.injectFail'));
+      if (!window.__ROAMCAT_CONTENT__?.isAlive?.()) throw new Error(T('fp.startFail'));
       return window.__ROAMCAT_CONTENT__;
     }
 
     async toggleReadingMode() {
+      const quickReading = this.shadowQuery('#quick-reading');
+      // rebuild 期间给 pending 态并屏蔽连点，避免按钮态长时间滞后且无反馈
+      quickReading?.classList.add('is-pending');
       try {
         const content = await this.ensurePageContent();
         const next = !readingEnabled;
@@ -3434,45 +3394,38 @@
         this.updateReadingStatus();
       } catch (err) {
         console.error('Toggle reading mode error', err);
-        this.speakStatus?.('阅读辅助没能启动，请刷新网页后再试 喵~', { busy: false, duration: 2800 });
+        this.speakStatus?.(T('pet.assistFailed'), { busy: false, duration: 2800 });
+      } finally {
+        quickReading?.classList.remove('is-pending');
       }
     }
 
     async toggleBilingual(fromShortcut = false) {
-      this.triggerFlipEffect();
       const speechEl = this.shadowQuery('#cat-speech .speech-text');
       try {
         const content = await this.ensurePageContent();
         if (fromShortcut && content.toggleEmergencyShortcut) {
           const st = await content.toggleEmergencyShortcut();
           const on = Boolean(st?.active || st?.displayed);
-          if (speechEl) speechEl.textContent = on ? '旋旋翻开动！正在双语对照 喵~' : '旋旋翻：已复原纯英文阅读 喵~';
+          if (speechEl) speechEl.textContent = on ? T('fp.flipOn') : T('fp.flipOff');
           this.setPetState(on ? 'thinking' : 'idle');
           return;
         }
         const currentStatus = content.emergencyStatus?.();
         const isTurningOff = Boolean(currentStatus?.active || currentStatus?.displayed);
         if (isTurningOff) {
-          if (speechEl) speechEl.textContent = '旋旋翻：已复原纯英文阅读 喵~';
+          if (speechEl) speechEl.textContent = T('fp.flipOff');
         } else {
-          if (speechEl) speechEl.textContent = '旋旋翻开动！正在双语对照 喵~';
+          if (speechEl) speechEl.textContent = T('fp.flipOn');
           this.setPetState('thinking');
         }
         await content.toggleEmergencyTranslation();
       } catch (err) {
         console.error('Failed to toggle bilingual mode', err);
-        const copy = /尚未连接|请先连接/.test(err?.message || '') ? '辅助服务还没连上。猫和本页辅助还在，去设置里连接后再翻 喵~' : '双语翻译启动失败，请检查服务连接 喵~';
+        const copy = err?.code === 'NOT_READY' || /尚未连接|请先连接|connect a service|not connected/i.test(err?.message || '') ? T('fp.flipNoSvc') : T('fp.flipFail');
         if (speechEl) speechEl.textContent = copy;
         this.setPetState('error');
       }
-    }
-
-    triggerFlipEffect() {
-      if (!this.flipBtn) return;
-      this.flipBtn.classList.remove('flip-trigger');
-      void this.flipBtn.offsetWidth;
-      this.flipBtn.classList.add('flip-trigger');
-      setTimeout(() => this.flipBtn?.classList.remove('flip-trigger'), 460);
     }
 
     onEmergencyStatusChange(status) {
@@ -3488,13 +3441,13 @@
         const tooltip = this.shadowQuery('#flip-tooltip');
         if (tooltip) {
           if (isTranslating) {
-            tooltip.textContent = `旋旋翻 · 翻译中 (${status.completed}/${status.total || '?'}段)`;
+            tooltip.textContent = T('fp.tipBusy',{done:status.completed,total:status.total || '?'});
           } else if (isActive && status.phase === 'error' && status.error) {
-            tooltip.textContent = '旋旋翻 · 辅助服务未连接，附近段落已暂停';
+            tooltip.textContent = T('fp.tipNoSvc');
           } else if (isActive) {
-            tooltip.textContent = `旋旋翻 · 双语已开启 (${status.completed}段) · 点击复原`;
+            tooltip.textContent = T('fp.tipOn',{done:status.completed});
           } else {
-            tooltip.textContent = `旋旋翻 · 一键切换双语对照 (Alt+Shift+T)`;
+            tooltip.textContent = T('fp.tipIdle');
           }
         }
       }
@@ -3508,11 +3461,11 @@
       const bilingualSub = this.shadowQuery('#bilingual-status-sub');
       if (bilingualSub) {
         if (isTranslating) {
-          bilingualSub.textContent = `逐段对照中 (${status.completed}/${status.total || '?'} 段)...`;
+          bilingualSub.textContent = T('fp.subBusy',{done:status.completed,total:status.total || '?'});
         } else if (isActive) {
-          bilingualSub.textContent = `双语对照就绪 (${status.completed} 段) · 点击复原`;
+          bilingualSub.textContent = T('fp.subReady',{done:status.completed});
         } else {
-          bilingualSub.textContent = `沉浸式双语对照阅读`;
+          bilingualSub.textContent = T('fp.subIdle');
         }
       }
 
@@ -3535,8 +3488,9 @@
 
       // Ensure friendly cat voice tone
       let formatted = text.trim();
-      if (!formatted.endsWith('喵~') && !formatted.endsWith('喵') && formatted.length <= 24) {
-        formatted += ' 喵~';
+      const meow = T('fp.meowSuffix');
+      if (meow && !formatted.endsWith(meow.trim()) && formatted.length <= 24) {
+        formatted += meow;
       }
 
       textEl.textContent = formatted;
@@ -3568,6 +3522,41 @@
       return this.speakStatus(text, options);
     }
 
+    // 悬停播报存档/恢复：进入前记下当前气泡，离开时若气泡仍停在本次悬停文案
+    // 就还原，避免路过快捷按钮把正在显示的状态/忙碌气泡清掉。
+    stashSpeechForHover(hoverText) {
+      if (this._hoverStash) { this._hoverStash.hoverText = hoverText; return; }
+      const bubble = this.shadowQuery('#cat-speech');
+      if (!bubble) return;
+      const speechEl = this.shadowQuery('#cat-speech .speech-text');
+      this._hoverStash = {
+        cls: bubble.className,
+        text: speechEl?.textContent || '',
+        hasSpeech: this.container?.classList.contains('has-speech') || false,
+        hoverText,
+      };
+    }
+
+    restoreSpeechAfterHover() {
+      const stash = this._hoverStash;
+      this._hoverStash = null;
+      const bubble = this.shadowQuery('#cat-speech');
+      const speechEl = this.shadowQuery('#cat-speech .speech-text');
+      if (!bubble) return;
+      // 悬停期间有别处播报接管气泡，不能覆盖回去
+      if (stash?.hoverText && speechEl && speechEl.textContent !== stash.hoverText) return;
+      if (stash && stash.cls.includes('speaking')) {
+        bubble.className = stash.cls;
+        if (speechEl) speechEl.textContent = stash.text;
+        this.container?.classList.toggle('has-speech', stash.hasSpeech);
+      } else {
+        bubble.classList.remove('speaking', 'quote');
+        this.container?.classList.remove('has-speech');
+        if (speechEl) speechEl.textContent = T('pet.speechDefault');
+      }
+      this.fitSpeechBubble();
+    }
+
     clearStatusSpeech(key = '') {
       clearTimeout(this._speechTimer);
       const bubble = this.shadowQuery('#cat-speech');
@@ -3579,18 +3568,18 @@
       // If was busy and finishing successfully, give a brief cheerful feedback
       if (bubble.classList.contains('is-busy')) {
         bubble.classList.remove('is-busy', 'quote');
-        if (textEl) textEl.textContent = '准备好啦 喵~';
+        if (textEl) textEl.textContent = T('fp.ready');
         this.setPetState('success');
         this._speechTimer = setTimeout(() => {
           bubble.classList.remove('speaking');
-          if (textEl) textEl.textContent = '漫游伴读 喵~';
+          if (textEl) textEl.textContent = T('pet.speechDefault');
           if (petState === 'success') this.setPetState('idle');
         }, 1800);
         return;
       }
 
       bubble.classList.remove('speaking', 'is-busy', 'is-error', 'quote');
-      if (textEl) textEl.textContent = '漫游伴读 喵~';
+      if (textEl) textEl.textContent = T('pet.speechDefault');
       if (petState !== 'idle') this.setPetState('idle');
     }
 
@@ -3827,9 +3816,9 @@
       try {
         const article = await this.extractArticle();
         if (!isCurrent()) return;
-        if (location.href !== request.url || article.url !== request.url) throw new Error('页面已变化，请在当前页面重新提炼摘要。');
+        if (location.href !== request.url || article.url !== request.url) throw new Error(T('fp.pageChanged'));
         if (!article.text || article.text.trim().length < 40) {
-          throw new Error('当前页面没有检测到足够的正文内容供提炼摘要。');
+          throw new Error(T('fp.noContent'));
         }
 
         currentArticleMeta = calculateReadingMeta(article.text);
@@ -3843,9 +3832,9 @@
         });
 
         if (!isCurrent()) return;
-        if (location.href !== request.url) throw new Error('页面已变化，请在当前页面重新提炼摘要。');
+        if (location.href !== request.url) throw new Error(T('fp.pageChanged'));
         if (!res?.ok) {
-          throw new Error(res?.error || '提取摘要失败，请检查当前模型连接状态与订阅配置。');
+          throw new Error(res?.error || T('fp.sumFail'));
         }
 
         cachedSummary = res.data;
@@ -3857,7 +3846,7 @@
       } catch (error) {
         if (!isCurrent()) return;
         this.setPetState('error');
-        this.renderSummaryError(error.message || '提炼摘要失败');
+        this.renderSummaryError(error.message || T('fp.sumFailGeneric'));
       } finally {
         if (isCurrent()) {
           this._summaryPending = false;
@@ -3922,18 +3911,21 @@
     }
 
     copySummaryText() {
-      if (!cachedSummary || !cachedSummarySource) return;
+      if (!cachedSummary || !cachedSummarySource) {
+        this.speakStatus(T('fp.copyEmpty'), {duration: 2200});
+        return;
+      }
       const text = [
-        `【${cachedSummarySource.title}】RoamCat 内容精华导读`,
+        T('fp.copyHead',{title:cachedSummarySource.title}),
         ``,
-        `💡 核心结论：`,
+        T('fp.copyConcl'),
         `${cachedSummary.takeaway}`,
         ``,
-        `📌 核心要点：`,
+        T('fp.copyPoints'),
         ...(cachedSummary.highlights || []).map((h, i) => `${i + 1}. ${h.replace(/\*\*/g, '')}`),
         ``,
-        cachedSummary.keywords?.length ? `🏷️ 关键概念：${cachedSummary.keywords.join('、')}` : '',
-        `来源：${cachedSummarySource.url}`
+        cachedSummary.keywords?.length ? T('fp.copyTerms',{list:cachedSummary.keywords.join('、')}) : '',
+        T('fp.copySrc',{url:cachedSummarySource.url})
       ].filter(Boolean).join('\n');
 
       navigator.clipboard.writeText(text).then(() => {
@@ -3941,10 +3933,10 @@
         const textSpan = this.shadowQuery('#copy-btn-text');
         if (btn && textSpan) {
           btn.classList.add('copied');
-          textSpan.textContent = '已复制！';
+          textSpan.textContent = T('fp.copied');
           setTimeout(() => {
             btn.classList.remove('copied');
-            textSpan.textContent = '复制摘要';
+            textSpan.textContent = T('pet.copyBtn');
           }, 2500);
         }
       }).catch(err => {

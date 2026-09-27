@@ -47,6 +47,7 @@ const DOMAIN = Object.freeze([
   'shared.js',
   'api-providers.mjs',
   'api-transport.mjs',
+  'usage-stats.mjs',
   'message-protocol.js',
   'message-router.js',
   'activation.js',
@@ -59,7 +60,7 @@ const DOMAIN_ASSETS = Object.freeze([
 ]);
 
 const EXCLUDED_DIRECTORIES = new Set(['local-inference', 'vendor', 'fonts', 'icons']);
-const CONTENT_SCRIPT_ORDER = Object.freeze(['design.js', 'reading-style.js', 'content-ui.js', 'pet-quotes.js', 'content.js']);
+const CONTENT_SCRIPT_ORDER = Object.freeze(['design.js', 'i18n.js', 'reading-style.js', 'content-ui.js', 'pet-quotes.js', 'complexity.js', 'formula.js', 'site-profiles.js', 'content.js']);
 // 不经 manifest 静态声明、但始终以 classic 方式注入的页面脚本：伴读猫经
 // chrome.scripting 按 floatingPet.enabled 动态注册（pet-quotes.js 作为其语录库先行注入），
 // auto-start.js 按站点规则注册。

@@ -67,5 +67,5 @@ test('生成的 design.js 暴露完整 RoamCatDesign API', () => {
   assert.match(hostCss, /--rc-spring-soft: linear/u, '动效 token 缺失');
 
   const pageCss = design.cssFor('.roamcat-card', 'dark');
-  assert.match(pageCss, /\.roamcat-card \{[\s\S]*--rc-canvas: #121316/u, 'dark 主题选择器错误');
+  assert.match(pageCss, /\.roamcat-card \{[\s\S]*--rc-canvas: #0b0e13/u, 'dark 主题选择器错误');
 });

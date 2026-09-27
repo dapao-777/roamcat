@@ -9,6 +9,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
  */
+
+const M=(zh,en)=>globalThis.RoamCatI18n?.lang?.()==='en'?en:zh;
 const terminalEvents=new Set(['end','interrupted','cancelled','error']);
 
 export function createSpeechHandler(tts){
@@ -32,7 +34,7 @@ export function createSpeechHandler(tts){
       if(job.started||job.closed)return;
       job.started=true;
       const text=message?.text;
-      if(typeof text!=='string'||!text.trim()||text.length>2000){emit(job,{type:'error',error:'请选择不超过 2000 字符的英文词语或原句。'});return;}
+      if(typeof text!=='string'||!text.trim()||text.length>2000){emit(job,{type:'error',error:M('请选择不超过 2000 字符的英文词语或原句。','Select an English word or sentence under 2000 characters.')});return;}
       if(active){finish(active,'interrupted');tts.stop();}
       active=job;
       try{
@@ -41,13 +43,13 @@ export function createSpeechHandler(tts){
         const local=voices.filter(voice=>!voice.remote&&!voice.extensionId&&/^en(?:-|$)/i.test(voice.lang||'')&&voice.eventTypes?.includes('start')&&voice.eventTypes.includes('end'));
         // macOS lists novelty voices before its natural reading voices.
         const voice=local.find(voice=>voice.voiceName==='Samantha')||local.find(voice=>voice.voiceName==='Daniel')||local.find(voice=>voice.lang.toLowerCase()==='en-us')||local[0];
-        if(!voice)throw new Error('没有可用的本地英文语音，请在系统设置中安装英文语音后重试。');
+        if(!voice)throw new Error(M('没有可用的本地英文语音，请在系统设置中安装英文语音后重试。','No local English voice available; install an English voice in system settings and retry.'));
         await tts.speak(text.trim(),{voiceName:voice.voiceName,lang:voice.lang,requiredEventTypes:['start','end'],onEvent:event=>{
           if(active!==job||job.closed)return;
           if(event.type==='start')emit(job,{type:'start'});
           else if(terminalEvents.has(event.type))finish(job,event.type,event.errorMessage||'');
         }});
-      }catch(error){finish(job,'error',error.message||'无法朗读，请检查系统语音设置。');}
+      }catch(error){finish(job,'error',error.message||M('无法朗读，请检查系统语音设置。','Cannot speak; check the system speech settings.'));}
     });
   };
 }

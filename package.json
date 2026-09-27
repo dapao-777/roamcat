@@ -9,6 +9,9 @@
     "build:watch": "vite build --config vite.content-ui.config.mjs --mode development && vite build --mode development --watch",
     "verify:build": "node tools/verify-build.cjs",
     "verify": "node tools/verify-module-graph.cjs",
+    "verify:sites": "node tools/verify-dev-sites.cjs",
+    "verify:ui": "node tools/verify-ui-all.cjs",
+    "verify:pet": "node tools/verify-pet-buttons.cjs",
     "test": "node --test \"tools/unit/*.test.mjs\"",
     "gen:tokens": "node build/gen-design-tokens.mjs"
   },
@@ -37,6 +40,8 @@
     "vite": "^8.3.0"
   },
   "dependencies": {
-    "lit": "^3.3.3"
+    "fflate": "^0.8.3",
+    "lit": "^3.3.3",
+    "pdfjs-dist": "^6.3.289"
   }
 }

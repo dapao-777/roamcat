@@ -9,6 +9,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
  */
+
+const M=(zh,en)=>globalThis.RoamCatI18n?.lang?.()==='en'?en:zh;
 // Metadata only. Shared by the service worker and native connector.
 export const DIAGNOSTIC_LIMIT = 500;
 export const DIAGNOSTIC_TTL = 7 * 86400000;
@@ -96,7 +98,7 @@ export function createDiagnosticStore(storage,{now=Date.now}={}) {
       return enqueue(async()=>{if(!enabled||expectedEpoch!==epoch)return false;events.push(event);prune();await persist();return true;}).catch(()=>false);
     },
     async snapshot(){await queue;await enqueue(async()=>{const before=events.length;prune();if(before!==events.length)await persist();}).catch(()=>{});return {version:1,enabled,events:events.map(event=>({...event})),summary:summarizeDiagnostics(events,now()),storageError};},
-    async configure(value){if(typeof value!=='boolean')throw new Error('诊断开关无效。');epoch++;await enqueue(async()=>{enabled=value;await persist();});return this.snapshot();},
+    async configure(value){if(typeof value!=='boolean')throw new Error(M('诊断开关无效。','Invalid diagnostics toggle.'));epoch++;await enqueue(async()=>{enabled=value;await persist();});return this.snapshot();},
     async clear(){epoch++;await enqueue(async()=>{events=[];await persist();});return this.snapshot();},
   };
 }

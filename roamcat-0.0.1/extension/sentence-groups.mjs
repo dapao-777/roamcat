@@ -9,6 +9,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
  */
+
+const M=(zh,en)=>globalThis.RoamCatI18n?.lang?.()==='en'?en:zh;
 const ITEM_ID=/^[A-Za-z0-9._:-]{1,128}$/;
 const ROLES=Object.freeze(['subject','predicate','object','predicative','complement','adverbial','attributive']);
 
@@ -24,16 +26,16 @@ predicate is the VERB GROUP ONLY: objects and complements have separate ranges. 
 
 const GROUP_SCHEMA={type:'object',additionalProperties:false,required:['role','first','last'],properties:{role:{type:'string',enum:ROLES},first:{type:'integer',minimum:1,maximum:2000},last:{type:'integer',minimum:1,maximum:2000}}};
 export const SENTENCE_GROUPS_SCHEMA=Object.freeze({type:'object',additionalProperties:false,required:['items'],properties:{items:{type:'array',minItems:1,maxItems:4,items:{type:'object',additionalProperties:false,required:['id','groups'],properties:{id:{type:'string'},groups:{type:'array',maxItems:63,items:GROUP_SCHEMA}}}}}});
-function invalid(message='阅读解构结果无效。'){throw new Error(message);}
+function invalid(message=M('阅读解构结果无效。','Invalid deconstruction result.')){throw new Error(message);}
 
 export function normalizeSentenceGroupItems(value){
-  if(!Array.isArray(value)||value.length<1||value.length>4)invalid('每批阅读解构须包含 1–4 句。');
+  if(!Array.isArray(value)||value.length<1||value.length>4)invalid(M('每批阅读解构须包含 1–4 句。','A deconstruction batch must contain 1–4 sentences.'));
   const ids=new Set();let total=0;
   return value.map(raw=>{
-    if(!raw||typeof raw!=='object'||Array.isArray(raw)||Object.keys(raw).some(key=>!['id','sentence'].includes(key)))invalid('阅读解构请求无效。');
-    const {id,sentence}=raw;if(typeof id!=='string'||!ITEM_ID.test(id)||ids.has(id))invalid('阅读解构请求编号无效或重复。');
-    if(typeof sentence!=='string'||!sentence.trim()||sentence.length>2000)invalid('单句须为 1–2000 个字符。');
-    ids.add(id);total+=sentence.length;if(total>4000)invalid('每批阅读解构正文不能超过 4000 个字符。');return{id,sentence};
+    if(!raw||typeof raw!=='object'||Array.isArray(raw)||Object.keys(raw).some(key=>!['id','sentence'].includes(key)))invalid(M('阅读解构请求无效。','Invalid deconstruction request.'));
+    const {id,sentence}=raw;if(typeof id!=='string'||!ITEM_ID.test(id)||ids.has(id))invalid(M('阅读解构请求编号无效或重复。','Deconstruction request ids are invalid or duplicated.'));
+    if(typeof sentence!=='string'||!sentence.trim()||sentence.length>2000)invalid(M('单句须为 1–2000 个字符。','A sentence must be 1–2000 characters.'));
+    ids.add(id);total+=sentence.length;if(total>4000)invalid(M('每批阅读解构正文不能超过 4000 个字符。','A deconstruction batch must not exceed 4000 characters.'));return{id,sentence};
   });
 }
 
