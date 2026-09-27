@@ -117,7 +117,7 @@
 </p>
 
 <p align="center">
-  <img src=".github/assets/options-en.png" alt="RoamCat 设置页英文界面" width="60%">
+  <img src=".github/assets/options-zh-dark.png" alt="RoamCat 设置页 · 深色" width="60%">
   <img src=".github/assets/popup-light.png" alt="RoamCat 工具栏弹窗" width="24%">
 </p>
 

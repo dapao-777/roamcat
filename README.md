@@ -117,7 +117,7 @@ All visual decisions collapse into a single set of `--rc-*` tokens in `src/style
 </p>
 
 <p align="center">
-  <img src=".github/assets/options-en.png" alt="RoamCat options in English" width="60%">
+  <img src=".github/assets/options-zh-dark.png" alt="RoamCat options — Chinese UI, dark theme" width="60%">
   <img src=".github/assets/popup-light.png" alt="RoamCat toolbar popup" width="24%">
 </p>
 
