@@ -24,7 +24,14 @@
 html,body{width:1920px;height:1080px;overflow:hidden;background:var(--canvas);font-family:var(--ui)}
 #root{position:absolute;inset:0}
 .scene{position:absolute;inset:0;visibility:hidden}
-.cam{position:absolute;inset:0}
+.cam{position:absolute;inset:0;perspective:1500px}
+#wipe{position:fixed;left:-15%;top:-30%;width:130%;height:160%;z-index:60;pointer-events:none;opacity:0;
+  background:linear-gradient(100deg,transparent 40%,rgba(240,166,60,.92) 47%,#161511 50%,rgba(240,166,60,.92) 53%,transparent 60%)}
+#flash{position:fixed;inset:0;background:#fffdf7;opacity:0;z-index:70;pointer-events:none}
+.shock{position:absolute;left:0;top:0;width:90px;height:90px;margin:-45px;border:3px solid var(--amber);border-radius:50%;opacity:0;pointer-events:none;z-index:30}
+.curg{position:absolute;left:0;top:0;z-index:19;width:26px;pointer-events:none;opacity:0}
+.curg svg{width:100%}
+.zhwrap>div{transform-origin:50% 0}
 .grain{position:absolute;inset:0;pointer-events:none;opacity:.5;
   background-image:repeating-linear-gradient(0deg,rgba(22,21,17,.022) 0 1px,transparent 1px 3px)}
 .grain.d{background-image:repeating-linear-gradient(0deg,rgba(236,231,217,.02) 0 1px,transparent 1px 3px)}
@@ -143,7 +150,7 @@ table.tb .zhc{font-family:var(--serif);font-size:12px;color:var(--ink3);margin-t
 .w{position:relative;white-space:nowrap}
 .w .gloss{position:absolute;left:50%;top:-1.5em;transform:translateX(-50%) scale(.8);opacity:0;
   font-family:var(--serif);font-size:12.5px;color:var(--amberL);white-space:nowrap;font-weight:600}
-.w.hl{background:linear-gradient(180deg,transparent 55%,rgba(240,166,60,.5) 55%);border-radius:2px}
+.w.hl{border-radius:2px;background-image:linear-gradient(180deg,transparent 55%,rgba(240,166,60,.5) 55%);background-size:var(--hlw,100%) 100%;background-repeat:no-repeat}
 .w.query{outline:2px solid var(--amberL);outline-offset:2px;border-radius:3px;background:rgba(240,166,60,.14)}
 .seg{position:relative}
 .seg .ul{position:absolute;left:0;right:0;bottom:-3px;height:3px;border-radius:2px;transform:scaleX(0);transform-origin:left center}
@@ -537,6 +544,8 @@ npm run profile -- --scenario=cold-start</pre>
   </div>
 
 </div>
+<div id="wipe"></div>
+<div id="flash"></div>
 <script src="_assets.js"></script>
 <script src="anim.js"></script>
 </body>

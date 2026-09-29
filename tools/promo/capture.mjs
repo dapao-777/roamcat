@@ -13,7 +13,7 @@ const EDGE = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
 const FPS = num('--fps', 30);
 const WORKERS = num('--workers', 4);
 const FROM = num('--from', 0);
-const TO = num('--to', 52);
+const TO = num('--to', 33.6);
 const ONLY = arg('--only')?.split(',').map(Number) ?? null;
 const OUT = path.resolve('preview/promo/frames');
 const W = 1920, H = 1080;

@@ -12,7 +12,8 @@ import path from 'node:path';
 const require = createRequire(import.meta.url);
 const ffmpeg = require('ffmpeg-static');
 const skip = process.argv.includes('--skip-frames');
-const fps = (process.argv[process.argv.indexOf('--fps') + 1] ?? '30');
+const fi = process.argv.indexOf('--fps');
+const fps = fi >= 0 ? process.argv[fi + 1] : '30';
 const OUT = path.resolve('preview/promo');
 
 const run = (cmd, args) => { console.log('▶', cmd, ...args); execFileSync(cmd, args, { stdio: 'inherit' }); };

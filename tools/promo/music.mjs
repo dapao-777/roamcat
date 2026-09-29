@@ -1,16 +1,17 @@
 /**
  * @file tools/promo/music.mjs
- * 宣传片配乐合成：chiptune（脉冲方波主旋律 + 三角波贝斯 + 噪声鼓组 + 和声垫），
- * 直出 44.1kHz/16bit 立体声 WAV → preview/promo/music.wav。节拍与 anim.js 场景对齐。
+ * 宣传片配乐合成：动感电子（四分底鼓 + 侧链抽动垫音/和弦刺 + 锯齿波琶音 + 噪声鼓组
+ * + riser/鼓花），直出 44.1kHz/16bit 立体声 WAV → preview/promo/music.wav。
+ * 128 BPM，场景边界与 anim.js 的 SCENE/WIPES/FLASHES 对齐。
  */
 import { writeFileSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 
-const SR = 44100, DUR = 52, BPM = 104;
-const BEAT = 60 / BPM, BAR = BEAT * 4;      // beat≈0.577s, bar≈2.308s
+const SR = 44100, DUR = 33.6, BPM = 128;
+const BEAT = 60 / BPM, BAR = BEAT * 4;      // beat=0.46875s, bar=1.875s
 const N = m => 440 * Math.pow(2, (m - 69) / 12);
-const CH = { C: [48, 55, 64, 67], Cm7: [48, 55, 64, 70], G: [43, 50, 59, 67], Am: [45, 52, 60, 67], Am7: [45, 52, 60, 67], F: [41, 48, 57, 65], Fmaj7: [41, 48, 57, 64], Dm: [38, 45, 57, 62], Em: [40, 47, 59, 64], Cmaj7: [48, 55, 59, 64] };
-const BASS = { C: 36, G: 31, Am: 33, F: 29, Dm: 26, Em: 28, Cmaj7: 36, Am7: 33, Fmaj7: 29, Cm7: 36 };
+const CH = { C: [48, 55, 64, 67], G: [43, 50, 59, 67], Am: [45, 52, 60, 67], F: [41, 48, 57, 65], Cmaj7: [48, 55, 59, 64], Am7: [45, 52, 60, 67] };
+const BASS = { C: 36, G: 31, Am: 33, F: 29, Cmaj7: 36, Am7: 33 };
 
 const len = Math.ceil(DUR * SR);
 const L = new Float32Array(len), R = new Float32Array(len);
@@ -26,121 +27,138 @@ function add(t, dur, fn, vol = .2, pan = 0) {
     L[i] += v * ca; R[i] += v * sa;
   }
 }
-/* 乐器 */
+const saw = f => tt => 2 * (tt * f % 1) - 1;
 const pulse = (f, duty = .25) => (tt) => (tt * f % 1) < duty ? 1 : -1;
 const tri = f => tt => { const p = tt * f % 1; return p < .5 ? 4 * p - 1 : 3 - 4 * p; };
 const sin = f => tt => Math.sin(2 * Math.PI * f * tt);
 const env = (a, d, s = 0) => tt => tt < a ? tt / a : Math.max(s, Math.exp(-(tt - a) / d));
+/* 侧链抽动：每拍起点压瘪后回弹，模拟 pump */
+const pump = tt => 1 - .62 * Math.exp(-(tt % BEAT) / .11);
 
 function kick(t, v = .5) {
-  add(t, .22, (tt) => Math.sin(2 * Math.PI * (140 * Math.exp(-tt * 22) + 46) * tt) * env(.002, .09)(tt), v);
+  add(t, .22, (tt) => (Math.sin(2 * Math.PI * (145 * Math.exp(-tt * 26) + 46) * tt)) * env(.001, .09)(tt), v);
+  add(t, .03, (tt) => rnd() * env(.0005, .006)(tt), v * .4);
 }
-function hat(t, v = .075, dur = .05) { add(t, dur, (tt) => rnd() * env(.001, .016)(tt), v, .18); }
-function snare(t, v = .14) {
-  add(t, .19, (tt) => (rnd() * .7 + Math.sin(2 * Math.PI * 185 * tt) * .4) * env(.002, .05)(tt), v, .1);
+function clap(t, v = .16) {
+  for (let k = 0; k < 3; k++) add(t + k * .012, .16, (tt) => rnd() * env(.001, .035 + k * .03)(tt), v * (k === 2 ? 1 : .55), (k - 1) * .15);
 }
-function bass(m, t, d, v = .26) {
-  add(t, d, (tt) => tri(N(m))(tt) * env(.008, .14, .0)(tt), v, -.1);
+function hat(t, v = .06, dur = .05) { add(t, dur, (tt) => rnd() * env(.0008, .012)(tt), v, .2); }
+function ohat(t, v = .085) { add(t, .2, (tt) => rnd() * env(.001, .07)(tt), v, .22); }
+function snare(t, v = .2) {
+  add(t, .18, (tt) => (rnd() * .65 + sin(190)(tt) * .45) * env(.001, .045)(tt), v, .08);
 }
-function lead(m, t, d, v = .15, duty = .25) {
+function bass(m, t, d, v = .3) {
   const f = N(m);
-  add(t, d, (tt) => pulse(f, duty)(tt) * env(.006, .10)(tt), v, -.16);
-  add(t, d, (tt) => pulse(f * 1.005, duty)(tt) * env(.006, .10)(tt), v * .5, .22); // 失谐副声部
+  add(t, d, (tt) => (sin(f)(tt) * .75 + tri(f)(tt) * .3) * env(.004, .1)(tt), v, -.06);
 }
-function pad(m, t, d, v = .042) {
+/* 锯齿波和弦刺 + 侧链 */
+function stab(m, t, d, v = .075) {
   const f = N(m);
-  add(t, d, (tt) => (sin(f)(tt) * .6 + tri(f)(tt) * .3 + sin(f * 2.001)(tt) * .12) * env(.3, .6, .35)(tt) * (tt > d - .5 ? Math.max(0, (d - tt) / .5) : 1), v);
+  add(t, d, (tt) => (saw(f)(tt) * .5 + saw(f * 1.007)(tt) * .3 + saw(f * .993)(tt) * .3) * env(.003, .13)(tt) * pump(tt), v);
 }
-function pluck(m, t, v = .18) {
+function pad(m, t, d, v = .045, pumped = false) {
   const f = N(m);
-  add(t, .5, (tt) => pulse(f, .5)(tt) * env(.003, .06)(tt), v, .12);
+  add(t, d, (tt) => (sin(f)(tt) * .55 + tri(f)(tt) * .3 + sin(f * 2.003)(tt) * .13)
+    * env(.2, .5, .35)(tt) * (tt > d - .35 ? Math.max(0, (d - tt) / .35) : 1)
+    * (pumped ? pump(tt) : 1), v);
 }
-function sparkle(t, base = 84, v = .13) { // 上行琶音闪音
+/* 琶音方波——动感主线 */
+function arp(m, t, d, v = .11) {
+  const f = N(m);
+  add(t, d, (tt) => (pulse(f, .5)(tt) * .6 + pulse(f * 2, .5)(tt) * .25) * env(.002, .06)(tt), v, -.12);
+}
+function pluck(m, t, v = .15) {
+  const f = N(m);
+  add(t, .4, (tt) => pulse(f, .5)(tt) * env(.002, .05)(tt), v, .12);
+}
+function sparkle(t, base = 84, v = .12) {
   [0, 4, 7, 12, 16, 19].forEach((s, i) => {
-    const f = N(base + s), tt0 = t + i * .055;
-    add(tt0, .4, (tt) => pulse(f, .5)(tt) * env(.002, .09)(tt), v, i % 2 ? .3 : -.3);
+    const f = N(base + s), tt0 = t + i * .04;
+    add(tt0, .3, (tt) => pulse(f, .5)(tt) * env(.002, .07)(tt), v, i % 2 ? .3 : -.3);
   });
 }
-function riser(t, d = .8, v = .06) { // 噪声上行过门
-  add(t, d, (tt) => rnd() * env(.05, .3)(tt) * (tt / d), v);
+function riser(t, d, v = .09) { // 噪声上扬 + 啁啾升调
+  add(t, d, (tt) => rnd() * env(.03, .3)(tt) * Math.pow(tt / d, 1.8), v);
+  add(t, d, (tt) => { const f = 350 + 2600 * tt / d; return Math.sin(2 * Math.PI * f * tt) * .3; } , v * .5);
+}
+function snareRoll(t, v = .14) { // 军鼓渐密鼓花
+  const offs = [0, .234, .469, .586, .645, .703, .732, .762, .791, .82, .85, .879];
+  offs.forEach((o, i) => snare(t + o * BEAT, v * (.5 + .5 * i / offs.length)));
+}
+function impact(t, v = .5) { // 段落落点重锤
+  kick(t, v * 1.25);
+  add(t, .5, (tt) => rnd() * env(.002, .15)(tt), v * .32);
+  [36, 48, 55, 64].forEach(m => add(t, .7, (tt) => (sin(N(m))(tt) * .7 + tri(N(m))(tt) * .3) * env(.002, .22)(tt), .12));
 }
 
 /* ---------------- 编曲 ---------------- */
-// 引子 0–4.6（bar 0-1）：Cmaj7 → Am7 pad + logo 闪音
-pad(48, 0, 2.6); pad(55, 0, 2.6); pad(59, .1, 2.5); pad(64, .2, 2.4);
-pad(45, 2.3, 2.5); pad(52, 2.35, 2.4); pad(60, 2.4, 2.3); pad(67, 2.5, 2.2);
-sparkle(1.45, 84);
-sparkle(3.9, 79, .09);
-
-// A 段 4.615–23.08（bar 2-9）：C G Am F ×2，鼓组进入
-const A = ['C', 'G', 'Am', 'F', 'C', 'G', 'F', 'G'];
-const LEAD_A = [ // 每小节主旋律（midi, 拍内偏移, 拍长）
-  [[76, 0, 1], [79, 1, .5], [81, 1.5, .5], [79, 2, 1], [76, 3, 1]],
-  [[74, 0, .5], [76, .5, .5], [74, 1, 1], [71, 2, 1], [74, 3, 1]],
-  [[72, 0, .5], [76, .5, .5], [79, 1, 1], [76, 2, .5], [74, 2.5, .5], [72, 3, 1]],
-  [[69, 0, .5], [72, .5, .5], [76, 1, 1], [74, 2, .5], [72, 2.5, .5], [69, 3, 1]],
-  [[76, 0, 1], [79, 1, .5], [84, 1.5, 1.5], [83, 3, .5], [81, 3.5, .5]],
-  [[79, 0, 1], [74, 1, .5], [71, 1.5, .5], [74, 2, 1], [79, 3, 1]],
-  [[77, 0, .5], [76, .5, .5], [72, 1, 1], [69, 2, .5], [72, 2.5, .5], [74, 3, 1]],
-  [[71, 0, 1], [74, 1, .5], [79, 1.5, .5], [81, 2, 1.5], [79, 3.5, .5]],
+/* 小节表：能量 0=pad 氛围 / 1=行进 / 2=全开drop */
+const BARS = [
+  ['Cmaj7', 0], ['Am7', 0],                              // 0-1   片头
+  ['C', 2], ['G', 2], ['Am', 2], ['F', 2], ['C', 2], ['G', 2], // 2-7   痛点+双语+辅助前段
+  ['Am', 1], ['F', 1],                                   // 8-9   辅助尾/伴读猫
+  ['C', 1],                                              // 10    伴读猫
+  ['Am', 1], ['F', 1],                                   // 11-12 服务商 build
+  ['C', 2], ['G', 2],                                    // 13-14 阅读器 drop B
+  ['Cmaj7', 0], ['Am7', 0], ['Cmaj7', 0],                // 15-17 收尾
 ];
-for (let b = 0; b < 8; b++) {
-  const t0 = 4.615 + b * BAR, ch = A[b];
-  for (const m of CH[ch]) pad(m, t0, BAR * 1.05, .038);
-  for (let e = 0; e < 8; e++) bass(BASS[ch] + (e % 4 === 2 ? 7 : 0), t0 + e * BEAT / 2, .3);
-  kick(t0); kick(t0 + BEAT * 2); snare(t0 + BEAT * 2, .09);
-  for (let e = 0; e < 8; e += 2) hat(t0 + e * BEAT / 2 + BEAT / 4);
-  for (const [m, sb, lb] of LEAD_A[b]) lead(m, t0 + sb * BEAT, lb * BEAT * .92);
-}
 
-// B 段 23.08–34.6（bar 10-14）：Am F C G Am，加密鼓点
-const B = ['Am', 'F', 'C', 'G', 'Am'];
-const LEAD_B = [
-  [[81, 0, .5], [79, .5, .5], [76, 1, .5], [72, 1.5, .5], [76, 2, 1], [79, 3, 1]],
-  [[77, 0, .5], [76, .5, .5], [72, 1, .5], [69, 1.5, .5], [72, 2, 1], [76, 3, 1]],
-  [[79, 0, 1], [76, 1, .5], [72, 1.5, .5], [76, 2, 1], [79, 3, .5], [81, 3.5, .5]],
-  [[83, 0, 1], [79, 1, .5], [74, 1.5, .5], [79, 2, 1.5], [78, 3.5, .5]],
-  [[76, 0, 1], [72, 1, .5], [69, 1.5, .5], [72, 2, 1], [76, 3, 1]],
-];
-for (let b = 0; b < 5; b++) {
-  const t0 = 23.08 + b * BAR, ch = B[b];
-  for (const m of CH[ch]) pad(m, t0, BAR * 1.05, .034);
-  for (let e = 0; e < 8; e++) bass(BASS[ch] + (e === 6 ? 7 : e === 7 ? 12 : 0), t0 + e * BEAT / 2, .26, .24);
-  kick(t0); kick(t0 + BEAT * 2); kick(t0 + BEAT * 3.5, .3); snare(t0 + BEAT * 2);
-  for (let e = 0; e < 16; e++) hat(t0 + e * BEAT / 4, e % 4 === 2 ? .08 : .05);
-  for (const [m, sb, lb] of LEAD_B[b]) lead(m + 12, t0 + sb * BEAT, lb * BEAT * .9, .12, .2);
-}
-pluck(88, 22.15); // 词卡弹出
-pluck(91, 22.24, .14);
+const ARP_SEQ = [0, 7, 12, 16, 19, 16, 12, 7, 0, 7, 12, 16, 19, 21, 19, 16];
+const ROOT = { C: 60, G: 55, Am: 57, F: 53, Cmaj7: 60, Am7: 57 };
 
-// C 段 34.6–41.5（bar 15-17）：F C G 推进
-const Csec = ['F', 'C', 'G'];
-for (let b = 0; b < 3; b++) {
-  const t0 = 34.6 + b * BAR, ch = Csec[b];
-  for (const m of CH[ch]) pad(m, t0, BAR * 1.05, .036);
-  for (let e = 0; e < 8; e++) bass(BASS[ch] + (e % 4 === 3 ? 7 : 0), t0 + e * BEAT / 2, .3);
-  kick(t0); kick(t0 + BEAT * 2); snare(t0 + BEAT * 2, .11);
-  for (let e = 0; e < 8; e += 2) hat(t0 + e * BEAT / 2 + BEAT / 4);
-  [0, 2, 4].forEach((e, i) => lead(CH[ch][i % 4] + 24, t0 + e * BEAT / 2, .42, .11, .2));
-}
+BARS.forEach(([ch, energy], b) => {
+  const t0 = b * BAR;
+  if (energy === 0) {
+    for (const m of CH[ch]) pad(m, t0, BAR * 1.06, .048);
+    return;
+  }
+  for (const m of CH[ch]) pad(m, t0, BAR * 1.02, .026, true);
+  const root = ROOT[ch];
 
-// 收束 41.5–52（bar 18+）：pad 回归 + 点缀 + 终式和弦
-for (const m of CH.Cmaj7) pad(m, 41.5, 4.9, .04);
-for (const m of CH.Am7) pad(m, 46.3, 3.4, .036);
-for (const m of [48, 55, 59, 64, 67]) pad(m, 49.6, 2.6, .05);
-kick(41.5); sparkle(42.3, 81, .08);
-pluck(79, 45.9, .12); pluck(84, 46.15, .1); pluck(88, 46.4, .1);
-sparkle(47.5, 84, .11); sparkle(49.9, 88, .15);
-riser(4.2, .4); riser(34.2, .35); riser(45.5, .4);
-lead(84, 50.4, 1.3, .13, .5); lead(88, 50.4, 1.3, .09, .5);
+  if (energy === 1) {
+    kick(t0); kick(t0 + BEAT * 2); kick(t0 + BEAT * 3.5, .34);
+    clap(t0 + BEAT * 2, .1);
+    for (let e = 0; e < 8; e += 2) hat(t0 + e * BEAT / 2 + BEAT / 4, .05);
+    ohat(t0 + BEAT * 3.5, .05);
+    for (let e = 0; e < 8; e++) bass(BASS[ch] + (e === 5 ? 7 : e === 7 ? 12 : 0), t0 + e * BEAT / 2, .22, .26);
+    /* 八分稀疏琶音 */
+    for (let s = 0; s < 8; s += 2) arp(root + ARP_SEQ[(b * 8 + s) % 16], t0 + s * BEAT / 2, .2, .085);
+  } else {
+    for (let k = 0; k < 4; k++) kick(t0 + k * BEAT);
+    clap(t0 + BEAT); clap(t0 + BEAT * 3);
+    for (let e = 0; e < 16; e++) hat(t0 + e * BEAT / 4, e % 4 === 2 ? .062 : .035);
+    ohat(t0 + BEAT * 1.5, .06); ohat(t0 + BEAT * 3.5, .06);
+    /* 十六分驱动贝斯 */
+    for (let e = 0; e < 16; e++) bass(BASS[ch] + (e % 8 === 6 ? 12 : 0), t0 + e * BEAT / 4, .11, e % 2 ? .18 : .24);
+    /* 反拍和弦刺 */
+    for (const m of CH[ch]) for (const obb of [.5, 1.5, 3.5]) stab(m, t0 + obb * BEAT, .3);
+    /* 十六分琶音主旋律 */
+    for (let s = 0; s < 16; s++) arp(root + ARP_SEQ[(b * 16 + s) % 16], t0 + s * BEAT / 4, .11, .1);
+  }
+});
 
-/* 简易延迟（主旋律空间感）已混入双声道声像替代 */
+/* build：服务商段落末尾鼓花 + riser 顶进阅读器 drop */
+riser(23.1, 1.25, .07);
+snareRoll(24.375 - .879 * BEAT);
+riser(2.15, .95, .08);                       // 片头 → 第一落点
+snareRoll(3.75 - .879 * BEAT - .05, .11);
+
+/* 场景对位音效（对齐 anim.js） */
+sparkle(1.05, 84);                           // 片头猫组装完成
+impact(3.1);                                 // 页面登场
+pluck(88, 7.42, .14); pluck(93, 7.52, .1);   // 「翻译本页」按下
+pluck(91, 14.15, .13);                       // 词卡弹出
+sparkle(18.8, 86, .09);                      // 摘要卡展开
+impact(24.375, .45);                         // 阅读器 drop
+sparkle(29.0, 84, .12);                      // 收尾猫标锁定 + 闪光
+impact(29.0, .55);                           // 终式重锤
+arp(96, 29.0, .9, .1); arp(100, 29.0, .9, .07);
 
 /* ---------------- 母带 & 写盘 ---------------- */
 mkdirSync('preview/promo', { recursive: true });
-const g = 1.25;
-for (let i = 0; i < len; i++) {                       // soft clip + 淡入淡出
-  const fi = Math.min(1, i / (SR * .25)), fo = Math.min(1, (len - i) / (SR * 1.4));
+const g = 1.15;
+for (let i = 0; i < len; i++) {
+  const fi = Math.min(1, i / (SR * .12)), fo = Math.min(1, (len - i) / (SR * .9));
   L[i] = Math.tanh(L[i] * g) * fi * fo; R[i] = Math.tanh(R[i] * g) * fi * fo;
 }
 const buf = Buffer.alloc(44 + len * 4);
