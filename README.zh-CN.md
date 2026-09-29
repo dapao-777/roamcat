@@ -34,6 +34,13 @@
   </picture>
 </p>
 
+<p align="center">
+  <a href="https://github.com/dapao-777/roamcat/blob/main/.github/assets/roamcat-intro.mp4" title="观看 34 秒介绍短片（含配乐）">
+    <img src=".github/assets/promo-teaser.gif" alt="RoamCat 介绍动画 —— 点击播放含配乐的完整版" width="94%">
+  </a><br>
+  <sub>▶ 34 秒介绍短片 · 点击片段观看完整版（带音乐）</sub>
+</p>
+
 > **0.0.1 预发布版**——开发者模式加载，未上架商店。本项目是对开源项目 [RelyLess](https://github.com/rockythink/relyless) 的重构、优化与修复，感谢原作者 B 站 UP 主 [停车拾穗](https://live.bilibili.com/392612)。
 
 **本地优先**。不经营服务器、不采集遥测、阅读历史默认关闭且按站授权。AI 能力来自你自选的服务——内置本地分类模型、**28 家自备 API** 之一，或复用本机 **ChatGPT / Grok / Antigravity** 订阅的连接器。

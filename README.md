@@ -34,6 +34,13 @@
   </picture>
 </p>
 
+<p align="center">
+  <a href="https://github.com/dapao-777/roamcat/blob/main/.github/assets/roamcat-intro.mp4" title="Watch the 34-second intro film — with music">
+    <img src=".github/assets/promo-teaser.gif" alt="RoamCat intro animation — click to play the full film with music" width="94%">
+  </a><br>
+  <sub>▶ 34s intro film · click the clip for the full video with music</sub>
+</p>
+
 > **0.0.1 prerelease** — loaded via developer mode, not yet on any store. This project rebuilds, optimizes and repairs the open-source [RelyLess](https://github.com/rockythink/relyless); thanks to its author, Bilibili creator [停车拾穗](https://live.bilibili.com/392612).
 
 **Local-first.** No servers operated, no telemetry, reading history off by default and gated per site. AI capability comes from a source you choose — a bundled local classification model, one of **28 bring-your-own API providers**, or a local connector that reuses your **ChatGPT / Grok / Antigravity** subscriptions.
