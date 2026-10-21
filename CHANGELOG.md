@@ -5,6 +5,11 @@
 ## [Unreleased]
 
 ### 已有
+- **ego lite 实测修复**：
+  - MDN 等 `<main style="display:contents">` 的文档页正文不再整页漏翻（容器自身无布局盒子曾被判为不可见，只剩导航被翻译）；
+  - 收起的下拉菜单面板（自定义元素里未渲染的后代）不再拼进可见条目一起翻译，译文不再浮在顶栏上；
+  - 补齐伴读猫气泡/查词卡缺失的 4 个文案键；`check-dict` 新增「代码引用但字典缺失」扫描并接入 CI；
+  - 新增 `contents-main` 站点夹具（去掉修复即失败）；`tools/package-release.mjs` 生成真正的 zip 安装包与 SHA256SUMS；门禁工具支持 `ROAMCAT_BROWSER` 指定其他 Chromium 浏览器。
 - **文档更新**：
   - 中英 README 重排：顶部导航与亮点、功能一览集中放截图，FAQ / 架构 / 设计规格改为折叠块；标志随 GitHub 明暗主题切换；
   - 安装说明以「从源码构建」为主，删掉已失效的「直接加载源码目录」方式；Release 安装包改为「发布后提供」（当前 Release 仍是草稿）；落地页与 `llms.txt` 同步；

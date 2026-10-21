@@ -78,7 +78,7 @@ RoamCat 是一个面向英语阅读的 Chrome / Edge 扩展，按双模式组织
 
 免构建的预发布安装包 `roamcat-0.0.1-extension.zip` 会在发布后附在 GitHub Releases 中：
 
-1. 从 GitHub Releases 下载安装包并解压，得到 `extension/` 目录（`npm run build:release` 产物）。订阅连接器 `connector/` 请从本仓库获取。
+1. 从 GitHub Releases 下载安装包（附 `SHA256SUMS` 可校验）并解压，得到 `roamcat-0.0.1/` 目录，其中包含 `extension/`（`npm run build:release` 产物）、`connector/`（订阅连接器）、`README.md`、`LICENSE` 与 `NOTICE.txt`。
 2. 打开扩展管理页：
    - Chrome：`chrome://extensions`
    - Edge：`edge://extensions`

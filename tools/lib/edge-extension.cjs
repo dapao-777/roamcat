@@ -15,6 +15,26 @@ function loadPlaywright() {
 }
 const { chromium } = loadPlaywright();
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+const net = require('node:net');
+const {spawn, spawnSync} = require('node:child_process');
+const freePort = () => new Promise((resolve, reject) => { const srv = net.createServer(); srv.unref(); srv.on('error', reject); srv.listen(0, '127.0.0.1', () => { const {port} = srv.address(); srv.close(() => resolve(port)); }); });
+
+// ROAMCAT_BROWSER=<浏览器 exe 路径> 时改用该 Chromium 系浏览器（如 ego lite）：部分发行版不响应 Playwright 的
+// --remote-debugging-pipe，这里自己以临时配置 + 本地调试端口启动，再经 CDP 连接。ROAMCAT_BROWSER_HEADLESS=0 可开窗观察。
+async function launchExternal(executable, {extension, profile, viewport, headless}) {
+  const port = await freePort();
+  const args = [`--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, `--disable-extensions-except=${extension}`, `--load-extension=${extension}`,
+    '--no-first-run', '--no-default-browser-check', `--window-size=${viewport.width},${viewport.height}`];
+  if (headless) args.push('--headless=new');
+  const proc = spawn(executable, [...args, 'about:blank'], {stdio: 'ignore'});
+  let ready = false;
+  for (let i = 0; i < 60 && !ready; i++) { await sleep(500); try { ready = (await fetch(`http://127.0.0.1:${port}/json/version`)).ok; } catch {} }
+  const kill = () => { if (process.platform === 'win32') spawnSync('taskkill', ['/PID', String(proc.pid), '/T', '/F'], {stdio: 'ignore'}); else try { process.kill(proc.pid); } catch {} };
+  if (!ready) { kill(); throw new Error(`浏览器调试端口未就绪：${executable}`); }
+  const browser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`);
+  const context = browser.contexts()[0];
+  return {context, shutdown: async () => { await browser.close().catch(() => {}); kill(); await sleep(800); }};
+}
 const toId = buf => [...buf.subarray(0, 16)].flatMap(b => [b >> 4, b & 15]).map(n => String.fromCharCode(97 + n)).join('');
 
 // options({headless, extensionDir, viewport}) → {context, extPage, profile, extension, close()}
@@ -25,17 +45,27 @@ async function launchExtension({headless = true, extensionDir, viewport = {width
   const extension = fs.mkdtempSync(path.join(os.tmpdir(), 'roamcat-edge-ext-'));
   fs.cpSync(extensionDir, extension, {recursive: true});
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'roamcat-edge-profile-'));
-  const context = await chromium.launchPersistentContext(profile, {
-    channel: 'msedge', headless, ignoreDefaultArgs: ['--disable-extensions'],
-    args: ['--disable-extensions-except=' + extension, '--load-extension=' + extension],
-    viewport,
-  }).catch(error => { fs.rmSync(extension, {recursive: true, force: true}); fs.rmSync(profile, {recursive: true, force: true}); throw error; });
+  const external = process.env.ROAMCAT_BROWSER;
+  const cleanup = () => { fs.rmSync(extension, {recursive: true, force: true, maxRetries: 5, retryDelay: 300}); fs.rmSync(profile, {recursive: true, force: true, maxRetries: 5, retryDelay: 300}); };
+  let context, shutdown;
+  if (external) {
+    ({context, shutdown} = await launchExternal(external, {extension, profile, viewport, headless: headless && process.env.ROAMCAT_BROWSER_HEADLESS !== '0'}).catch(error => { cleanup(); throw error; }));
+  } else {
+    context = await chromium.launchPersistentContext(profile, {
+      channel: 'msedge', headless, ignoreDefaultArgs: ['--disable-extensions'],
+      args: ['--disable-extensions-except=' + extension, '--load-extension=' + extension],
+      viewport,
+    }).catch(error => { cleanup(); throw error; });
+    shutdown = () => context.close().catch(() => {});
+  }
   const manifest = JSON.parse(fs.readFileSync(path.join(extension, 'manifest.json'), 'utf8'));
   const ids = [];
   if (manifest.key) ids.push(toId(crypto.createHash('sha256').update(Buffer.from(manifest.key, 'base64')).digest()));
   ids.push(toId(crypto.createHash('sha256').update(extension, 'utf16le').digest()));
-  for (const existing of context.pages()) await existing.close().catch(() => {});
+  // 先开扩展页再关旧标签：经 CDP 连接的外部浏览器在关掉最后一个标签时会直接退出。
   const extPage = await context.newPage();
+  if (external) await extPage.setViewportSize(viewport);
+  for (const existing of context.pages()) if (existing !== extPage) await existing.close().catch(() => {});
   let opened = false;
   for (let attempt = 0; attempt < 45 && !opened; attempt++) {
     const worker = context.serviceWorkers()[0];
@@ -45,9 +75,9 @@ async function launchExtension({headless = true, extensionDir, viewport = {width
     }
     if (!opened) await sleep(1000);
   }
-  if (!opened) { await context.close().catch(() => {}); fs.rmSync(extension, {recursive: true, force: true}); fs.rmSync(profile, {recursive: true, force: true}); throw new Error('无法打开扩展页（扩展未加载）'); }
+  if (!opened) { await shutdown(); cleanup(); throw new Error('无法打开扩展页（扩展未加载）'); }
   await extPage.waitForTimeout(500);
-  const close = async () => { await context.close().catch(() => {}); fs.rmSync(extension, {recursive: true, force: true}); fs.rmSync(profile, {recursive: true, force: true}); };
+  const close = async () => { await shutdown(); cleanup(); };
   return {context, extPage, profile, extension, close};
 }
 

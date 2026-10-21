@@ -104,6 +104,13 @@ const cases = [
     mustNotRead: ['joshka 14 hours ago', 'abhin4v 11 hours ago', '42', 'navigation chrome wording'],
     mustNotTranslate: ['joshka 14 hours ago', 'abhin4v 11 hours ago', 'MatheusRich 5 hours ago', 'chrismorgan 2 hours ago', 'ai meta'],
     chromeOnly: ['navigation chrome wording']
+  },
+  {
+    // 无站点档案的通用页：<main> 为 display:contents（MDN 同款），正文必须作为 article 单元进入翻译。
+    slug: 'contents-main', url: 'https://developer.mozilla.org/en-US/docs/Web/Performance/Guides/Fundamentals', site: null,
+    articleUnits: ['Performance means efficiency in the context of web apps', 'user-perceived performance is the only performance', 'how the rendering engine contributes to performance'],
+    mustNotTranslate: ['Hidden dropdown panel wording'],
+    chromeOnly: ['Understanding latency sidebar wording', 'Table of contents aside wording']
   }
 ];
 const urlKey = raw => { const u = new URL(raw); return u.host + u.pathname.replace(/\/$/, ''); };
@@ -155,12 +162,15 @@ async function runFixtures() {
           assert.ok(inspect, 'inspect() 无结果（content script 未注入？）');
           assert.equal(inspect.site, c.site, `site=${inspect.site}`);
           if (!c.allowNullRoot) assert.ok(inspect.root, 'root 为空');
+          // SITES_DEBUG=<slug> 时打印该夹具提取出的全部单元，便于排查用例为何没命中。
+          if (process.env.SITES_DEBUG === c.slug) console.log(JSON.stringify(inspect.units, null, 1));
           const blockText = haystack(inspect.blocks || []), unitText = haystack(inspect.units || []);
           const chromeText = (inspect.units || []).filter(u => u.zone === 'chrome').map(u => u.text).join('\n');
           const misses = [
             ...findMissing(blockText, c.mustRead || []).map(p => `mustRead 未读到:${p}`),
             ...findPresent(blockText, c.mustNotRead || []).map(p => `mustNotRead 被读:${p}`),
             ...findPresent(unitText, c.mustNotTranslate || []).map(p => `mustNotTranslate 出现:${p}`),
+            ...(c.articleUnits || []).filter(p => !(inspect.units || []).some(u => u.zone === 'article' && u.text.includes(p))).map(p => `articleUnits 未作为正文单元出现:${p}`),
             ...(c.chromeOnly || []).flatMap(p => {
               if (!chromeText.includes(p)) return [`chromeOnly 未出现在 chrome 单元:${p}`];
               if (blockText.includes(p)) return [`chromeOnly 出现在 blocks:${p}`];

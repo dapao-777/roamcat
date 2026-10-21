@@ -1,0 +1,47 @@
+<!doctype html>
+<!-- 回归夹具：仿 MDN 文档页，<main> 为 display:contents（自身无布局盒子）。
+     曾导致 isVisible(main) 判为不可见，整页正文不进翻译单元，只剩导航被当作页面构件翻译。 -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Performance fundamentals fixture</title>
+<style>
+  body { margin: 0; font: 16px/1.6 system-ui, sans-serif; display: grid; grid-template-columns: 220px 1fr; }
+  .layout { display: grid; grid-template-columns: 1fr 200px; }
+  main#content { display: contents; }
+  nav, aside { font-size: 14px; }
+</style>
+</head>
+<body>
+<!-- 仿 MDN 顶栏下拉菜单：自定义元素 display:contents，收起时面板不分配插槽、不渲染；面板文字绝不能进入翻译。 -->
+<div class="menu__tab">Reference tab label <x-dropdown><div class="menu__panel">Hidden dropdown panel wording that must stay out of translation</div></x-dropdown></div>
+<script>
+  customElements.define('x-dropdown', class extends HTMLElement {
+    // 面板被分配进 Shadow DOM 里一个收起（display:none）的插槽：计算样式仍是 block，但没有布局盒子——与 MDN 实测一致。
+    constructor() { super(); this.attachShadow({mode: 'open'}).innerHTML = '<style>:host{display:contents}.panel{display:none}</style><div class="panel"><slot></slot></div>'; }
+  });
+</script>
+<nav aria-label="Sidebar">
+  <ul>
+    <li><a href="#a">Understanding latency sidebar wording</a></li>
+    <li><a href="#b">How long is too long sidebar wording</a></li>
+  </ul>
+</nav>
+<div class="layout">
+  <main id="content">
+    <section class="content-section">
+      <h1>Performance fundamentals</h1>
+      <p>Performance means efficiency in the context of web apps, and this document explains how the browser platform helps improve it.</p>
+      <p>Ultimately, user-perceived performance is the only performance that matters to the people who rely on your application every day.</p>
+    </section>
+    <section class="content-section">
+      <h2>Platform performance optimizations</h2>
+      <p>This section provides a brief overview of how the rendering engine contributes to performance below the level of all applications.</p>
+    </section>
+  </main>
+  <aside aria-label="In this article">
+    <a href="#a">Table of contents aside wording</a>
+  </aside>
+</div>
+</body>
+</html>

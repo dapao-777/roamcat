@@ -202,8 +202,24 @@ const LIMIT_ERROR = T('c.limit');
     }catch{}finally{capture.busy=false;}
   }
   function hiddenStyle(style){return style.display==='none'||style.visibility==='hidden'||style.visibility==='collapse'||style.contentVisibility==='hidden'||Number(style.opacity)===0||style.clip==='rect(0px, 0px, 0px, 0px)'||style.clipPath==='inset(50%)'||style.overflow==='hidden'&&parseFloat(style.width)<=1&&parseFloat(style.height)<=1;}
+    // display:contents 容器是否真有内容被渲染：任一子元素有布局盒子（嵌套的 contents 继续向下找），或任一非空文本有矩形。
+    function rendersContent(element,depth=0){
+      if(depth>6)return false;
+      for(const child of element.childNodes){
+        if(child.nodeType===Node.TEXT_NODE){if(child.nodeValue.trim()){const range=document.createRange();range.selectNodeContents(child);if(range.getClientRects().length)return true;}continue;}
+        if(child.nodeType!==Node.ELEMENT_NODE)continue;
+        const style=getComputedStyle(child);
+        if(hiddenStyle(style))continue;
+        if(child.getClientRects().length||style.display==='contents'&&rendersContent(child,depth+1))return true;
+      }
+      return false;
+    }
     function isVisible(element) {
-      if(!element?.isConnected||!element.getClientRects().length)return false;
+      if(!element?.isConnected)return false;
+      // display:contents 元素自身不生成盒子（getClientRects 为空）：MDN 的 <main> 是这样，正文照常渲染；
+      // 但下拉菜单等隐藏容器也常是 display:contents。只有当它至少有一个子节点真正渲染出来时才算可见，
+      // 否则曾出现两种错误：整页正文被漏掉，或隐藏菜单里的条目被翻译后浮在页面上。
+      if(!element.getClientRects().length&&!(getComputedStyle(element).display==='contents'&&rendersContent(element)))return false;
       for(let parent=element;parent;parent=parent.parentElement)if(hiddenStyle(getComputedStyle(parent)))return false;
       return true;
     }
@@ -1294,6 +1310,9 @@ const LIMIT_ERROR = T('c.limit');
     if(node.nodeType!==Node.ELEMENT_NODE||node.namespaceURI!=='http://www.w3.org/1999/xhtml')return '';
     if(node.matches(SKIP_HARD)||node.hasAttribute(OWN)&&!['term','annotation'].includes(node.getAttribute(OWN))||hiddenStyle(getComputedStyle(node)))return '';
     if(node.tagName==='BR')return '\n';
+    // 没有渲染出来的子树（如收起的下拉菜单：自定义元素的面板未分配插槽，计算样式却正常）不能算进文字，
+    // 否则整块隐藏菜单会并进相邻标签的翻译单元，译文浮在页面上。判断与 isVisible 的 display:contents 规则一致。
+    if(!node.getClientRects().length&&!(getComputedStyle(node).display==='contents'&&rendersContent(node)))return '';
     return [...node.childNodes].map(emergencyText).join('');
   }
   function emergencyBlocks(root) {

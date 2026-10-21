@@ -28,3 +28,6 @@ jobs:
         run: node tools/verify-module-graph.cjs
       - name: Unit tests
         run: npm test
+      # 中英字典对齐 + 代码里用到的键都在字典里（缺键时界面会直接显示键名）。
+      - name: i18n dictionary check
+        run: node tools/check-dict.cjs
