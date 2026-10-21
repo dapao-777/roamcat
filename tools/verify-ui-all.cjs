@@ -40,6 +40,23 @@ const check = (name, cond, detail = '') => {
   return cond;
 };
 const warn = (name, detail) => report.warnings.push(detail ? `${name} — ${detail}` : name);
+// 现场拼一份单页 PDF（Helvetica 一行文字），xref 偏移按字节算，供阅读器走真实 pdfjs 解析。
+const tinyPdf = (text) => {
+  const stream = `BT /F1 18 Tf 72 720 Td (${text.replace(/[()\\]/g, '\\$&')}) Tj ET`;
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>',
+    `<< /Length ${Buffer.byteLength(stream)} >>\nstream\n${stream}\nendstream`,
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'
+  ];
+  let body = '%PDF-1.4\n';
+  const offsets = objects.map((object, index) => { const at = Buffer.byteLength(body); body += `${index + 1} 0 obj\n${object}\nendobj\n`; return at; });
+  const xref = Buffer.byteLength(body);
+  body += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n${offsets.map(at => String(at).padStart(10, '0') + ' 00000 n \n').join('')}`;
+  body += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+  return Buffer.from(body);
+};
 const shot = async (page, name, {fullPage = false, minBytes = 40000} = {}) => {
   const file = path.join(out, name + '.png');
   await page.screenshot({path: file, fullPage});
@@ -121,6 +138,10 @@ const setTheme = async (page, theme) => {
       await reader.waitForTimeout(400);
       check(`reader 空态[${theme}]`, await reader.locator('.reader-status-card').isVisible());
       await shot(reader, `reader-empty-${theme}`);
+      // 真实走一遍 pdfjs：曾因 pdfjs 6 去掉 doc.destroy()，解析完最后一页才报错、整份 PDF 打不开。
+      await reader.setInputFiles('#reader-file', {name: 'sample.pdf', mimeType: 'application/pdf', buffer: tinyPdf('The quiet machinery of morning wakes the city.')});
+      await reader.waitForFunction(() => document.querySelectorAll('.reader-block').length > 0 || /pdf|PDF|无法|failed/i.test(document.querySelector('.reader-status-card')?.textContent || ''), undefined, {timeout: 15000}).catch(() => {});
+      check(`reader 真实 PDF 解析[${theme}]`, await reader.locator('.reader-block').count() > 0, await reader.locator('.reader-status-card').textContent().catch(() => ''));
       await reader.evaluate(() => {
         const el = document.querySelector('roamcat-reader');
         const blocks = [

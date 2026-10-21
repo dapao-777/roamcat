@@ -68,6 +68,7 @@ export class RoamcatReader extends LitElement {
     } catch (error) {
       this.error = t('rd.remoteFail',{err:error?.message || error});
       this.view = 'error';
+      this.progress = '';
     }
   }
 
@@ -82,6 +83,7 @@ export class RoamcatReader extends LitElement {
     } catch (error) {
       this.error = t('rd.openFail',{err:error?.message || error});
       this.view = 'error';
+      this.progress = '';
     }
   }
 
@@ -124,6 +126,7 @@ export class RoamcatReader extends LitElement {
   }
 
   finishLoad(title, kind, sidebar, blocks) {
+    this.progress = '';
     if (!blocks.length) { this.error = t('rd.noText'); this.view = 'error'; return; }
     this.title = title;
     this.kind = kind;
@@ -140,13 +143,33 @@ export class RoamcatReader extends LitElement {
     this.translating = true;
     let done = 0;
     try {
-      for (const batch of batches) {
-        this.progress = t('rd.translating',{done,total:batches.length});
-        const result = await request('READER_TRANSLATE', {items: batch});
-        for (const item of result.items || []) this.translations.set(item.id, item.translation);
-        this.translations = new Map(this.translations);
-        done += 1;
-      }
+      // 两路并发：与后台每个服务默认的 2 个并发名额对齐，按文档顺序取批。
+      // 单批失败不拖垮其余批次；结束后再报错，再点一次只补翻没译出的段落。
+      let next = 0, failed = null;
+      this.progress = t('rd.translating',{done,total:batches.length});
+      const worker = async () => {
+        while (next < batches.length) {
+          const batch = batches[next++];
+          try {
+            // 模型偶发漏条/夹杂格式时整批被校验拒收：拆成单条逐个重试，一条坏数据不拖累同批其余段落。
+            const items = await request('READER_TRANSLATE', {items: batch}).then(result => result.items || [], async error => {
+              if (batch.length === 1) throw error;
+              const singles = await Promise.allSettled(batch.map(item => request('READER_TRANSLATE', {items: [item]})));
+              const ok = singles.filter(single => single.status === 'fulfilled').flatMap(single => single.value.items || []);
+              if (ok.length < batch.length) failed ??= singles.find(single => single.status === 'rejected')?.reason || error;
+              return ok;
+            });
+            for (const item of items) this.translations.set(item.id, item.translation);
+            this.translations = new Map(this.translations);
+            done += 1;
+            this.progress = t('rd.translating',{done,total:batches.length});
+          } catch (error) {
+            failed ??= error;
+          }
+        }
+      };
+      await Promise.all([worker(), worker()]);
+      if (failed) throw failed;
       this.progress = t('rd.transDone');
     } catch (error) {
       this.progress = '';

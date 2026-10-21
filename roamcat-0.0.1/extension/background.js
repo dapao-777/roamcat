@@ -434,13 +434,14 @@ async function requireApiPermission(service) {
 // semaphore (default 2, adjustable 1–10 in settings), so a low-tier service
 // (e.g. StepFun V0: 5 concurrent / 10 RPM) is never hammered by parallel tabs
 // while higher-tier services stay fast. Keyed by service id (unique per service).
+// urgent（查词、摘要、连接测试等用户主动请求）排到队首，不被后台批量辅助压住整整一轮超时。
 const apiServiceSlots=new Map();
-async function acquireApiServiceSlot(service) {
+async function acquireApiServiceSlot(service,urgent=false) {
   const limit=Number.isInteger(service?.maxConcurrency)?service.maxConcurrency:2;
   let slot=apiServiceSlots.get(service.id);
   if(!slot){slot={active:0,waiters:[]};apiServiceSlots.set(service.id,slot);}
   if(slot.active<limit){slot.active++;return;}
-  await new Promise(resolve=>slot.waiters.push(resolve));
+  await new Promise(resolve=>urgent?slot.waiters.unshift(resolve):slot.waiters.push(resolve));
   slot.active++;
 }
 function releaseApiServiceSlot(service) {
@@ -461,10 +462,10 @@ function apiKeyRotatorFor(service) {
 }
 // 限流 60 秒、鉴权 120 秒：足够跨过常规 RPM 窗口，又不至于把误伤永久化。
 const API_KEY_COOLDOWN = Object.freeze({rateLimit:60_000,auth:120_000});
-async function apiRequest(provider,payload,instructions,schema,{onContent,trace,beforeRequest,lenientJson=false}={}) {
+async function apiRequest(provider,payload,instructions,schema,{onContent,trace,beforeRequest,lenientJson=false,urgent=false}={}) {
   const preferences=readingHistory.policy()?.translation;if(preferences&&[ASSISTANCE_INSTRUCTIONS,SUPPORT_INSTRUCTIONS,SUPPORT_CORRECTION_INSTRUCTIONS,EMERGENCY_INSTRUCTIONS,PAGE_TRANSLATION_INSTRUCTIONS].includes(instructions))payload={...payload,personalization:preferences};
   const service=normalizeApiService(provider);await requireApiPermission(service);
-  await acquireApiServiceSlot(service);
+  await acquireApiServiceSlot(service,urgent);
   const timeoutMs=providerRequestTimeoutMs(service);
   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),timeoutMs);
   const generation=providerGeneration;
@@ -540,8 +541,10 @@ function withBackgroundSlot(operation,guard){
   if(activeBackgroundWork>=2&&workWaiters.length>=16){reject(Object.assign(new Error(M('后台任务较多，请稍后重试。','Too many background tasks; please retry shortly.')),{code:'NOT_READY'}));return promise;}
   workWaiters.push({operation,guards,generation:providerGeneration,resolve,reject});drainBackgroundWork();return promise;
 }
+// 标签页/框架在异步操作中途关闭或换文档：属正常竞态，不算故障。
+const tabGone=error=>/No tab with id:|No frame with id:|Frame not found|No document with id:|The tab was closed/i.test(error?.message||'');
 async function readingPageCall(operation){
-  try{return await operation();}catch(error){if(/No tab with id:|No frame with id:|Frame not found|No document with id:|The tab was closed/i.test(error?.message||''))throw staleWork();throw error;}
+  try{return await operation();}catch(error){if(tabGone(error))throw staleWork();throw error;}
 }
 function persistSupportCache(expectedProvider=providerGeneration,expectedSupport){const work=writes.then(async()=>{const state=await load(false);if(futureSchema||expectedProvider!==providerGeneration||(expectedSupport!==undefined&&expectedSupport!==state.supportDataGeneration))return;await writeReadingSession({supportCache:Object.fromEntries(supportCache)},expectedProvider);});writes=work.catch(()=>{});return work.catch(()=>{});}
 async function readingSource(sender){
@@ -917,7 +920,7 @@ async function pageSummary(message, sender) {
       { title: payload.title, sample },
       PAGE_SUMMARY_INSTRUCTIONS,
       PAGE_SUMMARY_SCHEMA,
-      { trace, beforeRequest: guard }
+      { trace, beforeRequest: guard, urgent: true }
     );
     result = normalizePageSummaryResult(raw);
   }
@@ -986,7 +989,7 @@ const operation=previous.catch(()=>{}).then(async()=>{
             try{
               if(isSubscriptionKind(state.settings.providerKind))return await providerOperation(()=>assistSubscription(request,state.settings.subscriptionModel,diagnostics.trace(message)?.traceId,readingHistory.policy()?.translation,onProgress,nativeKind(state.settings)),diagnostics.trace(message),state.settings.subscriptionModel,nativeKind(state.settings),JSON.stringify(request).length);
               const onContent=content=>onProgress(assistanceProgress(content,request,{envelope:'result'}));
-              const wrapped=await apiRequest(apiProviderForTask(state.settings,'assist'),request,ASSISTANCE_INSTRUCTIONS,assistanceSchema(request),{onContent,trace:diagnostics.trace(message)});
+              const wrapped=await apiRequest(apiProviderForTask(state.settings,'assist'),request,ASSISTANCE_INSTRUCTIONS,assistanceSchema(request),{onContent,trace:diagnostics.trace(message),urgent:true});
               return wrapped.result;
             }finally{flight.open=false;}
           })();
@@ -1348,7 +1351,7 @@ const messageHandlers=[
   {type:'ASSIST',handle:(message,{sender,trusted})=>assist(message,sender)},
   {type:'ASSIST_COMMIT',handle:(message,{sender,trusted})=>assistCommit(message,sender)},
   {type:'PROVIDER_TEST',handle:async (message,{sender,trusted})=>{
-      const state=await load();if(!configured(state.settings))throw new Error(M('请先连接服务。','Please connect a service first.'));const request={text:'index',context:'The database query uses an index.',domain:'data',kind:'word',level:'hint',detail:'full'};let raw;if(isSubscriptionKind(state.settings.providerKind))raw=await providerOperation(()=>assistSubscription(request,state.settings.subscriptionModel,diagnostics.trace(message)?.traceId,undefined,undefined,nativeKind(state.settings)),diagnostics.trace(message),state.settings.subscriptionModel,nativeKind(state.settings),JSON.stringify(request).length);else{raw=(await apiRequest(activeApiProvider(state.settings), request, ASSISTANCE_INSTRUCTIONS, assistanceSchema(request),{trace:diagnostics.trace(message)})).result;}return{hint:normalizeAssistanceResult(raw,request).hint};
+      const state=await load();if(!configured(state.settings))throw new Error(M('请先连接服务。','Please connect a service first.'));const request={text:'index',context:'The database query uses an index.',domain:'data',kind:'word',level:'hint',detail:'full'};let raw;if(isSubscriptionKind(state.settings.providerKind))raw=await providerOperation(()=>assistSubscription(request,state.settings.subscriptionModel,diagnostics.trace(message)?.traceId,undefined,undefined,nativeKind(state.settings)),diagnostics.trace(message),state.settings.subscriptionModel,nativeKind(state.settings),JSON.stringify(request).length);else{raw=(await apiRequest(activeApiProvider(state.settings), request, ASSISTANCE_INSTRUCTIONS, assistanceSchema(request),{trace:diagnostics.trace(message),urgent:true})).result;}return{hint:normalizeAssistanceResult(raw,request).hint};
     }},
   {type:'ENCOUNTER',handle:(message,{sender,trusted})=>encounterOffered(message,sender)},
   {type:'INTERACT',handle:(message,{sender,trusted})=>interactOffered(message,sender)},
@@ -1428,7 +1431,7 @@ chrome.tabs.onActivated?.addListener((activeInfo)=>{
 chrome.tabs.onUpdated.addListener((tabId,changeInfo,tab) => {
   // 浏览器「选项」菜单和 target=_blank 都会自己打开设置页，而且可能新开一扇窗口。
   // 页签地址一变成设置页就收回当前窗口，不等下次启动。
-  if (typeof changeInfo.url === 'string' && changeInfo.url.startsWith(optionsPageUrl())) void settleOptionsPages().catch(error => console.error('整理设置页失败', error));
+  if (typeof changeInfo.url === 'string' && changeInfo.url.startsWith(optionsPageUrl())) void settleOptionsPages(tabId).catch(error => console.error('整理设置页失败', error));
   if (tab?.url) {
     const next = articleUrl(tab.url);
     const prev = tabSeenArticle.get(tabId);
@@ -1443,7 +1446,7 @@ chrome.tabs.onUpdated.addListener((tabId,changeInfo,tab) => {
   if (changeInfo.status !== 'complete' && !sameDocument) return;
 
   tabActivationGeneration.set(tabId,(tabActivationGeneration.get(tabId) || 0) + 1);
-  void activateTab(tab,{sameDocument}).catch(error => console.error('更新页面自动开启策略失败',error));
+  void activateTab(tab,{sameDocument}).catch(error => {if(!tabGone(error))console.error('更新页面自动开启策略失败',error);});
 });
 chrome.webNavigation.onHistoryStateUpdated.addListener(details => {
   if (details.frameId !== 0 || !pageOrigin(details.url || '')) return;
@@ -1453,7 +1456,7 @@ chrome.webNavigation.onHistoryStateUpdated.addListener(details => {
     if (tab.status !== 'complete') return;
     tabActivationGeneration.set(tabId,(tabActivationGeneration.get(tabId) || 0) + 1);
     await activateTab({...tab,url:details.url || tab.url},{sameDocument:true});
-  })().catch(error => console.error('站内跳转后继续阅读失败',error));
+  })().catch(error => {if(!tabGone(error))console.error('站内跳转后继续阅读失败',error);});
 });
 // http(s) 的 .pdf 导航改走扩展阅读器（settings.pdfReader 可关闭）；
 // file:// PDF 需在 chrome://extensions 为扩展勾选「允许访问文件网址」，本地文件也可在阅读器内手动打开。

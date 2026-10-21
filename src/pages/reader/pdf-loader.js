@@ -9,20 +9,25 @@ pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
 // source: {url} 远程地址或 {data:Uint8Array} 本地文件；返回 {title, pages:[{number, blocks}]}
 export async function loadPdf(source, onProgress) {
-  const doc = await pdfjs.getDocument({
+  // pdfjs 6 起文档对象不再有 destroy()，释放 worker 走加载任务；放进 finally，解析中途出错也不泄漏。
+  const task = pdfjs.getDocument({
     ...(source.url ? {url: source.url} : {data: source.data}),
     isEvalSupported: false,
     cMapPacked: true
-  }).promise;
-  const pages = [];
-  for (let number = 1; number <= doc.numPages; number++) {
-    const page = await doc.getPage(number);
-    const content = await page.getTextContent();
-    pages.push({number, blocks: blocksFromTextItems(content.items, number)});
-    onProgress?.(number, doc.numPages);
+  });
+  try {
+    const doc = await task.promise;
+    const pages = [];
+    for (let number = 1; number <= doc.numPages; number++) {
+      const page = await doc.getPage(number);
+      const content = await page.getTextContent();
+      pages.push({number, blocks: blocksFromTextItems(content.items, number)});
+      onProgress?.(number, doc.numPages);
+    }
+    const info = await doc.getMetadata().catch(() => null);
+    const title = info?.info?.Title || source.name || t('rd.pdfDoc');
+    return {title, pages};
+  } finally {
+    void task.destroy();
   }
-  const info = await doc.getMetadata().catch(() => null);
-  const title = info?.info?.Title || source.name || t('rd.pdfDoc');
-  void doc.destroy();
-  return {title, pages};
 }

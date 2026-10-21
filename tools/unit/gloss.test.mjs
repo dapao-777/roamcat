@@ -281,6 +281,9 @@ test('整页应急翻译协议校验批次与译文', () => {
   assert.throws(() => normalizeEmergencyResult({items: [{id: 'one', translation: '数据库。'}]}, batch), (error) => error.code === 'BATCH_COUNT');
   assert.throws(() => normalizeEmergencyResult({items: [{id: 'one', translation: 'Database index'}, {id: 'two', translation: '缓存。'}]}, batch), (error) => error.code === 'TRANSLATION_NO_HAN');
   assert.throws(() => normalizeEmergencyResult({items: [{id: 'one', translation: ' 数据库。'}, {id: 'two', translation: '缓存。'}]}, batch), (error) => error.code === 'TRANSLATION_WHITESPACE');
+  // PDF 图注、短标签原样保留英文不算失败；省略号不当作句号。
+  const labels = [{id: 'one', text: 'Hash Hash'}, {id: 'two', text: 'Item Item ... Item Item ...'}];
+  assert.deepEqual(normalizeEmergencyResult({items: [{id: 'one', translation: 'Hash Hash'}, {id: 'two', translation: 'Item Item ... Item Item ...'}]}, labels).items.length, 2);
   assert.throws(() => normalizeEmergencyResult({items: [{id: 'ghost', translation: '数据库。'}, {id: 'two', translation: '缓存。'}]}, batch), (error) => error.code === 'ITEM_ID');
   assert.throws(() => normalizeEmergencyResult({items: [{id: 'one', translation: '数据库。'}, {id: 'one', translation: '缓存。'}]}, batch), (error) => error.code === 'ITEM_DUPLICATE');
   assert.throws(() => normalizeEmergencyResult({items: [{id: 'one', translation: '数据库。', extra: 1}, {id: 'two', translation: '缓存。'}]}, batch), (error) => error.code === 'ITEM_FIELDS');

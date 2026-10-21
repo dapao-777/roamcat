@@ -36,7 +36,8 @@
   const SKIP_CHROME = `nav,menu,aside,body>header,footer,[role="complementary"],[role="banner"],[role="contentinfo"],[role="navigation"],[role="menu"],[role="toolbar"]${SITE.chrome.length?','+SITE.chrome.join(','):''}`;
   const SKIP = SKIP_HARD+','+SKIP_CHROME;
   const LOOKUP_CONTROLS='input,textarea,select,button,[role="button"],[role="combobox"],[role="searchbox"],[role="spinbutton"],[role="slider"],[role="checkbox"],[role="radio"],[role="switch"],'+EDITABLE;
-  const LOOKUP_UI='['+OWN+']:not(['+OWN+'="term"]):not(['+OWN+'="hint"]):not(['+OWN+'="annotation"])';
+  // term/hint/annotation 与长难句、公式标记包的都是原文，查词照常放行；其余 RoamCat 挂件不当作单词。
+  const LOOKUP_UI='['+OWN+']:not(['+OWN+'="term"]):not(['+OWN+'="hint"]):not(['+OWN+'="annotation"]):not(['+OWN+'="complex"]):not(['+OWN+'="formula"])';
   const T=(k,v)=>globalThis.RoamCatI18n?.t(k,v)??k;
 const LIMIT_ERROR = T('c.limit');
   const previous = window.__ROAMCAT_CONTENT__;

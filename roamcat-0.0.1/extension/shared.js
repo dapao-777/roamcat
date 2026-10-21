@@ -225,13 +225,20 @@ function queueOptions(task) {
   optionsFlight = work.catch(() => {});
   return work;
 }
-async function consolidateOptionsTabs({create = false, section = ''} = {}) {
+async function consolidateOptionsTabs({create = false, section = '', prefer} = {}) {
   const hash = OPTIONS_SECTIONS.has(section) ? '#' + section : '';
   const tabs = await optionsPageTabs();
   const {hostId: windowId, homes} = await describeWindows();
   // 只有一个设置页、且它所在的普通窗口里还有别的页签时，说明用户正在那里用它：
   // 侧栏切换分区也会改 hash 触发 onUpdated，这时不能把它搬走。
   if (!create && tabs.length === 1 && homes.has(tabs[0].windowId)) return tabs[0];
+  // 刚打开（或刚导航到）设置页的页签就是用户此刻要看的：它在有别的页签的普通窗口里时留下它、关掉旧的，
+  // 否则新页签会一闪即逝、旧页签也不会被带到前台。
+  const preferred = !create && tabs.find(tab => tab.id === prefer);
+  if (preferred && homes.has(preferred.windowId)) {
+    await chrome.tabs.remove(tabs.filter(tab => tab !== preferred).map(tab => tab.id));
+    return preferred;
+  }
   let keep;
   let moved = false;
   const drop = [];
@@ -272,8 +279,8 @@ async function consolidateOptionsTabs({create = false, section = ''} = {}) {
   if (reveal && Number.isInteger(keep.windowId)) await chrome.windows.update(keep.windowId, {focused: true}).catch(() => {});
   return keep;
 }
-export function settleOptionsPages() {
-  return queueOptions(() => consolidateOptionsTabs({create: false}));
+export function settleOptionsPages(prefer) {
+  return queueOptions(() => consolidateOptionsTabs({create: false, prefer}));
 }
 export function focusOptionsPage(section = '') {
   return queueOptions(() => consolidateOptionsTabs({create: true, section}));

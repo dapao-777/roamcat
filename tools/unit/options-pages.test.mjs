@@ -102,6 +102,19 @@ test('settleOptionsPages 把窗口外的设置页搬回浏览窗口并关掉副�
   assert.deepEqual(state.focused, [[5, {focused: true}]]);
 });
 
+test('settleOptionsPages 留下刚打开的设置页并关掉旧的，不让新页签一闪即逝', async () => {
+  reset();
+  state.windows = [
+    {id: 5, focused: true, tabs: [{id: 1, url: 'https://example.com/'}, {id: 41, url: OPTIONS_URL}]},
+    {id: 6, focused: false, tabs: [{id: 2, url: 'https://example.com/b'}, {id: 42, url: OPTIONS_URL}]},
+  ];
+  state.contexts = [optionsContext(41, 5), optionsContext(42, 6)];
+  const kept = await shared.settleOptionsPages(42);
+  assert.equal(kept.id, 42);
+  assert.deepEqual(state.removed, [41]);
+  assert.equal(state.moved.length, 0);
+});
+
 test('settleOptionsPages 没有浏览窗口时保留一页并去掉重复', async () => {
   reset();
   state.contexts = [optionsContext(31, 1), optionsContext(32, 2)];

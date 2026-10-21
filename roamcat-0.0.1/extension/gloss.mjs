@@ -405,8 +405,9 @@ function pageTranslationItem(item){
 // 导航、按钮、专名这类短标签译成原文是对的；带从句或句号的正文仍必须含汉字。
 function sourceNeedsChinese(text){
   const source=typeof text==='string'?text.trim():'';if(!source)return true;
-  const words=source.split(/\s+/).filter(Boolean);
-  if(words.length>=6||/[.!?]/.test(source))return true;
+  const words=source.split(/\s+/).filter(word=>/[A-Za-z]/.test(word));
+  // 句末标点只认“字母紧跟 .!? 再接空白或结尾”：省略号、域名、版本号里的点不算成句。
+  if(words.length>=6||/[A-Za-z][.!?](?:s|$)/.test(source))return true;
   if(words.length>=3&&/\b(?:the|a|an|is|are|was|were|be|to|of|for|and|or|with|from|that|this|in|on|by|as|if|when|while|not)\b/i.test(source))return true;
   return false;
 }
@@ -419,20 +420,21 @@ function translationTextCode(translation,sourceText){
   if(!HAN.test(translation))return sourceText!==undefined&&!sourceNeedsChinese(sourceText)?null:'TRANSLATION_NO_HAN';
   return null;
 }
-function translationItemCode(item){
+function translationItemCode(item,sourceText){
   if(!exactKeys(item,['id','translation']))return 'ITEM_FIELDS';
-  return translationTextCode(item.translation);
+  return translationTextCode(item.translation,sourceText);
 }
 export function normalizeEmergencyResult(value,items) {
   const selected=normalizeEmergencyItems(items),expectedCount=selected.length;
   if(!exactKeys(value,['items'])||!Array.isArray(value.items))translationFailure('BATCH_SHAPE',{expectedCount});
   if(value.items.length!==expectedCount)translationFailure('BATCH_COUNT',{expectedCount,actualCount:value.items.length});
-  const expected=new Set(selected.map(item=>item.id)),translations=new Map(),batchDetail={expectedCount,actualCount:value.items.length,inputIds:selected.map(source=>source.id),outputIds:value.items.map(row=>expected.has(row?.id)?row.id:null)};
+  const expected=new Set(selected.map(item=>item.id)),sources=new Map(selected.map(item=>[item.id,item.text])),translations=new Map(),batchDetail={expectedCount,actualCount:value.items.length,inputIds:selected.map(source=>source.id),outputIds:value.items.map(row=>expected.has(row?.id)?row.id:null)};
   for(let itemIndex=0;itemIndex<value.items.length;itemIndex++){
     const item=value.items[itemIndex],detail={...batchDetail,itemIndex};
     if(!expected.has(item?.id))translationFailure('ITEM_ID',detail);
     if(translations.has(item.id))translationFailure('ITEM_DUPLICATE',detail);
-    const code=translationItemCode(item);
+    // 带上原文：阅读器 PDF 里的图注、短标签原样保留英文是对的，不该让整批失败。
+    const code=translationItemCode(item,sources.get(item.id));
     if(code)translationFailure(code,{...detail,...(code==='ITEM_FIELDS'?{fieldCount:item&&typeof item==='object'?Object.keys(item).length:0,fields:item&&typeof item==='object'?Object.keys(item).slice(0,12):[]}:{translationLength:typeof item?.translation==='string'?item.translation.length:undefined})});
     translations.set(item.id,item.translation);
   }

@@ -74,6 +74,26 @@ test('blocksFromTextItems() 按基线聚行、按行距切块', () => {
   assert.equal(blocks[0].page, 1);
 });
 
+test('blocksFromTextItems() 保留 pdfjs 拆出的空格项，hasEOL 行尾不切段', () => {
+  // 仿 bitcoin.pdf：每行都带 hasEOL、行距 11.5 > 字高 9.3×1.45×0.8；句间空格是独立的 " " 项。
+  const item = (str, x, y, width, hasEOL = false, height = 9.3) => ({str, transform: [height, 0, 0, height, x, y], width, height: str.trim() ? height : 0, hasEOL});
+  const items = [
+    item('Abstract.', 146, 579, 37), item(' ', 183, 579, 8), item('A purely peer-to-peer version of electronic cash would', 191, 579, 270, true),
+    item('allow payments to be sent directly from one party to another', 146, 567.5, 315, true),
+    item('without a bank.', 146, 556, 70, true),
+    item('Next paragraph starts at the same line spacing and runs on', 146, 544.5, 315, true),
+    item('to the right margin.', 146, 533, 90, true),
+    item('Introduction', 108, 500, 77, true, 11.5),
+    item('Commerce', 108, 486, 50), item('relies', 170, 486, 30, true)
+  ];
+  const blocks = blocksFromTextItems(items, 1);
+  assert.deepEqual(blocks.map(block => block.role), ['p', 'p', 'h3', 'p']);
+  assert.equal(blocks[0].text, 'Abstract. A purely peer-to-peer version of electronic cash would allow payments to be sent directly from one party to another without a bank.');
+  assert.equal(blocks[1].text, 'Next paragraph starts at the same line spacing and runs on to the right margin.');
+  // 没有空格项但水平间距明显时补空格。
+  assert.equal(blocks[3].text, 'Commerce relies');
+});
+
 test('translationBatches() 满足后台 1–4 项/≤12000 字符契约', () => {
   const blocks = Array.from({length: 10}, (_, i) => ({id: 'b' + i, role: 'p', text: 'Sentence number ' + i + ' with some words.'}));
   const batches = translationBatches(blocks);
@@ -85,4 +105,13 @@ test('translationBatches() 满足后台 1–4 项/≤12000 字符契约', () => 
   }
   const oversized = translationBatches([{id: 'b0', role: 'p', text: 'x'.repeat(5000)}]);
   assert.equal(oversized.length, 0, '超过 4000 字符的块应被跳过');
+  // 图注、公式碎片、源码不送翻；单词标题照常翻译。
+  const mixed = translationBatches([
+    {id: 'a', role: 'p', text: 'Tx Tx ... Tx Tx ...'},
+    {id: 'b', role: 'p', text: '1 if p≤q q ='},
+    {id: 'c', role: 'p', text: '#include <math.h> double f(double q) { double p = 1.0 - q; return p; }'},
+    {id: 'd', role: 'h3', text: '5. Network'},
+    {id: 'e', role: 'p', text: 'The proof-of-work also solves the problem.'}
+  ]);
+  assert.deepEqual(mixed.flat().map(item => item.id), ['d', 'e']);
 });
