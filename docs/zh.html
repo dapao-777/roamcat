@@ -136,7 +136,7 @@ footer .links{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:10px}
     <span class="pill">中英双语界面</span>
   </div>
   <div class="cta">
-    <a class="btn primary" href="https://github.com/dapao-777/roamcat/releases">下载预发版</a>
+    <a class="btn primary" href="#install">开始使用</a>
     <a class="btn" href="https://github.com/dapao-777/roamcat">在 GitHub 点星</a>
   </div>
   <p class="mut" style="font-size:13px;margin-top:18px">0.0.1 预发布版——开发者模式加载；Chrome Web Store / Edge Add-ons 上架进行中。</p>
@@ -223,8 +223,8 @@ footer .links{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:10px}
 <section id="install">
   <h2>三步安装</h2>
   <div class="steps">
-    <div class="step"><div><b>下载</b><p>到 <a href="https://github.com/dapao-777/roamcat/releases">Releases</a> 下载 <code>roamcat-0.0.1-extension.zip</code> 并解压。</p></div></div>
-    <div class="step"><div><b>加载</b><p>打开 <code>chrome://extensions</code>，开启开发者模式，「加载已解压的扩展」，选择解压出的 <code>extension</code> 目录。</p></div></div>
+    <div class="step"><div><b>构建</b><p>克隆<a href="https://github.com/dapao-777/roamcat">仓库</a>，运行 <code>npm ci</code> 与 <code>npm run build</code>（需要 Node.js 20.11+）。免构建的预发布安装包之后会发布到 Releases。</p></div></div>
+    <div class="step"><div><b>加载</b><p>打开 <code>chrome://extensions</code>，开启开发者模式，「加载已解压的扩展」，选择 <code>dist/extension</code> 目录。</p></div></div>
     <div class="step"><div><b>开读</b><p>在任意英文页面点工具栏图标——或按 <code>Alt+Shift+T</code> 双语翻译。模型来源在「设置」里配置。</p></div></div>
   </div>
 </section>

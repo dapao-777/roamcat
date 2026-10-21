@@ -40,7 +40,7 @@
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
   "license": "https://www.mozilla.org/MPL/2.0/",
   "url": "https://dapao-777.github.io/roamcat/",
-  "downloadUrl": "https://github.com/dapao-777/roamcat/releases",
+  "downloadUrl": "https://github.com/dapao-777/roamcat",
   "codeRepository": "https://github.com/dapao-777/roamcat",
   "author": { "@type": "Person", "name": "fenghua" },
   "featureList": "In-place bilingual translation; sparse-hint reading assistance; word lookup cards; sentence deconstruction; PDF/EPUB reader; companion cat widget; 28 BYOK model providers; ChatGPT/Grok/Google subscription connector; local domain classifier; bilingual zh/en UI"
@@ -174,7 +174,7 @@ footer .links{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:10px}
     <span class="pill">ZH / EN UI</span>
   </div>
   <div class="cta">
-    <a class="btn primary" href="https://github.com/dapao-777/roamcat/releases">Download prerelease</a>
+    <a class="btn primary" href="#install">Get started</a>
     <a class="btn" href="https://github.com/dapao-777/roamcat">Star on GitHub</a>
   </div>
   <p class="mut" style="font-size:13px;margin-top:18px">0.0.1 prerelease — developer-mode install; Chrome Web Store / Edge Add-ons listing in progress.</p>
@@ -261,8 +261,8 @@ footer .links{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:10px}
 <section id="install">
   <h2>Install in three steps</h2>
   <div class="steps">
-    <div class="step"><div><b>Download</b><p>Grab <code>roamcat-0.0.1-extension.zip</code> from <a href="https://github.com/dapao-777/roamcat/releases">Releases</a> and unzip it.</p></div></div>
-    <div class="step"><div><b>Load</b><p>Open <code>chrome://extensions</code>, enable Developer mode, click "Load unpacked" and select the unzipped <code>extension</code> directory.</p></div></div>
+    <div class="step"><div><b>Build</b><p>Clone <a href="https://github.com/dapao-777/roamcat">the repository</a> and run <code>npm ci</code> then <code>npm run build</code> (Node.js 20.11+). A ready-made prerelease zip will follow on Releases.</p></div></div>
+    <div class="step"><div><b>Load</b><p>Open <code>chrome://extensions</code>, enable Developer mode, click "Load unpacked" and select the <code>dist/extension</code> folder.</p></div></div>
     <div class="step"><div><b>Read</b><p>Click the toolbar icon on any English page — or press <code>Alt+Shift+T</code> for bilingual translation. Configure your model source in Settings.</p></div></div>
   </div>
 </section>

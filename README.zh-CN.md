@@ -1,30 +1,33 @@
 <p align="center">
-  <img src="roamcat-0.0.1/extension/icons/roamcat.svg" alt="RoamCat 标志" width="88" height="88">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="roamcat-0.0.1/extension/icons/roamcat.svg">
+    <img src="roamcat-0.0.1/extension/icons/roamcat-light.svg" alt="RoamCat 标志" width="96" height="96">
+  </picture>
 </p>
 
 <h1 align="center">RoamCat · 随心阅</h1>
 
 <p align="center">
-  <strong>像猫一样漫游英文世界的双模式阅读扩展</strong><br/>
-  双语翻译把页面英文原位译成中英对照；<br/>
-  阅读辅助保留原文，只给稀疏提示与按需救援。<br/>
-  <em>免费、开源、本地优先 —— Manifest V3，适用于 Chrome 与 Edge 125+。</em>
+  <strong>像猫一样漫游英文世界——帮助只在需要时出现，读懂了就悄悄退场。</strong><br>
+  双语翻译把每段英文旁边配上中文；<br>
+  阅读辅助保留整页英文，只给随你进步而渐退的稀疏提示。
 </p>
 
 <p align="center">
   <a href="LICENSE"><img alt="License: MPL-2.0" src="https://img.shields.io/badge/license-MPL--2.0-blue"></a>
-  <a href="https://github.com/dapao-777/roamcat/releases"><img alt="Version" src="https://img.shields.io/badge/version-0.0.1%20prerelease-orange"></a>
   <a href="https://github.com/dapao-777/roamcat/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/dapao-777/roamcat/actions/workflows/ci.yml/badge.svg"></a>
+  <img alt="版本 0.0.1 预发布" src="https://img.shields.io/badge/version-0.0.1%20prerelease-orange">
   <img alt="Chrome / Edge 125+" src="https://img.shields.io/badge/Chrome%20%2F%20Edge-125%2B-green">
   <img alt="Manifest V3" src="https://img.shields.io/badge/manifest-V3-blueviolet">
 </p>
 
 <p align="center">
-  <a href="README.md">English</a> ·
-  <a href="https://github.com/dapao-777/roamcat/releases">下载预发版</a> ·
-  <a href="roamcat-0.0.1/README.md">产品文档</a> ·
-  <a href="roamcat-0.0.1/SPEC.md">工程规范</a> ·
-  <a href="roamcat-0.0.1/docs/design-system.md">设计文档</a>
+  <a href="#-快速开始"><b>快速开始</b></a> ·
+  <a href="#-功能一览">功能一览</a> ·
+  <a href="#-模型服务">模型服务</a> ·
+  <a href="#-常见问题">常见问题</a> ·
+  <a href="#-文档">文档</a> ·
+  <a href="README.md">English</a>
 </p>
 
 <p align="center">
@@ -41,60 +44,105 @@
   <sub>▶ 34 秒介绍短片 · 点击片段观看完整版（带音乐）</sub>
 </p>
 
-> **0.0.1 预发布版**——开发者模式加载，未上架商店。本项目是对开源项目 [RelyLess](https://github.com/rockythink/relyless) 的重构、优化与修复，感谢原作者 B 站 UP 主 [停车拾穗](https://live.bilibili.com/392612)。
+> [!NOTE]
+> **0.0.1 预发布版**：目前通过开发者模式从源码安装（两条命令，见[快速开始](#-快速开始)），尚未上架扩展商店。本项目是对开源项目 [RelyLess](https://github.com/rockythink/relyless) 的重构、优化与修复，详见[致谢](#-致谢)。
 
-**本地优先**。不经营服务器、不采集遥测、阅读历史默认关闭且按站授权。AI 能力来自你自选的服务——内置本地分类模型、**28 家自备 API** 之一，或复用本机 **ChatGPT / Grok / Antigravity** 订阅的连接器。
+## ✨ 亮点
 
-**中英双语界面**。弹窗、设置、引导页、阅读器、页内挂件与伴读猫全部支持中英文切换；`自动` 档跟随浏览器界面语言。
+- **两种模式，一个引擎**——要么整页中英对照，要么保留英文原文、只在卡住时搭把手。
+- **读得懂真实网页**——为 GitHub、Reddit、Hacker News、Stack Exchange、Discourse、dev.to、Lobsters 准备了站点档案，代码、diff、投票署名等构件不打扰阅读；公式原样保留。
+- **PDF / EPUB 阅读器**——本地文件和粘贴的文章共用同一套双语引擎。
+- **模型自己选**——28 家自备 API、内置离线模型，或复用本机 ChatGPT / Grok / Google CLI 订阅。
+- **本地优先**——没有 RoamCat 服务器、没有遥测，阅读记录默认关闭、按站授权。
+- **全界面中英双语**——所有界面都能在中英文间切换；页边还有一只伴读猫陪你读，亮色和深色各有一身打扮。
 
 ## 🌓 两种模式，一个引擎
 
 | | 🌐 双语翻译 · 主模式 | 📖 阅读辅助 · 副模式 |
 |---|---|---|
 | **做什么** | 页面英文原位译成中英对照 | 保留英文，只给稀疏提示与按需救援 |
-| **怎么用** | 弹窗「翻译本页」或 `Alt+Shift+T`，随阅读位置推进，不后台预译整篇 | 自动少量提示渐退减量；按住 `D` + 单击查词；划词 / 选段手动救援 |
-| **呈现** | 正文段落原位对照，表格卡片原位对应；导航、侧栏等页面构件以行内小字呈现译文 | 查词卡片 / 顶部词注 / 句子解构下划线 |
-| **退出** | 「返回英文」只移除扩展插入物，不回滚站点更新 | 提示随读随消，目标是逐渐不再需要提示 |
+| **怎么用** | 弹窗「翻译本页」或 `Alt+Shift+T`，随阅读位置推进，不后台预译整篇 | 提示随读随减；按住 `D` + 单击查词；划词 / 选段手动救援 |
+| **呈现** | 正文段落原位对照，表格卡片原位对应；导航、侧栏等构件以行内小字呈现译文 | 查词卡片 / 顶部词注 / 句子解构下划线 |
+| **退出** | 「返回英文」只移除扩展插入的内容 | 提示随读随消，目标是逐渐不再需要提示 |
 
-失败单元按分级退避重试（2.5s → 6s → 14s，按错误码分类），耗尽后才露出「重试这一段」——临时限流不再闪现失败界面。
+失败的段落按分级退避自动重试（2.5s → 6s → 14s，按错误码分类），用尽后才露出「重试这一段」——临时限流不会再闪现失败界面。
 
-### 🐱 伴读猫
+## 📸 功能一览
 
-趴在页边的 Shadow DOM 挂件——阅读开关、文章摘要、设置与快捷键入口；可拖拽贴边，每页一只，未启用时完全不注入。
+**伴读猫**趴在页边，提供阅读开关、文章摘要、设置与快捷键入口；可拖拽、可贴边，每页一只，未启用时完全不注入。它还会跟着网页换装：深色网站上是一团边缘发光的黑麻薯，亮色网站上是奶白麻薯。
 
 <p align="center">
-  <img src=".github/assets/pet-summary-dark.png" alt="页内文章摘要卡与伴读猫" width="66%">
-  <img src=".github/assets/widget-wordcard-dark.png" alt="查词卡片" width="29%">
+  <img src=".github/assets/pet-summary-dark.png" alt="页内文章摘要卡与伴读猫" width="52%">
+  <img src=".github/assets/widget-wordcard-dark.png" alt="查词卡片" width="42%">
 </p>
 
-### 🧭 读懂真实网页
+**内置阅读器**打开 PDF、EPUB（也可粘贴文章），「翻译全文」按你的阅读位置逐段生成中文对照。
+
+<p align="center">
+  <img src=".github/assets/reader-dark.png" alt="RoamCat 阅读器双语对照" width="88%">
+</p>
+
+**设置页与工具栏弹窗**——顶部一眼看到阅读、模型、最近请求三项状态，改动即时保存，支持亮色与深色主题。
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset=".github/assets/options-dark.png">
+    <img src=".github/assets/options-light.png" alt="RoamCat 设置页" width="88%">
+  </picture>
+</p>
+
+<p align="center">
+  <img src=".github/assets/options-zh-dark.png" alt="RoamCat 设置页 · 中文深色" width="60%">
+  <img src=".github/assets/popup-dark.png" alt="RoamCat 工具栏弹窗 · 深色" width="24%">
+</p>
+
+<details>
+<summary><strong>更多：如何读懂真实网页</strong></summary>
 
 - **站点档案**覆盖程序员常驻地——GitHub、Reddit（新旧 UI）、Hacker News、Stack Exchange 系、Discourse、dev.to（Forem）、Lobsters：代码区、diff、文件树、投票与署名构件不进阅读块，归入页面构件分区处理。
 - **长难句检测**给含从句的 ≥22 词句子画上琥珀色细下划线——纯本地判定，不调模型。
 - **公式保护**让 MathML / KaTeX / MathJax 容器与行内 `$…$` / `\(…\)` / `\[…\]` 不进入翻译单元。
 - **弹窗快捷切换**：工具栏弹窗行内展示当前模型服务，展开即可在订阅通道与已存 API 之间切换。
 
-## 📚 内置阅读器
+</details>
 
-打开 **PDF 与 EPUB** 文件（也可粘贴文章），共用同一套双语引擎——「翻译全文」按你的阅读位置逐段生成中文对照：
-
-<p align="center">
-  <img src=".github/assets/reader-dark.png" alt="RoamCat 阅读器双语对照" width="88%">
-</p>
-
-## 🔌 模型服务，自选来源
+## 🔌 模型服务
 
 | 来源 | 内容 |
 |---|---|
 | **自备 API** | 28 家服务商、8 种协议——OpenAI / DeepSeek / Gemini / Anthropic / xAI / OpenRouter / Ollama / 阿里云 / 火山 / Kimi / 阶跃等。结构化输出能力先探测后降级。 |
 | **订阅连接器** | 本机 Native Messaging 复用官方 CLI 权益——Codex CLI（ChatGPT 订阅）、Grok CLI（SuperGrok / X Premium+）、Antigravity `agy`（Google AI Pro / Ultra），免 API Key。 |
-| **本地模型** | 内置 `Xenova/all-MiniLM-L6-v2` 在离屏文档 + Worker 中做页面领域识别，不联网、无需下载。 |
+| **本地模型** | 内置 `Xenova/all-MiniLM-L6-v2` 在离屏文档中做页面领域识别，不联网、无需下载。 |
+
+## 🚀 快速开始
+
+需要 **Chrome 或 Edge 125+** 与 **Node.js 20.11+**。
+
+```sh
+git clone https://github.com/dapao-777/roamcat.git
+cd roamcat
+npm ci
+npm run build      # → dist/extension
+```
+
+然后打开 `chrome://extensions`（或 `edge://extensions`），开启**开发者模式**，点**加载已解压的扩展**，选择 **`dist/extension`**。
+
+开发构建的扩展 ID 是固定的（`afpeggkplomdjjiemgajjgcajieincng`，来自 `build/extension-key.json`），移动目录也不会让连接器失效。拉取新代码后重新 `npm run build`，再在扩展管理页点重新加载即可。
+
+**可选：订阅连接器。** 让扩展使用你本机已登录的 ChatGPT / Grok / Antigravity CLI：
+
+```sh
+node roamcat-0.0.1/connector/install.mjs --extension-id afpeggkplomdjjiemgajjgcajieincng --backend grok
+```
+
+不带 `--backend` 时默认是 ChatGPT（Codex），也可以传 `antigravity`。免构建的预发布安装包会在发布后附在 [Releases](https://github.com/dapao-777/roamcat/releases) 中。
 
 ## 🔒 本地优先的边界
 
-- 阅读记录默认关闭且按站授权，无痕页面不采集；API Key 只存 `chrome.storage.local`。
-- 密钥不进内容脚本、诊断日志或连接器；内容脚本仅可用 74 种消息中的 **33 种白名单类型**。
-- 模型输出全部经 `gloss.mjs` 结构化校验才进入 UI；自定义 API 地址强制 HTTPS（仅本机回环允许 HTTP）。
+- 阅读记录默认关闭且按站授权，无痕页面不采集；API Key 只存在 `chrome.storage.local`。
+- 密钥不进内容脚本、诊断日志或连接器；内容脚本只能使用 74 种消息中的 **33 种白名单类型**。
+- 模型输出全部经结构化校验（`gloss.mjs`）才进入界面；自定义 API 地址强制 HTTPS（仅本机回环允许 HTTP）。
+- 页面文本只在你主动调用模型功能时离开本机，直达你配置的服务商。完整说明见[隐私政策](roamcat-0.0.1/PRIVACY.md)。
 
 ## ⚖️ 与同类工具的对比
 
@@ -109,189 +157,160 @@
 | **费用** | 免费——只有自选付费 API 才产生费用 | 订阅制免费额度 | 订阅制 | 订阅制 |
 | **平台** | Chrome / Edge 125+ | Chrome、Edge、Firefox、Safari、移动端 | Chrome、Edge | Chrome、Edge、App |
 
-想要最省心、平台最全的整页翻译，沉浸式翻译更成熟。想让英文原文始终主导、想要可审计的开源代码、或想复用已有的 AI 订阅而非再买一个——选 RoamCat。
+想要最省心、平台最全的整页翻译，沉浸式翻译更成熟。想让英文原文始终主导、想要可审计的开源代码、或想复用已有的 AI 订阅而非再买一个——选 RoamCat。同样值得一看的开源邻居：[kiss-translator](https://github.com/fishjar/kiss-translator)、[openai-translator](https://github.com/openai-translator/openai-translator)。
 
-同样值得一看的开源邻居：[kiss-translator](https://github.com/fishjar/kiss-translator)、[openai-translator](https://github.com/openai-translator/openai-translator)。RoamCat 本身是 [RelyLess](#-致谢与项目渊源) 的重构延续。
+## ❓ 常见问题
+
+<details>
+<summary><strong>RoamCat 收费吗？</strong></summary>
+
+不收——MPL-2.0 开源，无账户、无付费档、无遥测。只有你自己接入付费 API 时才需要向该服务商付费；内置本地模型与订阅连接器没有额外成本。
+</details>
+
+<details>
+<summary><strong>会把我的阅读数据传到哪里吗？</strong></summary>
+
+项目没有自有服务器。阅读记录默认关闭、按站授权；页面文本只在你主动调用模型功能时离开本机，且直达你配置的服务商，不经任何中转。
+</details>
+
+<details>
+<summary><strong>支持哪些浏览器？</strong></summary>
+
+桌面端 Chrome 与 Edge 125+（Manifest V3）。暂不支持 Firefox 与 Safari。
+</details>
+
+<details>
+<summary><strong>能整页翻译吗？</strong></summary>
+
+能——双语翻译模式随阅读位置逐段插入中文对照。阅读辅助模式则保持整页英文，只给随读渐退的稀疏提示。
+</details>
+
+<details>
+<summary><strong>支持 PDF 和 EPUB 吗？</strong></summary>
+
+支持——内置阅读器可打开本地 PDF / EPUB 或粘贴的文章，共用同一套双语引擎。
+</details>
+
+<details>
+<summary><strong>可以用哪些模型？</strong></summary>
+
+28 家自备 API（OpenAI、DeepSeek、Gemini、Anthropic、xAI、OpenRouter、Ollama、阿里云、火山、Kimi、阶跃……）、内置本地领域识别模型，或经本机连接器复用已登录的 ChatGPT / Grok / Antigravity CLI 订阅——免 API Key。
+</details>
+
+<details>
+<summary><strong>适合谁？</strong></summary>
+
+日常泡在英文站点上的中文读者——文档、GitHub、Reddit、Hacker News——想要随阅读进步而渐退的帮助，或需要时的中英对照。
+</details>
 
 ## 🎨 设计语言
 
-**纸墨 × 像素 × 轻拟物**。米白纸面 `#faf9f4` + 暖黑墨色 `#161511`，Silkscreen 像素字体与边缘发光的麻薯猫点缀数码感；控件是带物理反馈的键帽——按钮有底沿裙边、按下下沉，开关是铣槽瓷珠，徽标是凹刻铭牌。暗色主题是同一套材质语言的镜像：**砚台冷墨**——微蓝砚底 `#0b0e13` + 暖象牙字 `#ece7d9` + 瓷白漆主键，琥珀金 `#f0a63c` 只留给语义强调。
+**纸墨 × 像素 × 轻拟物**。米白纸面 `#faf9f4` + 暖黑墨色 `#161511`，Silkscreen 像素字体与边缘发光的麻薯猫点缀数码感；控件是带物理反馈的键帽。暗色主题是同一套材质的镜像：**砚台冷墨**——微蓝砚底 `#0b0e13` + 暖象牙字 `#ece7d9` + 瓷白漆主键，琥珀金 `#f0a63c` 只留给语义强调。两种主题下的小号文字都满足 WCAG AA 对比度。
 
 <details>
 <summary><strong>设计规格速览</strong></summary>
 
 | 项 | 规格 |
 |---|---|
-| 界面正文 | 系统无衬线（Segoe UI / PingFang SC / 微软雅黑），14–15px |
+| 界面文字 | 系统无衬线（Segoe UI / PingFang SC / 微软雅黑），14–15px |
 | 阅读文本与标题 | 宋体系（Noto Serif SC → 宋体 → Georgia），正文 15px / 行距 1.6 |
 | 品牌 / 数字 / 键帽 | Silkscreen 像素体（已内置 woff2，离线可用） |
-| 标签 / 词性 / 诊断码 | ui-monospace 等宽，13px |
-| 色板 | 浅色：纸 `#faf9f4` + 墨 `#161511`（墨色即强调）；深色：砚台 `#0b0e13` + 象牙 `#ece7d9` + 琥珀 `#f0a63c` |
-| 标志与图形 | 边缘光麻薯猫（`icons/roamcat.svg` + 单色标 `roamcat-cat-ink.svg`，`fill="currentColor"`；由 `tools/make-brand-cat.mjs` 生成）、圆点波纹带、像素星芒 |
+| 色板 | 浅色：纸 `#faf9f4` + 墨 `#161511`；深色：砚台 `#0b0e13` + 象牙 `#ece7d9` + 琥珀 `#f0a63c` |
+| 标志与形象 | 麻薯猫两身打扮——砚底砖上的边缘发光黑猫（`icons/roamcat.svg`）与拿铁砖上的奶白猫（`icons/roamcat-light.svg`），另有单色标；均由 `tools/make-brand-cat.mjs` 生成 |
 | 动效 | 80 / 160 / 280 / 440ms 四档 + `linear()` 弹簧曲线，遵守 `prefers-reduced-motion` |
 
 </details>
 
-全部视觉决策收敛在 `src/styles/tokens.css` 一套 `--rc-*` token；页内组件经 Shadow DOM + `design.js` 注入同一套 token，对网站样式零污染。完整规范见[设计系统文档](roamcat-0.0.1/docs/design-system.md)；标志用法、配色比例与文案语气见[品牌方案](roamcat-0.0.1/docs/brand.md)，也可直接打开[可视化品牌板](roamcat-0.0.1/docs/brand-board.html)查看全部色卡、字模与材质样张。
-
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset=".github/assets/options-dark.png">
-    <img src=".github/assets/options-light.png" alt="RoamCat 设置页" width="88%">
-  </picture>
-</p>
-
-<p align="center">
-  <img src=".github/assets/options-zh-dark.png" alt="RoamCat 设置页 · 深色" width="60%">
-  <img src=".github/assets/popup-dark.png" alt="RoamCat 工具栏弹窗 · 深色" width="24%">
-</p>
-
-## 🚀 快速开始
-
-要求 Chrome 或 Edge **125 及以上**。
-
-**A · Release 压缩包（最快，免构建）**——到 [Releases](https://github.com/dapao-777/roamcat/releases) 下载 `roamcat-0.0.1-extension.zip` 并解压，`chrome://extensions` → 开启开发者模式 →「加载已解压的扩展」→ 选择解压出的 `extension` 目录。zip 产物未注入固定 key，扩展 ID 随安装路径生成；使用订阅连接器需按其安装流程绑定实际 ID。
-
-**B · 源码构建（推荐开发用，扩展 ID 固定）**
-
-```sh
-npm ci
-npm run build    # → dist/extension（dev 构建，manifest 注入固定 key）
-```
-
-加载 **`dist/extension`**。dev 构建的扩展 ID 由 `build/extension-key.json` 固定（当前 `afpeggkplomdjjiemgajjgcajieincng`），移动构建目录不影响 ID，连接器无需重装。改过源码后重新 `npm run build`，在扩展管理页点重新加载，再刷新已打开的网页。
-
-**C · 直接加载源目录（免构建）**——选择 **`roamcat-0.0.1/extension`** 加载。注意：未打包扩展的 ID 与目录路径绑定，移动目录会改变 ID 并使本机连接器失效。
-
-**可选 · 订阅连接器**——让扩展调用本机已登录的 ChatGPT / Grok / Antigravity CLI：
-
-```sh
-node roamcat-0.0.1/connector/install.mjs --extension-id <扩展ID> --backend grok
-```
+全部视觉决策收敛在 `src/styles/tokens.css` 一套 `--rc-*` token；页内组件经 Shadow DOM 与 `design.js` 注入同一套 token，不污染网站样式。详见[设计系统](roamcat-0.0.1/docs/design-system.md)、[品牌方案](roamcat-0.0.1/docs/brand.md)与可视化[品牌板](roamcat-0.0.1/docs/brand-board.html)。
 
 ## 🏗️ 架构
 
+<details>
+<summary><strong>组件图</strong></summary>
+
 ```
-┌─────────────────────────── 浏览器 ───────────────────────────┐
-│ 内容脚本（manifest 静态九件套，document_idle）                  │
-│   design.js → i18n.js → reading-style.js → content-ui.js →    │
-│   pet-quotes.js → complexity.js → formula.js → site-profiles.js│
-│   → content.js                                                │
-│   · i18n.js：中英双语运行时字典，全部界面共享                    │
-│   · content-ui.js：lit-html 页内 UI 渲染层（构建产物入库）      │
-│   · content.js：阅读区识别 / 标注 / 查词 / 解构 / 双语翻译引擎   │
-│ 动态注册（chrome.scripting，按需注入）                          │
-│   · floating-pet.js 伴读猫挂件 · auto-start.js 自动开启         │
-├──────────────────────────────────────────────────────────────┤
-│ Service Worker：background.js（ES module，无状态）              │
-│   74 种消息路由 · 设置校验迁移 · 缓存/并发/看门狗 · 订阅端口      │
-│   · 界面语言变更经 SS_REFRESH 快照广播到所有标签页                │
-├──────────────────────────────────────────────────────────────┤
-│ 扩展页面：popup / options / welcome / reader                   │
-│   src/ 下 Lit 应用经 Vite 构建进 dist/extension/ui/            │
-│ 离屏文档：local-inference（ONNX MiniLM 领域分类，5 分钟空闲销毁） │
-├──────────────────────────────────────────────────────────────┤
-│ 本机连接器（Node.js 20+，Native Messaging stdio 帧协议）         │
-│   host.mjs + codex.mjs / grok.mjs / antigravity.mjs            │
-└──────────────────────────────────────────────────────────────┘
+┌────────────────────────────── 浏览器 ──────────────────────────────────┐
+│ 内容脚本（静态九件套，document_idle）                                    │
+│   design.js → i18n.js → reading-style.js → content-ui.js →             │
+│   pet-quotes.js → complexity.js → formula.js → site-profiles.js →      │
+│   content.js                                                           │
+│ 动态注册（chrome.scripting，按需注入）                                   │
+│   · floating-pet.js 伴读猫 · auto-start.js 自动开启                      │
+├────────────────────────────────────────────────────────────────────────┤
+│ Service Worker：background.js（ES module，无状态）                       │
+│   74 种消息路由 · 设置校验与迁移 · 缓存 / 并发 / 看门狗 · 订阅端口          │
+├────────────────────────────────────────────────────────────────────────┤
+│ 扩展页面：popup / options / welcome / reader                            │
+│   src/ 下的 Lit 应用，经 Vite 构建到 dist/extension/ui/                   │
+│ 离屏文档：本地 ONNX MiniLM 领域识别                                       │
+├────────────────────────────────────────────────────────────────────────┤
+│ 本机连接器（Node.js 20+，Native Messaging stdio）                        │
+│   host.mjs + codex.mjs / grok.mjs / antigravity.mjs                    │
+└────────────────────────────────────────────────────────────────────────┘
 ```
 
-工程要点：
+</details>
 
-- **信任边界**：扩展页（受信）→ 内容脚本（33 种白名单消息）→ 模型输出（结构化校验后才进 UI）→ 网页 DOM（以数据身份进提示词，`SOURCE_DATA_INSTRUCTIONS`）。
-- **消息协议唯一事实源**：`extension/message-protocol.js` 登记全部 74 种消息与载荷解析器，注册表与处理器一一对应，有源码契约测试强制。
-- **双语界面运行时**：`extension/i18n.js` 是唯一中英字典（约 1,600 条双语对齐键），Lit 页面、classic 脚本与 Service Worker 共用；无法访问 `chrome.storage` 的内容脚本经 `STATE_GET` / `SS_REFRESH` 快照同步语言偏好。
-- **Service Worker 无内存态假设**：跨调用状态落在 `chrome.storage.local/session` 与 IndexedDB；写操作串行化，长操作带看门狗。
-- 完整规范见 [`roamcat-0.0.1/SPEC.md`](roamcat-0.0.1/SPEC.md)。
+- **信任边界**——扩展页（可信）→ 内容脚本（33 种白名单消息）→ 模型输出（校验后才进界面）→ 网页 DOM（只以数据身份进入提示词）。
+- **消息协议唯一事实源**——`extension/message-protocol.js` 登记全部 74 种消息与载荷解析器，契约测试保证路由表同步。
+- **唯一的双语运行时**——`extension/i18n.js` 收录 1,657 个中英对齐键，扩展页、内容脚本与 Service Worker 共用。
+- **无状态 Service Worker**——跨调用状态落在 `chrome.storage` 与 IndexedDB；写操作串行化，长操作带看门狗。
 
-## 🗺️ 路线图
-
-以下为规划方向，可能随进展与反馈调整，不构成承诺：
-
-- 主 / 副模式在阅读中的一键切换交互。
-- 阅读辅助覆盖更多载体（副模式方向）：PDF、电子阅读器。
-- `host_permissions` 由全站改为 `optional_host_permissions` 按需申请。
-- Chrome Web Store / Microsoft Edge Add-ons 上架（文案与权限理由已备于 [`CHROMEWEBSTORE.md`](roamcat-0.0.1/CHROMEWEBSTORE.md)）。
-
-## ❓ 常见问题
-
-**RoamCat 收费吗？**
-不收——MPL-2.0 开源，无账户、无付费档、无遥测。只有你自己选择接入付费 API 时才需要向该服务商付费；内置本地模型与订阅连接器零额外成本。
-
-**RoamCat 会把我的阅读数据传到哪里吗？**
-项目没有自有服务器。阅读记录默认关闭、按站授权；页面文本只在你主动调用模型功能时离开本机，且直达你配置的服务商，不经任何中转。
-
-**支持哪些浏览器？**
-桌面端 Chrome 与 Edge 125+（Manifest V3）。暂不支持 Firefox 与 Safari。
-
-**能整页翻译吗？**
-能——双语翻译模式按阅读位置逐段插入中文对照。阅读辅助模式则保持整页英文，只给随读渐退的稀疏提示。
-
-**支持 PDF 和 EPUB 吗？**
-支持——内置阅读器可打开本地 PDF / EPUB 或粘贴的文章，共用同一套双语引擎。
-
-**可以用哪些模型？**
-28 家自备 API（OpenAI、DeepSeek、Gemini、Anthropic、xAI、OpenRouter、Ollama、阿里云、火山、Kimi、阶跃……）、内置本地领域识别模型，或经本机连接器复用已登录的 ChatGPT / Grok / Antigravity CLI 订阅——免 API Key。
-
-**适合谁？**
-日常泡在英文站点上的中文读者——文档、GitHub、Reddit、Hacker News——想要随阅读进步而渐退的帮助，或需要时的中英对照。
+完整工程规范见 [`SPEC.md`](roamcat-0.0.1/SPEC.md)。
 
 ## 🛠️ 开发
 
-要求 Node.js 20.11+（Node 24 已验证）。静态检查与单测均为零依赖：
-
 | 命令 | 用途 |
 |---|---|
-| `npm run build` · `npm run build:watch` | Vite 开发构建 → `dist/extension`（注入固定 key） |
-| `npm run verify` | 模块图门禁 R1–R11：加载契约 / 无环 / 分层方向 / 文件头 / manifest 资源 |
-| `npm run verify:sites` | 站点档案 e2e：fixture 按真实 URL 路由进 Edge 断言 `inspect()`（`--live` 复核真站） |
-| `npm test` | 193 例单元测试（经 `tools/run-unit-tests.mjs` 调用 `node --test`，Node 20.11+） |
+| `npm run build` · `npm run build:watch` | Vite 开发构建 → `dist/extension`（扩展 ID 固定） |
+| `npm test` | 193 例单元测试（经 `tools/run-unit-tests.mjs` 调用 `node --test`） |
+| `npm run verify` | 模块图门禁 R1–R11：加载契约、无环、分层方向、文件头、manifest 资源 |
 | `npm run verify:build` | 构建产物门禁：字节比对 + Edge 实际加载冒烟 |
-| `npm run verify:ui` | 77 项全界面门禁：页面/挂件遍历、明暗主题、中英文断言、截图 → `preview/` |
-| `npm run verify:pet` | 65 项伴读猫门禁：真实点击全部悬浮按钮并断言状态 |
-| `npm run gen:tokens` · `node tools/check-dict.cjs` | 由 tokens.css 重新生成 `extension/design.js` · 中英典键对齐校验 |
+| `npm run verify:ui` | 81 项全界面门禁：页面与挂件遍历、明暗主题、中英文断言，截图 → `preview/ui-audit/` |
+| `npm run verify:pet` | 65 项伴读猫门禁：真实点击全部悬浮按钮 |
+| `npm run verify:sites` | 站点档案端到端检查：fixture 按真实 URL 路由（`--live` 复核真站） |
+| `npm run gen:tokens` · `node tools/check-dict.cjs` | 由 tokens.css 重新生成 `extension/design.js` · 中英字典对齐校验 |
 
-本机浏览器回归（需要 Playwright + 本机 Edge，产出到 `preview/`）：
-
-```sh
-node tools/audit-extension.cjs    # 主回归
-node tools/verify-ui-all.cjs      # UI 布局、明暗主题与中英文断言
-```
-
-贡献前请读 [CONTRIBUTING.md](CONTRIBUTING.md)；安全漏洞请私下报告，见 [SECURITY.md](SECURITY.md)。
+浏览器门禁需要 Playwright（`npm ci` 会安装 `playwright-core`）和本机 Edge。贡献前请读 [CONTRIBUTING.md](CONTRIBUTING.md)；安全漏洞请按 [SECURITY.md](SECURITY.md) 私下报告。
 
 <details>
 <summary><strong>仓库布局</strong></summary>
 
 | 路径 | 内容 |
 |------|------|
-| [`roamcat-0.0.1/extension/`](roamcat-0.0.1/extension/) | Manifest V3 扩展源层：background、内容脚本、`i18n.js` 中英运行时、领域模块、本地推理、icons/fonts/_locales，及 Lit 应用共用的 `ui/` 模块与样式（经典页面源由构建产物替代）。 |
-| [`roamcat-0.0.1/connector/`](roamcat-0.0.1/connector/) | Native Messaging 宿主 + Codex / Grok / Antigravity 三个订阅 CLI 适配。 |
-| [`src/`](src/) | Vite + Lit 页面应用与共享组件；`src/content-ui` 为页内 UI lit-html 渲染层；`@ext` 别名指向扩展源目录。 |
-| [`build/`](build/) | 构建期脚本：扩展拷贝/manifest 变换插件、design tokens 生成、dev 扩展 key；`vite.content-ui.config.mjs` 为 content-ui IIFE 构建。 |
-| `dist/extension/` | 构建产物（不入库）= 源层拷贝 − `REPLACED_BY_BUILD` + Vite 页面产物 + 变换后的 manifest。 |
-| [`tools/`](tools/) | 模块图门禁、单元测试、构建产物门禁、本机浏览器回归脚本。 |
+| [`roamcat-0.0.1/extension/`](roamcat-0.0.1/extension/) | 扩展源码层：background、内容脚本、`i18n.js`、领域模块、本地推理、icons / fonts / `_locales`，以及扩展页共用的 `ui/` 模块与样式 |
+| [`roamcat-0.0.1/connector/`](roamcat-0.0.1/connector/) | Native Messaging 宿主与 Codex / Grok / Antigravity 适配 |
+| [`src/`](src/) | Vite + Lit 页面应用与共享组件；`src/content-ui` 为页内 lit-html 渲染层 |
+| [`build/`](build/) | 构建插件、design tokens 生成与 dev 扩展 key |
+| [`tools/`](tools/) | 单元测试、静态与浏览器门禁、品牌与宣传片生成脚本 |
+| `dist/extension/` | 构建产物（不入库），在浏览器里加载的就是它 |
 
 </details>
+
+## 🗺️ 路线图
+
+以下为规划方向，可能随进展与反馈调整：
+
+- 阅读中一键切换两种模式。
+- 在 PDF / EPUB 阅读器与电子阅读器中提供阅读辅助（稀疏提示）。
+- 权限收窄：`host_permissions` 由全站改为 `optional_host_permissions` 按需申请。
+- 上架 Chrome Web Store 与 Microsoft Edge Add-ons（文案与权限理由已备于 [`CHROMEWEBSTORE.md`](roamcat-0.0.1/CHROMEWEBSTORE.md)）。
 
 ## 📖 文档
 
 | 文档 | 内容 |
 |------|------|
 | [产品文档](roamcat-0.0.1/README.md) | 功能详情、安装、模型服务配置与隐私说明 |
-| [设计系统](roamcat-0.0.1/docs/design-system.md) | 设计语汇、字体排版、色彩材质、动效与组件规范 |
-| [品牌方案](roamcat-0.0.1/docs/brand.md) · [品牌板](roamcat-0.0.1/docs/brand-board.html) | 标志用法、品牌色板、字体角色与文案语气；本地打开品牌板可看渲染效果 |
 | [工程规范](roamcat-0.0.1/SPEC.md) | 消息协议、存储模型、安全边界、测试门禁 |
-| [隐私政策](roamcat-0.0.1/PRIVACY.md) | 数据处理与权限用途的完整披露 |
-| [上架清单](roamcat-0.0.1/CHROMEWEBSTORE.md) | Chrome Web Store 文案与逐权限理由 |
+| [设计系统](roamcat-0.0.1/docs/design-system.md) · [品牌方案](roamcat-0.0.1/docs/brand.md) · [品牌板](roamcat-0.0.1/docs/brand-board.html) | token、字体、材质、动效，以及标志与形象用法 |
+| [隐私政策](roamcat-0.0.1/PRIVACY.md) | 数据处理与权限用途 |
+| [上架清单](roamcat-0.0.1/CHROMEWEBSTORE.md) | 商店文案与逐权限理由 |
 | [更新日志](CHANGELOG.md) | 版本变更记录（Keep a Changelog 格式） |
 | [贡献指南](CONTRIBUTING.md) · [行为准则](CODE_OF_CONDUCT.md) · [安全政策](SECURITY.md) | 协作与披露流程 |
 
-## 🙏 致谢与项目渊源
+## 🙏 致谢
 
-RoamCat 基于 [RelyLess](https://github.com/rockythink/relyless) 重构而来——本项目在其开源代码与产品理念之上做了重构、优化与修复（双模式引擎、Vite + Lit 页面构建链、整页双语翻译、订阅连接器等均为此基础上的工作）。
-
-原作者为 B 站 UP 主 **[停车拾穗](https://live.bilibili.com/392612)**，感谢其开源工作。RelyLess 原仓库未附带许可声明，本仓库自有代码以 MPL-2.0 发布；若上游补充许可要求，本项目将遵循。
+RoamCat 基于 [RelyLess](https://github.com/rockythink/relyless) 重构而来——本项目在其开源代码与产品理念之上做了重构、优化与修复（双模式引擎、Vite + Lit 页面构建链、整页双语翻译、订阅连接器等均为此基础上的工作）。感谢原作者 B 站 UP 主 **[停车拾穗](https://live.bilibili.com/392612)** 的开源工作。RelyLess 原仓库未附带许可声明，本仓库自有代码以 MPL-2.0 发布；若上游补充许可要求，本项目将遵循。
 
 ## 许可
 

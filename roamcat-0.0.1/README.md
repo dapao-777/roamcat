@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="extension/icons/roamcat.svg" alt="RoamCat Logo" width="96" height="96">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="extension/icons/roamcat.svg">
+    <img src="extension/icons/roamcat-light.svg" alt="RoamCat Logo" width="96" height="96">
+  </picture>
 </p>
 
 <h1 align="center">RoamCat · 随心阅</h1>
@@ -31,7 +34,7 @@ RoamCat 是一个面向英语阅读的 Chrome / Edge 扩展，按双模式组织
 
 我们更看重：你是否读完了真正想读的内容，以及下一次能否少求助一点。这是产品的设计方向，不是对学习效果的保证。
 
-安装后可在 **设置 → 使用说明** 按阅读场景查看指南：词义不确定时用注释，长句读不顺时用阅读解构，提示太多时调整帮助，需要大意时请求局部翻译。标记与词注、渐退与恢复、模型请求及数据隐私的说明融入对应场景；查词按键会跟随当前设置。
+安装后可在 **设置 → 使用手册** 按阅读场景查看指南：词义不确定时用注释，长句读不顺时用阅读解构，提示太多时调整帮助，需要大意时请求局部翻译。标记与词注、渐退与恢复、模型请求及数据隐私的说明融入对应场景；查词按键会跟随当前设置。
 
 网页中的查词卡片、阅读解构卡片、翻译操作条和状态反馈均带有 RoamCat 来源标识；原文标记、顶部词注和结构下划线不添加 Logo，也不新增常驻悬浮入口。
 
@@ -52,7 +55,7 @@ RoamCat 是一个面向英语阅读的 Chrome / Edge 扩展，按双模式组织
 
 工具栏弹窗的 **本页双语翻译 → 翻译本页** 会立即开始翻译。`Alt+Shift+T` 打开同一入口并直接开始；浏览器不支持自动打开时，请点击工具栏图标。快捷键可在浏览器扩展快捷键页修改，原有 `Alt+Shift+S` 不变。
 
-进度按正文单元计数，区分已译、待阅读、失败和跳过。只处理视口附近正文，不后台预译整篇；无法安全原位插入的特殊布局保留英文并报告跳过。失败段落只在手动重试时重新请求，已成功部分不会重发。停止保留已有译文，点「继续」即可接着未完成段落；返回英文只移除扩展插入物，不回滚站点更新。已发出的请求可能继续计费。
+进度按正文单元计数，区分已译、待阅读、失败和跳过。只处理视口附近正文，不后台预译整篇；无法安全原位插入的特殊布局保留英文并报告跳过。失败段落先按分级退避自动重试（约 2.5 秒、6 秒、14 秒，鉴权等不可恢复的错误不重试），用尽后才显示「重试这一段」；已成功部分不会重发。停止保留已有译文，点「继续」即可接着未完成段落；返回英文只移除扩展插入物，不回滚站点更新。已发出的请求可能继续计费。
 
 使用 ChatGPT 订阅连接器时，扩展与连接器须一起更新，并重新运行连接器安装程序；本次全文协议不兼容旧连接器。
 
@@ -62,27 +65,25 @@ RoamCat 是一个面向英语阅读的 Chrome / Edge 扩展，按双模式组织
 
 - **双模式切换交互**：产品已按「双语翻译主模式 + 阅读辅助副模式」组织；在阅读中一键切换两个模式的交互正在实现。
 - **界面层现代化（已完成）**：全部扩展页面（popup / options / welcome / reader）与页内 UI（词卡、解构卡、状态条、toast、伴读猫）均已迁移到 Vite + Lit 与设计 token 体系，并支持中英双语切换。
-- **阅读辅助覆盖更多载体**（副模式方向）：
-  - PDF 阅读支持；
-  - 电子阅读器支持。
+- **阅读辅助覆盖更多载体**（副模式方向）：PDF / EPUB 的双语翻译已由内置阅读器支持，下一步是在阅读器与电子阅读器中提供阅读辅助（稀疏提示）。
 - **权限收敛与上架**：`host_permissions` 改为按需申请；Chrome Web Store / Edge Add-ons 上架。
 
-## 从 Release 安装
+## 安装
 
 要求 Chrome 或 Edge **125 及以上版本**。
 
-1. 从 GitHub Releases 下载 `roamcat-0.0.1.zip`。
-2. 解压后会得到 `roamcat-0.0.1/`，其中包含：
-   - `extension/`（`npm run build:release` 产物重命名）
-   - `connector/`
-   - `README.md`
-   - `LICENSE`
-   - `NOTICE.txt`
-3. 打开扩展管理页：
+预发布阶段推荐**从源码构建**（见下方[从源码开发](#从源码开发)）：`npm ci && npm run build` 后加载 `dist/extension`，扩展 ID 固定，连接器不会因移动目录失效。
+
+### 从 Release 安装（发布后提供）
+
+免构建的预发布安装包 `roamcat-0.0.1-extension.zip` 会在发布后附在 GitHub Releases 中：
+
+1. 从 GitHub Releases 下载安装包并解压，得到 `extension/` 目录（`npm run build:release` 产物）。订阅连接器 `connector/` 请从本仓库获取。
+2. 打开扩展管理页：
    - Chrome：`chrome://extensions`
    - Edge：`edge://extensions`
-4. 开启“开发者模式”。
-5. 选择“加载已解压的扩展”，指向解压后的 **`extension/` 目录**。
+3. 开启“开发者模式”。
+4. 选择“加载已解压的扩展”，指向解压后的 **`extension/` 目录**。
 
 Release 包已经包含运行所需文件和本地模型，不包含源码开发依赖；使用 API 模式时无需安装 npm 依赖，也无需构建。
 
@@ -120,7 +121,7 @@ Windows 也可用：
 irm https://x.ai/cli/install.ps1 | iex
 ```
 
-然后在解压包根目录运行安装程序。必须把下面的占位符换成扩展管理页显示的、**你自己的实际扩展 ID**：
+然后在仓库的 `roamcat-0.0.1/` 目录下运行安装程序（从仓库根目录运行时写成 `node roamcat-0.0.1/connector/install.mjs …`）。把下面的占位符换成扩展管理页显示的**实际扩展 ID**——从源码构建的 `dist/extension` 固定为 `afpeggkplomdjjiemgajjgcajieincng`：
 
 ```sh
 node connector/install.mjs --extension-id <YOUR_ACTUAL_EXTENSION_ID> --backend grok
@@ -154,7 +155,7 @@ irm https://antigravity.google/cli/install.ps1 | iex
 
 先在终端运行 `agy`，按提示用你的 Google 账号（Google AI Pro / Ultra 订阅）完成登录。登录态保存在系统钥匙串中，连接器直接复用，不在扩展内走网页登录。
 
-然后在解压包根目录运行安装程序。必须把下面的占位符换成扩展管理页显示的、**你自己的实际扩展 ID**：
+然后在仓库的 `roamcat-0.0.1/` 目录下运行安装程序（从仓库根目录运行时写成 `node roamcat-0.0.1/connector/install.mjs …`）。把下面的占位符换成扩展管理页显示的**实际扩展 ID**——从源码构建的 `dist/extension` 固定为 `afpeggkplomdjjiemgajjgcajieincng`：
 
 ```sh
 node connector/install.mjs --extension-id <YOUR_ACTUAL_EXTENSION_ID> --backend antigravity
@@ -178,7 +179,7 @@ node connector/install.mjs --extension-id <YOUR_ACTUAL_EXTENSION_ID> --backend a
 npm install -g @openai/codex
 ```
 
-然后在解压包根目录运行安装程序。必须把下面的占位符换成扩展管理页显示的、**你自己的实际扩展 ID**：
+然后在仓库的 `roamcat-0.0.1/` 目录下运行安装程序（从仓库根目录运行时写成 `node roamcat-0.0.1/connector/install.mjs …`）。把下面的占位符换成扩展管理页显示的**实际扩展 ID**——从源码构建的 `dist/extension` 固定为 `afpeggkplomdjjiemgajjgcajieincng`：
 
 ```sh
 node connector/install.mjs --extension-id <YOUR_ACTUAL_EXTENSION_ID>
@@ -197,7 +198,7 @@ ChatGPT 订阅是否包含可用 Codex 权益、可选模型和调用额度由 O
 - 普通辅助会发送目标词句及适用的页面标题、章节信息和上下文；自动预备的文章上下文最多 12,000 字符，较短文章可能整体包含在内。请求同时包含任务指令与结构化输出约束。
 - 选择远程领域识别（订阅连接器、自定义 API 或 Jev 增强判定）时，会发送标题和经过长度限制的正文样本；默认本地领域识别不需要该远程请求。Jev 自定义密钥与接口地址保存在本机。
 - 主动翻译选段时，会发送所选片段及有限上下文。视频字幕支持暂时隐藏，不挂载播放器入口；已有视频偏好保留。
-- 本页双语翻译仅在确认后发送附近正文及有限上下文：标题、所在章节各最多 160 字符，相邻正文前后各最多 400 字符。每批最多四项、源文本合计最多 4,000 字符，源文本加上下文最多 12,000 字符；不读取输入框、隐藏正文或视频字幕。不会因此额外生成摘要、写入全文阅读事件或个人词档案；成功译文仅进入五分钟、最多 256 项的后台内存缓存。
+- 本页双语翻译在点「翻译本页」（或 `Alt+Shift+T`）后立即开始，不再二次确认，只发送视口附近正文及有限上下文：标题、所在章节各最多 160 字符，相邻正文前后各最多 400 字符。每批最多八项、源文本合计最多 8,000 字符，源文本加上下文最多 20,000 字符；不读取输入框、隐藏正文或视频字幕。不会因此额外生成摘要、写入全文阅读事件或个人词档案；成功译文仅进入五分钟、最多 256 项的后台内存缓存。
 - 如果明确开启阅读摘要，会发送长度受限的阅读样本；如果进一步开启个性化分析，会发送近 30 天内有限的查询、例句、摘要和客观活动统计证据。
 
 请求载荷不主动包含页面网址，但服务商仍可获得正常网络请求元数据，并可能按照其自身条款记录请求、账户和内容。RoamCat 无法承诺第三方或自建 API 服务端不留存数据；请在使用前检查所选服务商的隐私与保留政策。
@@ -226,7 +227,7 @@ npm test              # 单元测试（tools/run-unit-tests.mjs → node --test 
 npm run verify:build  # 构建产物门禁 + Edge 实际加载冒烟
 ```
 
-开发时在 `chrome://extensions` 加载 **`dist/extension`**；也可以免构建直接加载 `roamcat-0.0.1/extension`（页面为被构建替代前的经典实现，ID 随目录路径变化）。
+开发时在 `chrome://extensions` 加载 **`dist/extension`**。不要直接加载 `roamcat-0.0.1/extension` 源码目录：扩展页已迁到 `src/` 由 Vite 构建，源码目录里没有弹窗、设置页等页面。
 
 本机浏览器回归脚本（Playwright + 本机 Edge）在 `tools/` 下，需先 `npm ci` 安装 `playwright-core`（或设置 `PLAYWRIGHT_CORE_PATH`）；截图与 JSON 报告输出到 `preview/`（不入库）。
 

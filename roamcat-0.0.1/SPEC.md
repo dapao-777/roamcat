@@ -11,7 +11,7 @@
 | 形态 | Chrome / Edge Manifest V3 扩展 + Node.js 本机 Native Messaging 连接器 |
 | 最低浏览器 | Chrome / Edge 125（`minimum_chrome_version: "125"`） |
 | 许可 | 项目代码 MPL-2.0；第三方材料见 `NOTICE.txt` 及各子目录声明 |
-| 规范版本 | v1.6（2026-09-26，全界面中英双语：新增 `i18n.js` 运行时字典（约 1,600 键双语对齐）接入 4 个扩展页/页内挂件/伴读猫/后台消息，语言偏好 `roamcat_ui_lang` 经 SS_REFRESH 快照同步到受限上下文；深色主题重设计为砚台冷墨材质；reader.html 阅读器页入库） |
+| 规范版本 | v1.7（2026-10-21，麻薯猫亮暗双版形象与 logo；设置页单页签治理；本页译文容错与传输层严格/宽松解析分离；CI 恢复全绿（Node 20 测试运行器、单测固定界面语言、CI 安装依赖）；界面审查修复：小字对比度达 WCAG AA、删除 ui.css 主题 token 覆写块、诊断页切换即刷新） |
 
 ---
 
@@ -130,12 +130,13 @@
 | `content.js` | 阅读根识别、文本映射、自动标注、查词（按键+卡片+顶部词注）、选段翻译、阅读解构高亮、整页翻译引擎、历史采集、重载侦察（失效 toast） | 只拆文本节点不重建强调/链接；所有跨文档操作带 generation 校验；DOM 批量更新走 rAF；重载侦察用可见性门控的低频探测，不用常驻 port（不阻止 SW 空闲回收） |
 | `floating-pet.js` | 伴读猫（SVG/Shadow DOM/拖拽贴边/菜单/摘要/状态气泡/左侧快捷按钮行）、全局快捷键 | window 级监听只注册一次（`bindGlobalEvents`）；快捷键在输入框/可编辑区不触发（`petShortcutBlocked`）；左侧快捷按钮行（阅读开关/摘要/设置/贴边）贴左屏时翻向右侧，贴边时随旋旋翻隐藏 |
 | `design.js` | 设计 token（明暗双主题）唯一下发 | 仅当脚本带 `data-roamcat-page` 时才向页面根注入 |
-| `i18n.js` | 中英双语运行时 `RoamCatI18n`：`t()`/`lang()`/`pref()`/`setPref()`/`apply()`/`onChange()`，字典约 1,600 键双语对齐 | storage 受限上下文自动回退 `STATE_GET` 拉取偏好，监听 `SS_REFRESH` 同步变更 |
+| `i18n.js` | 中英双语运行时 `RoamCatI18n`：`t()`/`lang()`/`pref()`/`setPref()`/`apply()`/`onChange()`，字典 1,657 键双语对齐 | storage 受限上下文自动回退 `STATE_GET` 拉取偏好，监听 `SS_REFRESH` 同步变更 |
 | `reading-style.js` | 三层（原文/词注/译文）样式规范化与 CSS 生成 | 选择器必须静态；`!important` 全覆盖以对抗站点样式 |
 
 ### 4.3 扩展页面
 - 四个扩展页均已迁移到 `src/`（Vite + Lit）：`build/extension-plugin.mjs` 的 `REPLACED_BY_BUILD` 清单使构建产物覆盖对应 `ui/` 文件；**不要直接改将由构建替代的源文件**。页内 UI（`src/content-ui`）同样经构建链产出 `content-ui.js`。
 - `ui/popup.html|js`（构建产物来自 `src/pages/popup/`）：本页开关、网站自动开启、阅读解构、本页双语翻译（立即开始）、服务告警、语言切换钮。
+- 设置页以 `options_ui`（`open_in_tab: true`）注册，全局只保留一个页签：`shared.js` 的 `focusOptionsPage`/`settleOptionsPages` 把设置页收回正在浏览的普通窗口（跳过无痕窗口），分区切换（改 hash）不搬页签；弹窗、阅读器、页内挂件都经 `OPEN_OPTIONS`（可带 `section`）打开。
 - `ui/options.html|js` + `options-nav.js`（构建产物来自 `src/pages/options/`：shell + 12 分区模板，`options-controller.js` 与 `@ext/ui/history.js` 动态加载填充动态内容）：12 个设置分区（assistance/appearance/sites/advanced/terms/personalization/history/privacy/service/diagnostics/shortcuts/guide）；顶栏含主题与语言循环钮。
 - `ui/welcome.html|js` + `welcome.css`（构建产物来自 `src/pages/welcome/`）：首次安装引导与交互式演示，顶栏含主题/语言循环钮。
 - `ui/reader.html|js`（构建产物来自 `src/pages/reader/`）：PDF/EPUB/粘贴文章的阅读器，`READER_TRANSLATE` 逐段双语对照，工具栏含语言切换钮。
@@ -335,7 +336,7 @@
 | 静态检查 | `node tools/verify-module-graph.cjs`（11 条规则：加载契约、import 解析、无环、连接器闭包纯净、分层方向、无反向依赖、文件头注释、无重复 ID、无内联脚本、manifest 资源存在、classic 脚本 `node --check` 语法）；`node tools/verify-deadcode.cjs`（未使用导出/导入，报告型） | 模块依赖方向、页面契约、语法与死代码 |
 | 真实扩展回归 | `tools/audit-extension.cjs`（playwright-core + 系统 Edge 无头，本地 fixture 文章 + 模拟模型服务） | 截至 2026-09-22：完整回归 29 项 + 摘要补充回归 22 项（去重 30 场景）：设置持久化、12 分区明暗/窄窗、术语/规则、API 模型列表、内容脚本开关、真实按键查词卡片、语言切换、已认识词撤销、历史导出清理、句子结构、整页翻译显示与清除、本地模型零请求分类、个性化空态、摘要防重与切换文章/模型过期、伴读猫拖拽持久化、欢迎页 |
 | 专项回归 | `tools/verify-bilingual-shortcut.cjs` 等（另有 `verify-catalog/jev/connector-throttle/pet-actions/popup-colors/popup-emergency/summary-timeout`） | 快捷键（页面触发/输入框忽略/旋旋翻开关/工具栏入口）、服务目录、Jev 判定、连接器节流、伴读猫操作、弹窗配色与应急翻译、摘要超时 |
-| 全界面门禁 | `npm run verify:ui`（`tools/verify-ui-all.cjs`，77 项断言） | options 全 12 分区明暗/窄窗、welcome/reader/popup、页内挂件（词卡/任务条/解构卡/toast/选区条/伴读猫）、中英文档断言、横向溢出、控制台错误 |
+| 全界面门禁 | `npm run verify:ui`（`tools/verify-ui-all.cjs`，81 项断言；每轮先清理旧截图） | options 全 12 分区明暗/窄窗、welcome/reader/popup、页内挂件（词卡/任务条/解构卡/toast/选区条/伴读猫）、中英文档断言、横向溢出、控制台错误 |
 | 伴读猫门禁 | `npm run verify:pet`（`tools/verify-pet-buttons.cjs`，65 项断言） | 快捷坞/旋旋翻/缩放/贴边/气泡/摘要窗全部按钮的真实点击与键盘操作、文案键解析 |
 | 连接器行为 | 临时脚本（假 spawn） | Grok 重试门控（AUTH/429 不重试、格式错误重试、过长不重试） |
 
@@ -404,6 +405,11 @@ MV3 下改代码必须重载扩展：service worker 变更需重载扩展本身�
 | 21 | options 页仍为经典 imperative 实现，与已迁移的 popup/welcome 两套 UI 体系并存；商店文案与 Release 说明仍是单模式旧口径 | options 迁移至 `src/pages/options`（Lit shell + 12 分区静态模板，`options-controller.js` 与 `@ext/ui/history.js` 动态填充），`REPLACED_BY_BUILD` 增加 options/options-nav/history 四项，扩展页全部 Lit 化；`verify:build` 新增 options 路由/主题/侧栏/弹层检查；`_locales` extDescription 与 Release 包内容清单改双模式与构建产物口径 |
 | 22 | 全界面硬编码中文，无双语切换 | 新增 `extension/i18n.js` 运行时字典（约 1,600 键双语对齐，`node tools/check-dict.cjs` 校验）；四个扩展页、页内挂件、伴读猫、后台错误消息全部接入；偏好 `roamcat_ui_lang` ∈ auto/zh/en，`auto` 跟随浏览器语言；content script 受限上下文经 `STATE_GET`/`SS_REFRESH` 同步；各页顶栏语言循环钮 |
 | 23 | 深色主题为 Relingo 蓝灰调色板，与 tokens.css 漂移、材质发糊 | 深色重设计为砚台冷墨材质（`#0b0e13` 微蓝底/象牙字/瓷白主键/琥珀收敛为语义色）；`ui.css` 重复 token 块清除，主题色回归 `src/styles/tokens.css` 单一事实源；新增 `--rc-face-panel` 大面板材质（大卡与小控件分层） |
+| 24 | 打开设置会另开窗口，浏览器「选项」菜单与阅读器入口各开一扇，进 Alt+Tab 又关不掉 | manifest 改 `options_ui`；`shared.js` 统一收回到浏览窗口并去重，跳过无痕窗口，hash 路由不触发搬迁；`tools/unit/options-pages.test.mjs` 覆盖 |
+| 25 | 思考模型在 JSON 外夹围栏/说明/额外字段时整批标失败；宽松解析曾放在共享传输层 | `gloss.mjs` 新增 `parseModelObject`，只用于本页翻译（`lenientJson`），其余协议仍严格；流式进度在下一条刚开头时不丢已完成段落；`api-transport-json.test.mjs` 覆盖 |
+| 26 | CI 连续失败：Node 20 不展开 `node --test` 通配符、英文环境下中文断言失败、未装 `fflate` | `npm test` 改由 `tools/run-unit-tests.mjs` 显式列文件；单测 mock 固定 `getUILanguage`；CI 先 `npm ci --ignore-scripts` |
+| 27 | 品牌形象：扫描线猫与亮色界面不搭 | 伴读猫与 logo 改为麻薯猫亮暗双版（`--pet-cat-*` / `--rc-cat-*` 变量，`icons/roamcat-light.svg`），全部 logo 资产与插图由 `tools/make-brand-cat.mjs` 生成 |
+| 28 | 界面审查：侧栏进诊断页要等 5 秒；小字对比度 3.2–4.3；`ui.css` 在手动亮色下覆写 13 个主题 token；查词卡开局出错无出路 | `optionsSectionEnter` 先记当前分区；弱化文字 token 加深达 AA；删除覆写块；错误态补「重试 / 连接或修复服务」，任务条错误态危险色 |
 
 
 ### 14.2 遗留 / 观察项

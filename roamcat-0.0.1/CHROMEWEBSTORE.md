@@ -1,6 +1,6 @@
 # Chrome Web Store Listing — RoamCat · 随心阅
 
-> Last Updated: 2026-09-26（与 SPEC v1.6、74 种消息协议同步；全界面中英双语）
+> Last Updated: 2026-10-21（与 SPEC v1.7、74 种消息协议同步；全界面中英双语；麻薯猫亮暗双版形象）
 > 本文是上架 Chrome Web Store / Microsoft Edge Add-ons 的单一事实源：商店文案、权限理由、隐私披露、版本历史。
 > 提交前请逐项核对文末「提交前检查单」。本文不随 Release ZIP 发布（放在仓库根目录，打包白名单之外）。
 
@@ -229,7 +229,7 @@ https://github.com/dapao-777/roamcat
 - [ ] 至少 1 张 1280×800 截图（候选素材已列出，需裁剪）
 - [ ] 128×128 商店图标就绪
 - [x] 无混淆代码；第三方许可声明齐全
-- [x] 已在真实 Edge 无头回归验证主要功能（截至 2026-09-26：单元 178 项；`verify:ui` 全界面门禁 77 项含明暗主题与中英文断言；`verify:pet` 伴读猫门禁 65 项；`verify:build` 10 项；报告见 `preview/`）
+- [x] 已在真实 Edge 无头回归验证主要功能（截至 2026-10-21：单元 193 项；`verify:ui` 全界面门禁 81 项含明暗主题与中英文断言；`verify:pet` 伴读猫门禁 65 项；`verify:build` 10 项；CI 在 Node 20/22/24 全绿；报告见 `preview/`）
 
 ### Rejection History
 （暂无）
