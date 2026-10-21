@@ -716,7 +716,7 @@
         right: calc(100% + 6px);
         top: 50%;
         transform: translateY(-50%) translateX(4px);
-        background: var(--pet-btn-face, var(--pet-surface-elevated, #ffffff));
+        background: var(--pet-surface-elevated, #ffffff);
         color: var(--pet-glyph, var(--pet-ink, #161511));
         border: 1px solid var(--pet-btn-rim, var(--pet-line, #e2ded4));
         border-radius: 999px;
@@ -725,7 +725,7 @@
         font-weight: 600;
         white-space: nowrap;
         text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
-        box-shadow: var(--pet-btn-inset, none), var(--pet-btn-cast, 0 4px 12px rgba(0,0,0,0.12));
+        box-shadow: var(--pet-btn-cast, 0 4px 12px rgba(0,0,0,0.12));
         pointer-events: none;
         opacity: 0;
         visibility: hidden;
@@ -1146,7 +1146,7 @@
         right: calc(100% + 6px);
         top: 50%;
         transform: translateY(-50%) translateX(4px);
-        background: var(--pet-btn-face, var(--pet-surface-elevated, #ffffff));
+        background: var(--pet-surface-elevated, #ffffff);
         color: var(--pet-glyph, var(--pet-ink, #161511));
         border: 1px solid var(--pet-btn-rim, var(--pet-line, #e2ded4));
         border-radius: 999px;
@@ -1155,7 +1155,7 @@
         font-weight: 600;
         white-space: nowrap;
         text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
-        box-shadow: var(--pet-btn-inset, none), var(--pet-btn-cast, 0 4px 12px rgba(0, 0, 0, 0.12));
+        box-shadow: var(--pet-btn-cast, 0 4px 12px rgba(0, 0, 0, 0.12));
         opacity: 0;
         visibility: hidden;
         pointer-events: none;
@@ -1213,7 +1213,7 @@
         bottom: calc(100% + 8px + var(--zoom-offset, 0px));
         left: 50%;
         transform: translateX(calc(-50% + var(--bubble-shift-x, 0px))) translateY(4px);
-        background: var(--pet-btn-face, var(--pet-surface-elevated, #ffffff));
+        background: var(--pet-surface-elevated, #ffffff);
         color: var(--pet-ink, #111827);
         border: 1.5px solid var(--pet-btn-rim, var(--pet-line, #e5e7eb));
         border-radius: 12px;
@@ -1225,7 +1225,7 @@
         line-height: 1.35;
         text-align: left;
         text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
-        box-shadow: var(--pet-btn-inset, none), var(--pet-btn-cast, 0 4px 16px rgba(0,0,0,0.12));
+        box-shadow: var(--pet-btn-cast, 0 4px 16px rgba(0,0,0,0.12));
         pointer-events: none;
         opacity: 0;
         transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.2, 0.9, 0.3, 1), border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
@@ -1292,7 +1292,7 @@
 
       /* Speaking default state */
       .cat-speech-bubble.speaking {
-        background: var(--pet-btn-face, var(--pet-surface-elevated, #ffffff));
+        background: var(--pet-surface-elevated, #ffffff);
         color: var(--pet-ink, #161511) !important;
         border-color: var(--pet-btn-rim, var(--pet-line, #e5e7eb));
       }
@@ -2042,10 +2042,10 @@
         max-width: calc(100vw - 32px);
         max-height: calc(100vh - 80px);
         background-color: var(--pet-surface);
-        background-image: var(--pet-btn-face, none);
-        border: 1px solid var(--pet-btn-rim, var(--pet-line));
+        background-image: none;
+        border: 1px solid var(--pet-line);
         border-radius: 12px;
-        box-shadow: var(--pet-btn-inset, none), var(--pet-shadow-lg), 0 0 0 1px color-mix(in srgb, var(--pet-primary, #f59e0b) 22%, transparent);
+        box-shadow: var(--pet-shadow-lg), 0 0 0 1px color-mix(in srgb, var(--pet-primary, #f59e0b) 22%, transparent);
         display: flex;
         flex-direction: column;
         overflow: hidden;

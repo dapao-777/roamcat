@@ -156,7 +156,7 @@ const WORD_CARD_CSS = `:host{color:var(--ink);font:var(--type-control)/var(--lea
 .hud-term{margin:0;font:800 var(--fs-4, 16px)/1.3 var(--mono);color:var(--ink);text-shadow:var(--engrave,none);overflow-wrap:anywhere;white-space:pre-wrap}
 .hud-term.passage{font:400 var(--fs-2, 13px)/1.55 var(--sans)}
 .hud-head-right{display:flex;align-items:center;gap:8px;flex:none}
-.hud-tag{font:700 var(--fs-1, 12px)/1.4 var(--mono);padding:2px 7px;border-radius:4px;background-color:var(--surface-subtle);background-image:var(--face-well,none);border:1px solid var(--rim-soft,var(--line));box-shadow:var(--well-shadow,none);text-shadow:var(--engrave,none);color:var(--accent);white-space:nowrap}
+.hud-tag{font:500 var(--fs-1, 12px)/1.4 var(--ui, var(--sans));padding:2px 8px;border-radius:999px;background-color:var(--surface-subtle);color:var(--muted-strong);white-space:nowrap}
 .hud-icon-btn,.listen{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;min-width:24px;min-height:24px;padding:0;margin:0;border-radius:5px;border:1px solid var(--rim-soft,var(--line));background-color:var(--surface-subtle);background-image:var(--key-face,var(--face,none));box-shadow:var(--key-skirt,var(--inset-soft,none));color:var(--muted);cursor:pointer;transition:all .15s ease}
 .hud-icon-btn:hover,.listen:hover{color:var(--accent);border-color:var(--rim,var(--accent));box-shadow:var(--key-skirt-hover,var(--key-skirt,none))}
 .hud-icon-btn:active,.listen:active{transform:translateY(2px);box-shadow:var(--key-press,var(--press,none))}
@@ -173,14 +173,14 @@ const WORD_CARD_CSS = `:host{color:var(--ink);font:var(--type-control)/var(--lea
 .explanation dd{display:inline;margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
 .explanation dd+dt{display:block}
 .hud-foot{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;border-top:1px solid var(--rim-soft,var(--line));box-shadow:inset 0 1px 0 var(--edge-hi,transparent);padding-top:12px}
-.hud-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.hud-action{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px;margin:0;border-radius:6px;border:1px solid var(--rim-soft,var(--line));background-color:var(--surface-subtle);background-image:var(--key-face,var(--face,none));box-shadow:var(--key-skirt,var(--inset-soft,none));color:var(--muted-strong);text-shadow:var(--emboss,none);font:600 var(--fs-1, 12px)/1 var(--ui, var(--sans));cursor:pointer;transition:all .15s ease}
-.hud-action:hover{color:var(--ink);border-color:var(--rim,var(--muted));box-shadow:var(--key-skirt-hover,var(--key-skirt,none))}
-.hud-action:active{transform:translateY(2px);box-shadow:var(--key-press,var(--press,none))}
+.hud-actions{display:flex;align-items:center;gap:2px;flex-wrap:wrap}
+.hud-action{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 8px;margin:0;border-radius:6px;border:1px solid transparent;background:transparent;color:var(--muted-strong);font:500 var(--fs-2, 13px)/1 var(--ui, var(--sans));cursor:pointer;transition:background-color .15s ease,color .15s ease}.hud-action.known-action{padding:0 10px;margin-right:4px;border-color:var(--action);background:var(--action);color:var(--on-action);font-weight:600}.hud-action.known-action:hover{border-color:var(--action-hover);background:var(--action-hover);color:var(--on-action)}
+.hud-action:hover{color:var(--ink);background:var(--surface-hover)}
+.hud-action:active{box-shadow:var(--press,none)}
 .hud-action:disabled{background-color:var(--accent-soft);background-image:none;border-color:var(--accent-line);box-shadow:none;color:var(--accent);cursor:default;transform:none}
 .hud-action svg{display:block}
-.hud-engine{display:inline-flex;align-items:center;gap:5px;margin-left:auto;font:400 var(--fs-1, 12px)/1 var(--mono);color:var(--muted)}
-.hud-engine img{display:block}
+
+
 details.sentence{margin-top:10px}
 details.sentence>summary{display:none}
 .sentence-body{margin:0;padding:10px 14px;background-color:var(--surface-subtle);background-image:var(--face-well,none);box-shadow:var(--well-shadow,none);border-radius:6px;border:1px dashed var(--muted);font-size:var(--fs-2, 13px);line-height:1.5}
@@ -227,7 +227,6 @@ export function wordCard(shadow, {
           <button type="button" class="hud-action" ?hidden=${!error || !handlers.retry} ${ref(el => { refs.retry = el; })} @click=${handlers.retry}>${T('ui.retry')}</button>
           <button type="button" class="hud-action" ?hidden=${!error || !handlers.repair} ${ref(el => { refs.repair = el; })} @click=${handlers.repair}>${T('ui.fixSvc')}</button>
         </div>
-        <span class="hud-engine"><img src=${brandIconUrl} alt="" aria-hidden="true" width="12" height="12">RoamCat</span>
       </footer>
       <details class="sentence" id="card-sentence-panel" ?hidden=${isPassage || !contextText} ${ref(el => { refs.sentence = el; })}>
         <summary ${ref(el => { refs.sentenceSummary = el; })}>${T('ui.sentTrans')}</summary>
