@@ -589,7 +589,7 @@ button.welcome-options-link {
   padding: 2px 7px;
   border-radius: var(--radius-xs, 3px);
   background: var(--color-amber-soft);
-  color: var(--color-amber);
+  color: color-mix(in srgb, var(--color-amber) 65%, var(--color-text-primary));
   border: 1px solid var(--color-amber);
 }
 
@@ -635,7 +635,7 @@ button.welcome-options-link {
 .sb-token.active-target {
   background: var(--color-amber-soft);
   border-bottom: 2px solid var(--color-amber);
-  color: var(--color-amber);
+  color: color-mix(in srgb, var(--color-amber) 65%, var(--color-text-primary));
   box-shadow: 0 0 10px var(--color-amber-soft);
 }
 
@@ -1116,7 +1116,8 @@ button.welcome-options-link {
 
 .choice-badge.ruby {
   background: rgba(124, 184, 232, 0.13);
-  color: #7cb8e8;
+  /* 原 #7cb8e8 在纸色上只有 1.85：向正文色混一档。 */
+  color: color-mix(in srgb, #3b82c4 70%, var(--color-text-primary));
   border: 1px solid rgba(124, 184, 232, 0.32);
 }
 

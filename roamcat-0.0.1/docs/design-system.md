@@ -30,7 +30,7 @@ extension/design.js              ← 生成物（RoamCatDesign.cssFor(selector)�
 - tokens.css 三个标记段：`common`（排版/间距/圆角/焦点/动效/材质 + 兼容别名）、
   `light`、`dark`。段内只允许 `--name: value;` 与 `color-scheme` 声明。
 - `extension/ui/ui.css`（共享界面皮肤）、`refinement.css`（纸墨精修层）、
-  `welcome.css`（欢迎沙盒）、`src/styles/base.css` + `motion.css`（页面基线与动效层）
+  `welcome.css`（欢迎沙盒）、`src/styles/motion.css`（动效层）
   全部是 token 的消费方，不定义新色值。
 
 ## 2. 命名与分层
@@ -39,7 +39,7 @@ extension/design.js              ← 生成物（RoamCatDesign.cssFor(selector)�
 |---|---|---|
 | Canonical `--rc-*` | `src/styles/tokens.css` 标记段 | 全部（页面 + 内容脚本 + Shadow DOM） |
 | 兼容别名（`--paper`/`--sans`/`--color-*`/组件旧名） | `common` 段尾 | 迁移期既有代码；新代码禁止新增旧名引用 |
-| 页面基线 | `src/styles/base.css`（@layer reset/base） | 扩展页 |
+| 页面基线 | `extension/ui/ui.css` 顶部（选区色、细滚动条、等宽字体等全局细节） | 扩展页 |
 | 动效 | `src/styles/motion.css`（@layer motion）+ 动效 token | 扩展页；Shadow DOM 组件内联同款协议 |
 
 `--rc-<族>-<名>` 是唯一 canonical 前缀。族：`surface / ink / line / accent /

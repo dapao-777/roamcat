@@ -225,7 +225,7 @@ export const shellTop = html`
         </nav>
       </div>
 
-            <!-- Bottom 随心阅 Stamp Card (Free Roam · 漫游猫) -->
+            <!-- Bottom 随心阅 Stamp Card (Free Roam · 麻薯猫) -->
       <div class="sidebar-user-card-wrap" data-purpose="user-status-card">
         <div class="nav-group-header stamp-group-header">${t('opt.brandSeal')}</div>
         <div class="matrix-stamp-card" id="sidebar-stamp-card" aria-label="${t('opt.stampCardAria')}" role="button" tabindex="0" title="${t('opt.stampCardTitle')}" data-tooltip="${t('opt.stampTooltip')}">

@@ -17,6 +17,7 @@ import {loadPdf} from './pdf-loader.js';
 import {parseEpub} from './epub-package.mjs';
 import {translationBatches} from './pdf-blocks.mjs';
 import {heroArt} from '../../components/hero-art.js';
+import {icon} from '../../components/icons.js';
 import '../../components/rc-switch.js';
 import {t} from '../../i18n-runtime.js';
 
@@ -197,7 +198,7 @@ export class RoamcatReader extends LitElement {
               <button class="rc-button rc-primary" ?disabled=${this.translating} @click=${this.translateAll}>${this.translating ? t('rd.translatingBtn') : t('rd.transAll')}</button>
             ` : ''}
             <button class="rc-button" @click=${this.openFilePicker}>${t('rd.open')}</button>
-            <button class="rc-button" type="button" title=${t('opt.langToggleTitle',{lang:this.#langName()})} @click=${() => this.#cycleUiLang()}>${this.#langShort()}</button>
+            <button class="rc-button rc-button-icon" type="button" title=${t('opt.langToggleTitle',{lang:this.#langName()})} aria-label=${t('opt.langToggleTitle',{lang:this.#langName()})} @click=${() => this.#cycleUiLang()}>${icon('globe', {size: 15})}<span>${this.#langShort()}</span></button>
             <button class="rc-button" type="button" @click=${() => { request('OPEN_OPTIONS').catch(() => chrome.runtime.openOptionsPage()); }}>${t('rd.settings')}</button>
           </div>
         </header>

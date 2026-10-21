@@ -28,8 +28,9 @@ button, input, select, textarea { font-family: var(--font-sans); }
 .options-body .sidebar-brand-left { flex: 1 1 auto; }
 .options-body .brand-info-wrap { min-width: 0; }
 .options-body .sidebar-header-actions { flex: 0 0 auto; }
-.options-body .brand-meta-row { display: flex; align-items: center; gap: 6px; margin-top: 5px; min-width: 0; }
-.options-body .brand-meta-row .brand-subtitle { margin-top: 0; overflow: hidden; text-overflow: ellipsis; }
+.options-body .brand-meta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; margin-top: 5px; min-width: 0; }
+/* 英文副标题更长：放不下时整体换到下一行，而不是截断成 “Read ea…”。 */
+.options-body .brand-meta-row .brand-subtitle { margin-top: 0; }
 .options-body .brand-meta-row .brand-pro-tag { flex: 0 0 auto; }
 /* 去掉副标题前的点阵足迹：品牌区下沿已有一条点阵虚线，这里再放一组会显得零碎。 */
 .options-body .brand-meta-row .brand-subtitle::before { display: none; }
@@ -527,3 +528,24 @@ button, input, select, textarea { font-family: var(--font-sans); }
 /* 欢迎页顶栏 logo：与设置页侧栏一致，logo 自带圆角砖，不再套带边框的图标框。 */
 .welcome-body .brand-icon-box { width: 36px; height: 36px; background: none; border: 0; box-shadow: none; }
 .welcome-body .brand-icon-box img { width: 36px; height: 36px; border-radius: 9px; box-shadow: 0 2px 6px rgba(70, 50, 30, 0.18); }
+
+/* 侧栏印章卡：给右下角的圆形钢印留出位置，猫名过长（英文）时省略而不压到钢印上。 */
+.options-body .matrix-stamp-card .stamp-content-wrap { padding-right: 46px; }
+.options-body .matrix-stamp-card :is(.stamp-hero-num,.stamp-meta-title) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 侧栏小字下限：版本号、印章眉标与副标题原为 9–10px，放大 1px 保证可读。 */
+.options-body .brand-pro-tag { font-size: 10px; }
+.options-body .brand-subtitle { font-size: 11px; }
+.options-body :is(.stamp-eyebrow,.stamp-meta-sub) { font-size: 10px; }
+
+/* 个性化「所选服务」未连接时用提醒色，与设置页顶部状态卡的 attention 档一致。 */
+.options-body #personalization-service-label.is-attention { color: var(--rc-status-attention, var(--color-danger)); }
+
+/* 网站规则空状态：列表为空时不占位，空提示收成一块虚线引导卡，告诉用户下一步怎么做。 */
+.options-body .automation-site-list:empty { display: none; }
+.options-body #automation-site-empty:not([hidden]) { display: block; margin-top: 12px; padding: 14px 16px; border: 1px dashed var(--color-border-card); border-radius: 10px; }
+.options-body #automation-site-empty h3 { margin: 0 0 4px; font-size: 13px; }
+.options-body #automation-site-empty p { margin: 0; font-size: 12px; line-height: 1.6; }
+
+/* 顶栏在纵向弹性布局里不能被压缩：窄屏折成两行时会被压回 60px 最小高度，按钮溢出压到正文上。 */
+.options-body .settings-toolbar { flex-shrink: 0; }

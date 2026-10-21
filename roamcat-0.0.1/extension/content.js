@@ -153,7 +153,7 @@ const LIMIT_ERROR = T('c.limit');
     panel.classList.toggle('compact',selected.busy&&!selected.error);
     const copy=selected.error?(T(statusFailures[selected.key]||'c.fail.fallback')):selected.text;
     if(label.textContent!==copy)label.textContent=copy;label.title=copy;
-    indicator.dataset.error=String(selected.error);indicator.dataset.busy=String(selected.busy&&!selected.error);indicator.textContent=selected.error?'!':selected.busy?'':'·';
+    indicator.dataset.error=String(selected.error);pageStatus.root.panel.dataset.error=String(Boolean(selected.error));indicator.dataset.busy=String(selected.busy&&!selected.error);indicator.textContent=selected.error?'!':selected.busy?'':'·';
     count.textContent=active.length>1?'+'+(active.length-1):'';count.hidden=active.length<2;count.setAttribute('aria-label',T('c.moreStatus',{n:active.length-1}));
     more.hidden=!selected.error&&active.length===1;if(more.hidden)collapse();
     const details=active.map(entry=>entry.text).join('\n\n');if(detail.textContent!==details)detail.textContent=details;
@@ -936,7 +936,7 @@ const LIMIT_ERROR = T('c.limit');
           view.support=support.support || support;view.answer.textContent=T('c.quietAck');
         }catch(error){if(state.card===view){view.answer.textContent=error.message;view.less.disabled=false;}}
       },
-      repair:()=>void request('OPEN_OPTIONS')}});
+      repair:()=>void request('OPEN_OPTIONS',{section:'service'})}});
     Object.assign(view,{card:refs.card,answer:refs.answer,explanation:refs.explanation,sentence:refs.sentence,sentenceTranslation:refs.sentenceTranslation,sentenceLine:refs.sentenceLine,rescue:refs.rescue,known:refs.known,retry:refs.retry,wrong:refs.wrong,less:refs.less,note:refs.note,speechNotice:refs.speechNotice,repair:refs.repair});state.card=view;
     speechButton(view,refs.sourceHeader,target.text,target.kind==='word'?T('c.speakWord'):T('c.speakSel'));
     const sentenceSpeech=speechButton(view,refs.originalLabel,target.context,T('c.speakOrig'));

@@ -37,6 +37,8 @@ body {
   text-decoration: none; white-space: nowrap; cursor: pointer;
   transition: box-shadow var(--rc-dur-fast, .16s) var(--rc-ease-standard, ease), transform var(--rc-dur-instant, .08s) ease, border-color var(--rc-dur-fast, .16s) ease;
 }
+.rc-button-icon { display: inline-flex; align-items: center; gap: 6px; }
+.rc-button-icon svg { flex: none; }
 .rc-button:hover { border-color: var(--rim, var(--line-dark)); box-shadow: var(--key-skirt-hover, var(--key-skirt, var(--inset-soft, none))); }
 .rc-button:active { transform: translateY(2px); box-shadow: var(--key-press, var(--press, none)); }
 .rc-button:focus-visible { outline: var(--focus-ring); outline-offset: var(--focus-offset); }
@@ -102,14 +104,14 @@ body {
 
 .reader-block:has(+ .reader-translation) { margin-bottom: .12em; }
 .reader-translation {
-  margin: 0 0 1em; padding: .5em .9em;
+  /* 译文是正文的附注，不是输入框：只留左侧色条与浅底，去掉内凹描边与阴影。 */
+  margin: 0 0 1em; padding: .35em .9em;
   font-family: var(--sans); font-size: .9em; line-height: 1.65;
   color: var(--muted-strong, var(--ink));
-  background-color: var(--surface-subtle); background-image: var(--face-well, none);
-  border: 1px solid var(--rim-soft, var(--line));
+  background: color-mix(in srgb, var(--surface-subtle) 60%, transparent);
+  border: 0;
   border-inline-start: 3px solid var(--teal-line, var(--accent-line, var(--line)));
-  border-radius: var(--radius-panel, 10px);
-  box-shadow: var(--well-shadow, var(--inset-soft, none));
+  border-radius: 0 6px 6px 0;
 }
 
 @media (max-width: 760px) {

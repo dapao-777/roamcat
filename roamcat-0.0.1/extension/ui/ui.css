@@ -851,44 +851,7 @@ legend { padding: 0; margin-bottom: var(--space-3); font-size: var(--type-contro
 
 /* 深浅主题色 token 均由 tokens.css 的 design-tokens 段统一供给（--rc-* → 同名别名），本文件不再覆写，避免双调色板漂移。 */
 
-:root[data-theme="light"], body[data-theme="light"] {
-
-  --choice-selected-bg: rgba(22, 21, 17, 0.05);
-  --choice-selected-border: #161511;
-  --choice-selected-text: #161511;
-  --choice-selected-desc: #4c4a41;
-  --choice-unselected-bg: #faf9f4;
-  --choice-unselected-border: #dbd8c6;
-  --choice-unselected-text: #161511;
-  --choice-unselected-desc: #7a7768;
-
-  --input-bg: #faf9f4;
-  --input-border: #cfccb9;
-  --input-color: #161511;
-  --input-focus-border: #161511;
-  --input-focus-ring: rgba(22, 21, 17, 0.14);
-
-  --keycap-bg: linear-gradient(180deg, #fffef9 0%, #eceadf 100%);
-  --keycap-border: #c2bea8;
-  --keycap-border-bottom: #9b9889;
-  --keycap-color: #161511;
-
-  --badge-bg: #ecebe0;
-  --badge-border: #dbd8c6;
-  --badge-text: #4c4a41;
-
-  --btn-primary-bg: #161511;
-  --btn-primary-color: #f5f4ee;
-  --btn-primary-border: #161511;
-
-  --nav-active-bg: #161511;
-  --nav-active-color: #f5f4ee;
-  --nav-active-dot: #c26a1b;
-  --nav-active-border: transparent;
-
-  --card-shadow: 0 1px 2px rgba(22, 21, 17, 0.05);
-  --card-shadow-hover: 0 6px 18px rgba(22, 21, 17, 0.09);
-}
+/* 原此处的 :root[data-theme="light"] 覆写块已删除：它只在手动选亮色时生效，与「跟随系统」的亮色取值不一致。 */
 
 html.options-document, body.options-body {
   width: 100%;
@@ -1663,7 +1626,7 @@ html.options-document, body.options-body {
   gap: 8px;
   font-size: 12px;
   font-family: var(--font-mono);
-  color: #64748b;
+  color: var(--color-text-dim);
 }
 
 .breadcrumb-sep {
@@ -1710,7 +1673,8 @@ html.options-document, body.options-body {
   gap: 6px;
   font-size: 12px;
   font-family: var(--font-mono);
-  color: var(--color-amber);
+  /* 琥珀色直接当小字对比不足：向正文色混一档，亮色变深、深色变亮。 */
+  color: color-mix(in srgb, var(--color-amber) 65%, var(--color-text-primary));
   font-weight: 500;
 }
 
@@ -3692,9 +3656,10 @@ button.stamp-dialog-link {
 }
 
 .service-badge.is-default {
-  color: #107c41;
-  background: rgba(16, 124, 65, 0.12);
-  border: 1px solid rgba(16, 124, 65, 0.25);
+  /* 原写死 #107c41：深色主题下只有 2.8 对比；改用主题内的 emerald（亮色为墨色、深色为亮绿）。 */
+  color: var(--color-emerald);
+  background: color-mix(in srgb, var(--color-emerald) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-emerald) 30%, transparent);
 }
 
 .service-badge.is-configured {
@@ -3765,9 +3730,9 @@ button.stamp-dialog-link {
 .catalog-active-badge {
   font-size: 11px;
   font-weight: 600;
-  color: #107c41;
-  background: rgba(16, 124, 65, 0.12);
-  border: 1px solid rgba(16, 124, 65, 0.3);
+  color: var(--color-emerald);
+  background: color-mix(in srgb, var(--color-emerald) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-emerald) 30%, transparent);
   padding: 2px 8px;
   border-radius: 999px;
 }
@@ -3875,3 +3840,9 @@ button.stamp-dialog-link {
   :root:not([data-theme="dark"]) .rc-logo-dark { display: none !important; }
   :root:not([data-theme="dark"]) .rc-logo-light { display: block !important; }
 }
+
+/* 页面全局细节（原 src/styles/base.css 中未被任何页面引用的几条，移到这里才真正生效；
+   该文件的 reset 会清掉段落默认间距、把行内图标改成块级，不能整份接入，已删除）。 */
+::selection { background: var(--rc-accent-soft); color: var(--rc-ink); }
+kbd, code, pre { font-family: var(--rc-mono); }
+* { scrollbar-width: thin; scrollbar-color: var(--rc-line-dark) transparent; }

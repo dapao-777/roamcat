@@ -51,8 +51,13 @@ roamcat-options { display: contents; }
 }
 .now-status-item[data-tone="attention"] strong { color: var(--rc-status-attention); }
 .now-status-item[data-tone="steady"] strong { color: var(--rc-status-steady); }
+/* 窄窗口不再竖排成三张卡（会在正文前占掉约 200px）：保持一行三格，缩小内边距与字号，长文字省略。 */
 @media (max-width: 760px) {
-  .now-status { grid-template-columns: 1fr; }
+  /* 窄屏顶栏会折成两行，58px 的吸顶偏移会让状态卡压到顶栏按钮下面：窄屏改为随页面滚动。 */
+  .now-status { position: static; gap: var(--rc-space-2); margin-bottom: var(--rc-space-3); padding-bottom: var(--rc-space-2); }
+  .now-status-item { padding: var(--rc-space-2) var(--rc-space-3); }
+  .now-status-k { font-size: 11px; }
+  .now-status-item strong { font-size: 12px; }
 }
 
 /* 分区切换：整页快照交叉淡化（startViewTransition 由 options-app 触发） */

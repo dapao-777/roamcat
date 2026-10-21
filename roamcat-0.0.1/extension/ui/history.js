@@ -244,7 +244,10 @@ function renderPersonalization() {
   const state=historyState.personalization||{},config=state.config||historyState.snapshot?.config||{};
   els.personalizationEnabled.checked=config.personalization===true;
   els.personalizationAutoApply.checked=config.autoApply===true;els.personalizationAutoApply.disabled=!els.personalizationEnabled.checked;
-  els.personalizationServiceLabel.textContent=text(state.serviceLabel)||M('未选择服务','No service selected');
+  // 服务标签只是设置里选的服务；真没连上时补一句「未连接」，与顶部「还没有可用模型」状态卡一致。
+  const serviceLabel=text(state.serviceLabel)||M('未选择服务','No service selected'),serviceReady=window.optionsState?.providerConfigured!==false;
+  els.personalizationServiceLabel.textContent=serviceReady?serviceLabel:`${serviceLabel} · ${M('未连接','not connected')}`;
+  els.personalizationServiceLabel.classList.toggle('is-attention',!serviceReady);
   const personalizationEnabled=config.personalization===true;
   els.personalizationAnalyze.disabled=!personalizationEnabled;
   els.personalizationStatus.replaceChildren();

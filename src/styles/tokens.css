@@ -279,9 +279,10 @@
   --rc-card-bg: #faf9f4;
   --rc-ink: #161511;
   --rc-ink-secondary: #4c4a41;
-  --rc-ink-tertiary: #6f6c5e;
-  --rc-ink-dim: #7a7768;
-  --rc-ink-faint: #7f7c69;
+  /* 弱化文字三档：在最亮/最暗卡面上都 ≥4.5（WCAG AA 小字）。 */
+  --rc-ink-tertiary: #625f52;
+  --rc-ink-dim: #64614f;
+  --rc-ink-faint: #666352;
   --rc-ink-strong: #000000;
   --rc-ink-soft: rgba(22, 21, 17, 0.06);
   --rc-ink-line: rgba(22, 21, 17, 0.28);
@@ -331,7 +332,7 @@
   --rc-choice-unselected-bg: #faf9f4;
   --rc-choice-unselected-border: #dbd8c6;
   --rc-choice-unselected-text: #161511;
-  --rc-choice-unselected-desc: #7a7768;
+  --rc-choice-unselected-desc: #64614f;
   --rc-input-bg: #faf9f4;
   --rc-input-border: #cfccb9;
   --rc-input-color: #161511;
@@ -423,9 +424,9 @@
     /* 暖象牙墨字：延续浅色「纸上墨色」的温度 */
     --rc-ink: #ece7d9;
     --rc-ink-secondary: #bcb6a5;
-    --rc-ink-tertiary: #908b7c;
-    --rc-ink-dim: #908b7c;
-    --rc-ink-faint: #848070;
+    --rc-ink-tertiary: #a8a393;
+    --rc-ink-dim: #a39e8e;
+    --rc-ink-faint: #a39e8e;
     --rc-ink-strong: #f9f5e8;
     --rc-ink-soft: rgba(236, 231, 217, 0.07);
     --rc-ink-line: rgba(236, 231, 217, 0.22);
@@ -478,7 +479,7 @@
     --rc-choice-unselected-bg: #151c26;
     --rc-choice-unselected-border: rgba(237, 231, 214, 0.10);
     --rc-choice-unselected-text: #ece7d9;
-    --rc-choice-unselected-desc: #908b7c;
+    --rc-choice-unselected-desc: #a39e8e;
     --rc-input-bg: #0e1319;
     --rc-input-border: rgba(237, 231, 214, 0.14);
     --rc-input-color: #ece7d9;
@@ -569,9 +570,9 @@
   /* 暖象牙墨字：延续浅色「纸上墨色」的温度 */
   --rc-ink: #ece7d9;
   --rc-ink-secondary: #bcb6a5;
-  --rc-ink-tertiary: #908b7c;
-  --rc-ink-dim: #908b7c;
-  --rc-ink-faint: #848070;
+  --rc-ink-tertiary: #a8a393;
+  --rc-ink-dim: #a39e8e;
+  --rc-ink-faint: #a39e8e;
   --rc-ink-strong: #f9f5e8;
   --rc-ink-soft: rgba(236, 231, 217, 0.07);
   --rc-ink-line: rgba(236, 231, 217, 0.22);
@@ -624,7 +625,7 @@
   --rc-choice-unselected-bg: #151c26;
   --rc-choice-unselected-border: rgba(237, 231, 214, 0.10);
   --rc-choice-unselected-text: #ece7d9;
-  --rc-choice-unselected-desc: #908b7c;
+  --rc-choice-unselected-desc: #a39e8e;
   --rc-input-bg: #0e1319;
   --rc-input-border: rgba(237, 231, 214, 0.14);
   --rc-input-color: #ece7d9;

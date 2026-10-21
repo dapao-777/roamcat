@@ -334,7 +334,7 @@
         --pet-line: rgba(237, 231, 214, 0.13);
         --pet-line-subtle: rgba(237, 231, 214, 0.08);
         --pet-ink: #ece7d9;
-        --pet-muted: #908b7c;
+        --pet-muted: #a39e8e;
         --pet-tag-bg: rgba(237, 231, 214, 0.09);
         --pet-shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.5);
         --pet-shadow-md: 0 12px 36px rgba(0, 0, 0, 0.6);
@@ -390,7 +390,7 @@
           --pet-line: rgba(237, 231, 214, 0.13);
           --pet-line-subtle: rgba(237, 231, 214, 0.08);
           --pet-ink: #ece7d9;
-          --pet-muted: #908b7c;
+          --pet-muted: #a39e8e;
           --pet-tag-bg: rgba(237, 231, 214, 0.09);
           --pet-shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.5);
           --pet-shadow-md: 0 12px 36px rgba(0, 0, 0, 0.6);

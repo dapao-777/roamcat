@@ -14,6 +14,8 @@ const {launchExtension, sleep} = require('./lib/edge-extension.cjs');
 const root = path.resolve(__dirname, '..');
 const extensionDir = path.resolve(process.env.ROAMCAT_EXTENSION_DIR || path.join(root, 'dist/extension'));
 const out = path.resolve(process.env.UI_AUDIT_OUT || path.join(root, 'preview/ui-audit'));
+// 每轮先清掉上次留下的截图：旧版本生成的文件（如 pet-*.png.png）会混在新截图里误导审查。
+if (fs.existsSync(out)) for (const name of fs.readdirSync(out)) if (/\.png$/i.test(name)) fs.rmSync(path.join(out, name), {force: true});
 fs.mkdirSync(out, {recursive: true});
 
 const MIME = {'.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2', '.json': 'application/json'};
@@ -242,7 +244,7 @@ const setTheme = async (page, theme) => {
     await tab.locator('[data-roamcat-ui="card"]').screenshot({path: path.join(out, 'widget-wordcard-passage.png')});
     await execInTab(`() => {
       const {host, shadow} = ${WIDGET_HOST('card', `position:fixed;z-index:2147483647;width:min(360px,calc(100vw - 24px));left:24px;top:24px`)};
-      window.__probe.cardRefs = globalThis.RoamCatContentUI.wordCard(shadow, {brandIconUrl: ${JSON.stringify(iconUrl)}, kind: 'word', sourceText: 'unobtainium', error: '本地模型服务暂时不可用，请稍后重试。', handlers: {}});
+      window.__probe.cardRefs = globalThis.RoamCatContentUI.wordCard(shadow, {brandIconUrl: ${JSON.stringify(iconUrl)}, kind: 'word', sourceText: 'unobtainium', error: '本地模型服务暂时不可用，请稍后重试。', handlers: {retry() {}, repair() {}}});
       return true;
     }`);
     await tab.waitForTimeout(200);
@@ -267,7 +269,7 @@ const setTheme = async (page, theme) => {
     const detailVisible = await execInTab(`() => !window.__probe.status.detail.hidden && window.__probe.status.more.getAttribute('aria-expanded') === 'true'`);
     check('任务状态条详情展开', Boolean(detailVisible));
     await tab.locator('[data-roamcat-ui="task-status"]').screenshot({path: path.join(out, 'widget-taskstatus-detail.png')});
-    await execInTab(`() => { const s = window.__probe.status; s.indicator.dataset.busy = 'false'; s.indicator.dataset.error = 'true'; s.label.textContent = '阅读辅助遇到问题'; s.collapse(); return true; }`);
+    await execInTab(`() => { const s = window.__probe.status; s.indicator.dataset.busy = 'false'; s.indicator.dataset.error = 'true'; s.panel.dataset.error = 'true'; s.label.textContent = '阅读辅助遇到问题'; s.collapse(); return true; }`);
     await tab.waitForTimeout(200);
     await tab.locator('[data-roamcat-ui="task-status"]').screenshot({path: path.join(out, 'widget-taskstatus-error.png')});
     await execInTab(`() => window.__probe['task-status'].host.remove()`);
@@ -287,7 +289,8 @@ const setTheme = async (page, theme) => {
       const D = globalThis.RoamCatDesign;
       globalThis.RoamCatContentUI.renderStructureTree(refs.tree, {
         groups, sentence,
-        roleLabel: role => (D.structureRoles[role] || ['?', 'neutral'])[0],
+        // 与 content.js 一致经 i18n 翻译角色名，门禁截图才能发现解构卡的文案回归。
+        roleLabel: role => globalThis.RoamCatI18n.t((D.structureRoles[role] || ['?', 'neutral'])[0]),
         roleColor: role => (D.structureColors[(D.structureRoles[role] || [0, 'neutral'])[1]] || ['#666'])[0]
       });
       return true;
