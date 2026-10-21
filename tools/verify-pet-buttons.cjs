@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 // 伴读猫悬浮按钮专项门禁：真实 Edge + 真实 content script 环境，
-// 对猫头/快捷坞 5 按钮/旋旋翻/缩放/贴边标签/气泡关闭/摘要窗全部按钮
+// 对猫头/快捷坞 3 按钮加猫头上的提炼与设置/旋旋翻/缩放/贴边标签/气泡关闭/摘要窗全部按钮
 // 做真实鼠标点击与键盘操作并断言状态变化，报告写入 preview/pet-buttons/。
 const fs = require('node:fs');
 const path = require('node:path');
@@ -432,8 +432,7 @@ const warn = (name, detail) => report.warnings.push(detail ? `${name} — ${deta
       `speech=${st?.speech} cls=${st?.speechCls}`);
 
     // ---------- 16. options 按钮打开/聚焦设置页 ----------
-    // chrome.runtime.openOptionsPage 对已打开的 options 页是聚焦而非新建，
-    // extPage 本身就是 options.html —— 断言它变为可见前台即视为生效。
+    // 设置页已打开时只聚焦，不另开窗口。extPage 本身就是 options.html。
     await avatar.click();
     await tab.waitForTimeout(350);
     await tab.locator('#quick-options').click();

@@ -36,6 +36,7 @@ import {
   normalizePageTranslationItems,
   inspectPageTranslationResult,
   normalizePageTranslationResult,
+  parseModelObject,
   normalizeAssistanceCommand,
   normalizeAssistanceRequest,
   normalizeAssistanceResult,
@@ -321,6 +322,25 @@ test('本页翻译协议校验封闭上下文与部分失败', () => {
     items: [{id: 'one', translation: '数据库。'}],
     errors: [{id: 'one', code: 'BATCH_COUNT'}],
   }, batch), (error) => error.code === 'ITEM_FIELDS');
+
+  const messy = '思考完毕。\n```json\n{"note":"ignore","items":[{"id":"one","translation":" 数据库使用索引。 ","reason":"x"},{"id":"two","translation":"缓存降低延迟。"}]}\n```';
+  const recovered = inspectPageTranslationResult(messy, batch);
+  assert.deepEqual(recovered.errors, []);
+  assert.deepEqual(recovered.items.map(item => item.translation), ['数据库使用索引。', '缓存降低延迟。']);
+  assert.deepEqual(parseModelObject(messy).items[0].id, 'one');
+
+  const labels = [
+    {id: 'one', text: 'Pull requests', context},
+    {id: 'two', text: 'Read the docs now.', context},
+  ];
+  const kept = inspectPageTranslationResult({items: [{id: 'one', translation: 'Pull requests'}, {id: 'two', translation: 'Read the docs now.'}]}, labels);
+  assert.deepEqual(kept.items, [{id: 'one', translation: 'Pull requests'}]);
+  assert.deepEqual(kept.errors, [{id: 'two', code: 'TRANSLATION_NO_HAN'}]);
+  const relabeled = normalizePageTranslationResult({
+    items: [{id: 'one', translation: ' Pull requests '}],
+    errors: [{id: 'two', code: 'TRANSLATION_NO_HAN'}],
+  }, labels);
+  assert.deepEqual(relabeled.items, [{id: 'one', translation: 'Pull requests'}]);
 });
 
 test('帮助请求规范化强制 context 包含 text 与段落限制', () => {

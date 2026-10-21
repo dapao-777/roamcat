@@ -36,6 +36,7 @@ function createChromeMock() {
     connectNative: () => { throw new Error('mock: 未安装本机连接器'); },
     getContexts: async () => [],
   };
+  const createdTabs = [];
   const read = (map, keys) => {
     if (keys === null || keys === undefined) return Object.fromEntries(map);
     const list = Array.isArray(keys) ? keys : [keys];
@@ -52,12 +53,16 @@ function createChromeMock() {
   });
   const chrome = {
     runtime,
+    // 断言用的是中文报错文案：界面语言固定为中文，不随运行环境（如英文 CI 机器）的 navigator.language 漂移。
+    i18n: {getUILanguage: () => 'zh-CN'},
     storage: {local: storageArea(areas.local), session: storageArea(areas.session)},
     tabs: {
       query: async () => [],
       get: async tabId => ({id: tabId, url: 'https://example.com/', active: true}),
       sendMessage: async () => undefined,
-      create: async () => ({id: 99}),
+      create: async props => { createdTabs.push(props); return {id: 99, windowId: props?.windowId ?? 1}; },
+      remove: async () => {},
+      update: async () => {},
       onRemoved: {addListener() {}},
       onUpdated: {addListener() {}},
       onActivated: {addListener() {}},
@@ -78,8 +83,12 @@ function createChromeMock() {
     tts: {},
     offscreen: {hasDocument: async () => false, createDocument: async () => {}},
     webNavigation: {getFrame: async () => null, onHistoryStateUpdated: {addListener() {}}, onBeforeNavigate: {addListener() {}}},
+    windows: {
+      getAll: async () => [{id: 3, focused: true, type: 'normal', tabs: [{id: 1, url: 'https://example.com/'}]}],
+      update: async () => {},
+    },
   };
-  return {chrome, listeners, openedOptions, registeredScripts};
+  return {chrome, listeners, openedOptions, registeredScripts, createdTabs};
 }
 
 const trustedPopup = chrome => ({id: chrome.runtime.id, url: chrome.runtime.getURL('ui/popup.html'), tab: {id: 1, url: 'https://example.com/'}});
@@ -89,7 +98,7 @@ test('迁移后的 background.js 在 mock 浏览器中构造注册表并按信�
   const warnings = [];
   const originalError = console.error;
   console.error = (...args) => warnings.push(args.join(' '));
-  const {chrome, listeners, openedOptions, registeredScripts} = createChromeMock();
+  const {chrome, listeners, registeredScripts, createdTabs} = createChromeMock();
   globalThis.chrome = chrome;
   try {
     await import('../../roamcat-0.0.1/extension/background.js');
@@ -158,10 +167,12 @@ test('迁移后的 background.js 在 mock 浏览器中构造注册表并按信�
     assert.match(wrongPage.error, /仅设置页可以读取 API 模型列表。/u);
   });
 
-  await t.test('OPEN_OPTIONS 走完注册表并产生真实副作用', async () => {
-    const opened = await send({type: 'OPEN_OPTIONS'}, trustedPopup(chrome));
+  await t.test('OPEN_OPTIONS 在正在浏览的窗口里只开一个设置页', async () => {
+    const opened = await send({type: 'OPEN_OPTIONS', section: 'service'}, trustedPopup(chrome));
     assert.equal(opened.ok, true, opened.error);
-    assert.equal(openedOptions.count, 1);
+    assert.equal(createdTabs.length, 1);
+    assert.equal(createdTabs[0].windowId, 3);
+    assert.match(createdTabs[0].url, /\/ui\/options\.html#service$/u);
   });
 
   await t.test('伴读猫动态注册显式声明渲染层依赖顺序', async () => {

@@ -37,3 +37,10 @@ test('进度快照最多 8 项', () => {
   const nine = Array.from({length: 9}, (_, index) => ({id: `i${index}`, text: 'x', context: {title: '', heading: '', before: '', after: ''}}));
   assert.equal(normalizeTranslationProgress({items: [{id: 'i0', translation: '好。'}]}, nine), null);
 });
+
+test('下一条刚开括号或只写了半个键名时，已写完的条目仍然交出', () => {
+  for (const prefix of ['{"items":[{"id":"one","translation":"数据库使用索引。"},{', '{"items":[{"id":"one","translation":"数据库使用索引。"},{"tr']) {
+    const partial = translationProgress(prefix, pageItems);
+    assert.deepEqual(partial?.items, [{id: 'one', translation: '数据库使用索引。'}], prefix);
+  }
+});

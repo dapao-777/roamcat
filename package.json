@@ -12,7 +12,7 @@
     "verify:sites": "node tools/verify-dev-sites.cjs",
     "verify:ui": "node tools/verify-ui-all.cjs",
     "verify:pet": "node tools/verify-pet-buttons.cjs",
-    "test": "node --test \"tools/unit/*.test.mjs\"",
+    "test": "node tools/run-unit-tests.mjs",
     "gen:tokens": "node build/gen-design-tokens.mjs",
     "promo": "node tools/promo/render.mjs"
   },

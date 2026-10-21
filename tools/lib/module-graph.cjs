@@ -298,6 +298,7 @@ async function verifyModuleGraph({root}) {
     manifest.background?.service_worker,
     manifest.action?.default_popup,
     manifest.options_page,
+    manifest.options_ui?.page,
     ...Object.values(manifest.icons || {}),
     ...(manifest.web_accessible_resources || []).flatMap(entry => entry.resources || []),
   ].filter(Boolean);

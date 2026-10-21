@@ -101,8 +101,8 @@ function* walkFiles(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:tr
      assert.ok(!(await page.locator('#terms').isVisible()),'非活跃分区应隐藏');
      await page.locator('[data-section="terms"]').click();
      await page.waitForFunction(()=>!document.getElementById('terms').hidden&&document.getElementById('assistance').hidden,null,{timeout:5000});
-     assert.equal(await page.locator('#section-title').textContent(),'生词记忆矩阵');
-     assert.equal(await page.locator('#toolbar-breadcrumb-title').textContent(),'生词记忆');
+     assert.equal(await page.locator('#section-title').textContent(),'生词');
+     assert.equal(await page.locator('#toolbar-breadcrumb-title').textContent(),'生词');
      await page.locator('#theme-toggle-btn').click();
      const theme=await page.evaluate(()=>document.documentElement.dataset.theme||'auto');
      assert.match(theme,/^(dark|light|auto)$/u);

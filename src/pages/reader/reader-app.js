@@ -198,7 +198,7 @@ export class RoamcatReader extends LitElement {
             ` : ''}
             <button class="rc-button" @click=${this.openFilePicker}>${t('rd.open')}</button>
             <button class="rc-button" type="button" title=${t('opt.langToggleTitle',{lang:this.#langName()})} @click=${() => this.#cycleUiLang()}>${this.#langShort()}</button>
-            <a class="rc-button" href="options.html" target="_blank" rel="noopener">${t('rd.settings')}</a>
+            <button class="rc-button" type="button" @click=${() => { request('OPEN_OPTIONS').catch(() => chrome.runtime.openOptionsPage()); }}>${t('rd.settings')}</button>
           </div>
         </header>
         <input id="reader-file" type="file" accept=".pdf,.epub,application/pdf,application/epub+zip" hidden @change=${this.openFile}>

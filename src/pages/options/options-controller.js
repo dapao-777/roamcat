@@ -364,7 +364,73 @@ async function optionsSaveProvider(event){
 }
 async function optionsSaveDetection(){const mode=document.querySelector('input[name="domain-detection-mode"]:checked')?.value||'local',before=structuredClone(optionsState.settings),current=optionsDetectionSettings(),useTranslationApi=optionsEls.detectionUseTranslationApi.checked;let api=current.api||{baseUrl:'https://api.openai.com/v1',apiKey:''},parsed=null,granted=false,jevGranted=false,parsedJev=null,jevOrigin='https://router.requesty.ai/*';try{if(mode==='api'&&!useTranslationApi){parsed=optionsParseProviderURL(optionsEls.detectionApiUrl.value);const entered=optionsEls.detectionApiKey.value.trim();if(entered.length>4096)throw new Error(T('ctl.detKeyLong'));api={baseUrl:parsed.baseUrl,apiKey:entered||(optionsOriginPattern(api.baseUrl)===`${parsed.url.origin}/*`?api.apiKey||'':'')};if(!optionsEls.detectionApiModel.value.trim())throw new Error(T('ctl.detModelRequired'));granted=await optionsEnsurePermission(`${parsed.url.origin}/*`,Boolean(api.apiKey));}if(mode==='jev'&&optionsEls.detectionJevUrl){parsedJev=optionsParseProviderURL(optionsEls.detectionJevUrl.value||'https://router.requesty.ai/v1');jevOrigin=`${parsedJev.url.origin}/*`;}const jevBaseUrl=parsedJev?parsedJev.baseUrl:(optionsEls.detectionJevUrl?.value?.trim()||current.jevBaseUrl||'https://router.requesty.ai/v1');const jevModel=(optionsEls.detectionJevModel?.value?.trim())||current.jevModel||'typesafe/jev-1.13.0';const enteredJevKey=optionsEls.detectionJevKey?.value?.trim()||'';if(enteredJevKey.length>4096)throw new Error(T('ctl.jevKeyLong'));const jevApiKey=enteredJevKey||current.jevApiKey||'';if(mode==='jev'){if(!jevApiKey)throw new Error(T('ctl.jevKeyRequired'));if(!jevModel)throw new Error(T('ctl.jevModelRequired'));jevGranted=await optionsEnsurePermission(jevOrigin,true);}const saved=await optionsSavePatch({domainDetection:{mode,subscriptionModel:optionsEls.detectionSubscriptionModel.value,apiModel:optionsEls.detectionApiModel.value.trim(),useTranslationApi,api,jevModel,jevApiKey,jevBaseUrl}},T('ctl.detSaved'));if(!saved){if(granted)await chrome.permissions.remove({origins:[`${parsed.url.origin}/*`]});if(jevGranted)await chrome.permissions.remove({origins:[jevOrigin]});return;}optionsDetectionDirty=false;await optionsRemoveUnusedPermissions(before,optionsState.settings);optionsRenderDetection();}catch(error){optionsShowError(error);}}
 async function optionsTestProvider(element){optionsSetResult(element,T('ctl.testing'));optionsEls.testProvider.disabled=true;optionsEls.testSubscription.disabled=true;try{const result=await request('PROVIDER_TEST');optionsSetResult(element,T('ctl.testHint',{hint:result.hint}));}catch(error){optionsSetResult(element,T('ctl.testFail',{err:optionsErrorText(error)}),true);}finally{optionsRenderProvider();}}
-async function optionsSyncState(){if(optionsCurrentSection==='diagnostics')return;[optionsState,optionsAutomation]=await Promise.all([request('STATE_GET'),request('AUTOMATION_GET')]);optionsState.settings.automation=optionsAutomation.automation;window.optionsState=optionsState;optionsRenderAll();}
+let optionsNowSequence = 0;
+function optionsSetNow(id, text, tone) {
+  const item = document.getElementById(id);
+  const value = item?.querySelector('strong');
+  if (!item || !value) return;
+  value.textContent = text;
+  item.dataset.tone = tone;
+}
+async function optionsRenderNow() {
+  const sequence = ++optionsNowSequence;
+  const settings = optionsState?.settings;
+  if (!settings || !document.getElementById('now-status')) return;
+  let model = T('opt.now.modelNone');
+  let modelTone = 'attention';
+  if (settings.providerKind === 'api') {
+    const service = activeApiProvider(settings);
+    if (service?.name) {
+      model = service.model ? `${service.name} · ${service.model}` : service.name;
+      modelTone = 'steady';
+    }
+  } else if (optionsState.providerConfigured) {
+    const kind = settings.providerKind === 'grok' ? 'Grok' : settings.providerKind === 'antigravity' ? 'Google' : 'ChatGPT';
+    model = settings.subscriptionModel ? `${kind} · ${settings.subscriptionModel}` : kind;
+    modelTone = 'steady';
+  }
+  optionsSetNow('now-model-item', model, modelTone);
+  let reading = T('opt.now.readingNone');
+  let readingTone = 'progress';
+  try {
+    const tabs = await chrome.tabs.query({url: ['http://*/*', 'https://*/*']});
+    // 设置页和网页同窗，那扇窗的活动页签就是设置页自己；取最近看过的网页才是用户说的「本页」。
+    const tab = tabs.reduce((best, item) => (!best || (item.lastAccessed || 0) > (best.lastAccessed || 0) ? item : best), null);
+    if (tab) {
+      const status = await chrome.tabs.sendMessage(tab.id, {type: 'SS_STATUS'}, {frameId: 0});
+      if (sequence !== optionsNowSequence) return;
+      const on = Boolean(status?.data?.enabled);
+      reading = on ? T('opt.now.readingOn') : T('opt.now.readingOff');
+      readingTone = on ? 'steady' : 'progress';
+    }
+  } catch { /* 当前没有可询问的网页。 */ }
+  if (sequence !== optionsNowSequence) return;
+  optionsSetNow('now-reading-item', reading, readingTone);
+  let requestText = T('opt.now.requestOk');
+  let requestTone = 'steady';
+  try {
+    const diag = await request('DIAGNOSTICS_GET');
+    if (sequence !== optionsNowSequence) return;
+    const summary = diag?.summary || {};
+    const issue = (summary.issues || []).find(item => !['SLOW_REQUEST', 'INTERRUPTED', 'REPEATED_FAILURE'].includes(item.code)) || summary.issues?.[0];
+    if ((summary.failures || 0) > 0 && issue) {
+      requestText = optionsDiagnosticLabel(issue.code);
+      requestTone = 'attention';
+    } else if ((summary.pending || 0) > 0) {
+      requestText = T('opt.now.requestPending', {n: summary.pending});
+      requestTone = 'progress';
+    }
+  } catch { requestText = T('opt.now.requestOk'); }
+  if (sequence !== optionsNowSequence) return;
+  optionsSetNow('now-request-item', requestText, requestTone);
+}
+// 保存、刷新订阅、SS_REFRESH 会接连触发同步；状态卡要问网页和诊断，合并成一次。
+let optionsNowTimer = 0;
+function optionsScheduleNow() {
+  clearTimeout(optionsNowTimer);
+  optionsNowTimer = setTimeout(() => { optionsNowTimer = 0; void optionsRenderNow(); }, 200);
+}
+async function optionsSyncState(){const [state,automation]=await Promise.all([request('STATE_GET'),request('AUTOMATION_GET')]);optionsState=state;optionsAutomation=automation;optionsState.settings.automation=optionsAutomation.automation;window.optionsState=optionsState;if(optionsCurrentSection!=='diagnostics')optionsRenderAll();optionsScheduleNow();}
 async function optionsLoadModels(refresh=false){let loaded=true;try{const result=await request('MODELS_LIST',{refresh,kind:optionsSubscriptionKind()});optionsModels=Array.isArray(result.models)?result.models:[];}catch(error){loaded=false;optionsSetResult(optionsEls.subscriptionResult,T('ctl.modelsFail',{err:optionsErrorText(error)}),true);}if(optionsState){optionsRenderSubscription();optionsRenderDetection();}return loaded;}
 async function optionsRefreshSubscription(refresh=false){if(optionsSubscriptionBusy||optionsProviderKind()==='api')return;optionsSubscriptionBusy=true;optionsRenderSubscription();try{const kind=optionsSubscriptionKind();const subscription=await request('SUBSCRIPTION_STATUS',{kind});optionsState.subscription=subscription;await optionsSyncState();if(!subscription.connected||subscription.error){optionsSetResult(optionsEls.subscriptionResult,'');return;}if(await optionsLoadModels(refresh))optionsSetResult(optionsEls.subscriptionResult,T('ctl.accountUpdated'));}catch(error){optionsSetResult(optionsEls.subscriptionResult,optionsErrorText(error),true);}finally{optionsSubscriptionBusy=false;optionsRenderSubscription();}}
 async function optionsSubscriptionAction(type){if(optionsSubscriptionBusy)return;optionsSubscriptionBusy=true;optionsRenderSubscription();try{const kind=optionsSubscriptionKind();optionsState.subscription=await request(type,{kind});await optionsSyncState();optionsSetResult(optionsEls.subscriptionResult,type==='SUBSCRIPTION_LOGOUT'?T('ctl.loggedOut',{label:optionsSubscriptionLabel(kind)}):T('ctl.stateUpdated'));}catch(error){optionsSetResult(optionsEls.subscriptionResult,optionsErrorText(error),true);}finally{optionsSubscriptionBusy=false;optionsRenderSubscription();}}

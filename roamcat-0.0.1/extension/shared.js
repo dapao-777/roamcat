@@ -1,7 +1,8 @@
 /**
  * @file extension/shared.js
  * 文件职责：扩展共享基座——默认设置、规范化、词ID与后台请求封装。
- * 主要内容：DEFAULT_SETTINGS/normalizeSettings/wordId/request；旧键禁spread复活。
+ * 主要内容：DEFAULT_SETTINGS/normalizeSettings/wordId/request；旧键禁spread复活；
+ *   引导页与设置页的页签去重（设置页收回正在浏览的窗口，避免 Alt+Tab 残留）。
  * 模块边界：领域层；被全扩展引用；改动注意迁移兼容。
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -170,4 +171,110 @@ export function closeWelcomeGuide() {
     if (ids.length) await chrome.tabs.remove(ids);
     else window.close();
   });
+}
+const OPTIONS_SECTIONS = new Set(['assistance', 'appearance', 'sites', 'advanced', 'terms', 'personalization', 'history', 'privacy', 'service', 'diagnostics', 'shortcuts', 'guide']);
+export function optionsPageUrl() { return chrome.runtime.getURL('ui/options.html'); }
+export async function optionsPageTabs() {
+  const url = optionsPageUrl();
+  const tabs = [];
+  const seen = new Set();
+  const collect = (id, windowId) => {
+    if (Number.isInteger(id) && !seen.has(id)) { seen.add(id); tabs.push({id, windowId}); }
+  };
+  // 与引导页相同：无 tabs 权限时 tabs.query({url}) 对扩展页静默落空（Chromium 40670457）。
+  // openOptionsPage 找不到已有页就会再开一扇，隐藏窗口仍会进 Alt+Tab，关闭按钮关不掉。
+  try {
+    for (const context of await chrome.runtime.getContexts({contextTypes: ['TAB']})) {
+      if (typeof context?.documentUrl === 'string' && context.documentUrl.startsWith(url)) collect(context.tabId, context.windowId);
+    }
+  } catch { /* getContexts 不可用时退回 tabs.query */ }
+  try {
+    for (const tab of await chrome.tabs.query({url: [url, url + '*']})) collect(tab.id, tab.windowId);
+  } catch { /* 查询失败不丢已收集结果 */ }
+  return tabs;
+}
+function tabAddress(tab) {
+  if (typeof tab?.url === 'string' && tab.url) return tab.url;
+  return typeof tab?.pendingUrl === 'string' ? tab.pendingUrl : '';
+}
+// 选设置页的落脚窗口：普通、非无痕窗口里优先有网页且聚焦的那扇。
+// 无痕窗口放不了跨模式的扩展页，搬进去会失败并把原设置页关掉，所以直接排除。
+async function describeWindows() {
+  try {
+    const wins = await chrome.windows.getAll({populate: true});
+    const optionsUrl = optionsPageUrl();
+    const described = wins.filter(win => (!win.type || win.type === 'normal') && !win.incognito).map(win => {
+      const tabs = win.tabs || [];
+      return {
+        id: win.id,
+        focused: !!win.focused,
+        web: tabs.some(tab => /^https?:/i.test(tabAddress(tab))),
+        onlyOptions: tabs.length > 0 && tabs.every(tab => tabAddress(tab).startsWith(optionsUrl)),
+      };
+    });
+    const pick = list => list.find(item => item.focused) || list[0];
+    const host = pick(described.filter(item => item.web)) || pick(described.filter(item => !item.onlyOptions)) || pick(described);
+    return {hostId: host?.id, homes: new Set(described.filter(item => !item.onlyOptions).map(item => item.id))};
+  } catch {
+    return {hostId: undefined, homes: new Set()};
+  }
+}
+let optionsFlight = Promise.resolve();
+function queueOptions(task) {
+  const work = optionsFlight.then(task, task);
+  optionsFlight = work.catch(() => {});
+  return work;
+}
+async function consolidateOptionsTabs({create = false, section = ''} = {}) {
+  const hash = OPTIONS_SECTIONS.has(section) ? '#' + section : '';
+  const tabs = await optionsPageTabs();
+  const {hostId: windowId, homes} = await describeWindows();
+  // 只有一个设置页、且它所在的普通窗口里还有别的页签时，说明用户正在那里用它：
+  // 侧栏切换分区也会改 hash 触发 onUpdated，这时不能把它搬走。
+  if (!create && tabs.length === 1 && homes.has(tabs[0].windowId)) return tabs[0];
+  let keep;
+  let moved = false;
+  const drop = [];
+  if (windowId !== undefined) {
+    const inside = tabs.filter(tab => tab.windowId === windowId);
+    const outside = tabs.filter(tab => tab.windowId !== windowId);
+    keep = inside[0];
+    if (!keep && outside[0]) {
+      try {
+        await chrome.tabs.move(outside[0].id, {windowId, index: -1});
+        keep = {id: outside[0].id, windowId};
+        moved = true;
+        drop.push(...outside.slice(1));
+      } catch {
+        // 搬不走就关掉那扇窗口里的设置页。留着它会变成 Alt+Tab 里关不掉的卡片。
+        drop.push(...outside);
+      }
+    } else {
+      drop.push(...outside, ...inside.slice(1));
+    }
+  } else {
+    keep = tabs[0];
+    drop.push(...tabs.slice(1));
+  }
+  if (drop.length) await chrome.tabs.remove(drop.map(tab => tab.id));
+  if (!keep) {
+    if (!create) return null;
+    const target = optionsPageUrl() + hash;
+    // 没有可依附的窗口时才让浏览器自己开窗；有窗口时必须指定 windowId，避免再开一扇。
+    return chrome.tabs.create(windowId !== undefined ? {url: target, windowId} : {url: target});
+  }
+  // 搬过来的页签要激活并聚焦，否则用户只看到设置页凭空消失。
+  const reveal = create || moved;
+  const props = {};
+  if (reveal) props.active = true;
+  if (hash) props.url = optionsPageUrl() + hash;
+  if (Object.keys(props).length) await chrome.tabs.update(keep.id, props);
+  if (reveal && Number.isInteger(keep.windowId)) await chrome.windows.update(keep.windowId, {focused: true}).catch(() => {});
+  return keep;
+}
+export function settleOptionsPages() {
+  return queueOptions(() => consolidateOptionsTabs({create: false}));
+}
+export function focusOptionsPage(section = '') {
+  return queueOptions(() => consolidateOptionsTabs({create: true, section}));
 }

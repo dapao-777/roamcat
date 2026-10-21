@@ -14,7 +14,7 @@
  */
 import {LitElement, html} from 'lit';
 import {t} from '../../i18n-runtime.js';
-import {shellTop, mainToolbar, heroBlock, telemetryFooter, shellDialog} from './shell.js';
+import {shellTop, mainToolbar, nowStatus, heroBlock, telemetryFooter, shellDialog} from './shell.js';
 import {
   assistanceSection, appearanceSection, sitesSection, advancedSection,
   termsSection, personalizationSection, historySection, privacySection,
@@ -130,6 +130,7 @@ class RoamcatOptions extends LitElement {
     <main class="main-panel" data-purpose="settings-main-canvas">
       ${mainToolbar}
       <div class="main-canvas-content">
+        ${nowStatus}
         ${heroBlock}
         ${SECTIONS.map(name => SECTION_TEMPLATES[name])}
       </div>
@@ -157,6 +158,9 @@ class RoamcatOptions extends LitElement {
   }
 
   async firstUpdated() {
+    const version = chrome.runtime.getManifest?.().version;
+    const tag = document.querySelector('.brand-pro-tag');
+    if (tag && version) tag.textContent = `v${version}`;
     this.#syncUiLangChoice();
     this.#applyRoute({initial: true});
     // 控制器与阅读记录模块在顶层执行 querySelector 契约绑定，必须在首帧渲染后加载。

@@ -159,11 +159,11 @@ export function normalizeTranslationProgress(value,items){
 export function translationProgress(text,items){
   if(typeof text!=='string'||text.length>CONTENT_LIMIT)return null;
   const parsed=parsePrefix(text,{partialStrings:true});if(parsed===INVALID)return null;
-  const root=parsed.value;if(Object.keys(root).some(key=>key!=='items')||!Array.isArray(root.items)||!Array.isArray(items)||root.items.length>items.length)return null;
+  const root=parsed.value;if(!root||typeof root!=='object'||Array.isArray(root)||!Array.isArray(root.items)||!Array.isArray(items)||root.items.length>items.length)return null;
   if(parsed.complete){try{const page=items.some(item=>item&&typeof item.context==='object'&&item.context);const normalized=page?inspectPageTranslationResult(root,items):normalizeEmergencyResult(root,items);return normalizeTranslationProgress({items:(normalized.items||[]).map(item=>({id:item.id,translation:item.translation}))},items);}catch{return null;}}
   const progress=[],seen=new Set();
   for(const item of root.items){
-    if(!item||typeof item!=='object'||Array.isArray(item)||Object.keys(item).some(key=>!['id','translation'].includes(key)))return null;
+    if(!item||typeof item!=='object'||Array.isArray(item))return null;
     if(item.id===undefined)continue;
     if(typeof item.id!=='string'||!items.some(source=>source.id===item.id)||seen.has(item.id))return null;seen.add(item.id);
     if(item.translation===undefined||item.translation==='')continue;

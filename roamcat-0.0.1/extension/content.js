@@ -102,9 +102,11 @@ const LIMIT_ERROR = T('c.limit');
       }); } catch(error) { reject(error); }
     });
   }
-  const brandIconUrl=runtime.getURL('icons/roamcat.svg');
+  // 品牌图标跟随网页明暗：亮色网页用奶白版 logo，深色网页用砚底版（与伴读猫的明暗判定一致）。
+  function pageTheme(){return globalThis.RoamCatPet?.detectPageTheme?globalThis.RoamCatPet.detectPageTheme():(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}
+  function brandIcon(){return runtime.getURL(pageTheme()==='light'?'icons/roamcat-light.svg':'icons/roamcat.svg');}
   const contentUI=globalThis.RoamCatContentUI;
-  function createBrandLabel(context=''){return contentUI.brandLabel(brandIconUrl,context);}
+  function createBrandLabel(context=''){return contentUI.brandLabel(brandIcon(),context);}
   const pageStatus={host:null,root:null,timer:0,lines:new Map(),dismissed:new Map(),selected:null};
   const statusPriority={support:1,structure:2,emergency:3,passage:4,lookup:5,known:6};
   const statusFailures={support:'c.fail.support',structure:'c.fail.structure',emergency:'c.fail.emergency',passage:'c.fail.passage',lookup:'c.fail.lookup',known:'c.fail.known'};
@@ -115,7 +117,7 @@ const LIMIT_ERROR = T('c.limit');
     const currentTheme = globalThis.RoamCatPet?.detectPageTheme ? globalThis.RoamCatPet.detectPageTheme() : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     host.setAttribute('data-theme', currentTheme);
     const shadow=host.attachShadow({mode:'closed'});
-    const root=contentUI.taskStatus(shadow,{brandIconUrl,onClose:()=>{for(const [key,entry]of pageStatus.lines)pageStatus.dismissed.set(key,entry.error?entry.text:true);renderPageStatus();}});
+    const root=contentUI.taskStatus(shadow,{brandIconUrl:brandIcon(),onClose:()=>{for(const [key,entry]of pageStatus.lines)pageStatus.dismissed.set(key,entry.error?entry.text:true);renderPageStatus();}});
     const {panel,detail,more,collapse}=root;
     panel.addEventListener('keydown',event=>{if(event.key!=='Escape')return;event.preventDefault();event.stopPropagation();if(!detail.hidden){collapse();more.focus();}else root.close.click();});
     (document.fullscreenElement||document.documentElement).append(host);
@@ -261,7 +263,7 @@ const LIMIT_ERROR = T('c.limit');
     const hit=sentenceHitAt(event.clientX,event.clientY);removeStructureCard();if(!hit)return;
     const host=document.createElement('div');host.setAttribute(OWN,'sentence-detail');host.style.cssText='position:fixed;z-index:2147483646;width:min(340px,calc(100vw - 32px))';
     const shadow=host.attachShadow({mode:'closed'});
-    const detail=contentUI.sentenceDetail(shadow,{brandIconUrl,onClose:removeStructureCard});
+    const detail=contentUI.sentenceDetail(shadow,{brandIconUrl:brandIcon(),onClose:removeStructureCard});
     document.documentElement.append(host);sentenceGroups.card={host,tree:detail.tree,key:hit.key,signature:''};updateStructureCard();const bounds=host.getBoundingClientRect();host.style.left=Math.max(16,Math.min(event.clientX-16,innerWidth-bounds.width-16))+'px';host.style.top=Math.max(12,Math.min(event.clientY+12,innerHeight-bounds.height-12))+'px';detail.close.focus({preventScroll:true});
   }
   function originalTextRows(block,mapping,start,end,clip){
@@ -554,7 +556,7 @@ const LIMIT_ERROR = T('c.limit');
     const previous=document.querySelector('['+OWN+'="known-feedback"]');previous?.remove();
     const host=document.createElement('div');host.setAttribute(OWN,'known-feedback');host.style.cssText='position:fixed;left:50%;bottom:max(20px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:2147483647;max-width:calc(100vw - 24px)';
     const shadow=host.attachShadow({mode:'closed'});
-    const {message,undo}=contentUI.knownFeedback(shadow,{brandIconUrl,term,onUndo:async()=>{undo.disabled=true;try{await request('WORD_PREFERENCE_SET',{wordId,known:false});host.remove();setPageStatus('known',T('c.knownRestored',{term}),{duration:3000});}catch(error){undo.disabled=false;message.textContent=T('c.restoreFail',{err:error.message});}}});
+    const {message,undo}=contentUI.knownFeedback(shadow,{brandIconUrl:brandIcon(),term,onUndo:async()=>{undo.disabled=true;try{await request('WORD_PREFERENCE_SET',{wordId,known:false});host.remove();setPageStatus('known',T('c.knownRestored',{term}),{duration:3000});}catch(error){undo.disabled=false;message.textContent=T('c.restoreFail',{err:error.message});}}});
     (document.fullscreenElement||document.documentElement).append(host);setTimeout(()=>host.remove(),8000);
   }
   async function setWordKnown(wordId,term,button){
@@ -918,7 +920,7 @@ const LIMIT_ERROR = T('c.limit');
     const shadow=host.attachShadow({mode:'closed'});
     const view={host,card:null,target,answer:null,explanation:null,sentence:null,sentenceTranslation:null,sentenceLine:null,speech:null,requestId:'',level:'hint',detail:'brief',retries:0,support:null,fullDetails:null,fullResult:null,detailsLoading:false,pendingDetails:false,confirmedDisplayed:false,referenceDisplayed:false,hasUnconfirmedProgress:false,progressBackup:null,progressFields:{},assistFinished:false};
     view.knownWordId=()=>view.support?.wordId||view.target.support?.wordId||view.target.prepared?.wordId||view.target.requestedRecord?.target?.wordId||'';
-    const refs=contentUI.wordCard(shadow,{brandIconUrl,kind:target.kind,sourceText:target.text,isPassage:target.kind==='passage',contextText:target.context||'',error,videoTheme:target.sourceKey?state.settings.video?.theme||'auto':'auto',knownAvailable:Boolean(view.knownWordId()),handlers:{
+    const refs=contentUI.wordCard(shadow,{brandIconUrl:brandIcon(),kind:target.kind,sourceText:target.text,isPassage:target.kind==='passage',contextText:target.context||'',error,videoTheme:target.sourceKey?state.settings.video?.theme||'auto':'auto',knownAvailable:Boolean(view.knownWordId()),handlers:{
       close:closeCard,
       rescue:()=>void assist(view,view.level==='rescue'?'hint':'rescue'),
       known:()=>void setWordKnown(view.knownWordId(),view.target.text,view.known),
@@ -1364,7 +1366,7 @@ const LIMIT_ERROR = T('c.limit');
     result.phase=!session.active?session.phase:session.pauseForService?'error':session.running||session.units.some(unit=>unit.state==='queued'||unit.state==='translating'||unit.state==='retrying')?'translating':result.failed?'partial':result.pending?'waiting':'complete';if(session.error)result.error=session.error;return result;
   }
   function updateEmergencyStatus(session){
-    if(state.emergency!==session)return;const value=emergencyStatus();const paused=Boolean(session.pauseForService&&session.error);const headline=paused?session.error:T('c.em.headline',{done:value.completed,total:value.total})+(value.failed?T('c.em.failed',{n:value.failed}):'')+(value.retrying?T('c.em.retrying',{n:value.retrying}):'')+(value.pending?T('c.em.pending',{n:value.pending}):'')+(value.skipped?T('c.em.skipped',{n:value.skipped}):'')+(!session.active?' · '+(session.error||T('c.em.stopped')):'');setPageStatus('emergency',headline,{busy:!paused&&value.phase==='translating',error:false});
+    if(state.emergency!==session)return;const value=emergencyStatus();const paused=Boolean(session.pauseForService&&session.error);if(!paused&&!value.failed)session.error='';const headline=paused?session.error:(session.error?session.error+' · ':'')+T('c.em.headline',{done:value.completed,total:value.total})+(value.failed?T('c.em.failed',{n:value.failed}):'')+(value.retrying?T('c.em.retrying',{n:value.retrying}):'')+(value.pending?T('c.em.pending',{n:value.pending}):'')+(value.skipped?T('c.em.skipped',{n:value.skipped}):'')+(!session.active?' · '+(session.error||T('c.em.stopped')):'');setPageStatus('emergency',headline,{busy:!paused&&value.phase==='translating',error:Boolean(session.error)&&!paused});
     globalThis.RoamCatPet?.onEmergencyStatusChange?.(value);
   }
   function retryEmergency(unit){
@@ -1373,7 +1375,7 @@ const LIMIT_ERROR = T('c.limit');
   function renderEmergencyFailure(unit,session){
     // A failed chunk has no model text. Keep validated chunks and append local controls only.
     let entry=session.containers.get(unit);if(!entry){const container=document.createElement('span');container.setAttribute(OWN,'emergency-translation');container.style.display=unit.zone==='chrome'?'inline-block':'block';if(unit.zone==='chrome')container.dataset.zone='chrome';unit.nodes.at(-1).after(container);entry={container,parts:new Map()};session.containers.set(unit,entry);inheritPageTranslationStyle(unit.parent,container);}
-    entry.error?.remove();const error=document.createElement('span');error.style.display=unit.zone==='chrome'?'inline':'block';error.setAttribute('role','status');error.setAttribute('aria-live','polite');error.append(document.createTextNode(T('c.em.paraUndone')));const button=document.createElement('button');button.type='button';button.textContent=T('c.em.retryPara');button.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();retryEmergency(unit);});error.addEventListener('pointerdown',event=>event.stopPropagation());error.append(button);entry.container.append(error);entry.error=error;
+    entry.error?.remove();const error=document.createElement('span');error.style.cssText=`display:${unit.zone==='chrome'?'inline':'block'};margin-top:4px;color:var(--danger,#b3261e);font-family:var(--ui,sans-serif);font-size:13px;line-height:1.4`;error.setAttribute('role','status');error.setAttribute('aria-live','polite');error.append(document.createTextNode(T('c.em.paraUndone')));const button=document.createElement('button');button.type='button';button.textContent=T('c.em.retryPara');button.style.cssText='margin-inline-start:8px;color:var(--danger,#b3261e);font:inherit;background:var(--danger-soft,transparent);border:1px solid var(--danger,#b3261e);border-radius:6px;padding:1px 8px;cursor:pointer';button.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();retryEmergency(unit);});error.addEventListener('pointerdown',event=>event.stopPropagation());error.append(button);entry.container.append(error);entry.error=error;
   }
   function inheritPageTranslationStyle(parent,container){
     const style=getComputedStyle(parent);container.style.width='auto';container.style.minWidth='0';container.style.maxWidth='100%';container.style.webkitTextFillColor='currentColor';
@@ -1482,6 +1484,7 @@ const LIMIT_ERROR = T('c.limit');
     }
     // 批级失败按错误码分类：限流/HTTP/解析类可重试；鉴权、协议不兼容与结果封装类直接落 failed。
     const retryable=!error?.code||['RATE_LIMIT','HTTP','PROVIDER_ERROR','INVALID_JSON','JSON_INVALID'].includes(error.code);
+    if(!retryable&&error?.message)session.error=error.message;
     for(const item of pending.batch){
       if(item.unit.version!==item.version)continue;
       markEmergencyRetry(item.unit,session,retryable);

@@ -22,7 +22,8 @@ function loadPlaywright() {
 }
 
 const { chromium } = loadPlaywright();
-const root = path.resolve(process.env.EXTENSION_DIR || path.join(__dirname, '../roamcat-0.0.1/extension'));
+// 扩展页已迁到 src/ 由 Vite 构建，源码层不再有 ui/options.html；默认检查 dist/extension（先 npm run build）。
+const root = path.resolve(process.env.EXTENSION_DIR || path.join(__dirname, '../dist/extension'));
 const previewDir = path.resolve(__dirname, '../preview/audit');
 if (!fs.existsSync(previewDir)) fs.mkdirSync(previewDir, { recursive: true });
 

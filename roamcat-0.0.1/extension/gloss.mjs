@@ -380,14 +380,48 @@ export function normalizePageTranslationItems(items) {
 
 const translationFailures = {BATCH_SHAPE:M('顶层字段或条目数组不符','Top-level fields or items array mismatch'),BATCH_COUNT:M('返回条目数量不符','Returned item count mismatch'),ITEM_FIELDS:M('条目缺少字段或包含额外字段','An item is missing fields or has extra fields'),ITEM_ID:M('返回了非本批次的条目 ID','An out-of-batch item id was returned'),ITEM_DUPLICATE:M('返回了重复的条目 ID','A duplicate item id was returned'),TRANSLATION_TYPE:M('译文不是字符串','The translation is not a string'),TRANSLATION_EMPTY:M('译文为空','The translation is empty'),TRANSLATION_WHITESPACE:M('译文包含首尾空白','The translation has leading/trailing whitespace'),TRANSLATION_LENGTH:M('译文超过长度上限','The translation exceeds the length limit'),TRANSLATION_NO_HAN:M('译文未包含汉字（可能原样保留了英文名称）','The translation contains no Chinese characters (the English name may have been kept)')};
 function translationFailure(code,detail){const error=new Error(M('整页翻译校验失败：','Page translation validation failed: ')+translationFailures[code]+'。');error.code=code;error.detail=detail;throw error;}
+function jsonObject(text){
+  try{const value=JSON.parse(text);if(value&&typeof value==='object'&&!Array.isArray(value))return value;}catch{/* 思考模型常在 JSON 前后夹说明或代码围栏 */}
+  return null;
+}
+// 恒思考模型（阶跃 Flash 等）经常把合法译文包进 ```json、前后说明，或在对象里多写字段。
+// 这里只取出最后一个能解析、且延伸到文本末尾的对象；选段协议仍走严格 exactKeys。
+export function parseModelObject(raw){
+  if(raw&&typeof raw==='object'&&!Array.isArray(raw))return raw;
+  if(typeof raw!=='string')return null;
+  const text=raw.trim();if(!text)return null;
+  const direct=jsonObject(text);if(direct)return direct;
+  const fences=[...text.matchAll(/```(?:json)?[^\n]*\n?([\s\S]*?)```/gi)];
+  for(let index=fences.length-1;index>=0;index--){const inner=jsonObject(fences[index][1].trim());if(inner)return inner;}
+  const end=text.lastIndexOf('}');if(end<0)return null;
+  const body=text.slice(0,end+1);let from=body.length,tries=0,best=null;
+  while(tries<48&&(from=body.lastIndexOf('{',from-1))>=0){tries++;const value=jsonObject(body.slice(from));if(value)best=value;}
+  return best;
+}
+function pageTranslationItem(item){
+  if(!item||typeof item!=='object'||Array.isArray(item))return item;
+  return {id:item.id,translation:typeof item.translation==='string'?item.translation.trim():item.translation};
+}
+// 导航、按钮、专名这类短标签译成原文是对的；带从句或句号的正文仍必须含汉字。
+function sourceNeedsChinese(text){
+  const source=typeof text==='string'?text.trim():'';if(!source)return true;
+  const words=source.split(/\s+/).filter(Boolean);
+  if(words.length>=6||/[.!?]/.test(source))return true;
+  if(words.length>=3&&/\b(?:the|a|an|is|are|was|were|be|to|of|for|and|or|with|from|that|this|in|on|by|as|if|when|while|not)\b/i.test(source))return true;
+  return false;
+}
+// 译文内容校验，选段与本页共用；字段集合只在选段协议里严格检查（本页条目先经 pageTranslationItem 收窄）。
+function translationTextCode(translation,sourceText){
+  if(typeof translation!=='string')return 'TRANSLATION_TYPE';
+  if(!translation.trim())return 'TRANSLATION_EMPTY';
+  if(translation!==translation.trim())return 'TRANSLATION_WHITESPACE';
+  if(translation.length>8000)return 'TRANSLATION_LENGTH';
+  if(!HAN.test(translation))return sourceText!==undefined&&!sourceNeedsChinese(sourceText)?null:'TRANSLATION_NO_HAN';
+  return null;
+}
 function translationItemCode(item){
   if(!exactKeys(item,['id','translation']))return 'ITEM_FIELDS';
-  if(typeof item.translation!=='string')return 'TRANSLATION_TYPE';
-  if(!item.translation.trim())return 'TRANSLATION_EMPTY';
-  if(item.translation!==item.translation.trim())return 'TRANSLATION_WHITESPACE';
-  if(item.translation.length>8000)return 'TRANSLATION_LENGTH';
-  if(!HAN.test(item.translation))return 'TRANSLATION_NO_HAN';
-  return null;
+  return translationTextCode(item.translation);
 }
 export function normalizeEmergencyResult(value,items) {
   const selected=normalizeEmergencyItems(items),expectedCount=selected.length;
@@ -408,33 +442,33 @@ export function normalizeEmergencyResult(value,items) {
 function pageBatchErrors(selected,code){return {items:[],errors:selected.map(({id})=>({id,code}))};}
 
 export function inspectPageTranslationResult(raw,items){
-  const selected=normalizePageTranslationItems(items),expected=new Set(selected.map(item=>item.id));
-  let value=raw;
-  if(typeof raw==='string'){try{value=JSON.parse(raw);}catch{return pageBatchErrors(selected,'BATCH_SHAPE');}}
-  if(!exactKeys(value,['items'])||!Array.isArray(value.items))return pageBatchErrors(selected,'BATCH_SHAPE');
+  const selected=normalizePageTranslationItems(items),expected=new Set(selected.map(item=>item.id)),sources=new Map(selected.map(item=>[item.id,item.text]));
+  const value=parseModelObject(raw);
+  if(!value||!Array.isArray(value.items))return pageBatchErrors(selected,'BATCH_SHAPE');
   const seen=new Set();
   for(const item of value.items){
     if(!item||typeof item!=='object'||Array.isArray(item)||!expected.has(item.id))return pageBatchErrors(selected,'ITEM_ID');
     if(seen.has(item.id))return pageBatchErrors(selected,'ITEM_DUPLICATE');
     seen.add(item.id);
   }
-  const rows=new Map(value.items.map(item=>[item.id,item])),valid=new Map(),failures=new Map();
+  const rows=new Map(value.items.map(item=>[item.id,pageTranslationItem(item)])),valid=new Map(),failures=new Map();
   for(const {id} of selected){
     const item=rows.get(id);
     if(!item){failures.set(id,'ITEM_ID');continue;}
-    const code=translationItemCode(item);
+    const code=translationTextCode(item.translation,sources.get(id));
     if(code)failures.set(id,code);else valid.set(id,item.translation);
   }
   return {items:selected.filter(({id})=>valid.has(id)).map(({id})=>({id,translation:valid.get(id)})),errors:selected.filter(({id})=>failures.has(id)).map(({id})=>({id,code:failures.get(id)}))};
 }
 
 export function normalizePageTranslationResult(value,items){
-  const selected=normalizePageTranslationItems(items),expected=new Set(selected.map(item=>item.id)),seen=new Set(),translations=new Map(),errors=new Map();
+  const selected=normalizePageTranslationItems(items),expected=new Set(selected.map(item=>item.id)),sources=new Map(selected.map(item=>[item.id,item.text])),seen=new Set(),translations=new Map(),errors=new Map();
   if(!exactKeys(value,['items','errors'])||!Array.isArray(value.items)||!Array.isArray(value.errors))translationFailure('BATCH_SHAPE',{expectedCount:selected.length});
-  for(const item of value.items){
+  for(const rawItem of value.items){
+    const item=pageTranslationItem(rawItem);
     if(!item||typeof item!=='object'||Array.isArray(item)||!expected.has(item.id))translationFailure('ITEM_ID',{});
     if(seen.has(item.id))translationFailure('ITEM_DUPLICATE',{});
-    const code=translationItemCode(item);if(code)translationFailure(code,{});
+    const code=translationTextCode(item.translation,sources.get(item.id));if(code)translationFailure(code,{});
     seen.add(item.id);translations.set(item.id,item.translation);
   }
   for(const error of value.errors){

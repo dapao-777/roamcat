@@ -13,7 +13,7 @@
 
  */
 import './i18n.js';
-import { DOMAINS, wordId, normalizeSettings, activeApiProvider, apiProviderForTask, settleWelcomeGuide } from './shared.js';
+import { DOMAINS, wordId, normalizeSettings, activeApiProvider, apiProviderForTask, settleWelcomeGuide, settleOptionsPages, focusOptionsPage, optionsPageUrl } from './shared.js';
 import {MESSAGE_TYPES,CONTENT_ALLOWED_TYPES,text,domain,validatePatch,settingsPatchEffects,customDetectionService,parseDomainTest,parseFloatingPetPatch,parsePopupIntentTake,parseAnalyze,parseHistoryRuleSet,parseHistoryRecordRef,parseHistorySummaryEdit,parseAssistRequest,parsePassageRequestRef,onDemandSuggestionDecision} from './message-protocol.js';
 import {createMessageRouter} from './message-router.js';
 import {apiServiceOrigins,apiServiceReady,normalizeApiService,apiServiceKeys,apiKeyPoolPick,apiKeyPoolCool,getApiProvider} from './api-providers.mjs';
@@ -461,7 +461,7 @@ function apiKeyRotatorFor(service) {
 }
 // 限流 60 秒、鉴权 120 秒：足够跨过常规 RPM 窗口，又不至于把误伤永久化。
 const API_KEY_COOLDOWN = Object.freeze({rateLimit:60_000,auth:120_000});
-async function apiRequest(provider,payload,instructions,schema,{onContent,trace,beforeRequest}={}) {
+async function apiRequest(provider,payload,instructions,schema,{onContent,trace,beforeRequest,lenientJson=false}={}) {
   const preferences=readingHistory.policy()?.translation;if(preferences&&[ASSISTANCE_INSTRUCTIONS,SUPPORT_INSTRUCTIONS,SUPPORT_CORRECTION_INSTRUCTIONS,EMERGENCY_INSTRUCTIONS,PAGE_TRANSLATION_INSTRUCTIONS].includes(instructions))payload={...payload,personalization:preferences};
   const service=normalizeApiService(provider);await requireApiPermission(service);
   await acquireApiServiceSlot(service);
@@ -482,7 +482,7 @@ async function apiRequest(provider,payload,instructions,schema,{onContent,trace,
       const attempt=pick.service;tried.add(pick.keyIndex);
       const attemptStartedAt=Date.now(),attemptUsage={value:null};let attemptCharsOut=0,attemptOk=false;
       try {
-        const output=await diagnostics.provider(trace,'api',attempt.model,new URL(attempt.baseUrl).origin,()=>performProviderRequest(attempt,payload,instructions,schema,{signal:controller.signal,onContent:tapContent,beforeRequest:checkRequest,onUsage:value=>{attemptUsage.value=value;}}));
+        const output=await diagnostics.provider(trace,'api',attempt.model,new URL(attempt.baseUrl).origin,()=>performProviderRequest(attempt,payload,instructions,schema,{signal:controller.signal,onContent:tapContent,beforeRequest:checkRequest,lenientJson,onUsage:value=>{attemptUsage.value=value;}}));
         if(instructions===ASSISTANCE_INSTRUCTIONS&&(!Object.hasOwn(output,'result')||Object.keys(output).length!==1))throw Object.assign(new Error(M('帮助服务返回的结果封装无效。','The help service returned an invalid result envelope.')),{code:'OUTPUT_INVALID'});
         providerError='';attemptOk=true;attemptCharsOut=JSON.stringify(output??'').length;return output;
       } catch(error) {
@@ -790,7 +790,7 @@ async function translateItems(items,settings,trace,{scope,onProgress,origin,sour
   if(fresh.length){
     const operation=withBackgroundSlot(async()=>{const sourceItems=fresh.map(value=>value.item),idToKey=new Map(fresh.map(value=>[value.item.id,value.key]));let raw;
       const progress=value=>{if(!onProgress||!value?.items)return;const byKey=new Map(value.items.map(item=>[idToKey.get(item.id),item.translation]));onProgress({items:items.flatMap((item,index)=>byKey.has(keys[index])?[{id:item.id,translation:byKey.get(keys[index])}]:[])});};
-      if(isSubscriptionKind(settings.providerKind))raw=await providerOperation(()=>emergencyTranslateSubscription({scope,items:sourceItems,model:settings.subscriptionModel,traceId:trace?.traceId,preferences:personalization,onProgress:progress,kind:nativeKind(settings)}),trace,settings.subscriptionModel,nativeKind(settings),JSON.stringify(sourceItems).length);else try{raw=await apiRequest(service,{items:sourceItems},instructions,EMERGENCY_SCHEMA,{trace,beforeRequest:()=>requireLiveConsumer(backgroundGuards.get(operation)),...(onProgress?{onContent:content=>progress(translationProgress(content,sourceItems))}:{})});}catch(error){if(scope!=='page'||(error?.code!=='INVALID_JSON'&&diagnosticError(error).code!=='JSON_INVALID'))throw error;providerError='';raw='';}
+      if(isSubscriptionKind(settings.providerKind))raw=await providerOperation(()=>emergencyTranslateSubscription({scope,items:sourceItems,model:settings.subscriptionModel,traceId:trace?.traceId,preferences:personalization,onProgress:progress,kind:nativeKind(settings)}),trace,settings.subscriptionModel,nativeKind(settings),JSON.stringify(sourceItems).length);else try{raw=await apiRequest(service,{items:sourceItems},instructions,EMERGENCY_SCHEMA,{trace,lenientJson:scope==='page',beforeRequest:()=>requireLiveConsumer(backgroundGuards.get(operation)),...(onProgress?{onContent:content=>progress(translationProgress(content,sourceItems))}:{})});}catch(error){if(scope!=='page'||(error?.code!=='INVALID_JSON'&&diagnosticError(error).code!=='JSON_INVALID'))throw error;providerError='';raw='';}
       try{
         const result=scope==='page'?(isSubscriptionKind(settings.providerKind)?normalizePageTranslationResult(raw,sourceItems):inspectPageTranslationResult(raw,sourceItems)):normalizeEmergencyResult(raw,sourceItems),mapped=new Map();
         for(const value of result.items)mapped.set(idToKey.get(value.id),{translation:value.translation});
@@ -1357,7 +1357,7 @@ const messageHandlers=[
   {type:'ON_DEMAND_SUGGESTION',handle:(message,{sender,trusted})=>mutate(state=>{const decision=onDemandSuggestionDecision(state.supportUsage,state.onDemandSuggestionShownAt,Date.now());if(decision.show)state.onDemandSuggestionShownAt=Date.now();return decision;},false,false)},
   {type:'MEMORY_CLEAR',handle:(message,{sender,trusted})=>clearReadingData('memory')},
   {type:'PAGE_SUMMARY',handle:(message,{sender,trusted})=>pageSummary(message,sender)},
-  {type:'OPEN_OPTIONS',handle:async (message,{sender,trusted})=>{await chrome.runtime.openOptionsPage();return{};}},
+  {type:'OPEN_OPTIONS',handle:async message=>{await focusOptionsPage(typeof message?.section==='string'?message.section:'');return{};}},
 ];
 const messageRouter=createMessageRouter(messageHandlers);
 // 注册表完整性自检：漏注册或多注册只报警不抛错，避免单点笔误瘫痪整个 worker；测试与 lint 负责拦截。
@@ -1405,6 +1405,7 @@ chrome.runtime.onInstalled.addListener(details => {
   void settleWelcomeGuide(details?.reason).catch(error => console.error('整理新手引导页失败', error));
 });
 void settleWelcomeGuide('startup').catch(error => console.error('整理新手引导页失败', error));
+void settleOptionsPages().catch(error => console.error('整理设置页失败', error));
 void registerContextMenus();
 async function forgetTabAutomation(tabId) {
   await chrome.storage.session.remove([tabPauseKey(tabId),offeredKey(tabId),pendingKey(tabId),assistCacheKey(tabId),'pageDomain:'+tabId]);
@@ -1425,6 +1426,9 @@ chrome.tabs.onActivated?.addListener((activeInfo)=>{
   }
 });
 chrome.tabs.onUpdated.addListener((tabId,changeInfo,tab) => {
+  // 浏览器「选项」菜单和 target=_blank 都会自己打开设置页，而且可能新开一扇窗口。
+  // 页签地址一变成设置页就收回当前窗口，不等下次启动。
+  if (typeof changeInfo.url === 'string' && changeInfo.url.startsWith(optionsPageUrl())) void settleOptionsPages().catch(error => console.error('整理设置页失败', error));
   if (tab?.url) {
     const next = articleUrl(tab.url);
     const prev = tabSeenArticle.get(tabId);

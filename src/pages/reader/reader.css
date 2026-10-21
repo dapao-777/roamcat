@@ -4,7 +4,7 @@ html, body { margin: 0; padding: 0; min-height: 100vh; }
 body {
   background: var(--canvas);
   color: var(--ink);
-  font: var(--weight-regular) var(--type-body)/var(--leading-body) var(--sans);
+  font: var(--weight-regular) var(--type-body)/var(--leading-body) var(--ui);
 }
 
 .reader-shell { min-height: 100vh; display: flex; flex-direction: column; }
@@ -33,7 +33,7 @@ body {
   border: 1px solid var(--rim-soft, var(--line));
   background-color: var(--surface); background-image: var(--key-face, var(--face, none));
   box-shadow: var(--key-skirt, var(--inset-soft, none));
-  color: var(--ink); font: var(--weight-medium) var(--type-support, 13px)/1 var(--sans);
+  color: var(--ink); font: var(--weight-medium) var(--type-support, 13px)/1 var(--ui);
   text-decoration: none; white-space: nowrap; cursor: pointer;
   transition: box-shadow var(--rc-dur-fast, .16s) var(--rc-ease-standard, ease), transform var(--rc-dur-instant, .08s) ease, border-color var(--rc-dur-fast, .16s) ease;
 }
@@ -60,7 +60,7 @@ body {
 }
 .reader-hero-art { width: 128px; margin: 0 auto var(--space-4); color: var(--ink); }
 .reader-hero-art svg { display: block; width: 100%; height: auto; }
-.reader-status-card h1 { margin: 0 0 var(--space-3); font: var(--weight-semibold) var(--type-section-title)/1.35 var(--sans); }
+.reader-status-card h1 { margin: 0 0 var(--space-3); font: var(--weight-semibold) var(--type-section-title)/1.35 var(--ui); }
 .reader-status-card p { margin: 0 0 var(--space-4); color: var(--muted-strong, var(--ink)); }
 .reader-format-chips { display: flex; justify-content: center; flex-wrap: wrap; gap: var(--space-2); margin: 0 0 var(--space-5); }
 .reader-format-chips span { padding: 3px 10px; border: 1px solid var(--rim-soft, var(--line)); border-radius: var(--radius-pill); background-color: var(--surface-subtle); background-image: var(--face-well, none); box-shadow: var(--well-shadow, none); font: var(--weight-medium) 11px/1.5 var(--mono); color: var(--muted-strong, var(--ink)); }
