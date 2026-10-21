@@ -14,51 +14,43 @@
 
 roamcat-options { display: contents; }
 
-/* 打开设置时的第一眼：阅读、模型、最近一次请求。三档颜色只表达状态。 */
+/* 侧栏底部的运行状态：阅读、模型、最近一次请求，三行键值；颜色只表达状态。 */
 .now-status {
-  position: sticky;
-  top: 58px;
-  z-index: 20;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--rc-space-3);
-  margin: 0 0 var(--rc-space-4);
-  padding-bottom: var(--rc-space-3);
-  background: var(--color-frame-bg, var(--rc-canvas));
-}
-.now-status-item {
-  min-width: 0;
-  padding: var(--rc-space-3) var(--rc-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--rc-space-2);
+  margin: 0 var(--rc-space-4) var(--rc-space-3);
+  padding: var(--rc-space-3);
   border: 1px solid var(--rc-line);
   border-radius: var(--rc-radius-panel);
   background: var(--rc-surface);
 }
+.now-status-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--rc-space-2);
+  min-width: 0;
+}
 .now-status-k {
+  flex: none;
   color: var(--rc-ink-tertiary);
-  font-size: var(--rc-type-support);
+  font-size: var(--fs-1);
   line-height: var(--rc-leading-support);
 }
 .now-status-item strong {
-  display: block;
-  margin-top: 2px;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--rc-status-progress);
-  font-size: var(--rc-type-control);
+  font-size: var(--fs-1);
   font-weight: var(--rc-weight-semibold);
-  line-height: var(--rc-leading-control);
+  line-height: var(--rc-leading-support);
 }
 .now-status-item[data-tone="attention"] strong { color: var(--rc-status-attention); }
 .now-status-item[data-tone="steady"] strong { color: var(--rc-status-steady); }
-/* 窄窗口不再竖排成三张卡（会在正文前占掉约 200px）：保持一行三格，缩小内边距与字号，长文字省略。 */
-@media (max-width: 760px) {
-  /* 窄屏顶栏会折成两行，58px 的吸顶偏移会让状态卡压到顶栏按钮下面：窄屏改为随页面滚动。 */
-  .now-status { position: static; gap: var(--rc-space-2); margin-bottom: var(--rc-space-3); padding-bottom: var(--rc-space-2); }
-  .now-status-item { padding: var(--rc-space-2) var(--rc-space-3); }
-  .now-status-k { font-size: 11px; }
-  .now-status-item strong { font-size: 12px; }
-}
+.sidebar-collapsed .now-status { display: none; }
 
 /* 分区切换：整页快照交叉淡化（startViewTransition 由 options-app 触发） */
 ::view-transition-old(root) {

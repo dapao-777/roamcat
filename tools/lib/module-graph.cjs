@@ -15,7 +15,8 @@
  *   R6 extension 不得反向 import connector；
  *   R7 全部参检源文件必须以文件级长注释开头（含 @file；connector/host.mjs 允许首行 shebang，次行起为文件头）；
  *   R8 扩展页面无重复元素 ID；R9 扩展页面无内联脚本/事件属性（CSP）；R10 manifest 引用资源全部存在；
- *   R11 classic content script 通过 node --check 语法门禁（ESM 模块由 R4/R5 动态 import 覆盖）。
+ *   R11 classic content script 通过 node --check 语法门禁（ESM 模块由 R4/R5 动态 import 覆盖）；
+ *   R12 extension/ 与 src/ 的样式不得写死 32px 以下的 px 字号（须用 tokens.css 的 --fs-1…6）。
  * 模块边界：只读文件系统并在本进程动态 import 被测模块，不启动浏览器、不写文件、不依赖 npm 包；
  *   规则清单与 SPEC.md 第 12 节一一对应；新增或修改规则必须同步修订 SPEC。
  *
@@ -90,6 +91,37 @@ function collectSourceFiles(root) {
   };
   walk(path.join(root, 'extension'), '');
   walk(path.join(root, 'connector'), '');
+  return files;
+}
+
+// R12 参检范围：扩展源层 .css/.js/.mjs 与 src/ 的页面样式、Lit 组件；生成物（design.js、content-ui.js）
+// 与字号定义处 tokens.css 除外。只匹配字号位置的 px：var() 兜底值前是逗号或括号，不会命中。
+const STYLE_GENERATED = new Set(['design.js', 'content-ui.js', 'tokens.css']);
+const FONT_SIZE_PATTERNS = [
+  /font-size:\s*(\d+(?:\.\d+)?)px\b/g,
+  /font:\s*(?:[^;{}`'"\n]*?\s)?(\d+(?:\.\d+)?)px(?=[\s/])/g,
+];
+
+/** 收集 R12 字号门禁的参检文件：extension/（排除资源目录）与仓库 src/ 下的 .css/.js/.mjs。 */
+function collectStyleSources(root) {
+  const files = [];
+  const walk = (directory, relative, top) => {
+    if (!fs.existsSync(directory)) return;
+    for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
+      if (entry.name.startsWith('.')) continue;
+      const child = path.join(directory, entry.name);
+      const childRelative = `${relative}/${entry.name}`;
+      if (entry.isDirectory()) {
+        if (top && EXCLUDED_DIRECTORIES.has(entry.name)) continue;
+        walk(child, childRelative, false);
+        continue;
+      }
+      if (!entry.isFile() || !/\.(?:css|js|mjs)$/u.test(entry.name) || STYLE_GENERATED.has(entry.name)) continue;
+      files.push({absolute: child, relative: childRelative});
+    }
+  };
+  walk(path.join(root, 'extension'), 'extension', true);
+  walk(path.join(root, '..', 'src'), 'src', true);
   return files;
 }
 
@@ -318,6 +350,21 @@ async function verifyModuleGraph({root}) {
       execFileSync(process.execPath, ['--check', node.file.absolute], {stdio: 'pipe'});
     } catch (error) {
       fail('R11', `classic 脚本语法错误: ${node.file.relative}: ${String(error.stderr || error.message).split('\n').find(line => /Error/.test(line)) || '未知错误'}`);
+    }
+  }
+
+  // R12：字号档位门禁——样式与内联 CSS 不得写死 32px 以下的 px 字号，须用 tokens.css 的 --fs-1…6
+  // （JS 内联可写 var(--fs-k, Npx) 兜底）；32px 及以上视为展示字放行。生成物与 tokens.css 本身不参检。
+  for (const file of collectStyleSources(root)) {
+    const source = fs.readFileSync(file.absolute, 'utf8');
+    for (const pattern of FONT_SIZE_PATTERNS) {
+      pattern.lastIndex = 0;
+      let match;
+      while ((match = pattern.exec(source)) !== null) {
+        if (Number(match[1]) >= 32) continue;
+        const line = source.slice(0, match.index).split('\n').length;
+        fail('R12', `写死字号 ${match[1]}px：${file.relative}:${line}；改用 var(--fs-1…6)（12/13/14/16/20/28）`);
+      }
     }
   }
 

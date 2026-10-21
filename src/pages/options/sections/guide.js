@@ -25,9 +25,9 @@ export const guideSection = html`
       <div>
         <span class="guide-eyebrow" style="color: var(--color-brand-green); font-weight: 700;">${t('sec.guide.onboardEyebrow')}</span>
         <h3 style="margin: 4px 0 6px 0;">${t('sec.guide.onboardTitle')}</h3>
-        <p style="margin: 0; color: var(--color-text-secondary, #94a3b8); font-size: 13.5px;">${t('sec.guide.onboardDesc')}</p>
+        <p style="margin: 0; color: var(--color-text-secondary, #94a3b8); font-size: var(--fs-3, 14px);">${t('sec.guide.onboardDesc')}</p>
       </div>
-      <button type="button" class="js-open-welcome primary-action" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px; padding: 8px 18px; border-radius: var(--radius-pill); font-weight: 600; font-size: 13px; cursor: pointer;">
+      <button type="button" class="js-open-welcome primary-action" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px; padding: 8px 18px; border-radius: var(--radius-pill); font-weight: 600; font-size: var(--fs-2, 13px); cursor: pointer;">
         <span>${t('sec.guide.onboardBtn')}</span>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
       </button>

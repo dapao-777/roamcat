@@ -184,7 +184,7 @@ function optionsUpdateReadingColorUI(layer){const controls=optionsReadingControl
 function optionsPreviewReadingStyle(value){
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark' || (document.documentElement.getAttribute('data-theme') !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
   const theme = isDark ? 'dark' : 'light';
-  const css=globalThis.RoamCatDesign.cssFor(':root', theme)+'body{margin:0;padding:16px;font:16px/1.65 var(--sans);color:var(--ink);background:var(--paper);overflow-wrap:anywhere}p{margin:0 0 12px}'+globalThis.RoamCatReadingStyle.css(value,{mark:'#preview-word',hint:'#preview-hint',block:'#preview-translation',annotation:'#preview-annotation'});
+  const css=globalThis.RoamCatDesign.cssFor(':root', theme)+'body{margin:0;padding:16px;font:var(--fs-4, 16px)/1.65 var(--sans);color:var(--ink);background:var(--paper);overflow-wrap:anywhere}p{margin:0 0 12px}'+globalThis.RoamCatReadingStyle.css(value,{mark:'#preview-word',hint:'#preview-hint',block:'#preview-translation',annotation:'#preview-annotation'});
   const doc=optionsEls.readingStylePreview.contentDocument;
   if(doc?.documentElement)doc.documentElement.setAttribute('data-theme',theme);
   const existing=doc?.getElementById('preview-style');

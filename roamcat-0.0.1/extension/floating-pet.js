@@ -235,7 +235,7 @@
         z-index: 2147483647 !important;
         pointer-events: none !important;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif !important;
-        font-size: 14px !important;
+        font-size: var(--fs-3, 14px) !important;
         line-height: 1.5 !important;
         color-scheme: light dark;
       }
@@ -633,25 +633,25 @@
       .coin-glyph-bilingual {
         display: inline-flex;
         align-items: center;
-        font-size: 10px;
+        font-size: var(--fs-1, 12px);
         font-weight: 700;
         filter: var(--pet-glyph-emboss, none);
       }
 
       .glyph-main {
         color: var(--pet-glyph, var(--pet-ink, #161511));
-        font-size: 11px;
+        font-size: var(--fs-1, 12px);
       }
 
       .glyph-sep {
-        font-size: 8px;
+        font-size: var(--fs-1, 12px);
         color: var(--pet-muted, #9ca3af);
         opacity: 0.6;
         margin: 0 0.5px;
       }
 
       .glyph-sub {
-        font-size: 9px;
+        font-size: var(--fs-1, 12px);
         color: var(--pet-glyph, var(--pet-ink, #161511));
       }
 
@@ -721,7 +721,7 @@
         border: 1px solid var(--pet-btn-rim, var(--pet-line, #e2ded4));
         border-radius: 999px;
         padding: 3px 9px;
-        font-size: 11px;
+        font-size: var(--fs-1, 12px);
         font-weight: 600;
         white-space: nowrap;
         text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
@@ -983,7 +983,7 @@
       }
       .zoom-label {
         font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-        font-size: 10px;
+        font-size: var(--fs-1, 12px);
         font-weight: 600;
         color: var(--pet-ink, #161511);
         min-width: 34px;
@@ -1065,7 +1065,7 @@
         padding: 0;
         margin: 0;
         outline: none;
-        font-size: 14px;
+        font-size: var(--fs-3, 14px);
         line-height: 1;
         color: var(--pet-glyph, var(--pet-muted, #6b7280));
         transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
@@ -1151,7 +1151,7 @@
         border: 1px solid var(--pet-btn-rim, var(--pet-line, #e2ded4));
         border-radius: 999px;
         padding: 3px 9px;
-        font-size: 11px;
+        font-size: var(--fs-1, 12px);
         font-weight: 600;
         white-space: nowrap;
         text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
@@ -1218,7 +1218,7 @@
         border: 1.5px solid var(--pet-btn-rim, var(--pet-line, #e5e7eb));
         border-radius: 12px;
         padding: 6px 10px;
-        font-size: 11.5px;
+        font-size: var(--fs-1, 12px);
         font-weight: 600;
         white-space: normal;
         overflow-wrap: anywhere;
@@ -1471,13 +1471,13 @@
         font-weight: 600;
       }
       .cat-speech-bubble .quote-en {
-        font-size: 10px;
+        font-size: var(--fs-1, 12px);
         font-weight: 500;
         line-height: 1.45;
         color: var(--pet-ink-subtle, var(--pet-muted, #64748b));
       }
       .cat-speech-bubble .quote-author {
-        font-size: 10px;
+        font-size: var(--fs-1, 12px);
         font-weight: 500;
         color: var(--pet-ink-subtle, var(--pet-muted, #64748b));
       }
@@ -1758,9 +1758,9 @@
         opacity: 0;
         animation: zzz-float 3s ease-in infinite;
       }
-      .zzz-1 { font-size: 10px; right: 8px; animation-delay: 0s; }
-      .zzz-2 { font-size: 13px; right: 2px; animation-delay: 1s; }
-      .zzz-3 { font-size: 16px; right: -4px; animation-delay: 2s; }
+      .zzz-1 { font-size: var(--fs-1, 12px); right: 8px; animation-delay: 0s; }
+      .zzz-2 { font-size: var(--fs-2, 13px); right: 2px; animation-delay: 1s; }
+      .zzz-3 { font-size: var(--fs-4, 16px); right: -4px; animation-delay: 2s; }
       @keyframes zzz-float {
         0% { opacity: 0; transform: translate(0, 0) scale(0.6); }
         25% { opacity: 0.9; transform: translate(-3px, -8px) scale(0.85); }
@@ -2016,7 +2016,7 @@
       /* 领域徽章基础样式（摘要窗头部 chip 继续使用该类名，HUD 观感由
          .summary-header .menu-domain-tag 作用域规则提供） */
       .menu-domain-tag {
-        font-size: 10.5px;
+        font-size: var(--fs-1, 12px);
         padding: 3px 8px;
         border-radius: 999px;
         background: var(--pet-primary-soft);
@@ -2073,7 +2073,7 @@
       }
 
       .summary-title {
-        font: 800 16px/1.3 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font: 800 var(--fs-4, 16px)/1.3 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
         color: var(--pet-ink);
         min-width: 0;
       }
@@ -2087,7 +2087,7 @@
 
       /* 领域徽章 → HUD 标签 chip（仅摘要页头作用域，不影响气泡菜单里的同名类） */
       .summary-header .menu-domain-tag {
-        font: 700 10px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font: 700 var(--fs-1, 12px)/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
         padding: 2px 7px;
         border-radius: 4px;
         background: var(--pet-tag-bg);
@@ -2151,7 +2151,7 @@
         align-items: center;
         flex-wrap: wrap;
         gap: 8px;
-        font: 400 11.5px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font: 400 var(--fs-1, 12px)/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
         color: var(--pet-muted);
       }
 
@@ -2183,11 +2183,11 @@
         font-weight: 700;
         color: var(--pet-muted);
         margin-right: 4px;
-        font-size: 12.5px;
+        font-size: var(--fs-1, 12px);
       }
 
       .takeaway-text {
-        font-size: 14px;
+        font-size: var(--fs-3, 14px);
         font-weight: 500;
         line-height: 1.55;
         color: var(--pet-ink);
@@ -2201,7 +2201,7 @@
       }
 
       .section-subtitle {
-        font: 700 10px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font: 700 var(--fs-1, 12px)/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
         color: var(--pet-muted);
         letter-spacing: 0.04em;
         text-transform: uppercase;
@@ -2218,7 +2218,7 @@
       .highlight-item {
         display: flex;
         gap: 10px;
-        font-size: 13px;
+        font-size: var(--fs-2, 13px);
         line-height: 1.6;
         color: var(--pet-ink);
         padding: 8px 0;
@@ -2230,7 +2230,7 @@
       }
 
       .highlight-num {
-        font: 700 11px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font: 700 var(--fs-1, 12px)/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
         color: var(--pet-primary);
         flex: none;
       }
@@ -2256,7 +2256,7 @@
       }
 
       .keyword-pill {
-        font: 400 11px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font: 400 var(--fs-1, 12px)/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
         padding: 3px 8px;
         border-radius: 4px;
         background: var(--pet-tag-bg);
@@ -2301,7 +2301,7 @@
       }
 
       .loading-text {
-        font: 400 12.5px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font: 400 var(--fs-1, 12px)/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
         color: var(--pet-muted);
         max-width: 320px;
       }
@@ -2314,7 +2314,7 @@
         border-left: 3px solid #ef4444;
         border-radius: 6px;
         color: var(--pet-muted-strong, var(--pet-ink));
-        font-size: 13px;
+        font-size: var(--fs-2, 13px);
         display: flex;
         flex-direction: column;
         gap: 10px;
@@ -2358,7 +2358,7 @@
         border: 1px solid var(--pet-line);
         background: var(--pet-tag-bg);
         color: var(--pet-muted-strong, var(--pet-ink));
-        font-size: 12px;
+        font-size: var(--fs-1, 12px);
         font-weight: 600;
         cursor: pointer;
         transition: all 0.15s ease;
@@ -2382,7 +2382,7 @@
       }
 
       .summary-source-meta {
-        font: 400 10px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font: 400 var(--fs-1, 12px)/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
         color: var(--pet-muted);
       }
     `;
