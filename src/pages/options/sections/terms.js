@@ -1,7 +1,7 @@
 /**
  * @file src/pages/options/sections/terms.js
- * 文件职责：设置页静态分区模板——由 build/split-options.mjs 从
- *   extension/ui/options.html 机械切片生成；id/控件契约与原页完全一致。
+ * 文件职责：设置页静态分区模板——最初从
+ *   extension/ui/options.html 机械切片生成（切片脚本已移除）；id/控件契约与原页完全一致。
  * 主要内容：无绑定静态模板（动态内容由 options-controller.js 命令式填充），
  *   分区可见性由 options-app 统一驱动。
  * 模块边界：纯展示模板。

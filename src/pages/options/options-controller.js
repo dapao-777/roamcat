@@ -1,7 +1,7 @@
 /**
  * @file src/pages/options/options-controller.js
  * 文件职责：设置页表单控制器——12分区表单、服务目录、权限回收与诊断入口。
- *   由 build/port-options-controller.mjs 从 extension/ui/options.js 移植；
+ *   最初从 extension/ui/options.js 移植（移植脚本已移除）；
  *   分区路由/外壳交互已移交 options-app.js，分区进入钩子见 optionsSectionEnter。
  * 主要内容：STATE_PATCH编排、provider目录、重载扩展按钮。
  * 模块边界：扩展页受信上下文；API_MODELS_LIST仅此页可读。

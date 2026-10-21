@@ -234,7 +234,7 @@ npm run verify:build  # 构建产物门禁 + Edge 实际加载冒烟
 
 - `roamcat-0.0.1/extension/`：Manifest V3 扩展源层、本地模型与运行时资源、Lit 应用共用的 `ui/` 模块与样式。
 - `roamcat-0.0.1/connector/`：ChatGPT / Grok / Antigravity 订阅 Native Messaging 连接器。
-- `src/`：Vite + Lit 页面应用与共享组件；设计 token 唯一事实源 `src/tokens.css`。
+- `src/`：Vite + Lit 页面应用与共享组件；设计 token 唯一事实源 `src/styles/tokens.css`。
 - `build/`：构建期脚本与 dev 扩展 key。
 - `tools/`：模块图门禁、单元测试、构建产物门禁、浏览器回归脚本。
 

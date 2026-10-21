@@ -45,7 +45,7 @@ test('extractTokenSections 拒绝模板占位符', () => {
 
 test('design.js 与 tokens.css 同步（无漂移）', () => {
   const committed = readFileSync(path.join(repoRoot, 'roamcat-0.0.1', 'extension', 'design.js'), 'utf8');
-  assert.equal(committed, buildDesignJs(tokensCss), 'extension/design.js 与 src/tokens.css 不同步——请运行 npm run gen:tokens');
+  assert.equal(committed, buildDesignJs(tokensCss), 'extension/design.js 与 src/styles/tokens.css 不同步——请运行 npm run gen:tokens');
 });
 
 test('生成的 design.js 暴露完整 RoamCatDesign API', () => {

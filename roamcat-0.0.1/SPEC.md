@@ -141,7 +141,7 @@
 - `ui/reader.html|js`（构建产物来自 `src/pages/reader/`）：PDF/EPUB/粘贴文章的阅读器，`READER_TRANSLATE` 逐段双语对照，工具栏含语言切换钮。
 - `ui/provider-picker.js`：原生 select + Popover 自定义列表（Chrome 116+）。
 - `ui/theme-init.js`：防主题闪烁的早期脚本（外链文件，符合 CSP）。
-- 设计 token 唯一事实源 `src/tokens.css`：`npm run gen:tokens` 生成 `extension/design.js`，`design-tokens.test.mjs` 断言同步（见 `docs/design-system.md`）。
+- 设计 token 唯一事实源 `src/styles/tokens.css`：`npm run gen:tokens` 生成 `extension/design.js`，`design-tokens.test.mjs` 断言同步（见 `docs/design-system.md`）。
 
 ### 4.4 界面多语言（i18n）
 - `extension/i18n.js` 是唯一语言运行时：暴露 `globalThis.RoamCatI18n`（`t(key, vars)` 查 `DICTS.zh/en`，缺键返回键名本身；`lang()/pref()/setPref()/apply()/onChange()`）。偏好键 `roamcat_ui_lang` ∈ `auto|zh|en`，存 `localStorage` + `chrome.storage.local`；`auto` 回落 `chrome.i18n.getUILanguage()`。`apply()` 写入 `data-ui-lang` 与 `<html lang>`。

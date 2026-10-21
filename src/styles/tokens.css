@@ -1,5 +1,5 @@
 /**
- * @file src/tokens.css
+ * @file src/styles/tokens.css
  * 文件职责：RoamCat 设计 token 唯一语义源——canonical --rc-* 层 + 全量兼容别名；
  *   扩展页直接引用本文件，build/gen-design-tokens.mjs 由标记段生成 extension/design.js
  *   供内容脚本与 Shadow DOM 消费。

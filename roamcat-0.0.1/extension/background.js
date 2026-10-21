@@ -3,7 +3,7 @@
  * 文件职责：Service Worker 总控——74 种消息的注册表派发、设置校验与迁移、API/三订阅链路编排、
  *   缓存/并发/看门狗、订阅端口状态与诊断编排，是扩展侧所有业务的唯一入口。
  * 主要内容：messageHandlers 注册表（与 message-protocol.js MESSAGE_TYPES 一一对应）、STATE_PATCH 编排、
- *   SUPPORT_BATCH/ASSIST/解构/整页翻译/摘要装配、supportCache 等会话缓存、subscription  Yum 端口管理。
+ *   SUPPORT_BATCH/ASSIST/解构/整页翻译/摘要装配、supportCache 等会话缓存、subscription 端口管理。
  * 模块边界：无跨调用内存态假设，所有持久态经 chrome.storage/IndexedDB；纯校验逻辑已下沉
  *   message-protocol.js，本文件只做编排与副作用；新增类型必须同步 MESSAGE_TYPES 与 SPEC 第 5 节。
  *
