@@ -25,7 +25,7 @@
 @layer base {
   html { -webkit-text-size-adjust: 100%; }
   body {
-    font-family: var(--rc-sans);
+    font-family: var(--rc-ui);
     font-size: var(--rc-type-body);
     line-height: var(--rc-leading-body);
     color: var(--rc-ink);

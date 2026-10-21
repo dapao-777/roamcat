@@ -243,13 +243,34 @@
       :host, :host([data-theme="light"]) {
         color-scheme: light;
         color: var(--pet-ink, #0f172a);
-        --pet-cat-color: #241f18;
-        --pet-cat-hover: #d97706;
-        --pet-cat-glow: drop-shadow(0 0 1px rgba(255, 255, 255, 0.9)) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.18));
-        --pet-cat-glow-hover: drop-shadow(0 0 2px rgba(255, 255, 255, 0.95)) drop-shadow(0 4px 14px rgba(217, 119, 6, 0.4));
-        --pet-primary: #d97706;
-        --pet-primary-soft: #fffbeb;
-        --pet-primary-hover: #b45309;
+        --pet-cat-color: #0b0a0e;
+        /* 亮色伴读猫：奶白麻薯 + 粉蓝金柔光 + 暖棕细描边（SVG 配色变量，见 renderCatSvg）。 */
+        --pet-cat-body: #fffaf3;
+        --pet-cat-face: #3a2e26;
+        --pet-cat-whisker: #9a8a7e;
+        --pet-cat-whisker-under: transparent;
+        --pet-cat-line: rgba(96, 72, 54, 0.55);
+        --pet-cat-rim-0: #ffc2d8;
+        --pet-cat-rim-1: #f9bfe0;
+        --pet-cat-rim-2: #a9d6ff;
+        --pet-cat-rim-3: #b8ecf5;
+        --pet-cat-rim-4: #ffd08f;
+        --pet-cat-under-0: #ffd2b0;
+        --pet-cat-under-1: #e8d6ff;
+        --pet-cat-under-2: #d2e8ff;
+        --pet-cat-ear-0: #ffd3de;
+        --pet-cat-ear-1: #fff4ef;
+        --pet-cat-floor-0: #ead8ca;
+        --pet-cat-floor-1: #dcc6b4;
+        --pet-cat-floor-2: #e6d9cf;
+        --pet-cat-bloom: 0.5;
+        --pet-cat-chroma: 0.3;
+        --pet-cat-hover: #d97757;
+        --pet-cat-glow: drop-shadow(0 2px 5px rgba(90, 64, 40, 0.18));
+        --pet-cat-glow-hover: drop-shadow(0 3px 10px rgba(249, 191, 224, 0.7));
+        --pet-primary: #d97757;
+        --pet-primary-soft: #fbf3ef;
+        --pet-primary-hover: #c25e3e;
         --pet-accent: #0f172a;
         --pet-surface: #ffffff;
         --pet-surface-elevated: #ffffff;
@@ -269,9 +290,9 @@
         --pet-btn-inset: inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 -1.5px 2.5px rgba(122, 95, 49, 0.32), inset 0 0 0 1px rgba(255, 255, 255, 0.3);
         --pet-btn-cast: 0 1px 1.5px rgba(64, 48, 21, 0.26), 0 4px 10px rgba(64, 48, 21, 0.14);
         --pet-btn-press: inset 0 2px 4px rgba(88, 64, 26, 0.42), inset 0 -1px 0 rgba(255, 255, 255, 0.55);
-        --pet-btn-glow: inset 0 0 7px rgba(217, 119, 6, 0.28);
-        --pet-btn-active-face: radial-gradient(135% 135% at 30% 18%, #ffe9bd 0%, rgba(255, 233, 189, 0) 55%), linear-gradient(180deg, #f8cd7c 0%, #eda93a 60%, #d9932a 100%);
-        --pet-btn-active-ink: #5d3d0c;
+        --pet-btn-glow: inset 0 0 7px rgba(217, 119, 87, 0.28);
+        --pet-btn-active-face: radial-gradient(135% 135% at 30% 18%, #fce7df 0%, rgba(252, 231, 223, 0) 55%), linear-gradient(180deg, #f3bca8 0%, #e58d72 60%, #d97757 100%);
+        --pet-btn-active-ink: #4e2214;
         --pet-glyph: #463b28;
         --pet-glyph-emboss: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.72));
       }
@@ -279,14 +300,35 @@
       :host([data-theme="dark"]) {
         color-scheme: dark;
         color: #ece7d9;
-        --pet-cat-color: #ece7d9;
-        --pet-cat-hover: #f0a63c;
-        --pet-cat-glow: drop-shadow(0 0 1.5px rgba(236, 231, 217, 0.7)) drop-shadow(0 2px 10px rgba(0, 0, 0, 0.95)) drop-shadow(0 0 8px rgba(240, 166, 60, 0.3));
-        --pet-cat-glow-hover: drop-shadow(0 0 2px rgba(236, 231, 217, 0.85)) drop-shadow(0 4px 20px rgba(240, 166, 60, 0.6)) drop-shadow(0 0 14px rgba(247, 188, 85, 0.45));
-        --pet-primary: #f0a63c;
-        --pet-primary-soft: rgba(240, 166, 60, 0.16);
-        --pet-primary-hover: #f7bc55;
-        --pet-accent: #ece7d9;
+        --pet-cat-color: #f5efeb;
+        /* 深色伴读猫：近黑麻薯 + 白五官 + 彩虹边缘光。与下方 @media 兜底块同步。 */
+        --pet-cat-body: #0b0a0e;
+        --pet-cat-face: #fbfaff;
+        --pet-cat-whisker: #fbfaff;
+        --pet-cat-whisker-under: rgba(0, 0, 0, 0.38);
+        --pet-cat-line: transparent;
+        --pet-cat-rim-0: #ffffff;
+        --pet-cat-rim-1: #ffe0ee;
+        --pet-cat-rim-2: #bfe6ff;
+        --pet-cat-rim-3: #d8f3ff;
+        --pet-cat-rim-4: #ffd9a0;
+        --pet-cat-under-0: #ffc79a;
+        --pet-cat-under-1: #d9b8ff;
+        --pet-cat-under-2: #8cc4ff;
+        --pet-cat-ear-0: #d7c2cc;
+        --pet-cat-ear-1: #3a3038;
+        --pet-cat-floor-0: #ffe7d2;
+        --pet-cat-floor-1: #ffffff;
+        --pet-cat-floor-2: #d6ecff;
+        --pet-cat-bloom: 0.55;
+        --pet-cat-chroma: 0.5;
+        --pet-cat-hover: #e07a5f;
+        --pet-cat-glow: drop-shadow(0 0 6px rgba(190, 220, 255, 0.22));
+        --pet-cat-glow-hover: drop-shadow(0 0 12px rgba(255, 214, 236, 0.4));
+        --pet-primary: #e07a5f;
+        --pet-primary-soft: rgba(224, 122, 95, 0.16);
+        --pet-primary-hover: #f0947b;
+        --pet-accent: #f5efeb;
         --pet-surface: #161d27;
         --pet-surface-elevated: #222b39;
         --pet-line: rgba(237, 231, 214, 0.13);
@@ -303,9 +345,9 @@
         --pet-btn-inset: inset 0 1px 0 rgba(255, 240, 214, 0.18), inset 0 -1.5px 2.5px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(255, 240, 214, 0.05);
         --pet-btn-cast: 0 1px 1.5px rgba(0, 0, 0, 0.6), 0 5px 12px rgba(0, 0, 0, 0.45);
         --pet-btn-press: inset 0 2px 5px rgba(0, 0, 0, 0.65), inset 0 -1px 0 rgba(255, 240, 214, 0.08);
-        --pet-btn-glow: inset 0 0 8px rgba(240, 166, 60, 0.32);
-        --pet-btn-active-face: radial-gradient(135% 135% at 30% 18%, #f7bc55 0%, rgba(247, 188, 85, 0) 55%), linear-gradient(180deg, #e0a63a 0%, #bc8410 62%, #97680a 100%);
-        --pet-btn-active-ink: #241703;
+        --pet-btn-glow: inset 0 0 8px rgba(224, 122, 95, 0.32);
+        --pet-btn-active-face: radial-gradient(135% 135% at 30% 18%, #f0947b 0%, rgba(240, 148, 123, 0) 55%), linear-gradient(180deg, #e07a5f 0%, #b8583e 62%, #93422b 100%);
+        --pet-btn-active-ink: #241108;
         --pet-glyph: #ece7d9;
         --pet-glyph-emboss: drop-shadow(0 -1px 1px rgba(0, 0, 0, 0.75));
       }
@@ -314,14 +356,35 @@
         :host(:not([data-theme])) {
           color-scheme: dark;
           color: #ece7d9;
-          --pet-cat-color: #ece7d9;
-          --pet-cat-hover: #f0a63c;
-          --pet-cat-glow: drop-shadow(0 0 1.5px rgba(236, 231, 217, 0.7)) drop-shadow(0 2px 10px rgba(0, 0, 0, 0.95)) drop-shadow(0 0 8px rgba(240, 166, 60, 0.3));
-          --pet-cat-glow-hover: drop-shadow(0 0 2px rgba(236, 231, 217, 0.85)) drop-shadow(0 4px 20px rgba(240, 166, 60, 0.6)) drop-shadow(0 0 14px rgba(247, 188, 85, 0.45));
-          --pet-primary: #f0a63c;
-          --pet-primary-soft: rgba(240, 166, 60, 0.16);
-          --pet-primary-hover: #f7bc55;
-          --pet-accent: #ece7d9;
+          --pet-cat-color: #f5efeb;
+          /* 深色伴读猫：与上方 :host([data-theme="dark"]) 块同步。 */
+          --pet-cat-body: #0b0a0e;
+          --pet-cat-face: #fbfaff;
+          --pet-cat-whisker: #fbfaff;
+          --pet-cat-whisker-under: rgba(0, 0, 0, 0.38);
+          --pet-cat-line: transparent;
+          --pet-cat-rim-0: #ffffff;
+          --pet-cat-rim-1: #ffe0ee;
+          --pet-cat-rim-2: #bfe6ff;
+          --pet-cat-rim-3: #d8f3ff;
+          --pet-cat-rim-4: #ffd9a0;
+          --pet-cat-under-0: #ffc79a;
+          --pet-cat-under-1: #d9b8ff;
+          --pet-cat-under-2: #8cc4ff;
+          --pet-cat-ear-0: #d7c2cc;
+          --pet-cat-ear-1: #3a3038;
+          --pet-cat-floor-0: #ffe7d2;
+          --pet-cat-floor-1: #ffffff;
+          --pet-cat-floor-2: #d6ecff;
+          --pet-cat-bloom: 0.55;
+          --pet-cat-chroma: 0.5;
+          --pet-cat-hover: #e07a5f;
+          --pet-cat-glow: drop-shadow(0 0 6px rgba(190, 220, 255, 0.22));
+          --pet-cat-glow-hover: drop-shadow(0 0 12px rgba(255, 214, 236, 0.4));
+          --pet-primary: #e07a5f;
+          --pet-primary-soft: rgba(224, 122, 95, 0.16);
+          --pet-primary-hover: #f0947b;
+          --pet-accent: #f5efeb;
           --pet-surface: #161d27;
           --pet-surface-elevated: #222b39;
           --pet-line: rgba(237, 231, 214, 0.13);
@@ -337,9 +400,9 @@
           --pet-btn-inset: inset 0 1px 0 rgba(255, 240, 214, 0.18), inset 0 -1.5px 2.5px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(255, 240, 214, 0.05);
           --pet-btn-cast: 0 1px 1.5px rgba(0, 0, 0, 0.6), 0 5px 12px rgba(0, 0, 0, 0.45);
           --pet-btn-press: inset 0 2px 5px rgba(0, 0, 0, 0.65), inset 0 -1px 0 rgba(255, 240, 214, 0.08);
-          --pet-btn-glow: inset 0 0 8px rgba(240, 166, 60, 0.32);
-          --pet-btn-active-face: radial-gradient(135% 135% at 30% 18%, #f7bc55 0%, rgba(247, 188, 85, 0) 55%), linear-gradient(180deg, #e0a63a 0%, #bc8410 62%, #97680a 100%);
-          --pet-btn-active-ink: #241703;
+          --pet-btn-glow: inset 0 0 8px rgba(224, 122, 95, 0.32);
+          --pet-btn-active-face: radial-gradient(135% 135% at 30% 18%, #f0947b 0%, rgba(240, 148, 123, 0) 55%), linear-gradient(180deg, #e07a5f 0%, #b8583e 62%, #93422b 100%);
+          --pet-btn-active-ink: #241108;
           --pet-glyph: #ece7d9;
           --pet-glyph-emboss: drop-shadow(0 -1px 1px rgba(0, 0, 0, 0.75));
         }
@@ -689,7 +752,7 @@
       }
 
       /* =========================================================
-         左侧快捷按钮行：阅读开关 / 摘要 / 设置 / 贴边
+         左侧快捷按钮行：阅读开关 / 贴边。提炼和设置在猫身上。
          位于猫的左下角、横向向左延伸（与上方旋旋翻不重叠）；贴边时随旋旋翻
          一起隐藏，悬停探出恢复；猫贴左屏时整行翻到右侧。
          ========================================================= */
@@ -744,16 +807,61 @@
          （transform 留给 hover/active 等交互态，避免互相覆盖）。
          --i 为"离猫距离"序号：贴右边时 #quick-dock 最近（--i:0），
          贴左边时 #roamcat-flip-btn 最近。 */
-      .roamcat-quick-dock > :nth-child(1) { --i: 4; }
-      .roamcat-quick-dock > :nth-child(2) { --i: 3; }
-      .roamcat-quick-dock > :nth-child(3) { --i: 2; }
-      .roamcat-quick-dock > :nth-child(4) { --i: 1; }
-      .roamcat-quick-dock > :nth-child(5) { --i: 0; }
+      .roamcat-quick-dock > :nth-child(1) { --i: 2; }
+      .roamcat-quick-dock > :nth-child(2) { --i: 1; }
+      .roamcat-quick-dock > :nth-child(3) { --i: 0; }
       .roamcat-pet-widget.is-left .roamcat-quick-dock > :nth-child(1) { --i: 0; }
       .roamcat-pet-widget.is-left .roamcat-quick-dock > :nth-child(2) { --i: 1; }
       .roamcat-pet-widget.is-left .roamcat-quick-dock > :nth-child(3) { --i: 2; }
-      .roamcat-pet-widget.is-left .roamcat-quick-dock > :nth-child(4) { --i: 3; }
-      .roamcat-pet-widget.is-left .roamcat-quick-dock > :nth-child(5) { --i: 4; }
+
+      /* 提炼和设置在身体侧面、耳朵以下，给耳尖和眼睛留出来。贴左屏时翻到右侧。 */
+      .roamcat-cat-menu {
+        position: absolute;
+        top: 4px;
+        right: calc(100% + 6px);
+        left: auto;
+        display: flex;
+        gap: 6px;
+        z-index: 13;
+        visibility: hidden;
+        transition: visibility 0s 0.36s;
+      }
+      .roamcat-pet-widget.is-left .roamcat-cat-menu {
+        right: auto;
+        left: calc(100% + 6px);
+      }
+      .roamcat-pet-widget:is(.dock-open, :hover) .roamcat-cat-menu {
+        visibility: visible;
+        transition-delay: 0s;
+      }
+      .roamcat-cat-menu > .roamcat-quick-btn {
+        opacity: 0;
+        translate: 0 8px;
+        scale: 0.6;
+        pointer-events: none;
+        transition:
+          transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+          box-shadow 0.2s ease,
+          border-color 0.2s ease,
+          background-color 0.2s ease,
+          opacity 0.16s ease-in,
+          translate 0.16s ease-in,
+          scale 0.16s ease-in;
+      }
+      .roamcat-pet-widget:is(.dock-open, :hover) .roamcat-cat-menu > .roamcat-quick-btn {
+        opacity: 1;
+        translate: 0 0;
+        scale: 1;
+        pointer-events: auto;
+        transition:
+          transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+          box-shadow 0.2s ease,
+          border-color 0.2s ease,
+          background-color 0.2s ease,
+          opacity 0.18s ease,
+          translate 0.32s cubic-bezier(0.34, 1.56, 0.64, 1),
+          scale 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
 
       .roamcat-pet-widget .roamcat-quick-dock > * {
         opacity: 0;
@@ -1418,12 +1526,16 @@
       }
 
       /* Official 2D Scanline Mascot Cat SVG & Breathing Animation */
+        50% { transform: scale(1.15) rotate(4deg); }
+      }
+
       .cat-svg {
         width: 58px;
         height: 62px;
         color: var(--pet-cat-color, #1e293b);
         filter: var(--pet-cat-glow);
-        transform-origin: 180px 466px;
+        transform-box: fill-box;
+        transform-origin: center bottom;
         animation: cat-breathe 3.6s ease-in-out infinite;
         overflow: visible;
         display: block;
@@ -1432,7 +1544,7 @@
       }
 
       .roamcat-avatar-wrap:hover .cat-svg {
-        color: var(--pet-cat-hover, #d97706);
+        color: var(--pet-cat-hover, #d97757);
         filter: var(--pet-cat-glow-hover);
       }
 
@@ -1442,7 +1554,7 @@
       }
 
       :host([data-theme="dark"]) .roamcat-avatar-wrap:hover .cat-svg {
-        color: var(--pet-cat-hover, #fbbf24);
+        color: var(--pet-cat-hover, #e07a5f);
         filter: var(--pet-cat-glow-hover);
       }
 
@@ -1452,7 +1564,7 @@
       }
 
       :host([data-theme="light"]) .roamcat-avatar-wrap:hover .cat-svg {
-        color: var(--pet-cat-hover, #d97706);
+        color: var(--pet-cat-hover, #d97757);
         filter: var(--pet-cat-glow-hover);
       }
 
@@ -1463,7 +1575,8 @@
 
       /* 1. Tail Wagging Animation */
       .cat-tail {
-        transform-origin: 300px 316px;
+        transform-box: fill-box;
+        transform-origin: 0% 70%;
         animation: cat-tail-wag 4.5s ease-in-out infinite;
       }
       @keyframes cat-tail-wag {
@@ -1486,11 +1599,13 @@
 
       /* 2. Ear Twitching Animation */
       .cat-ear-left {
-        transform-origin: 92px 96px;
+        transform-box: fill-box;
+        transform-origin: 75% 100%;
         animation: cat-ear-twitch-left 6.8s ease-in-out infinite;
       }
       .cat-ear-right {
-        transform-origin: 246px 96px;
+        transform-box: fill-box;
+        transform-origin: 25% 100%;
         animation: cat-ear-twitch-right 7.5s ease-in-out infinite 2s;
       }
       @keyframes cat-ear-twitch-left {
@@ -1506,10 +1621,18 @@
 
       /* 3. Eyes Expressions: Blinking & Squinting */
       .cat-eyes-open {
-        transform-origin: 168px 147px;
+        transform-box: fill-box;
+        transform-origin: center;
         animation: scan-blink 4.2s ease-in-out infinite;
         opacity: 1;
         transition: opacity 0.16s ease;
+      }
+      /* 瞳孔带着小眼点跟光标走。行程按 58px 猫脸里的余量。 */
+      .cat-pupil-slot {
+        transform-box: fill-box;
+        transform-origin: center;
+        transform: translate(calc(var(--eye-x, 0) * 2.2px), calc(var(--eye-y, 0) * 1.8px));
+        transition: transform 0.28s ease-out;
       }
       .cat-eyes-squint {
         opacity: 0;
@@ -1535,11 +1658,7 @@
         opacity: 1;
       }
 
-      /* Gaze Tracking: 眼睛跟随光标（--eye-x/--eye-y ∈ -1..1，JS 驱动） */
-      .cat-eyes-group {
-        transform: translate(calc(var(--eye-x, 0) * 14px), calc(var(--eye-y, 0) * 9px));
-        transition: transform 0.16s ease-out;
-      }
+      /* 探头猫整组眼睛跟光标；坐姿猫的眼点跟光标（见 .cat-pupil-slot）。 */
       .cat-peeking-svg .peeking-eyes-group {
         transform: translate(calc(var(--eye-x, 0) * 3px), calc(var(--eye-y, 0) * 2.2px));
         transition: transform 0.16s ease-out;
@@ -1729,12 +1848,12 @@
       }
 
       .roamcat-avatar-wrap:hover .cat-peeking-svg {
-        color: var(--pet-cat-hover, #d97706);
+        color: var(--pet-cat-hover, #d97757);
         filter: var(--pet-cat-glow-hover);
       }
 
       :host([data-theme="dark"]) .roamcat-avatar-wrap:hover .cat-peeking-svg {
-        color: var(--pet-cat-hover, #fbbf24);
+        color: var(--pet-cat-hover, #e07a5f);
         filter: var(--pet-cat-glow-hover);
       }
 
@@ -1757,7 +1876,8 @@
 
       /* Peeking Eyes: Blinking & Happy Squint */
       .peeking-eyes-open {
-        transform-origin: 80px 85px;
+        transform-box: fill-box;
+        transform-origin: center;
         animation: peeking-blink 4.2s ease-in-out infinite;
         opacity: 1;
         transition: opacity 0.16s ease;
@@ -1792,7 +1912,8 @@
 
       /* Peeking Ear Twitch */
       .peeking-ear-front {
-        transform-origin: 75px 55px;
+        transform-box: fill-box;
+        transform-origin: 50% 100%;
         animation: peeking-ear-twitch 6.4s ease-in-out infinite;
       }
       @keyframes peeking-ear-twitch {
@@ -1803,7 +1924,8 @@
 
       /* Peeking Whisker Micro-Vibration */
       .peeking-whiskers .whisker {
-        transform-origin: 46px 100px;
+        transform-box: fill-box;
+        transform-origin: 100% 50%;
         animation: peeking-whisker-twitch 5s ease-in-out infinite;
       }
       @keyframes peeking-whisker-twitch {
@@ -1843,6 +1965,7 @@
         .cat-mode-roaming,
         .cat-mode-peeking,
         .cat-eyes-group,
+        .cat-pupil-slot,
         .peeking-eyes-group,
         .pet-car,
         .pet-car * {
@@ -1857,6 +1980,16 @@
           transition: opacity 0.12s ease !important;
         }
         .roamcat-pet-widget:is(.dock-open, :hover) .roamcat-quick-dock > * {
+          --dock-opacity: 1;
+        }
+        .roamcat-pet-widget .roamcat-cat-menu > .roamcat-quick-btn,
+        .roamcat-pet-widget:is(.dock-open, :hover) .roamcat-cat-menu > .roamcat-quick-btn {
+          opacity: var(--dock-opacity, 0);
+          translate: none;
+          scale: none;
+          transition: opacity 0.12s ease !important;
+        }
+        .roamcat-pet-widget:is(.dock-open, :hover) .roamcat-cat-menu > .roamcat-quick-btn {
           --dock-opacity: 1;
         }
         .roamcat-quick-dock,
@@ -2255,202 +2388,157 @@
     `;
   }
 
-  // Official Brand Mascot: RoamCat · 贴边探头姿态 (Peeking Mascot Mode)
+  // 伴读猫配色：深色主题是一团近黑麻薯（白五官、白→粉→蓝→金边缘光、底部暖光），
+  // 亮色主题换成奶白麻薯（深色五官、粉蓝金柔光加一圈暖棕细描边）。所有颜色走 --pet-cat-* 变量，
+  // 默认值即深色版；亮/暗两套取值在本文件顶部的 :host 主题块里（深色两处：:host[data-theme] 与 @media 兜底）。
+  const CAT_BODY = 'var(--pet-cat-body, #0b0a0e)', CAT_FACE = 'var(--pet-cat-face, #fbfaff)';
+  const CAT_WHISKER = 'var(--pet-cat-whisker, #fbfaff)', CAT_WHISKER_UNDER = 'var(--pet-cat-whisker-under, rgba(0,0,0,0.38))';
+  const CAT_LINE = 'var(--pet-cat-line, transparent)';
+  // 两种姿态各自一套 id（rc-cat-* / rc-peek-*），同在一个 Shadow root 里也不冲突。
+  function catGlowDefs(prefix, glow) {
+    return `
+      <linearGradient id="${prefix}-rim" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="var(--pet-cat-rim-0, #ffffff)"/>
+      <stop offset="0.3" stop-color="var(--pet-cat-rim-1, #ffe0ee)"/>
+      <stop offset="0.55" stop-color="var(--pet-cat-rim-2, #bfe6ff)"/>
+      <stop offset="0.8" stop-color="var(--pet-cat-rim-3, #d8f3ff)"/>
+      <stop offset="1" stop-color="var(--pet-cat-rim-4, #ffd9a0)"/>
+      </linearGradient>
+      <radialGradient id="${prefix}-under" gradientUnits="userSpaceOnUse" cx="${glow.x}" cy="${glow.y}" r="${glow.r}">
+      <stop offset="0" stop-color="var(--pet-cat-under-0, #ffc79a)" stop-opacity="0.95"/>
+      <stop offset="0.3" stop-color="var(--pet-cat-under-1, #d9b8ff)" stop-opacity="0.5"/>
+      <stop offset="0.6" stop-color="var(--pet-cat-under-2, #8cc4ff)" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="var(--pet-cat-under-2, #7fb8ff)" stop-opacity="0"/>
+      </radialGradient>
+      <linearGradient id="${prefix}-ear" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="var(--pet-cat-ear-0, #d7c2cc)"/>
+      <stop offset="1" stop-color="var(--pet-cat-ear-1, #3a3038)"/>
+      </linearGradient>
+      <linearGradient id="${prefix}-floor" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="var(--pet-cat-floor-1, #ffffff)" stop-opacity="0"/>
+      <stop offset="0.3" stop-color="var(--pet-cat-floor-0, #ffe7d2)" stop-opacity="0.9"/>
+      <stop offset="0.5" stop-color="var(--pet-cat-floor-1, #ffffff)"/>
+      <stop offset="0.7" stop-color="var(--pet-cat-floor-2, #d6ecff)" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="var(--pet-cat-floor-1, #ffffff)" stop-opacity="0"/>
+      </linearGradient>
+      <filter id="${prefix}-bloom" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="3.2"/></filter>`;
+  }
+
+  // 贴边姿态：同一团黑麻薯从屏幕右缘探出大半个脑袋，彩虹边缘光勾出轮廓，两只圆爪扒着屏幕边。
+  // 左贴边时整张图由 CSS 镜像。
   function renderPeekingCatSvg() {
+    const head = 'M56 152 C42 128 48 86 78 72 C100 62 150 62 172 80 L182 152 Z';
     return `
-      <svg class="cat-peeking-svg" viewBox="0 0 160 160" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-        <title>${T('fp.svgPeek')}</title>
-        <defs>
-          <linearGradient id="rc-peek-vol" x1="0" y1="0" x2="0.6" y2="1">
-            <stop offset="0" stop-color="#ffffff" stop-opacity="0.22"/>
-            <stop offset="0.5" stop-color="#ffffff" stop-opacity="0"/>
-            <stop offset="1" stop-color="#000000" stop-opacity="0.16"/>
-          </linearGradient>
-        </defs>
-
-        <!-- 1. Ambient Glow Silhouette -->
-        <path class="peeking-base-silhouette" d="M160,20 C130,20 102,30 84,46 C68,58 48,70 38,88 C28,106 32,125 46,138 C64,150 94,156 128,158 C144,159 156,160 160,160 Z" opacity="0.08" />
-
-        <!-- 2. Ears (Behind Head) -->
-        <g class="peeking-ears">
-          <!-- Back Ear (Near border) -->
-          <g class="peeking-ear peeking-ear-back">
-            <path d="M106,42 L132,8 C134,5 139,6 141,10 L148,38 Z" fill="currentColor" />
-            <path d="M114,40 L132,15 L140,36 Z" fill="var(--pet-primary, #f59e0b)" opacity="0.9" />
-          </g>
-          
-          <!-- Front Ear (Perky inner ear tilted forward into page) -->
-          <g class="peeking-ear peeking-ear-front">
-            <path d="M66,62 L48,22 C46,17 52,14 56,17 L86,48 Z" fill="currentColor" />
-            <path d="M66,55 L54,26 L78,46 Z" fill="var(--pet-primary, #f59e0b)" opacity="0.95" />
-          </g>
-        </g>
-
-        <!-- 3. Head & Cheek (Signature RoamCat Scanline Design) -->
-        <g class="peeking-head">
-          <!-- Soft Head Base Volume -->
-          <path class="peeking-head-bg" d="M160,36 C136,36 108,44 90,56 C72,68 50,78 42,94 C34,109 38,124 50,135 C66,146 94,152 128,154 L160,154 Z" opacity="0.18" />
-
-          <!-- Signature Scanline Bars (Forehead & Lower Cheek) -->
-          <g class="peeking-scanlines">
-            <!-- Forehead Bars -->
-            <rect x="96" y="44" width="64" height="4.5" rx="2.2" />
-            <rect x="84" y="52" width="76" height="4.5" rx="2.2" />
-            <rect x="74" y="60" width="86" height="4.5" rx="2.2" />
-            <rect x="116" y="68" width="44" height="4.5" rx="2.2" />
-            <rect x="118" y="76" width="42" height="4.5" rx="2.2" />
-            <rect x="118" y="84" width="42" height="4.5" rx="2.2" />
-            <rect x="118" y="92" width="42" height="4.5" rx="2.2" />
-            <!-- Cheek & Chin Lower Bars -->
-            <rect x="42" y="104" width="118" height="4.5" rx="2.2" />
-            <rect x="46" y="112" width="114" height="4.5" rx="2.2" />
-            <rect x="54" y="120" width="106" height="4.5" rx="2.2" />
-            <rect x="68" y="128" width="92" height="4.5" rx="2.2" />
-            <rect x="88" y="136" width="72" height="4.5" rx="2.2" />
-            <rect x="112" y="144" width="48" height="4.5" rx="2.2" />
-          </g>
-
-          <!-- Pseudo-2D Volume Shading on head -->
-          <path class="peeking-volume" fill="url(#rc-peek-vol)" d="M160,36 C136,36 108,44 90,56 C72,68 50,78 42,94 C34,109 38,124 50,135 C66,146 94,152 128,154 L160,154 Z" />
-
-          <!-- Cute Blushing Cheeks (Warm amber/rose glow) -->
-          <ellipse class="peeking-blush" cx="52" cy="110" rx="10" ry="5.5" fill="var(--pet-primary, #f59e0b)" opacity="0.5" />
-
-          <!-- 4. Expressive Eyes Group (Crisp Solid Eyeballs) -->
-          <g class="peeking-eyes-group">
-            <!-- Open Eyes: Gazing with curiosity into the text -->
-            <g class="peeking-eyes-open">
-              <!-- Front Eye (Left, large & glossy) -->
-              <ellipse cx="64" cy="86" rx="13" ry="16" fill="#ffffff" stroke="currentColor" stroke-width="2.2" />
-              <ellipse cx="61.5" cy="86" rx="8.5" ry="12" fill="var(--pet-ink, #1c1917)" />
-              <!-- Double Glossy Catchlights (✨) -->
-              <circle cx="58" cy="81" r="4" fill="#ffffff" />
-              <circle cx="65" cy="91" r="2.2" fill="#ffffff" />
-
-              <!-- Perspective Eye (Right, slightly smaller in perspective) -->
-              <ellipse cx="98" cy="78" rx="10.5" ry="13.5" fill="#ffffff" stroke="currentColor" stroke-width="2" />
-              <ellipse cx="95.5" cy="78" rx="7" ry="10" fill="var(--pet-ink, #1c1917)" />
-              <circle cx="93" cy="74" r="3.2" fill="#ffffff" />
-              <circle cx="99" cy="82" r="1.8" fill="#ffffff" />
-            </g>
-
-            <!-- Squint Eyes: Happy (^ ^) when hovering or petted -->
-            <g class="peeking-eyes-squint">
-              <path d="M50,88 C58,74 72,74 80,88" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" />
-              <path d="M88,80 C95,68 107,68 114,80" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" />
-            </g>
-          </g>
-
-          <!-- 5. Snout & Mouth -->
-          <g class="peeking-snout">
-            <!-- Nose (Amber/Gold triangle) -->
-            <path d="M72,97 L82,97 L77,103 Z" fill="var(--pet-primary, #f59e0b)" />
-            <!-- W Mouth -->
-            <path d="M68,103 Q73,108 77,104 Q81,108 85,103" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" />
-          </g>
-
-          <!-- 6. Whiskers (Dynamic twitching) -->
-          <g class="peeking-whiskers" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" opacity="0.85">
-            <line x1="44" y1="94" x2="10" y2="88" class="whisker whisker-1" />
-            <line x1="42" y1="102" x2="6" y2="102" class="whisker whisker-2" />
-            <line x1="44" y1="110" x2="12" y2="118" class="whisker whisker-3" />
-          </g>
-        </g>
-
-        <!-- =======================================================
-             7. High-Contrast Paws Clinging on Edge (扒拉在边框上的肉垫猫爪 🐾)
-             Anchored firmly at x=160 (The screen border!)
-             ======================================================= -->
-        <g class="peeking-paws">
-          <!-- Upper Paw (上爪) -->
-          <g class="peeking-paw paw-upper">
-            <!-- Paw Arm / Base Wrapping over edge -->
-            <path d="M160,54 C138,54 126,60 124,71 C123,81 131,89 144,91 C152,92 157,92 160,92 Z" fill="var(--pet-surface-elevated, #ffffff)" stroke="currentColor" stroke-width="2.8" stroke-linejoin="round" />
-            <!-- Main Palm Pad (肉垫) -->
-            <path d="M138,73 C138,67 148,67 148,73 C148,78 138,78 138,73 Z" fill="var(--pet-primary, #f59e0b)" />
-            <!-- 3 Cute Rounded Toe Beans (爪尖肉垫) -->
-            <circle cx="128" cy="63" r="4.5" fill="var(--pet-primary, #f59e0b)" stroke="currentColor" stroke-width="1.2" />
-            <circle cx="123" cy="73" r="5" fill="var(--pet-primary, #f59e0b)" stroke="currentColor" stroke-width="1.2" />
-            <circle cx="128" cy="83" r="4.5" fill="var(--pet-primary, #f59e0b)" stroke="currentColor" stroke-width="1.2" />
-          </g>
-
-          <!-- Lower Paw (下爪) -->
-          <g class="peeking-paw paw-lower">
-            <path d="M160,102 C138,102 126,108 124,119 C123,129 131,137 144,139 C152,140 157,140 160,140 Z" fill="var(--pet-surface-elevated, #ffffff)" stroke="currentColor" stroke-width="2.8" stroke-linejoin="round" />
-            <path d="M138,121 C138,115 148,115 148,121 C148,126 138,126 138,121 Z" fill="var(--pet-primary, #f59e0b)" />
-            <circle cx="128" cy="111" r="4.5" fill="var(--pet-primary, #f59e0b)" stroke="currentColor" stroke-width="1.2" />
-            <circle cx="123" cy="121" r="5" fill="var(--pet-primary, #f59e0b)" stroke="currentColor" stroke-width="1.2" />
-            <circle cx="128" cy="131" r="4.5" fill="var(--pet-primary, #f59e0b)" stroke="currentColor" stroke-width="1.2" />
-          </g>
-        </g>
+      <svg class="cat-peeking-svg" viewBox="0 0 160 160">
+      <title>${T('fp.svgPeek')}</title>
+      <defs>${catGlowDefs('rc-peek', {x: 112, y: 156, r: 86})}<clipPath id="rc-peek-clip"><path d="${head}"/></clipPath></defs>
+      <g class="peeking-ears">
+      <g class="peeking-ear peeking-ear-back">
+      <path d="M134 68 L152 46 L162 80 Z" fill="url(#rc-peek-ear)" stroke="url(#rc-peek-rim)" stroke-width="2.4" stroke-linejoin="round"/>
+      </g>
+      <g class="peeking-ear peeking-ear-front">
+      <path d="M68 90 L68 58 L98 72 Z" fill="url(#rc-peek-ear)" stroke="url(#rc-peek-rim)" stroke-width="2.4" stroke-linejoin="round"/>
+      </g>
+      </g>
+      <path d="${head}" fill="none" stroke="url(#rc-peek-rim)" stroke-width="7" style="opacity:var(--pet-cat-bloom, .55)" filter="url(#rc-peek-bloom)"/>
+      <path d="${head}" fill="${CAT_BODY}"/>
+      <g clip-path="url(#rc-peek-clip)"><rect x="40" y="50" width="150" height="110" fill="url(#rc-peek-under)"/></g>
+      <path d="${head}" fill="none" stroke="#ff8fc4" stroke-width="1.4" style="opacity:var(--pet-cat-chroma, .5)" transform="translate(-1 0)"/>
+      <path d="${head}" fill="none" stroke="#86dcff" stroke-width="1.4" style="opacity:var(--pet-cat-chroma, .5)" transform="translate(1 0.6)"/>
+      <path d="${head}" fill="none" stroke="url(#rc-peek-rim)" stroke-width="2.6"/>
+      <path d="${head}" fill="none" stroke="${CAT_LINE}" stroke-width="1.2"/>
+      <g class="peeking-eyes-group">
+      <g class="peeking-eyes-open" fill="${CAT_FACE}">
+      <circle cx="94" cy="110" r="5.4"/>
+      <circle cx="134" cy="105" r="5.4"/>
+      </g>
+      <g class="peeking-eyes-squint" fill="none" stroke="${CAT_FACE}" stroke-width="3" stroke-linecap="round">
+      <path d="M88 112 Q94 105 100 112"/>
+      <path d="M128 107 Q134 100 140 107"/>
+      </g>
+      </g>
+      <path d="M114 104 v3.2 M109 109 Q112 113.2 115 109.4 Q118 113.2 121 109" fill="none" stroke="${CAT_FACE}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <g aria-hidden="true" fill="none" stroke="${CAT_WHISKER_UNDER}" stroke-width="2.6" stroke-linecap="round">
+      <line x1="66" y1="118" x2="30" y2="114"/>
+      <line x1="66" y1="123" x2="32" y2="126"/>
+      <line x1="68" y1="128" x2="38" y2="137"/>
+      </g>
+      <g class="peeking-whiskers" fill="none" stroke="${CAT_WHISKER}" stroke-width="1.3" stroke-linecap="round" opacity="0.85">
+      <line class="whisker whisker-1" x1="66" y1="118" x2="30" y2="114"/>
+      <line class="whisker whisker-2" x1="66" y1="123" x2="32" y2="126"/>
+      <line class="whisker whisker-3" x1="68" y1="128" x2="38" y2="137"/>
+      </g>
+      <g class="peeking-paws">
+      <g class="peeking-paw paw-upper">
+      <path d="M160 112 C148 108 139 115 140 125 C141 133 150 136 160 133 Z" fill="${CAT_BODY}" stroke="url(#rc-peek-rim)" stroke-width="2.2" stroke-linejoin="round"/>
+      </g>
+      <g class="peeking-paw paw-lower">
+      <path d="M160 138 C148 134 139 141 140 151 C141 158 150 160 160 157 Z" fill="${CAT_BODY}" stroke="url(#rc-peek-rim)" stroke-width="2.2" stroke-linejoin="round"/>
+      </g>
+      </g>
       </svg>
     `;
   }
 
-  // Official Brand Mascot: RoamCat · 扫描线漫游猫 (Exact match with official website & welcome page)
+  // 坐姿：一整团黑麻薯端坐在发光地平线上——尖耳朝外微斜、两个白点眼、ω 嘴、细白胡须，
+  // 轮廓是彩虹边缘光加轻微色散，肚子下沿透出暖色反光；小尾巴从右后侧露出一截。
   function renderCatSvg() {
+    const body = 'M46 194 C30 176 32 130 56 110 C74 94 126 94 144 110 C168 130 170 176 154 194 C144 202 56 202 46 194 Z';
     return `
-      <svg class="cat-svg" viewBox="0 0 460 490" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-        <title>${T('fp.svgCat')}</title>
-        <defs>
-          <linearGradient id="rc-roam-vol" x1="0" y1="0" x2="0.55" y2="1">
-            <stop offset="0" stop-color="#ffffff" stop-opacity="0.26"/>
-            <stop offset="0.45" stop-color="#ffffff" stop-opacity="0"/>
-            <stop offset="1" stop-color="#000000" stop-opacity="0.18"/>
-          </linearGradient>
-          <radialGradient id="rc-roam-ground" cx="0.5" cy="0.5" r="0.5">
-            <stop offset="0" stop-color="#000000" stop-opacity="0.3"/>
-            <stop offset="1" stop-color="#000000" stop-opacity="0"/>
-          </radialGradient>
-        </defs>
-        <ellipse class="cat-ground-shadow" cx="190" cy="472" rx="176" ry="13" fill="url(#rc-roam-ground)"/>
-        <path class="cat-base" d="M60,94L86,10L124,72L142,66L168,62L196,66L212,72L250,10L274,94L284,124L288,156L278,180L258,198L232,210L168,214L104,210L78,198L58,180L48,156L52,124ZM108,208L230,208L244,238L256,272L276,316L296,362L306,410L310,446L312,462L48,462L50,442L56,398L66,348L82,300L96,258L104,228ZM296,318L334,324L374,318L408,300L432,272L446,242L454,216L448,208L438,212L428,238L414,264L390,290L362,306L330,308L298,300Z" opacity=".09"/>
-
-        <!-- Wind Trail Lines（向右的风） -->
-        <g class="cat-trails" opacity=".34"><rect x="288.8" y="109" width="146.2" height="4.8"/><rect x="293.7" y="127" width="123.3" height="4.8"/><rect x="295.9" y="145" width="155.1" height="4.8"/><rect x="293.1" y="163" width="139.9" height="4.8"/><rect x="283.2" y="181" width="131.8" height="4.8"/><rect x="259.6" y="199" width="189.4" height="4.8"/><rect x="399.2" y="307" width="45.8" height="4.8"/><rect x="290.0" y="325" width="137.0" height="4.8"/><rect x="297.8" y="343" width="111.2" height="4.8"/><rect x="305.3" y="361" width="137.7" height="4.8"/><rect x="309.0" y="379" width="116.0" height="4.8"/><rect x="312.8" y="397" width="94.2" height="4.8"/><rect x="315.8" y="415" width="125.2" height="4.8"/><rect x="317.8" y="433" width="105.2" height="4.8"/><rect x="319.9" y="451" width="85.1" height="4.8"/></g>
-
-        <!-- Animated Wagging Tail -->
-        <g class="cat-tail"><rect x="442.0" y="208" width="7.8" height="4.8"/><rect x="435.2" y="217" width="17.8" height="4.8"/><rect x="431.7" y="226" width="18.5" height="4.8"/><rect x="428.2" y="235" width="19.2" height="4.8"/><rect x="423.5" y="244" width="20.5" height="4.8"/><rect x="418.6" y="253" width="21.1" height="4.8"/><rect x="413.6" y="262" width="21.9" height="4.8"/><rect x="405.3" y="271" width="25.5" height="4.8"/><rect x="397.0" y="280" width="26.1" height="4.8"/><rect x="387.6" y="289" width="27.8" height="4.8"/><rect x="298.0" y="298" width="1.6" height="4.8"/><rect x="371.8" y="298" width="35.4" height="4.8"/><rect x="297.0" y="307" width="93.3" height="4.8"/><rect x="298.5" y="316" width="72.8" height="4.8"/></g>
-
-        <g class="cat-ear cat-ear-left"><rect x="85.3" y="10" width="2.2" height="4.8"/><rect x="82.5" y="19" width="10.5" height="4.8"/><rect x="79.7" y="28" width="18.8" height="4.8"/><rect x="76.9" y="37" width="27.1" height="4.8"/><rect x="74.1" y="46" width="35.4" height="4.8"/><rect x="71.3" y="55" width="43.7" height="4.8"/><rect x="68.5" y="64" width="52.0" height="4.8"/><rect x="140.8" y="64" width="19.2" height="4.8"/><rect x="65.8" y="73" width="94.2" height="4.8"/><rect x="63.0" y="82" width="97.0" height="4.8"/><rect x="60.2" y="91" width="99.8" height="4.8"/></g>
-        <g class="cat-ear cat-ear-right"><rect x="248.5" y="10" width="2.2" height="4.8"/><rect x="243.0" y="19" width="10.2" height="4.8"/><rect x="237.5" y="28" width="18.3" height="4.8"/><rect x="232.0" y="37" width="26.4" height="4.8"/><rect x="226.5" y="46" width="34.5" height="4.8"/><rect x="220.9" y="55" width="42.6" height="4.8"/><rect x="160.0" y="64" width="37.1" height="4.8"/><rect x="215.4" y="64" width="50.7" height="4.8"/><rect x="160.0" y="73" width="108.7" height="4.8"/><rect x="160.0" y="82" width="111.3" height="4.8"/><rect x="160.0" y="91" width="113.8" height="4.8"/></g>
-
-        <g class="cat-inner-ears" fill="var(--pet-primary, #f59e0b)" opacity="0.55"><path d="M76,62L88,30L106,62Z"/><path d="M230,62L248,30L260,62Z"/></g>
-
-        <!-- Scanline Halftone Body Bars -->
-        <g class="cat-scanlines"><rect x="57.8" y="100" width="219.0" height="4.8"/><rect x="55.4" y="109" width="224.4" height="4.8"/><rect x="53.0" y="118" width="229.8" height="4.8"/><rect x="51.3" y="127" width="58.7" height="4.8"/><rect x="144.0" y="127" width="48.0" height="4.8"/><rect x="226.0" y="127" width="58.7" height="4.8"/><rect x="50.2" y="136" width="59.8" height="4.8"/><rect x="144.0" y="136" width="48.0" height="4.8"/><rect x="226.0" y="136" width="59.8" height="4.8"/><rect x="49.1" y="145" width="60.9" height="4.8"/><rect x="144.0" y="145" width="48.0" height="4.8"/><rect x="226.0" y="145" width="60.9" height="4.8"/><rect x="48.2" y="154" width="61.8" height="4.8"/><rect x="144.0" y="154" width="48.0" height="4.8"/><rect x="226.0" y="154" width="61.8" height="4.8"/><rect x="51.9" y="163" width="58.1" height="4.8"/><rect x="144.0" y="163" width="48.0" height="4.8"/><rect x="226.0" y="163" width="58.1" height="4.8"/><rect x="55.7" y="172" width="224.7" height="4.8"/><rect x="61.8" y="181" width="212.4" height="4.8"/><rect x="71.8" y="190" width="192.4" height="4.8"/><rect x="85.4" y="199" width="165.3" height="4.8"/><rect x="107.5" y="208" width="123.6" height="4.8"/><rect x="110.4" y="208" width="115.2" height="4.8"/><rect x="105.7" y="217" width="129.6" height="4.8"/><rect x="103.9" y="226" width="135.6" height="4.8"/><rect x="101.5" y="235" width="142.2" height="4.8"/><rect x="99.1" y="244" width="147.9" height="4.8"/><rect x="96.7" y="253" width="153.4" height="4.8"/><rect x="93.9" y="262" width="159.5" height="4.8"/><rect x="90.9" y="271" width="165.8" height="4.8"/><rect x="87.9" y="280" width="172.9" height="4.8"/><rect x="84.9" y="289" width="180.0" height="4.8"/><rect x="81.9" y="298" width="187.0" height="4.8"/><rect x="78.9" y="307" width="194.1" height="4.8"/><rect x="75.9" y="316" width="201.2" height="4.8"/><rect x="72.9" y="325" width="208.1" height="4.8"/><rect x="69.9" y="334" width="215.0" height="4.8"/><rect x="66.9" y="343" width="221.9" height="4.8"/><rect x="64.7" y="352" width="228.0" height="4.8"/><rect x="62.9" y="361" width="233.4" height="4.8"/><rect x="61.1" y="370" width="237.0" height="4.8"/><rect x="59.3" y="379" width="240.7" height="4.8"/><rect x="57.5" y="388" width="244.4" height="4.8"/><rect x="55.8" y="397" width="248.0" height="4.8"/><rect x="54.6" y="406" width="251.1" height="4.8"/><rect x="53.4" y="415" width="253.5" height="4.8"/><rect x="52.1" y="424" width="255.7" height="4.8"/><rect x="50.9" y="433" width="257.9" height="4.8"/><rect x="49.8" y="442" width="260.1" height="4.8"/><rect x="48.9" y="451" width="262.1" height="4.8"/></g>
-
-        <path class="cat-volume" fill="url(#rc-roam-vol)" d="M60,94L86,10L124,72L142,66L168,62L196,66L212,72L250,10L274,94L284,124L288,156L278,180L258,198L232,210L168,214L104,210L78,198L58,180L48,156L52,124ZM108,208L230,208L244,238L256,272L276,316L296,362L306,410L310,446L312,462L48,462L50,442L56,398L66,348L82,300L96,258L104,228ZM296,318L334,324L374,318L408,300L432,272L446,242L454,216L448,208L438,212L428,238L414,264L390,290L362,306L330,308L298,300Z"/>
-
-        <g class="cat-eyes-group">
-          <g class="cat-eyes-open">
-            <g class="cat-eye cat-eye-left"><rect x="118.0" y="134" width="20.0" height="6"/><rect x="118.0" y="143" width="20.0" height="6"/><rect x="118.0" y="152" width="20.0" height="6"/></g>
-            <g class="cat-eye cat-eye-right"><rect x="200.0" y="134" width="20.0" height="6"/><rect x="200.0" y="143" width="20.0" height="6"/><rect x="200.0" y="152" width="20.0" height="6"/></g>
-          </g>
-          <g class="cat-eyes-squint">
-            <rect x="110" y="145" width="30" height="7" rx="3.5"/>
-            <rect x="114" y="138" width="22" height="6" rx="3"/>
-            <rect x="196" y="145" width="30" height="7" rx="3.5"/>
-            <rect x="200" y="138" width="22" height="6" rx="3"/>
-          </g>
-        </g>
-
-        <g class="cat-blush" fill="var(--pet-primary, #f59e0b)" opacity="0.34">
-          <ellipse cx="72" cy="182" rx="13" ry="6.5"/>
-          <ellipse cx="262" cy="182" rx="13" ry="6.5"/>
-        </g>
-
-        <g class="cat-muzzle">
-          <path d="M159 172h18l-9 11z" fill="var(--pet-primary, #f59e0b)"/>
-          <path d="M152 188q8 8 16 0q8 8 16 0" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-        </g>
-
-        <path class="cat-trail" d="M40 468h90m40 8h140m30-9h110" fill="none" stroke="currentColor" stroke-width="2.5"/>
-
+      <svg class="cat-svg" viewBox="0 0 200 220">
+      <title>${T('fp.svgCat')}</title>
+      <defs>${catGlowDefs('rc-cat', {x: 100, y: 200, r: 96})}<clipPath id="rc-cat-clip"><path d="${body}"/></clipPath></defs>
+      <g class="cat-ground-shadow">
+      <rect x="0" y="194.5" width="200" height="6" rx="3" fill="url(#rc-cat-floor)" filter="url(#rc-cat-bloom)"/>
+      <rect x="14" y="196.6" width="172" height="1.8" rx="0.9" fill="url(#rc-cat-floor)"/>
+      </g>
+      <g class="cat-tail">
+      <path d="M152 190 C172 188 182 172 176 158" fill="none" stroke="url(#rc-cat-rim)" stroke-width="12" stroke-linecap="round"/>
+      <path d="M152 190 C172 188 182 172 176 158" fill="none" stroke="${CAT_BODY}" stroke-width="7.4" stroke-linecap="round"/>
+      </g>
+      <g class="cat-ear cat-ear-left">
+      <path d="M52 120 L50 82 L82 100 Z" fill="url(#rc-cat-ear)" stroke="url(#rc-cat-rim)" stroke-width="2.6" stroke-linejoin="round"/>
+      </g>
+      <g class="cat-ear cat-ear-right">
+      <path d="M118 100 L150 82 L148 120 Z" fill="url(#rc-cat-ear)" stroke="url(#rc-cat-rim)" stroke-width="2.6" stroke-linejoin="round"/>
+      </g>
+      <path d="${body}" fill="none" stroke="url(#rc-cat-rim)" stroke-width="8" style="opacity:var(--pet-cat-bloom, .55)" filter="url(#rc-cat-bloom)"/>
+      <path d="${body}" fill="${CAT_BODY}"/>
+      <g clip-path="url(#rc-cat-clip)"><rect x="0" y="80" width="200" height="130" fill="url(#rc-cat-under)"/></g>
+      <path d="${body}" fill="none" stroke="#ff8fc4" stroke-width="1.5" style="opacity:var(--pet-cat-chroma, .5)" transform="translate(-1.2 0)"/>
+      <path d="${body}" fill="none" stroke="#86dcff" stroke-width="1.5" style="opacity:var(--pet-cat-chroma, .5)" transform="translate(1.2 0.6)"/>
+      <path d="${body}" fill="none" stroke="url(#rc-cat-rim)" stroke-width="2.8"/>
+      <path d="${body}" fill="none" stroke="${CAT_LINE}" stroke-width="1.2"/>
+      <g class="cat-eyes-group">
+      <g class="cat-eyes-open">
+      <g class="cat-eye cat-eye-left"><g class="cat-pupil-slot"><circle cx="80" cy="140" r="5.8" fill="${CAT_FACE}"/></g></g>
+      <g class="cat-eye cat-eye-right"><g class="cat-pupil-slot"><circle cx="122" cy="135" r="5.8" fill="${CAT_FACE}"/></g></g>
+      </g>
+      <g class="cat-eyes-squint" fill="none" stroke="${CAT_FACE}" stroke-width="3.2" stroke-linecap="round">
+      <path d="M73 142 Q80 134 87 142"/>
+      <path d="M115 137 Q122 129 129 137"/>
+      </g>
+      </g>
+      <path d="M102 133 v3.4 M96.5 139 Q99.5 143.5 102.5 139.4 Q105.5 143.5 108.5 139" fill="none" stroke="${CAT_FACE}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <g aria-hidden="true" fill="none" stroke="${CAT_WHISKER_UNDER}" stroke-width="2.6" stroke-linecap="round">
+      <line x1="52" y1="150" x2="16" y2="146"/>
+      <line x1="52" y1="155" x2="18" y2="158"/>
+      <line x1="54" y1="160" x2="24" y2="170"/>
+      <line x1="150" y1="122" x2="186" y2="110"/>
+      <line x1="150" y1="127" x2="188" y2="122"/>
+      <line x1="150" y1="132" x2="184" y2="133"/>
+      </g>
+      <g class="cat-whiskers" fill="none" stroke="${CAT_WHISKER}" stroke-width="1.3" stroke-linecap="round" opacity="0.85">
+      <line x1="52" y1="150" x2="16" y2="146"/>
+      <line x1="52" y1="155" x2="18" y2="158"/>
+      <line x1="54" y1="160" x2="24" y2="170"/>
+      <line x1="150" y1="122" x2="186" y2="110"/>
+      <line x1="150" y1="127" x2="188" y2="122"/>
+      <line x1="150" y1="132" x2="184" y2="133"/>
+      </g>
       </svg>
     `;
   }
-
   class RoamCatPetWidget {
     constructor() {
       // 先同步挂上猫，再异步读设置。STATE_GET 若等后台/连接器，页面上不能先空着。
@@ -2458,6 +2546,7 @@
       this.bindGlobalEvents();
       this.bindEvents();
       this.startIdleActions();
+      this.startPageGlance();
       this.startSleepWatchdog();
       this.startQuoteTicker();
       this._initialized = true;
@@ -2735,8 +2824,9 @@
         if (!rect || !rect.width) return;
         const nx = Math.max(-1, Math.min(1, (gazeX - (rect.left + rect.width / 2)) / 240));
         const ny = Math.max(-1, Math.min(1, (gazeY - (rect.top + rect.height / 2)) / 200));
-        this.container.style.setProperty('--eye-x', nx.toFixed(3));
-        this.container.style.setProperty('--eye-y', ny.toFixed(3));
+        this._gaze = {x: nx.toFixed(3), y: ny.toFixed(3)};
+        this.container.style.setProperty('--eye-x', this._gaze.x);
+        this.container.style.setProperty('--eye-y', this._gaze.y);
       };
       window.addEventListener('pointermove', (e) => {
         if (gazeMotion.matches) return;
@@ -3029,8 +3119,9 @@
       isDockOpen = true;
       this.container.classList.add('dock-open');
       this.zoomControls?.removeAttribute('inert');
-      // 卫星按钮随坞展开回到 Tab 序（收起态由模板与 closeQuickDock 置 tabindex=-1）
+      // 卫星按钮与猫身上的提炼/设置随坞展开回到 Tab 序。
       for (const btn of this.quickDock?.children || []) btn.removeAttribute('tabindex');
+      for (const btn of this.shadowQuery('#roamcat-cat-menu')?.querySelectorAll('button') || []) btn.removeAttribute('tabindex');
       this.avatarWrap?.setAttribute('aria-expanded', 'true');
       this.updateReadingStatus();
       this.fitSpeechBubble();
@@ -3042,6 +3133,7 @@
       this.container?.classList.remove('dock-open');
       this.zoomControls?.setAttribute('inert', '');
       for (const btn of this.quickDock?.children || []) btn.setAttribute('tabindex', '-1');
+      for (const btn of this.shadowQuery('#roamcat-cat-menu')?.querySelectorAll('button') || []) btn.setAttribute('tabindex', '-1');
       this.avatarWrap?.setAttribute('aria-expanded', 'false');
       this.fitSpeechBubble();
     }
@@ -3269,6 +3361,33 @@
         }, cooldown);
       };
       scheduleDrive();
+    }
+
+    // 空闲时瞳孔朝页面内侧看一眼再回到光标方向。贴右缘向左，贴左缘向右。
+    startPageGlance() {
+      clearTimeout(this._glanceTimer);
+      clearTimeout(this._glanceReset);
+      const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+      const schedule = () => {
+        if (this._disposed) return;
+        this._glanceTimer = setTimeout(() => {
+          const quiet = !this._disposed && !isDragging && !this._isSleeping && !motion.matches
+            && document.visibilityState === 'visible' && petState === 'idle' && this.container;
+          if (quiet) {
+            const lookLeft = !this.container.classList.contains('is-left');
+            this.container.style.setProperty('--eye-x', lookLeft ? '-0.9' : '0.9');
+            this.container.style.setProperty('--eye-y', '0.4');
+            this._glanceReset = setTimeout(() => {
+              if (!this.container || this._disposed) return;
+              const gaze = this._gaze || {x: '0', y: '0'};
+              this.container.style.setProperty('--eye-x', gaze.x);
+              this.container.style.setProperty('--eye-y', gaze.y);
+            }, 720);
+          }
+          schedule();
+        }, 7000 + Math.random() * 6000);
+      };
+      schedule();
     }
 
     startSleepWatchdog() {
@@ -3723,6 +3842,8 @@
       cachedSummarySource = null;
       this.releaseDrag();
       clearTimeout(this._idleTimer);
+      clearTimeout(this._glanceTimer);
+      clearTimeout(this._glanceReset);
       clearInterval(this._sleepWatchdogInterval);
       this.stopQuoteTicker();
       try { this._abort?.abort(); } catch {}
@@ -3956,6 +4077,8 @@
         this.stopQuoteTicker();
         this.releaseDrag();
         clearTimeout(this._idleTimer);
+        clearTimeout(this._glanceTimer);
+        clearTimeout(this._glanceReset);
         clearTimeout(this._driveTimer);
         clearTimeout(this._speechTimer);
         clearInterval(this._sleepWatchdogInterval);
@@ -3990,6 +4113,7 @@
           this.createDOM();
           this.bindEvents();
           this.startIdleActions();
+          this.startPageGlance();
           this.startSleepWatchdog();
           this.syncQuoteTicker();
           this.updateReadingStatus();

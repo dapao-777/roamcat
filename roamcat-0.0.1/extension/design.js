@@ -4,6 +4,7 @@
 
   const common = `
     --rc-sans: "Noto Serif SC", "Source Han Serif SC", "STSong", "SimSun", "Songti SC", Georgia, "Times New Roman", serif;
+    --rc-ui: "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
     --rc-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
     --rc-display: "Silkscreen", "JetBrains Mono", "Courier New", monospace;
     --rc-type-page-title: 22px;
@@ -40,6 +41,9 @@
     --rc-radius-pill: 999px;
     --rc-focus-ring: 2px solid var(--rc-accent);
     --rc-focus-offset: 2px;
+    --rc-status-progress: var(--rc-ink);
+    --rc-status-attention: var(--rc-danger);
+    --rc-status-steady: var(--rc-teal);
     --rc-dur-instant: 80ms;
     --rc-dur-fast: 160ms;
     --rc-dur-med: 280ms;
@@ -51,8 +55,9 @@
     --rc-spring-soft: linear(0, 0.007, 0.029 2.2%, 0.118 4.7%, 0.361 9.9%, 0.535 13%, 0.888 19.2%, 1.041 23.1%, 1.156 27.4%, 1.213 32.6%, 1.216 36.4%, 1.19, 1.146 46.3%, 1.058 61.6%, 1.015 68.9%, 0.997 76.1%, 1);
     --rc-spring-pop: linear(0, 0.11, 0.36 12%, 0.79 21%, 1.03 30%, 1.11 40%, 1.06 61%, 1);
     --sans: var(--rc-sans);
+    --ui: var(--rc-ui);
     --mono: var(--rc-mono);
-    --font-sans: var(--rc-sans);
+    --font-sans: var(--rc-ui);
     --font-serif: var(--rc-sans);
     --font-mono: var(--rc-mono);
     --font-display: var(--rc-display);
@@ -123,6 +128,9 @@
     --green-line: var(--rc-green-line);
     --danger: var(--rc-danger);
     --danger-soft: var(--rc-danger-soft);
+    --status-progress: var(--rc-status-progress);
+    --status-attention: var(--rc-status-attention);
+    --status-steady: var(--rc-status-steady);
     --warning: var(--rc-warning);
     --warning-soft: var(--rc-warning-soft);
     --reading-mark: var(--rc-reading-mark);
@@ -212,6 +220,26 @@
   `;
   const light = `
     color-scheme: light;
+    --rc-cat-body: #fffaf3;
+    --rc-cat-face: #3a2e26;
+    --rc-cat-whisker: #9a8a7e;
+    --rc-cat-whisker-under: transparent;
+    --rc-cat-line: rgba(96, 72, 54, 0.55);
+    --rc-cat-rim-0: #ffc2d8;
+    --rc-cat-rim-1: #f9bfe0;
+    --rc-cat-rim-2: #a9d6ff;
+    --rc-cat-rim-3: #b8ecf5;
+    --rc-cat-rim-4: #ffd08f;
+    --rc-cat-under-0: #ffd2b0;
+    --rc-cat-under-1: #e8d6ff;
+    --rc-cat-under-2: #d2e8ff;
+    --rc-cat-ear-0: #ffd3de;
+    --rc-cat-ear-1: #fff4ef;
+    --rc-cat-floor-0: #ead8ca;
+    --rc-cat-floor-1: #dcc6b4;
+    --rc-cat-floor-2: #e6d9cf;
+    --rc-cat-bloom: 0.5;
+    --rc-cat-chroma: 0.3;
     --rc-canvas: #efeee6;
     --rc-paper: #faf9f4;
     --rc-surface: #faf9f4;
@@ -326,6 +354,26 @@
   `;
   const dark = `
     color-scheme: dark;
+    --rc-cat-body: #0b0a0e;
+    --rc-cat-face: #fbfaff;
+    --rc-cat-whisker: #fbfaff;
+    --rc-cat-whisker-under: rgba(0, 0, 0, 0.38);
+    --rc-cat-line: transparent;
+    --rc-cat-rim-0: #ffffff;
+    --rc-cat-rim-1: #ffe0ee;
+    --rc-cat-rim-2: #bfe6ff;
+    --rc-cat-rim-3: #d8f3ff;
+    --rc-cat-rim-4: #ffd9a0;
+    --rc-cat-under-0: #ffc79a;
+    --rc-cat-under-1: #d9b8ff;
+    --rc-cat-under-2: #8cc4ff;
+    --rc-cat-ear-0: #d7c2cc;
+    --rc-cat-ear-1: #3a3038;
+    --rc-cat-floor-0: #ffe7d2;
+    --rc-cat-floor-1: #ffffff;
+    --rc-cat-floor-2: #d6ecff;
+    --rc-cat-bloom: 0.55;
+    --rc-cat-chroma: 0.5;
     --rc-canvas: #0b0e13;
     --rc-paper: #10141b;
     --rc-surface: #161d27;

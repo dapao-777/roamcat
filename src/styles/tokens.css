@@ -17,6 +17,7 @@
 :root {
   /* —— 字体与排版 —— */
   --rc-sans: "Noto Serif SC", "Source Han Serif SC", "STSong", "SimSun", "Songti SC", Georgia, "Times New Roman", serif;
+  --rc-ui: "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
   --rc-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   --rc-display: "Silkscreen", "JetBrains Mono", "Courier New", monospace;
   --rc-type-page-title: 22px;
@@ -60,6 +61,11 @@
   --rc-focus-ring: 2px solid var(--rc-accent);
   --rc-focus-offset: 2px;
 
+  /* 页内与设置里的状态三档：进行中沿用墨色，需要人处理用危险色，可以继续读用黄铜。 */
+  --rc-status-progress: var(--rc-ink);
+  --rc-status-attention: var(--rc-danger);
+  --rc-status-steady: var(--rc-teal);
+
   /* —— 动效 token：时长 / 缓动 / 弹簧 / 交错 —— */
   --rc-dur-instant: 80ms;
   --rc-dur-fast: 160ms;
@@ -74,8 +80,9 @@
 
   /* —— 兼容别名：design.js 旧名（内容脚本/页面共用，use-site 解析随主题） —— */
   --sans: var(--rc-sans);
+  --ui: var(--rc-ui);
   --mono: var(--rc-mono);
-  --font-sans: var(--rc-sans);
+  --font-sans: var(--rc-ui);
   --font-serif: var(--rc-sans);
   --font-mono: var(--rc-mono);
   --font-display: var(--rc-display);
@@ -146,6 +153,9 @@
   --green-line: var(--rc-green-line);
   --danger: var(--rc-danger);
   --danger-soft: var(--rc-danger-soft);
+  --status-progress: var(--rc-status-progress);
+  --status-attention: var(--rc-status-attention);
+  --status-steady: var(--rc-status-steady);
   --warning: var(--rc-warning);
   --warning-soft: var(--rc-warning-soft);
   --reading-mark: var(--rc-reading-mark);
@@ -238,6 +248,27 @@
 /* >>> design-tokens:light */
 :root {
   color-scheme: light;
+  /* 品牌猫（亮色）：奶白麻薯 + 粉蓝金柔光 + 暖棕细描边；伴读猫的 --pet-cat-* 取同值。 */
+  --rc-cat-body: #fffaf3;
+  --rc-cat-face: #3a2e26;
+  --rc-cat-whisker: #9a8a7e;
+  --rc-cat-whisker-under: transparent;
+  --rc-cat-line: rgba(96, 72, 54, 0.55);
+  --rc-cat-rim-0: #ffc2d8;
+  --rc-cat-rim-1: #f9bfe0;
+  --rc-cat-rim-2: #a9d6ff;
+  --rc-cat-rim-3: #b8ecf5;
+  --rc-cat-rim-4: #ffd08f;
+  --rc-cat-under-0: #ffd2b0;
+  --rc-cat-under-1: #e8d6ff;
+  --rc-cat-under-2: #d2e8ff;
+  --rc-cat-ear-0: #ffd3de;
+  --rc-cat-ear-1: #fff4ef;
+  --rc-cat-floor-0: #ead8ca;
+  --rc-cat-floor-1: #dcc6b4;
+  --rc-cat-floor-2: #e6d9cf;
+  --rc-cat-bloom: 0.5;
+  --rc-cat-chroma: 0.3;
   --rc-canvas: #efeee6;
   --rc-paper: #faf9f4;
   --rc-surface: #faf9f4;
@@ -359,6 +390,27 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
+    /* 品牌猫（深色）：近黑麻薯 + 白五官 + 彩虹边缘光；与下方 [data-theme="dark"] 块同步。 */
+    --rc-cat-body: #0b0a0e;
+    --rc-cat-face: #fbfaff;
+    --rc-cat-whisker: #fbfaff;
+    --rc-cat-whisker-under: rgba(0, 0, 0, 0.38);
+    --rc-cat-line: transparent;
+    --rc-cat-rim-0: #ffffff;
+    --rc-cat-rim-1: #ffe0ee;
+    --rc-cat-rim-2: #bfe6ff;
+    --rc-cat-rim-3: #d8f3ff;
+    --rc-cat-rim-4: #ffd9a0;
+    --rc-cat-under-0: #ffc79a;
+    --rc-cat-under-1: #d9b8ff;
+    --rc-cat-under-2: #8cc4ff;
+    --rc-cat-ear-0: #d7c2cc;
+    --rc-cat-ear-1: #3a3038;
+    --rc-cat-floor-0: #ffe7d2;
+    --rc-cat-floor-1: #ffffff;
+    --rc-cat-floor-2: #d6ecff;
+    --rc-cat-bloom: 0.55;
+    --rc-cat-chroma: 0.5;
     /* 砚台冷墨底：微蓝深墨，层级靠明度阶梯而非纯黑 */
     --rc-canvas: #0b0e13;
     --rc-paper: #10141b;
@@ -484,6 +536,27 @@
 }
 :root[data-theme="dark"], body[data-theme="dark"] {
   color-scheme: dark;
+  /* 品牌猫（深色）：与上方 @media 块同步。 */
+  --rc-cat-body: #0b0a0e;
+  --rc-cat-face: #fbfaff;
+  --rc-cat-whisker: #fbfaff;
+  --rc-cat-whisker-under: rgba(0, 0, 0, 0.38);
+  --rc-cat-line: transparent;
+  --rc-cat-rim-0: #ffffff;
+  --rc-cat-rim-1: #ffe0ee;
+  --rc-cat-rim-2: #bfe6ff;
+  --rc-cat-rim-3: #d8f3ff;
+  --rc-cat-rim-4: #ffd9a0;
+  --rc-cat-under-0: #ffc79a;
+  --rc-cat-under-1: #d9b8ff;
+  --rc-cat-under-2: #8cc4ff;
+  --rc-cat-ear-0: #d7c2cc;
+  --rc-cat-ear-1: #3a3038;
+  --rc-cat-floor-0: #ffe7d2;
+  --rc-cat-floor-1: #ffffff;
+  --rc-cat-floor-2: #d6ecff;
+  --rc-cat-bloom: 0.55;
+  --rc-cat-chroma: 0.5;
   /* 砚台冷墨底：微蓝深墨，层级靠明度阶梯而非纯黑 */
   --rc-canvas: #0b0e13;
   --rc-paper: #10141b;

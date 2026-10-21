@@ -238,13 +238,12 @@ class RoamcatWelcome extends LitElement {
     <div class="welcome-header-inner">
       <div class="welcome-brand">
         <div class="brand-icon-box">
-          <img src=${chrome.runtime.getURL('icons/roamcat.svg')} width="26" height="26" alt="RoamCat">
+          <img class="rc-logo-light" src=${chrome.runtime.getURL('icons/roamcat-light.svg')} width="26" height="26" alt="RoamCat"><img class="rc-logo-dark" src=${chrome.runtime.getURL('icons/roamcat.svg')} width="26" height="26" alt="RoamCat">
         </div>
         <div class="brand-meta">
           <div class="brand-name-row">
             <span class="brand-name">ROAMCAT</span>
             <span class="brand-version-pill">v${chrome.runtime.getManifest?.().version ?? '0.0.1'}</span>
-            <span class="brand-status-dot" title="Local Engine Ready"></span>
           </div>
           <span class="brand-sub">${t('pop.brand')} · FREE-ROAM READING</span>
         </div>

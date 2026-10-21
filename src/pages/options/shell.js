@@ -24,15 +24,16 @@ export const shellTop = html`
         <div class="sidebar-brand-lockup" data-purpose="brand-header">
           <div class="sidebar-brand-left">
             <div class="sidebar-brand-icon" id="sidebar-brand-logo" title="${t('common.brand')}">
-              <img src="../icons/roamcat.svg" width="26" height="26" alt="${t('common.brand')}" style="display:block;border-radius:4px;">
-              <span class="brand-live-dot" aria-hidden="true"></span>
+              <img class="rc-logo-light" src="../icons/roamcat-light.svg" width="26" height="26" alt="${t('common.brand')}" style="border-radius:4px;"><img class="rc-logo-dark" src="../icons/roamcat.svg" width="26" height="26" alt="${t('common.brand')}" style="display:block;border-radius:4px;">
             </div>
             <div class="brand-info-wrap">
               <div class="brand-title-row">
                 <span class="brand-title">RoamCat<span class="brand-title-cn"> · ${t('brand.cn')}</span></span>
-                <span class="brand-pro-tag">v0.2</span>
               </div>
-              <p class="brand-subtitle">${t('common.brandTagline')}</p>
+              <div class="brand-meta-row">
+                <span class="brand-pro-tag">v0.0.1</span>
+                <p class="brand-subtitle">${t('common.brandTagline')}</p>
+              </div>
             </div>
           </div>
           <div class="sidebar-header-actions">
@@ -309,6 +310,23 @@ export const mainToolbar = html`
         </div>
       </header>
 
+`;
+
+export const nowStatus = html`
+        <section id="now-status" class="now-status" aria-label="${t('opt.now.aria')}">
+          <div class="now-status-item" id="now-reading-item" data-tone="progress">
+            <span class="now-status-k">${t('opt.now.reading')}</span>
+            <strong id="now-reading">${t('opt.now.readingNone')}</strong>
+          </div>
+          <div class="now-status-item" id="now-model-item" data-tone="progress">
+            <span class="now-status-k">${t('opt.now.model')}</span>
+            <strong id="now-model">${t('opt.now.modelNone')}</strong>
+          </div>
+          <div class="now-status-item" id="now-request-item" data-tone="progress">
+            <span class="now-status-k">${t('opt.now.request')}</span>
+            <strong id="now-request">${t('opt.now.requestOk')}</strong>
+          </div>
+        </section>
 `;
 
 export const heroBlock = html`

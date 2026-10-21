@@ -391,12 +391,8 @@ class RoamcatPopup extends LitElement {
   }
 
   #openOptions(section = '') {
-    chrome.runtime.openOptionsPage(() => {
-      if (section) chrome.tabs.query({url: chrome.runtime.getURL('ui/options.html*')}, tabs => {
-        const tab = tabs.at(-1);
-        if (tab?.id) chrome.tabs.update(tab.id, {url: chrome.runtime.getURL('ui/options.html#' + section)});
-      });
-    });
+    // 后台整理页签失败时退回浏览器自己的打开方式，至少保证设置页能出来。
+    request('OPEN_OPTIONS', {section}).catch(() => chrome.runtime.openOptionsPage());
   }
 
   render() {
@@ -453,7 +449,7 @@ class RoamcatPopup extends LitElement {
   <main class="popup-shell" aria-labelledby="brand-title">
     <header class="popup-header">
       <div class="brand-lockup">
-        <img class="brand-icon" src=${chrome.runtime.getURL('icons/roamcat.svg')} width="24" height="24" alt="RoamCat">
+        <img class="brand-icon rc-logo-light" src=${chrome.runtime.getURL('icons/roamcat-light.svg')} width="24" height="24" alt="RoamCat"><img class="brand-icon rc-logo-dark" src=${chrome.runtime.getURL('icons/roamcat.svg')} width="24" height="24" alt="RoamCat">
         <div class="brand-text-col">
           <span id="brand-title" class="popup-brand-name">ROAMCAT</span>
           <span class="popup-brand-badge">${t('pop.brand')}</span>

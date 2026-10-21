@@ -23,6 +23,19 @@ button, input, select, textarea { font-family: var(--font-sans); }
 .options-body .sidebar-brand-lockup { gap: 8px; }
 .options-body .sidebar-brand-left { gap: 10px; }
 .options-body .brand-title-row { gap: 8px; }
+/* 品牌区两行排版：标题一行，版本号与副标题并排第二行，整体与 logo 垂直居中；
+   文字区可收缩、按钮不被挤压，收起按钮不再盖住版本号。 */
+.options-body .sidebar-brand-left { flex: 1 1 auto; }
+.options-body .brand-info-wrap { min-width: 0; }
+.options-body .sidebar-header-actions { flex: 0 0 auto; }
+.options-body .brand-meta-row { display: flex; align-items: center; gap: 6px; margin-top: 5px; min-width: 0; }
+.options-body .brand-meta-row .brand-subtitle { margin-top: 0; overflow: hidden; text-overflow: ellipsis; }
+.options-body .brand-meta-row .brand-pro-tag { flex: 0 0 auto; }
+/* 去掉副标题前的点阵足迹：品牌区下沿已有一条点阵虚线，这里再放一组会显得零碎。 */
+.options-body .brand-meta-row .brand-subtitle::before { display: none; }
+/* logo 本身就是圆角砖，不再套一层带边框的图标框，直接放大显示。 */
+.options-body .sidebar-brand-icon { width: 38px; height: 38px; background: none; border: 0; box-shadow: none; border-radius: 10px; }
+.options-body .sidebar-brand-icon img { width: 38px; height: 38px; border-radius: 10px !important; box-shadow: 0 2px 6px rgba(70, 50, 30, 0.18); }
 .options-body .brand-title { font-size: 13.5px; letter-spacing: .01em; }
 .options-body .brand-pro-tag { font: 9px/1.1 var(--font-display); padding: 1px 5px; }
 .options-body .sidebar-collapse-btn { width: 24px; height: 24px; }
@@ -511,4 +524,6 @@ button, input, select, textarea { font-family: var(--font-sans); }
   transition: border-color .18s ease, box-shadow .18s ease;
 }
 
-
+/* 欢迎页顶栏 logo：与设置页侧栏一致，logo 自带圆角砖，不再套带边框的图标框。 */
+.welcome-body .brand-icon-box { width: 36px; height: 36px; background: none; border: 0; box-shadow: none; }
+.welcome-body .brand-icon-box img { width: 36px; height: 36px; border-radius: 9px; box-shadow: 0 2px 6px rgba(70, 50, 30, 0.18); }

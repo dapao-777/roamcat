@@ -3865,3 +3865,13 @@ button.stamp-dialog-link {
   }
 }
 
+
+/* 品牌 logo 明暗双版：页面同时放 .rc-logo-dark（砚底版）与 .rc-logo-light（奶白版），按当前主题只显示一张。
+   强制主题看 data-theme；「跟随系统」时不带 data-theme，交给 prefers-color-scheme。 */
+.rc-logo-light { display: none !important; }
+:root[data-theme="light"] .rc-logo-dark { display: none !important; }
+:root[data-theme="light"] .rc-logo-light { display: block !important; }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .rc-logo-dark { display: none !important; }
+  :root:not([data-theme="dark"]) .rc-logo-light { display: block !important; }
+}
