@@ -4,7 +4,7 @@ RoamCat 的界面语言可以概括成一句话：**纸墨底、暖黑墨、克�
 
 纸面不是纯白——是米白的 `#faf9f4`；墨色不是纯黑——是暖黑的 `#161511`。
 在这层安静的纸墨之上，品牌字标、数字与键帽字用 Silkscreen 像素体，
-扫描线猫与圆点波纹给出「数码但温和」的气质；按钮是带底沿裙边的键帽，
+边缘光麻薯猫与圆点波纹给出「数码但温和」的气质；按钮是带底沿裙边的键帽，
 开关是铣槽里的瓷珠，徽标是凹刻铭牌——物理质感来自 token 化的材质渐变，
 而不是贴图。
 
@@ -147,7 +147,7 @@ emboss / engrave / lacquer / key-* / brass / track / knob / grain`）。
 | 任务状态条 | 右上 pill；伴读猫在场时改由猫的气泡播 status（`speakStatus`） |
 | 伴读猫 | Shadow DOM 悬浮件；快捷坞、菜单、摘要窗均走同一套材质 token；贴边态留爪印标签 |
 | 弹窗 | 卡片流（当前页辅助 / 模型服务切换 / 解构 / 双语翻译），底部快捷键 hint + 版本号 |
-| 选项页 | Swiss 侧栏 + 邮戳卡（stamp card，扫描线悬停动效）+ 双栏服务目录 |
+| 选项页 | Swiss 侧栏 + 邮戳卡（stamp card，麻薯猫插图）+ 双栏服务目录 |
 | 欢迎页 | 沙盒引导：banner 字标 + 功能胶囊 + 试玩词卡 |
 
 阅读三层样式（原文 / 标注 / 译文层的样式、字号、颜色、色板）开放给用户自定义，
@@ -160,7 +160,7 @@ emboss / engrave / lacquer / key-* / brass / track / knob / grain`）。
   替代 emoji；`icon(name,{size,cls})` 输出 lit 模板，页内 IIFE 与页面应用共用。
 - **服务商图标**：`extension/icons/providers/*.svg`，LobeHub 图标集（MIT）。
 - **品牌资产**：`extension/icons/roamcat.svg`（圆点波纹猫）、
-  `roamcat-cat-ink.svg`（扫描线猫）、`icon-16..512.png`。
+  `roamcat-cat-ink.svg`（麻薯猫单色标）、`icon-16..512.png`。
 - 页内所有 SVG 图标 `aria-hidden`，可访问名由外层控件提供。
 
 ## 9. 页内 UI 与网站隔离

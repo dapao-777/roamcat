@@ -222,7 +222,7 @@ cd roamcat
 npm ci
 npm run build         # Vite 构建 → dist/extension（dev 注入固定 key，扩展 ID 固定）
 npm run verify        # 模块图静态门禁
-npm test              # 单元测试（node --test tools/unit/**/*.test.mjs）
+npm test              # 单元测试（tools/run-unit-tests.mjs → node --test tools/unit/*.test.mjs）
 npm run verify:build  # 构建产物门禁 + Edge 实际加载冒烟
 ```
 

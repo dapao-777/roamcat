@@ -84,7 +84,7 @@
 - `manifest_version: 3`；`background.service_worker = background.js`，`type: module`。
 - `minimum_chrome_version: "125"`；`content_security_policy.extension_pages = "script-src 'self' 'wasm-unsafe-eval'; object-src 'none'; base-uri 'none'"`（wasm 供本地 ONNX 推理）。
 - 内容脚本固定九件套 `design.js, i18n.js, reading-style.js, content-ui.js, pet-quotes.js, complexity.js, formula.js, site-profiles.js, content.js`（`content-ui.js` 为 `src/content-ui` 经 `vite.content-ui.config.mjs` 构建的 IIFE 产物，入库、不手改；`i18n.js` 必须在所有调用 `t()` 的脚本之前加载），`run_at: document_idle`，`all_frames: false`；`floating-pet.js`（连同其语录库 `pet-quotes.js`）与 `auto-start.js` 改为 `chrome.scripting` 按需动态注册（同为 classic 形态，受模块图 R1 同约束）。
-- `web_accessible_resources` 仅 `icons/roamcat.svg`（`use_dynamic_url: true`）——页面内品牌图标所需，最小暴露面。
+- `web_accessible_resources` 仅 `icons/roamcat.svg` 与亮色版 `icons/roamcat-light.svg`（`use_dynamic_url: true`）——页面内品牌图标按网页明暗取用，最小暴露面。
 
 ### 3.2 权限与用途（上架时可直接引用的理由）
 | 权限 | 用途 | 理由（面向审核） |
@@ -214,6 +214,7 @@
 - 调度：仅视口 ±600px 内单元，就绪排序为可见性 → zone 权重（article > content > chrome）→ 距离 → 文档序；每批 ≤8 项、源文合计 ≤8000 字符；同一段的连续切片可以放进同一批。附近最多同时在飞 2 批，不预译整篇。模型一边返回，已完成的段落先画上。一批失败只标这一批，服务未连接时停住等待，滚动不会自动重发；连上服务或在弹窗里点「继续翻译」后再译，不把整页停掉。批次带 title/heading(≤160)/before/after(≤400) 封闭上下文。单段切片上限仍是 4000 字符。
 - 渲染：article/content 单元在原文下插块级译文行；chrome 单元用 `data-zone="chrome"` 走内联译文（跟在原文后、弱化样式），避免撑破导航与侧栏布局；flex/grid 容器的直接文本子节点仍按 `skipped` 跳过。
 - 失败：段落级失败可单独重试；成功译文仅入 5 分钟/256 项内存缓存；返回英文只移除扩展插入物。
+- 本页结果容错（`inspectPageTranslationResult`）：思考模型常在合法译文外加代码围栏、前后说明、额外字段或首尾空白。这些先剥掉再校验；导航/专名等短标签允许保留英文。带句号或从句的正文仍必须含汉字。选段翻译（`normalizeEmergencyResult`）保持严格字段集。
 
 ### 6.5 领域识别
 `手动固定 > 个人站点规则 > 全局固定 > 本地 MiniLM > 远程（订阅/API/Jev）`，结果 4 小时缓存（≤128 条）；本地不自信时回退个性化 `domainBias` 或 `general`。Jev 增强识别采用专用决策判定协议（`protocol: 'jev'`），支持自定义接口地址（Base URL）、模型 ID 及自定义 API Key，发送结构化问答后提取单选结果与置信度。Base URL 指向 `*.typesafe.ai` 时走官方 `/systemone` 原生协议（body 为 `{model, state, questions}`，模型自动去 `typesafe/` 前缀）；其余地址走 Requesty `chat/completions` 转发（`response_format: {type:'questions'}`）。
@@ -330,7 +331,7 @@
 | 层 | 工具 | 覆盖 |
 |---|---|---|
 | 连接器单测 | `tools/verify-summary-timeout.mjs`（chrome mock + 定时器拦截） | 原生消息超时与计时器释放 |
-| 单元测试 | `node --test "tools/unit/*.test.mjs"`（Node 20+，零安装依赖，178 例） | `gloss.mjs` 四类协议的准备/校验/纠正重试与失败码；`reading.js` 渐退状态机、迁移与读者证据；`lexicon.js` 词提名（排除规则/优先级/出现位置）；`activation.js` 自动化策略；`message-router/protocol` 注册表契约、载荷解析、设置补丁与副作用计划；`connector/host.mjs` 帧协议与来源校验；`background.js` mock 浏览器冒烟（注册表构造、信任边界、真实派发） |
+| 单元测试 | `npm test` → `tools/run-unit-tests.mjs` 显式列出 `tools/unit/*.test.mjs` 交给 `node --test`（Node 20.11+；阅读器用例依赖 `fflate`，CI 先 `npm ci`；193 例） | `gloss.mjs` 四类协议的准备/校验/纠正重试与失败码；`reading.js` 渐退状态机、迁移与读者证据；`lexicon.js` 词提名（排除规则/优先级/出现位置）；`activation.js` 自动化策略；`message-router/protocol` 注册表契约、载荷解析、设置补丁与副作用计划；`connector/host.mjs` 帧协议与来源校验；`background.js` mock 浏览器冒烟（注册表构造、信任边界、真实派发） |
 | 静态检查 | `node tools/verify-module-graph.cjs`（11 条规则：加载契约、import 解析、无环、连接器闭包纯净、分层方向、无反向依赖、文件头注释、无重复 ID、无内联脚本、manifest 资源存在、classic 脚本 `node --check` 语法）；`node tools/verify-deadcode.cjs`（未使用导出/导入，报告型） | 模块依赖方向、页面契约、语法与死代码 |
 | 真实扩展回归 | `tools/audit-extension.cjs`（playwright-core + 系统 Edge 无头，本地 fixture 文章 + 模拟模型服务） | 截至 2026-09-22：完整回归 29 项 + 摘要补充回归 22 项（去重 30 场景）：设置持久化、12 分区明暗/窄窗、术语/规则、API 模型列表、内容脚本开关、真实按键查词卡片、语言切换、已认识词撤销、历史导出清理、句子结构、整页翻译显示与清除、本地模型零请求分类、个性化空态、摘要防重与切换文章/模型过期、伴读猫拖拽持久化、欢迎页 |
 | 专项回归 | `tools/verify-bilingual-shortcut.cjs` 等（另有 `verify-catalog/jev/connector-throttle/pet-actions/popup-colors/popup-emergency/summary-timeout`） | 快捷键（页面触发/输入框忽略/旋旋翻开关/工具栏入口）、服务目录、Jev 判定、连接器节流、伴读猫操作、弹窗配色与应急翻译、摘要超时 |
@@ -352,7 +353,7 @@
 
 新增共享协议文件或领域层文件时必须同步更新 `tools/lib/module-graph.cjs` 清单与 §4.1。
 
-运行方式：`PLAYWRIGHT_CORE_PATH=<playwright-core 路径> node tools/<script>`；模块图检查 `node tools/verify-module-graph.cjs`（零依赖，`audit-extension.cjs` 启动浏览器前也会强制通过）；单元测试 `node --test "tools/unit/**/*.test.mjs"`。截图与报告输出到 `preview/audit/`。
+运行方式：`PLAYWRIGHT_CORE_PATH=<playwright-core 路径> node tools/<script>`；模块图检查 `node tools/verify-module-graph.cjs`（零依赖，`audit-extension.cjs` 启动浏览器前也会强制通过）；单元测试 `npm test`。截图与报告输出到 `preview/audit/`。
 
 ### 12.1 开发循环（改码后为何以及如何重载）
 

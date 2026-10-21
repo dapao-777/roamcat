@@ -9,7 +9,7 @@
 | `npm run build:watch` | watch 模式持续构建 |
 | `npm run verify` | 模块图静态门禁（R1–R11，只扫 `roamcat-0.0.1/extension` 与 `connector`） |
 | `npm run verify:sites` | 站点档案端到端：fixture 按真实 URL 路由进 Edge 断言 inspect()（加 `--live` 复核真站） |
-| `npm test` | `node --test` 单元测试（扫描 `tools/unit/*.test.mjs`，不递归） |
+| `npm test` | 单元测试：`tools/run-unit-tests.mjs` 列出 `tools/unit/*.test.mjs` 再交给 `node --test`（Node 20 不展开通配符，故不直接传 glob） |
 | `npm run verify:build` | 构建产物门禁：字节比对 + Edge 实际加载 `dist/extension` 冒烟 |
 | `npm run verify:ui` | 全界面 UI 门禁：Edge 加载 `dist/extension`，遍历 popup/options 全分区/welcome/reader 与页内挂件（词卡 HUD/任务条/解构卡/toast/选区条/伴读猫全状态），双主题截图 + 断言 → `preview/ui-audit/`（先跑 `npm run build`） |
 | `npm run verify:pet` | 伴读猫按钮门禁：真实点击/键盘操作全部悬浮按钮（快捷坞 5 按钮/旋旋翻/缩放/贴边/气泡/摘要窗），断言状态与可及性 → `preview/pet-buttons/` |

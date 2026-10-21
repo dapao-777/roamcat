@@ -14,7 +14,7 @@ cd roamcat
 npm ci
 npm run build         # Vite 构建 → dist/extension（dev 注入固定 key）
 npm run verify        # 模块图静态门禁（11 条规则）
-npm test              # 单元测试（node --test）
+npm test              # 单元测试（tools/run-unit-tests.mjs → node --test，193 例）
 npm run verify:build  # 构建产物门禁（改构建链后必跑）
 ```
 

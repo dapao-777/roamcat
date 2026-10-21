@@ -115,7 +115,7 @@
 
 ## 🎨 设计语言
 
-**纸墨 × 像素 × 轻拟物**。米白纸面 `#faf9f4` + 暖黑墨色 `#161511`，Silkscreen 像素字体与扫描线猫点缀数码感；控件是带物理反馈的键帽——按钮有底沿裙边、按下下沉，开关是铣槽瓷珠，徽标是凹刻铭牌。暗色主题是同一套材质语言的镜像：**砚台冷墨**——微蓝砚底 `#0b0e13` + 暖象牙字 `#ece7d9` + 瓷白漆主键，琥珀金 `#f0a63c` 只留给语义强调。
+**纸墨 × 像素 × 轻拟物**。米白纸面 `#faf9f4` + 暖黑墨色 `#161511`，Silkscreen 像素字体与边缘发光的麻薯猫点缀数码感；控件是带物理反馈的键帽——按钮有底沿裙边、按下下沉，开关是铣槽瓷珠，徽标是凹刻铭牌。暗色主题是同一套材质语言的镜像：**砚台冷墨**——微蓝砚底 `#0b0e13` + 暖象牙字 `#ece7d9` + 瓷白漆主键，琥珀金 `#f0a63c` 只留给语义强调。
 
 <details>
 <summary><strong>设计规格速览</strong></summary>
@@ -127,7 +127,7 @@
 | 品牌 / 数字 / 键帽 | Silkscreen 像素体（已内置 woff2，离线可用） |
 | 标签 / 词性 / 诊断码 | ui-monospace 等宽，13px |
 | 色板 | 浅色：纸 `#faf9f4` + 墨 `#161511`（墨色即强调）；深色：砚台 `#0b0e13` + 象牙 `#ece7d9` + 琥珀 `#f0a63c` |
-| 标志与图形 | 扫描线猫（`icons/roamcat.svg` + `roamcat-cat-ink.svg`，`fill="currentColor"`）、圆点波纹带、像素星芒 |
+| 标志与图形 | 边缘光麻薯猫（`icons/roamcat.svg` + 单色标 `roamcat-cat-ink.svg`，`fill="currentColor"`；由 `tools/make-brand-cat.mjs` 生成）、圆点波纹带、像素星芒 |
 | 动效 | 80 / 160 / 280 / 440ms 四档 + `linear()` 弹簧曲线，遵守 `prefers-reduced-motion` |
 
 </details>
@@ -245,7 +245,7 @@ node roamcat-0.0.1/connector/install.mjs --extension-id <扩展ID> --backend gro
 | `npm run build` · `npm run build:watch` | Vite 开发构建 → `dist/extension`（注入固定 key） |
 | `npm run verify` | 模块图门禁 R1–R11：加载契约 / 无环 / 分层方向 / 文件头 / manifest 资源 |
 | `npm run verify:sites` | 站点档案 e2e：fixture 按真实 URL 路由进 Edge 断言 `inspect()`（`--live` 复核真站） |
-| `npm test` | 179 例单元测试（`node --test`，零依赖，Node 18+ 通用） |
+| `npm test` | 193 例单元测试（经 `tools/run-unit-tests.mjs` 调用 `node --test`，Node 20.11+） |
 | `npm run verify:build` | 构建产物门禁：字节比对 + Edge 实际加载冒烟 |
 | `npm run verify:ui` | 77 项全界面门禁：页面/挂件遍历、明暗主题、中英文断言、截图 → `preview/` |
 | `npm run verify:pet` | 65 项伴读猫门禁：真实点击全部悬浮按钮并断言状态 |

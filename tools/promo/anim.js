@@ -71,24 +71,35 @@ function setZh(list, idx, p) {
   inner.style.transform = `perspective(700px) rotateX(${(1 - eo(q)) * -48}deg) translateY(${(1 - eo(q)) * -14}px)`;
 }
 
-function init() {
-  $('#logoCat').innerHTML = window.PROMO_ASSETS.scan;
-  $('#outCat').innerHTML = window.PROMO_ASSETS.scan;
-  $('#petCat').innerHTML = window.PROMO_ASSETS.pet;
-  $('#outPet').innerHTML = window.PROMO_ASSETS.pet;
-  $('#outPet').style.opacity = 0;
+/* 同一份猫 SVG 在片中插入四次：每份换一组渐变/滤镜 id，免得引用串到别的副本上。 */
+const uniqCat = tag => window.PROMO_ASSETS.pet.replaceAll('rc-cat-', `rc-cat-${tag}-`);
+/* 麻薯猫的组装零件（与 floating-pet.js renderCatSvg 的子元素顺序一致）：
+ *   0 地平线 · 1 尾巴 · 2/3 耳朵 · 4 辉光 · 5 身体 · 6 底部暖光 · 7/8 色散 · 9 边缘光 · 10 眼睛 · 11 嘴 · 12/13 胡须
+ * pieces 依次滑入；base[0] 辉光渐亮、base[1] 五官落位、base[2] 胡须/地平线/尾巴最后出现。 */
+function catParts(svg) {
+  const k = [...svg.children].filter(n => !['title', 'defs'].includes(n.tagName.toLowerCase()));
+  return {pieces: [k[2], k[3], k[5], k[6], k[7], k[8], k[9]], base: [[k[4]], [k[10], k[11]], [k[12], k[13], k[0], k[1]]]};
+}
+const styleAll = (list, apply) => list.forEach(el => el && apply(el.style));
 
-  const lg = $('#logoCat svg'), og = $('#outCat svg');
-  scanRectsLogo = [...lg.querySelectorAll('g')[0].children];
-  scanBaseLogo = [lg.children[0], lg.children[2], lg.children[3]];
-  scanRectsOut = [...og.querySelectorAll('g')[0].children];
-  scanBaseOut = [og.children[0], og.children[2], og.children[3]];
-  $('#petCat .cat-eyes-squint').style.opacity = 0;
-  $('#outPet .cat-eyes-squint').style.opacity = 0;
+function init() {
+  $('#logoCat').innerHTML = uniqCat('logo');
+  $('#outCat').innerHTML = uniqCat('out');
+  $('#petCat').innerHTML = uniqCat('pet');
+  $('#outPet').innerHTML = uniqCat('outpet');
+  $('#outPet').style.opacity = 0;
+  $('#extDot').insertAdjacentHTML('afterbegin', window.PROMO_ASSETS.icon.replaceAll('rc-logo-', 'rc-logo-ext-'));
+
+  const lg = catParts($('#logoCat svg')), og = catParts($('#outCat svg'));
+  scanRectsLogo = lg.pieces; scanBaseLogo = lg.base;
+  scanRectsOut = og.pieces; scanBaseOut = og.base;
+  // 四份猫默认睁眼；眯眼只在伴读猫场景里按需切换。
+  $$('#logoCat .cat-eyes-squint, #outCat .cat-eyes-squint, #petCat .cat-eyes-squint, #outPet .cat-eyes-squint').forEach(el => { el.style.opacity = 0; });
   petTail = $('#petCat .cat-tail'); petEyesO = $('#petCat .cat-eyes-open'); petEyesS = $('#petCat .cat-eyes-squint');
   outPetTail = $('#outPet .cat-tail'); outPetEyesO = $('#outPet .cat-eyes-open'); outPetEyesS = $('#outPet .cat-eyes-squint');
-  petTail.style.transformOrigin = '300px 320px';
-  outPetTail.style.transformOrigin = '300px 320px';
+  // 尾巴根部在身体右下（SVG 用户坐标）。
+  petTail.style.transformOrigin = '152px 190px';
+  outPetTail.style.transformOrigin = '152px 190px';
 
   for (const el of [$('#wordmark'), $('#outWord')]) {
     el.innerHTML = 'ROAMCAT'.split('').map(c => `<span>${c}</span>`).join('');
@@ -270,15 +281,15 @@ function sLogo(t) {
   tr(bd, eo(seg(t, .05, .3)), 0, (1 - eo(seg(t, .05, .3))) * -14);
   const rects = scanRectsLogo;
   for (let i = 0; i < rects.length; i++) {
-    const p = eo(seg(t, .08 + i * .009, .08 + i * .009 + .18));
+    const p = eo(seg(t, .08 + i * .07, .08 + i * .07 + .26));
     rects[i].style.opacity = p;
-    rects[i].style.transform = `translateX(${(1 - p) * -150}px)`;
+    rects[i].style.transform = `translateX(${(1 - p) * -60}px)`;
   }
-  scanBaseLogo[0].style.opacity = .065 * eo(seg(t, .08, .9));
+  styleAll(scanBaseLogo[0], st => { st.opacity = .55 * eo(seg(t, .5, .95)); });
   const fp = seg(t, .8, 1.05);
-  scanBaseLogo[1].style.opacity = fp; scanBaseLogo[1].style.transform = `translateY(${(1 - ob(fp)) * 10}px)`;
+  styleAll(scanBaseLogo[1], st => { st.opacity = fp; st.transform = `translateY(${(1 - ob(fp)) * 10}px)`; });
   const wp = seg(t, .92, 1.18);
-  scanBaseLogo[2].style.opacity = wp; scanBaseLogo[2].style.transform = `translateX(${(1 - wp) * 40}px)`;
+  styleAll(scanBaseLogo[2], st => { st.opacity = wp; st.transform = `translateX(${(1 - wp) * 20}px)`; });
   const beam = $('#scanline .beam');
   const bpz = seg(t, .1, 1.0);
   beam.style.transform = `translateY(${lerp(-60, 470, bpz)}px)`;
@@ -483,13 +494,13 @@ function sOut(t) {
   });
   const rects = scanRectsOut;
   for (let i = 0; i < rects.length; i++) {
-    const p = eo(seg(t, 28.35 + i * .004, 28.35 + i * .004 + .14));
+    const p = eo(seg(t, 28.35 + i * .045, 28.35 + i * .045 + .16));
     rects[i].style.opacity = p;
-    rects[i].style.transform = `translateX(${(1 - p) * -60}px)`;
+    rects[i].style.transform = `translateX(${(1 - p) * -30}px)`;
   }
-  scanBaseOut[0].style.opacity = .065 * eo(seg(t, 28.3, 28.9));
-  scanBaseOut[1].style.opacity = seg(t, 28.75, 29.05);
-  scanBaseOut[2].style.opacity = seg(t, 28.9, 29.2);
+  styleAll(scanBaseOut[0], st => { st.opacity = .55 * eo(seg(t, 28.5, 28.9)); });
+  styleAll(scanBaseOut[1], st => { st.opacity = seg(t, 28.75, 29.05); });
+  styleAll(scanBaseOut[2], st => { st.opacity = seg(t, 28.9, 29.2); });
   const gp = seg(t, 29.0, 29.14);
   $('#outCat').style.transform = (gp > 0 && gp < 1) ? `translate(${jit(t, 1 - gp)}px,${jit(t * 1.31, (1 - gp) * .6)}px)` : `translateY(${(1 - eo(seg(t, 28.3, 28.9))) * 24}px)`;
   $$('#outWord span').forEach((s, i) => {
