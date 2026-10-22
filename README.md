@@ -264,7 +264,7 @@ The full engineering spec is in [`SPEC.md`](roamcat-0.0.1/SPEC.md) (Chinese).
 | Command | What it does |
 |---|---|
 | `npm run build` · `npm run build:watch` | Vite dev build → `dist/extension` (fixed extension ID) |
-| `npm test` | 193 unit tests (`node --test` via `tools/run-unit-tests.mjs`) |
+| `npm test` | 202 unit tests (`node --test` via `tools/run-unit-tests.mjs`) |
 | `npm run verify` | Module-graph gates R1–R12: load contract, no cycles, layering, file headers, manifest resources, font-size scale |
 | `npm run verify:build` | Build-artifact gates: byte comparison + real Edge load smoke test |
 | `npm run verify:ui` | 81-check UI sweep: every page and widget, light + dark, zh + en, screenshots → `preview/ui-audit/` |

@@ -263,7 +263,7 @@ node roamcat-0.0.1/connector/install.mjs --extension-id afpeggkplomdjjiemgajjgca
 | 命令 | 用途 |
 |---|---|
 | `npm run build` · `npm run build:watch` | Vite 开发构建 → `dist/extension`（扩展 ID 固定） |
-| `npm test` | 193 例单元测试（经 `tools/run-unit-tests.mjs` 调用 `node --test`） |
+| `npm test` | 202 例单元测试（经 `tools/run-unit-tests.mjs` 调用 `node --test`） |
 | `npm run verify` | 模块图门禁 R1–R11：加载契约、无环、分层方向、文件头、manifest 资源 |
 | `npm run verify:build` | 构建产物门禁：字节比对 + Edge 实际加载冒烟 |
 | `npm run verify:ui` | 81 项全界面门禁：页面与挂件遍历、明暗主题、中英文断言，截图 → `preview/ui-audit/` |

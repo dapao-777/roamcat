@@ -64,7 +64,11 @@ const shot = async (page, name, {fullPage = false, minBytes = 40000} = {}) => {
   if (fs.existsSync(file) && fs.statSync(file).size < minBytes) {
     await page.waitForTimeout(800);
     await page.screenshot({path: file, fullPage});
-    if (fs.statSync(file).size < minBytes) report.warnings.push(`截图疑似空白: ${name}.png (${fs.statSync(file).size}B)`);
+    if (fs.statSync(file).size < minBytes) {
+      // 压平后的弹窗和阅读器空态 PNG 会低于体积阈值，但页面上仍有正文；只有几乎没有可见文字才算白屏。
+      const textLength = await page.evaluate(() => (document.body?.innerText || '').replace(/\s+/g, '').length).catch(() => 0);
+      if (textLength < 24) report.warnings.push(`截图疑似空白: ${name}.png (${fs.statSync(file).size}B)`);
+    }
   }
 };
 
