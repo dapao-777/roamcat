@@ -488,7 +488,7 @@ async function apiRequest(provider,payload,instructions,schema,{onContent,trace,
         providerError='';attemptOk=true;attemptCharsOut=JSON.stringify(output??'').length;return output;
       } catch(error) {
         const code=error?.code;
-        if(rotator&&!streamed&&!controller.signal.aborted&&error?.name!=='AbortError'&&(code==='RATE_LIMIT'||code==='AUTH')){
+        if(rotator&&!streamed&&!controller.signal.aborted&&error?.name!=='AbortError'&&(code==='RATE_LIMIT'||code==='QUOTA'||code==='AUTH')){
           apiKeyPoolCool(rotator,pick.keyIndex,code==='AUTH'?API_KEY_COOLDOWN.auth:API_KEY_COOLDOWN.rateLimit);
           if(tried.size<apiServiceKeys(service).length)continue;
         }
