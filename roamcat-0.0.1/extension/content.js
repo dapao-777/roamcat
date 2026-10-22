@@ -1329,6 +1329,20 @@ const LIMIT_ERROR = T('c.limit');
     if(!node.getClientRects().length&&!(getComputedStyle(node).display==='contents'&&rendersContent(node)))return '';
     return [...node.childNodes].map(emergencyText).join('');
   }
+  // 行内代码（命令、参数、键名）不翻译：送模型前换成 ⟦n⟧ 占位，译文回来再按原元素样式放回。
+  const CODE_LIKE='code,kbd,samp,var,tt';
+  const CODE_MARKER=/⟦(\d+)⟧/g;
+  function emergencyMarkedText(node,codes){
+    const raw=emergencyText(node);
+    if(node.nodeType!==Node.ELEMENT_NODE||!raw||node.tagName==='BR')return raw;
+    if(node.matches(CODE_LIKE)){if(!raw.trim())return raw;codes.push(node);return '⟦'+codes.length+'⟧';}
+    return [...node.childNodes].map(child=>emergencyMarkedText(child,codes)).join('');
+  }
+  // 判断值不值得翻译只看自然语言词：去掉行内代码和 /settings、--flag、[providers]、plan.enabled 这类命令写法。
+  function emergencyProse(text){
+    const words=text.replace(CODE_MARKER,' ').split(/\s+/).map(word=>word.replace(/^[("'“‘]+|[)"'”’.,;:!?…]+$/g,'')).filter(word=>/^[A-Za-z](?:[A-Za-z'’-]*[A-Za-z])?$/.test(word)&&word.length>1);
+    return {words:words.length,letters:words.join('').length};
+  }
   function emergencyBlocks(root) {
     const units=[];
     function visit(parent){
@@ -1337,7 +1351,12 @@ const LIMIT_ERROR = T('c.limit');
       // 页面区域分级：chrome（导航/侧栏/页眉页脚构件）、article（正文容器）、content（其余英文区域）。
       // chrome 区域用更低阈值（菜单项很短）并走内联渲染；article/content 保持块级译文。
       const zone=composedClosest(parent,SKIP_CHROME)?'chrome':composedClosest(parent,SITE.root.length?'article,main,[role="main"],'+SITE.root.join(','):'article,main,[role="main"]')?'article':'content';let nodes=[];
-      const flush=()=>{const text=nodes.map(emergencyText).join(''),threshold=parent.matches('h1,h2,h3,h4,h5,h6,td,th')||zone==='chrome'?2:12;if((text.match(/[A-Za-z]/g)||[]).length>=threshold)units.push({parent,nodes,text,skipped:layout,zone});nodes=[];};
+      const flush=()=>{
+        const text=nodes.map(emergencyText).join(''),codes=[],send=nodes.map(node=>emergencyMarkedText(node,codes)).join(''),prose=emergencyProse(send),threshold=parent.matches('h1,h2,h3,h4,h5,h6,td,th')||zone==='chrome'?2:12;
+        // 整格都是命令（只剩 “Alias:” 这类一个词）就不送：模型只会原样抄回来，页面上重复一遍。
+        const codeOnly=composedClosest(parent,CODE_LIKE)||!prose.words||codes.length&&prose.words<2;
+        if(!codeOnly&&prose.letters>=threshold)units.push({parent,nodes,text,send,codes,skipped:layout,zone});nodes=[];
+      };
       const inChrome=zone==='chrome';
       for(const node of parent.childNodes){
         if(node.nodeType===Node.ELEMENT_NODE){
@@ -1416,12 +1435,42 @@ const LIMIT_ERROR = T('c.limit');
     const style=getComputedStyle(parent);container.style.width='auto';container.style.minWidth='0';container.style.maxWidth='100%';container.style.webkitTextFillColor='currentColor';
     for(const [name,value]of [['--ss-source-font',style.fontFamily],['--ss-source-size',style.fontSize],['--ss-source-leading','1.6'],['--ss-source-color',style.color==='rgba(0, 0, 0, 0)'?getComputedStyle(document.body).color:style.color]])container.style.setProperty(name,value);
   }
+  // 只比较文字本身：去掉空白、标点与占位后，译文和原文一样就是“原样抄回”（版本号、文件名、模型丢了占位等）。
+  function sameAsSource(translation,source){
+    const bare=value=>String(value||'').replace(CODE_MARKER,'').replace(/[\s\p{P}\p{S}]+/gu,'').toLowerCase();
+    return bare(translation)===bare(source);
+  }
+  // 把译文里的 ⟦n⟧ 换回原来的行内代码（克隆原元素，沿用网页给 code/kbd 的样式）；模型漏掉的代码补在句末，多出来的占位丢掉。
+  function emergencyTranslationNodes(translation,codes){
+    const nodes=[],used=new Set();let last=0;
+    const codeNode=index=>{
+      const source=codes[index];if(!source)return null;
+      const clone=source.isConnected?source.cloneNode(true):Object.assign(document.createElement('code'),{textContent:source.textContent});
+      for(const element of [clone,...clone.querySelectorAll('*')])for(const {name}of [...element.attributes])if(name==='id'||name.startsWith('on'))element.removeAttribute(name);
+      return clone;
+    };
+    for(const match of translation.matchAll(CODE_MARKER)){
+      if(match.index>last)nodes.push(document.createTextNode(translation.slice(last,match.index)));
+      const index=Number(match[1])-1,node=used.has(index)?null:codeNode(index);if(node){used.add(index);nodes.push(node);}
+      last=match.index+match[0].length;
+    }
+    if(last<translation.length)nodes.push(document.createTextNode(translation.slice(last)));
+    codes.forEach((_,index)=>{if(used.has(index))return;const node=codeNode(index);if(node)nodes.push(document.createTextNode(' '),node);});
+    return nodes;
+  }
   function renderEmergencyChunk(item,translation,session) {
     const unit=item.unit;if(!validEmergencyUnit(unit,session)||unit.version!==item.version)return;
+    // 原样抄回的译文不显示，免得同一段英文在页面上出现两遍；记下来算作已完成。
+    if(sameAsSource(translation,unit.chunks[item.index])){
+      (unit.translations??=new Map()).set(item.index,translation);
+      const existing=session.containers.get(unit);
+      if(existing){existing.parts.delete(item.index);if(existing.parts.size)existing.container.replaceChildren(...[...existing.parts].sort((a,b)=>a[0]-b[0]).map(([,node])=>node));else{existing.container.remove();session.containers.delete(unit);}}
+      return;
+    }
     let entry=session.containers.get(unit);
     if(!entry){const container=document.createElement('span');container.setAttribute(OWN,'emergency-translation');container.lang='zh-CN';container.setAttribute('aria-label',T('c.em.aria'));container.style.display=unit.zone==='chrome'?'inline-block':'block';if(unit.zone==='chrome')container.dataset.zone='chrome';unit.nodes.at(-1).after(container);entry={container,parts:new Map()};session.containers.set(unit,entry);inheritPageTranslationStyle(unit.parent,container);}
     (unit.translations??=new Map()).set(item.index,translation);
-    const part=document.createElement('span');part.style.display=unit.zone==='chrome'?'inline':'block';part.textContent=translation;entry.parts.set(item.index,part);entry.container.replaceChildren(...[...entry.parts].sort((a,b)=>a[0]-b[0]).map(([,node])=>node));
+    const part=document.createElement('span');part.style.display=unit.zone==='chrome'?'inline':'block';part.replaceChildren(...emergencyTranslationNodes(translation,unit.codes||[]));entry.parts.set(item.index,part);entry.container.replaceChildren(...[...entry.parts].sort((a,b)=>a[0]-b[0]).map(([,node])=>node));
   }
   const emergencyFlights=new Set();
   function paintEmergencyProgress(pending,rows){
@@ -1633,7 +1682,7 @@ const LIMIT_ERROR = T('c.limit');
     const previous=session.units,affected=previous.filter(unit=>!unit.parent.isConnected||roots.some(root=>containsDeep(root,unit.parent))),next=previous.filter(unit=>!affected.includes(unit));let added=0;
     for(const root of roots)for(const descriptor of emergencyBlocks(root)){
       let unit=affected.find(value=>!value.invalid&&value.parent===descriptor.parent&&value.nodes.length===descriptor.nodes.length&&value.nodes.every((node,index)=>node===descriptor.nodes[index])&&value.text===descriptor.text&&value.skipped===descriptor.skipped&&value.zone===descriptor.zone);
-      if(!unit){unit={...descriptor,version:++session.version,chunks:splitEmergencyText(descriptor.text),done:new Set(),autoRetries:0,retryAt:0,state:descriptor.skipped?'skipped':'deferred'};added++;}next.push(unit);
+      if(!unit){unit={...descriptor,version:++session.version,chunks:splitEmergencyText(descriptor.send),done:new Set(),autoRetries:0,retryAt:0,state:descriptor.skipped?'skipped':'deferred'};added++;}next.push(unit);
     }
     for(const unit of affected)if(!next.includes(unit))invalidateEmergencyUnit(unit,session);
     next.sort((a,b)=>a===b?0:a.nodes[0].compareDocumentPosition(b.nodes[0])&Node.DOCUMENT_POSITION_FOLLOWING?-1:1);session.units=next;next.forEach((unit,index)=>unit.order=index);

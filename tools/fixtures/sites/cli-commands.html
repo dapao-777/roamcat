@@ -1,0 +1,29 @@
+<!doctype html>
+<!-- @file tools/fixtures/sites/cli-commands.html — CLI 命令表夹具：纯命令单元格、“Alias:” 单元格、带行内代码的说明句、版本号与会被原样返回的标题。MPL-2.0。 -->
+<html lang="en">
+<head><meta charset="utf-8"><title>Slash commands — CLI reference</title>
+<style>
+  body { font: 16px/1.6 system-ui, sans-serif; max-width: 960px; margin: 24px auto; padding: 0 16px; }
+  code { font-family: ui-monospace, monospace; background: #f0f0f0; padding: 0 4px; border-radius: 4px; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border-top: 1px solid #ddd; padding: 8px; text-align: left; vertical-align: top; }
+</style></head>
+<body>
+<main>
+  <article>
+    <h1>Slash commands</h1>
+    <p>Slash commands control the interactive session without leaving the prompt, and each one is documented with its accepted arguments below.</p>
+    <h2>Docker Compose</h2>
+    <table id="commands">
+      <thead><tr><th>Command</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td id="cmd-settings"><code>/settings</code></td><td id="desc-settings">Opens the settings menu.</td></tr>
+        <tr><td id="cmd-setup"><code>/setup [providers]</code><br>Alias: <code>/providers</code></td><td id="desc-setup">Opens provider setup for sign-in and web-search providers. No other subcommand is accepted.</td></tr>
+        <tr><td id="cmd-plan"><code>/plan [prompt]</code></td><td id="desc-plan">Toggles plan mode; an inline prompt starts immediately. Requires <code>plan.enabled</code>, cannot be used in goal mode.</td></tr>
+        <tr><td id="cmd-version">v2.3.1</td><td id="desc-version">Prints the installed version and exits.</td></tr>
+      </tbody>
+    </table>
+  </article>
+</main>
+</body>
+</html>

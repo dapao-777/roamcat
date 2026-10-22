@@ -207,10 +207,14 @@ async function runFixtures() {
       const u = new URL(route.request().url());
       const slug = fixtureRoutes.get(u.host + u.pathname.replace(/\/$/, ''));
       if (slug) return route.fulfill({status: 200, contentType: 'text/html; charset=utf-8', body: fixture(slug)});
+      if (u.host === 'example.com' && u.pathname === '/cli-commands')
+        return route.fulfill({status: 200, contentType: 'text/html; charset=utf-8', body: fixture('cli-commands')});
       if (u.host === 'example.com' && u.pathname === '/pretend-github-pr-files')
         return route.fulfill({status: 200, contentType: 'text/html; charset=utf-8', body: fixture('github-pr-files')});
       if (u.host === 'example.com')
         return route.fulfill({status: 200, contentType: 'text/html; charset=utf-8', body: '<!doctype html><title>Example Domain</title><p>Example domain placeholder page.</p>'});
+      // 本机假模型服务（startMockApi）要放行，否则双语检查里的翻译请求全被拦掉，只剩失败提示。
+      if (u.hostname === '127.0.0.1') return route.continue();
       if (u.protocol.startsWith('http')) return route.abort();
       return route.continue();
     });
@@ -280,7 +284,7 @@ async function runFixtures() {
         await page.waitForTimeout(1500);
         const skipSels = ['pre', '.blob-code', 'table.diff-table', '[role="tree"]', '.file-header', 'a.author', '[data-testid="avatar-link"]', '[data-testid="actor-link"]', '[data-testid="issue-body-header-author"]', '[class*="AuthorLink-module"]', 'a[data-hovercard-type="user"]', 'relative-time', '.commit-ref', '[class*="BranchName"]', '.IssueLabel', '.Label', '.topic-tag', '[class*="TopicTag"]', '.Counter', '#repository-details-container', '[data-testid="breadcrumbs"]', '#file-name-id-wide', '#file-name-id'];
         const verdict = await page.evaluate(skipSels => {
-          const panels = [...document.querySelectorAll('[data-roamcat-ui="emergency-translation"]')];
+          const panels = [...document.querySelectorAll('[data-roamcat-ui="emergency-translation"]')].filter(p => !p.querySelector('[role="status"]'));
           const bad = panels.filter(p => p.closest(skipSels.join(',')));
           const nearAuthor = panels.filter(p => p.closest('a.author,[data-testid="avatar-link"],[data-testid="actor-link"],a[data-hovercard-type="user"]') || p.querySelector('a.author,[data-testid="avatar-link"],[data-testid="actor-link"],a[data-hovercard-type="user"]'));
           const afterComment = panels.filter(p => p.closest('.comment-body') || p.previousElementSibling?.closest?.('.comment-body') || p.parentElement?.classList?.contains('comment-body'));
@@ -293,12 +297,50 @@ async function runFixtures() {
         return `译文 ${verdict.total} 块，评论后 ${verdict.afterComment} 块`;
       } finally { await page.close().catch(() => {}); }
     });
+    await check('cli-commands 命令格不翻译、行内代码原样保留、原样译文不显示', async () => {
+      const url = 'https://example.com/cli-commands';
+      const {page, tabId} = await probeTab(context, extPage, url);
+      try {
+        await extPage.evaluate(({tabId}) => chrome.runtime.sendMessage({type: 'PAGE_UI_INJECT', tabId}), {tabId});
+        const begun = await extPage.evaluate(({tabId, url}) => chrome.runtime.sendMessage({type: 'EMERGENCY_BEGIN', tabId, url}), {tabId, url});
+        const token = begun?.data?.token || begun?.token;
+        assert.ok(token, JSON.stringify(begun));
+        const started = await extPage.evaluate(({tabId, token}) => chrome.tabs.sendMessage(tabId, {type: 'SS_EMERGENCY_START', token, resume: false}, {frameId: 0}), {tabId, token});
+        assert.ok(started?.ok, started?.error || '未能开始双语');
+        await page.locator('#desc-plan [data-roamcat-ui="emergency-translation"]').waitFor({state: 'visible', timeout: 20000});
+        await page.waitForTimeout(1500);
+        const verdict = await page.evaluate(() => {
+          const translated = node => node && !node.querySelector('[role="status"]') ? node : null;
+          const panel = id => translated(document.querySelector(`#${id} [data-roamcat-ui="emergency-translation"]`));
+          const panels = [...document.querySelectorAll('[data-roamcat-ui="emergency-translation"]')].filter(translated);
+          const failed = document.querySelectorAll('[data-roamcat-ui="emergency-translation"] [role="status"]').length;
+          const plan = panel('desc-plan');
+          return {
+            commandCells: ['cmd-settings', 'cmd-setup', 'cmd-plan', 'cmd-version'].filter(panel),
+            described: ['desc-settings', 'desc-setup', 'desc-plan', 'desc-version'].filter(panel).length,
+            echoedHeading: panels.some(item => /Docker Compose/.test(item.textContent)),
+            leftoverMarkers: panels.filter(item => /⟦\d+⟧/.test(item.textContent)).length,
+            failed,
+            planCode: [...(plan?.querySelectorAll('code') || [])].map(code => code.textContent),
+            planHtml: plan?.innerHTML.slice(0, 300) || '',
+          };
+        });
+        assert.equal(verdict.failed, 0, `有 ${verdict.failed} 段翻译失败`);
+        assert.deepEqual(verdict.commandCells, [], `命令格出现了译文：${verdict.commandCells.join(', ')}`);
+        assert.equal(verdict.described, 4, '说明列应全部有译文');
+        assert.equal(verdict.echoedHeading, false, '原样返回的标题不应再显示一遍');
+        assert.equal(verdict.leftoverMarkers, 0, '译文里残留了 ⟦n⟧ 占位');
+        assert.deepEqual(verdict.planCode, ['plan.enabled'], `说明句里的行内代码没有原样放回：${verdict.planHtml}`);
+        return `说明 ${verdict.described} 格有译文，命令格 0 处，行内代码 ${verdict.planCode.join(', ')}`;
+      } finally { await page.close().catch(() => {}); }
+    });
   } finally { await session.close(); }
 }
 
 // ---- 假 OpenAI 服务（同 verify-bilingual-pipeline 的最小形态） ----
 let mockServer = null;
 function startMockApi() {
+  if (mockServer) return Promise.resolve(mockServer.address().port);
   return new Promise(resolve => {
     mockServer = http.createServer((req, res) => {
       if (req.method === 'OPTIONS') { res.writeHead(204, {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*'}).end(); return; }
@@ -314,7 +356,9 @@ function startMockApi() {
           let list = [];
           try { const p = JSON.parse(items); if (Array.isArray(p.items)) list = p.items; } catch {}
           res.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-          res.end(JSON.stringify({choices: [{message: {content: JSON.stringify({items: list.map(i => ({id: i.id, translation: '译文占位句。'}))})}, finish_reason: 'stop'}]}));
+          // 像真模型一样：专名标题原样抄回；行内代码占位 ⟦n⟧ 照抄进译文。
+          const translate = text => /Docker Compose/.test(text) ? text : '译文占位句' + ((text.match(/⟦\d+⟧/g) || []).map(marker => '，需要 ' + marker).join('')) + '。';
+          res.end(JSON.stringify({choices: [{message: {content: JSON.stringify({items: list.map(i => ({id: i.id, translation: translate(String(i.text || ''))}))})}, finish_reason: 'stop'}]}));
         } catch (e) { res.writeHead(500).end(String(e)); }
       });
     });
