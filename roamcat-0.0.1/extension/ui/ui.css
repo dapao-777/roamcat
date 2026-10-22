@@ -2369,6 +2369,24 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: var(--space-3); b
 .installation-note p { margin-top: var(--space-2); color: var(--muted); }
 .copy-command { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-3); padding: var(--space-3); border-radius: var(--radius-control); background: var(--surface-subtle); }
 .copy-command code { flex: 1 1 220px; min-width: 0; overflow-wrap: anywhere; }
+/* 订阅连接分步清单：完成的打勾，只展开当前卡住的一步，后面的置灰。 */
+.setup-steps { list-style: none; margin: var(--space-4) 0 0; padding: 0; display: flex; flex-direction: column; }
+.setup-step { position: relative; display: flex; gap: var(--space-3); padding-bottom: var(--space-4); }
+.setup-step:not(:last-child)::before { content: ""; position: absolute; left: 11px; top: 26px; bottom: 4px; width: 1px; background: var(--line); }
+.setup-step-mark { flex: none; display: grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--line-dark); border-radius: 50%; background: var(--surface); color: var(--muted); font-size: var(--fs-1); font-weight: var(--weight-semibold); }
+.setup-steps { counter-reset: setup-step; }
+.setup-step-mark::before { counter-increment: setup-step; content: counter(setup-step); }
+.setup-step[data-state="done"] .setup-step-mark { border-color: var(--accent); background: var(--accent); color: var(--surface); }
+.setup-step[data-state="done"] .setup-step-mark::before { content: "✓"; }
+.setup-step[data-state="current"] .setup-step-mark { border: 2px solid var(--accent); color: var(--accent); }
+.setup-step:last-child { padding-bottom: 0; }
+.setup-step-body { flex: 1; min-width: 0; padding-top: 2px; }
+.setup-step-body b { font-size: var(--fs-3); font-weight: var(--weight-semibold); }
+.setup-step[data-state="todo"] .setup-step-body b, .setup-step[data-state="done"] .setup-step-body b { color: var(--muted); font-weight: var(--weight-medium); }
+.setup-step-detail { display: none; margin-top: var(--space-2); }
+.setup-step[data-state="current"] .setup-step-detail { display: block; }
+.setup-step-detail p { margin-top: var(--space-2); color: var(--muted-strong); font-size: var(--type-support); }
+.setup-autocheck { margin: var(--space-3) 0 0 36px; }
 .copy-command button { flex: 0 0 auto; }
 code, pre { font: var(--type-support)/var(--leading-support) var(--mono); }
 pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: var(--space-3); background: var(--surface-subtle); border-radius: var(--radius-control); }

@@ -265,6 +265,7 @@
 - 浏览器：`chrome`/`edge` 默认；显式支持 `chromium`/`chrome-beta`/`chrome-testing`；只注册用户显式指定的目标。
 - 扩展 ID：`--extension-id` 支持单个或逗号分隔多个；缺省时按 manifest.key 或路径哈希推导。
 - CLI 查找：PATH + 平台特例（Windows `codex.cmd`/`.bat`、`~/.grok/bin`、`~/.local/bin`、`~/.gemini/bin` 等）；`--codex/--grok/--agy` 可指定。
+- 默认一次注册本机找得到的全部通道（`chatgpt` / `grok` / `antigravity`），找不到的跳过；`--backend` 只装一个。找不到任何 CLI，或指定通道注册失败时，进程以非 0 退出。
 - 登录态：仅缺失时才从 `~/.codex/auth.json` 复制；重装不覆盖。
 
 ### 8.2 帧协议（`connector/host.mjs`）

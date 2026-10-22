@@ -2,6 +2,7 @@
  * @file extension/subscription.js
  * 文件职责：三订阅端口管理——请求响应映射、超时与进度转发。
  * 主要内容：assist/翻译/总结120s其余45s；端口单例，断开拒全部在途。
+ *   probe 在端口还在时只查状态，不拆连接；没有端口时才走 refresh。
  * 模块边界：应用层；CONNECTOR_KINDS与message-protocol镜像一致（单测 guard）。
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -34,7 +35,10 @@ export async function syncNativeDiagnostics(payload,kind){
   return results.some(Boolean);
 }
 
-const DISCONNECTED = {connected:false,authenticated:false,email:null,plan:null,loginPending:false,userCode:null,error:null};
+// stage 给设置页的分步清单用：install=找不到连接器注册，start=连接器起不来（Node/CLI 不可用），
+// login=已连上待登录，ready=已登录，unknown=尚未检测或被主动断开。
+const STAGES = new Set(['install','start','login','ready','unknown']);
+const DISCONNECTED = {connected:false,authenticated:false,email:null,plan:null,loginPending:false,userCode:null,error:null,stage:'unknown'};
 
 function createConnector({host,label,cliName,loginHosts}) {
   const state = {
@@ -58,6 +62,7 @@ function createConnector({host,label,cliName,loginHosts}) {
       userCode:typeof value?.userCode === 'string' ? value.userCode.replace(/[^A-Za-z0-9-]/g,'').slice(0,32) : null,
       error:typeof value?.error === 'string' ? value.error.slice(0,600) : null,
     };
+    next.stage = next.connected ? (next.authenticated ? 'ready' : 'login') : STAGES.has(value?.stage) ? value.stage : 'unknown';
     if (JSON.stringify(next) === JSON.stringify(state.status)) return;
     state.status = next;
     for (const listener of state.listeners) listener(snapshot());
@@ -67,7 +72,7 @@ function createConnector({host,label,cliName,loginHosts}) {
     state.port = null;
     for (const {reject,timer} of state.pending.values()) { clearTimeout(timer); reject(error); }
     state.pending.clear();
-    update({...DISCONNECTED,error:error.message});
+    update({...DISCONNECTED,error:error.message,stage:error.stage});
   }
   function connection() {
     if (state.port) return state.port;
@@ -77,9 +82,11 @@ function createConnector({host,label,cliName,loginHosts}) {
     current.onDisconnect.addListener(() => {
       const reason = chrome.runtime.lastError?.message || '';
       const missing = /not found|not registered|forbidden/i.test(reason);
-      disconnect(current,new Error(missing
-        ? M(`未找到或未授权本地 ${label} 连接器。请按安装说明安装，然后点击“刷新连接”。`,`No authorized local ${label} connector found. Install it per the instructions, then click "Refresh connection".`)
-        : M(`本地 ${label} 连接器已断开。请确认 Node.js 和 ${cliName} 可用，再点击“刷新连接”。`,`The local ${label} connector is disconnected. Make sure Node.js and ${cliName} are available, then click "Refresh connection".`)));
+      const error = new Error(missing
+        ? M(`未找到或未授权本地 ${label} 连接器，请按设置页“模型服务”里的步骤安装。`,`No authorized local ${label} connector found. Install it following the steps under Settings → Model service.`)
+        : M(`本地 ${label} 连接器没能启动或已断开。请确认 Node.js 和 ${cliName} 可用，再重新运行安装命令。`,`The local ${label} connector did not start or disconnected. Make sure Node.js and ${cliName} are available, then rerun the install command.`));
+      error.stage = missing ? 'install' : 'start';
+      disconnect(current,error);
     });
     current.onMessage.addListener(message => {
       if (state.port !== current) return;
@@ -132,7 +139,18 @@ function createConnector({host,label,cliName,loginHosts}) {
         previous.disconnect();
       }
       try { update(await send('status')); }
-      catch (error) { update({...DISCONNECTED,error:error.message}); }
+      catch (error) { update({...DISCONNECTED,error:error.message,stage:error.stage}); }
+      return snapshot();
+    })().finally(() => { state.refreshInFlight = null; });
+    return state.refreshInFlight;
+  }
+  // 设置页轮询用：已连上时只问一次 status，避免每 5 秒拆掉端口、打断在途请求。
+  function probe() {
+    if (state.refreshInFlight) return state.refreshInFlight;
+    if (!state.port) return refresh();
+    state.refreshInFlight = (async () => {
+      try { update(await send('status')); }
+      catch (error) { update({...DISCONNECTED,error:error.message,stage:error.stage}); }
       return snapshot();
     })().finally(() => { state.refreshInFlight = null; });
     return state.refreshInFlight;
@@ -163,7 +181,7 @@ function createConnector({host,label,cliName,loginHosts}) {
     update(await send('logout'));
     return snapshot();
   }
-  return {state, snapshot, update, send, refresh, ensure, login, cancel, logout};
+  return {state, snapshot, update, send, refresh, probe, ensure, login, cancel, logout};
 }
 
 const connectors = {
@@ -194,6 +212,7 @@ function connector(kind) {
 export function subscriptionStatus(kind) { return connector(kind).snapshot(); }
 export function onSubscriptionStatus(listener,kind) { connector(kind).state.listeners.add(listener); }
 export function refreshSubscription(kind) { return connector(kind).refresh(); }
+export function probeSubscription(kind) { return connector(kind).probe(); }
 export async function ensureSubscription(kind) { return connector(kind).ensure(); }
 export async function loginSubscription(kind) { return connector(kind).login(); }
 export async function cancelSubscription(kind) { return connector(kind).cancel(); }

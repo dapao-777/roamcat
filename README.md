@@ -132,10 +132,10 @@ The dev build pins its extension ID (`afpeggkplomdjjiemgajjgcajieincng`, from `b
 **Optional — subscription connector.** Let the extension use the ChatGPT / Grok / Antigravity CLI you are already signed in to:
 
 ```sh
-node roamcat-0.0.1/connector/install.mjs --extension-id afpeggkplomdjjiemgajjgcajieincng --backend grok
+node roamcat-0.0.1/connector/install.mjs --extension-id afpeggkplomdjjiemgajjgcajieincng
 ```
 
-Omit `--backend` for ChatGPT (Codex), or pass `antigravity`. A ready-to-load prerelease zip will be attached to [Releases](https://github.com/dapao-777/roamcat/releases) once it is published.
+One command registers every channel whose CLI is already installed (Codex, Grok, `agy`); missing CLIs are skipped. Pass `--backend grok` (or `chatgpt` / `antigravity`) to register only one. A ready-to-load prerelease zip will be attached to [Releases](https://github.com/dapao-777/roamcat/releases) once it is published.
 
 ## 🔒 Privacy by design
 

@@ -50,7 +50,83 @@ roamcat-options { display: contents; }
 }
 .now-status-item[data-tone="attention"] strong { color: var(--rc-status-attention); }
 .now-status-item[data-tone="steady"] strong { color: var(--rc-status-steady); }
-.sidebar-collapsed .now-status { display: none; }
+/* 收起后侧栏只剩图标宽，状态改成三个圆点，文字留给悬停提示和读屏。 */
+.sidebar-collapsed .now-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--rc-space-2);
+  margin: 0 var(--rc-space-2) var(--rc-space-3);
+  padding: var(--rc-space-2) 0;
+}
+.sidebar-collapsed .now-status-item {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  justify-content: center;
+}
+.sidebar-collapsed .now-status-k,
+.sidebar-collapsed .now-status-item strong {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.sidebar-collapsed .now-status-item::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--rc-status-progress);
+}
+.sidebar-collapsed .now-status-item[data-tone="attention"]::after { background: var(--rc-status-attention); }
+.sidebar-collapsed .now-status-item[data-tone="steady"]::after { background: var(--rc-status-steady); }
+@media (max-width: 760px) {
+  .options-body { flex-direction: column; height: 100vh; overflow: hidden; }
+  .sidebar,
+  .sidebar-collapsed .sidebar {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    height: auto;
+    max-height: 42vh;
+    position: static;
+  }
+  .sidebar-collapsed .nav-text { display: inline !important; }
+  .now-status,
+  .sidebar-collapsed .now-status {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: stretch;
+    width: auto;
+    margin: 0 var(--rc-space-4) var(--rc-space-3);
+    padding: var(--rc-space-3);
+  }
+  .sidebar-collapsed .now-status-item { position: static; width: auto; height: auto; flex: 1; }
+  .sidebar-collapsed .now-status-item::after { content: none; }
+  .sidebar-collapsed .now-status-k,
+  .sidebar-collapsed .now-status-item strong {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: hidden;
+    clip: auto;
+    white-space: nowrap;
+  }
+  .main-panel,
+  .options-body .main-panel {
+    height: auto;
+    max-height: none;
+    min-height: 0;
+  }
+}
 
 /* 分区切换：整页快照交叉淡化（startViewTransition 由 options-app 触发） */
 ::view-transition-old(root) {

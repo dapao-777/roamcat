@@ -124,10 +124,10 @@ irm https://x.ai/cli/install.ps1 | iex
 然后在仓库的 `roamcat-0.0.1/` 目录下运行安装程序（从仓库根目录运行时写成 `node roamcat-0.0.1/connector/install.mjs …`）。把下面的占位符换成扩展管理页显示的**实际扩展 ID**——从源码构建的 `dist/extension` 固定为 `afpeggkplomdjjiemgajjgcajieincng`：
 
 ```sh
-node connector/install.mjs --extension-id <YOUR_ACTUAL_EXTENSION_ID> --backend grok
+node connector/install.mjs --extension-id <YOUR_ACTUAL_EXTENSION_ID>
 ```
 
-默认会为 Chrome 和 Edge 注册连接器。安装后重新加载扩展，在“模型服务”中选择 **Grok 订阅**，点击“刷新账户与模型”，并按需完成 Grok 登录。登录走官方 `auth.x.ai` 设备码流程，使用 SuperGrok 或 X Premium+ 的订阅权益，而不是 xAI API 按量计费。
+不带 `--backend` 时，这条命令会一次注册本机找得到 CLI 的全部订阅通道；只装 Grok 时加 `--backend grok`。默认会为 Chrome 和 Edge 注册连接器。安装后重新加载扩展，在“模型服务”中选择 **Grok 订阅**，页面会自动检测；也可点“立即检测”，并按需完成 Grok 登录。登录走官方 `auth.x.ai` 设备码流程，使用 SuperGrok 或 X Premium+ 的订阅权益，而不是 xAI API 按量计费。
 
 Grok 订阅是否包含可用 CLI 权益、可选模型和调用额度由 xAI 账户状态决定，订阅不等于无限或保证可用。
 
@@ -158,10 +158,10 @@ irm https://antigravity.google/cli/install.ps1 | iex
 然后在仓库的 `roamcat-0.0.1/` 目录下运行安装程序（从仓库根目录运行时写成 `node roamcat-0.0.1/connector/install.mjs …`）。把下面的占位符换成扩展管理页显示的**实际扩展 ID**——从源码构建的 `dist/extension` 固定为 `afpeggkplomdjjiemgajjgcajieincng`：
 
 ```sh
-node connector/install.mjs --extension-id <YOUR_ACTUAL_EXTENSION_ID> --backend antigravity
+node connector/install.mjs --extension-id <YOUR_ACTUAL_EXTENSION_ID>
 ```
 
-默认会为 Chrome 和 Edge 注册连接器。安装后重新加载扩展，在“模型服务”中选择 **Google 订阅**，点击“刷新账户与模型”即可使用；模型列表来自 `agy models`（如 Gemini 3.8 Flash、Gemini 3.1 Pro、Claude Sonnet / Opus 4.6、GPT-OSS 120B 等，以你的订阅配额为准）。
+不带 `--backend` 时会一次注册全部已安装的通道；只装 Google 时加 `--backend antigravity`。默认会为 Chrome 和 Edge 注册连接器。安装后重新加载扩展，在“模型服务”中选择 **Google 订阅**，页面会自动检测（终端里登录 `agy` 之后也会更新）；模型列表来自 `agy models`（如 Gemini 3.8 Flash、Gemini 3.1 Pro、Claude Sonnet / Opus 4.6、GPT-OSS 120B 等，以你的订阅配额为准）。
 
 说明：扩展内的“登录”按钮对 Google 订阅只会给出指引，不会打开登录页；登录与退出（`agy` 内输入 `/logout`）都请在终端里完成。Google 订阅的可用模型与调用额度（周配额 / 5 小时配额）由 Google 账户状态决定，订阅不等于无限或保证可用。
 
@@ -185,7 +185,7 @@ npm install -g @openai/codex
 node connector/install.mjs --extension-id <YOUR_ACTUAL_EXTENSION_ID>
 ```
 
-不要复制他人的扩展 ID，也不要把任何特定电脑上的 ID 写进脚本或公开配置。默认会为 Chrome 和 Edge 注册连接器；可用 `--browser chrome`、`--browser edge` 或逗号分隔的列表限制目标浏览器（另支持 `chromium`、`chrome-beta`、`chrome-testing`，仅注册显式指定的浏览器；`--extension-id` 支持逗号分隔的多个 ID）。安装后重新加载扩展，在“模型服务”中点击“刷新账户与模型”，并按需完成 ChatGPT 登录。
+不要复制他人的扩展 ID，也不要把任何特定电脑上的 ID 写进脚本或公开配置。不带 `--backend` 时会一次注册本机找得到 CLI 的全部通道（找不到的跳过）；只装 ChatGPT 时加 `--backend chatgpt`。默认会为 Chrome 和 Edge 注册连接器；可用 `--browser chrome`、`--browser edge` 或逗号分隔的列表限制目标浏览器（另支持 `chromium`、`chrome-beta`、`chrome-testing`，仅注册显式指定的浏览器；`--extension-id` 支持逗号分隔的多个 ID）。安装后重新加载扩展，在“模型服务”中选择 **ChatGPT 订阅**，页面会自动检测，并按需完成 ChatGPT 登录。
 
 移动扩展目录后，浏览器可能生成新 ID；此时必须使用新的实际 ID 重新安装连接器。更稳妥的升级方式是始终保留原目录位置。连接器安装程序实现了 macOS / Linux / Windows 的 Native Messaging 注册，目前以 macOS 实测为主；Linux 仍需更多验证，Windows 上 ChatGPT 连接器为新增支持（经 `codex.cmd` + shell 启动），如遇启动失败请用 `--codex` 指定完整路径后重试。重装/更新不会覆盖连接器已有的登录态（`auth.json` 仅缺失时才从 `~/.codex` 复制）。
 

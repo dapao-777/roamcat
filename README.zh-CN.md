@@ -132,10 +132,10 @@ npm run build      # → dist/extension
 **可选：订阅连接器。** 让扩展使用你本机已登录的 ChatGPT / Grok / Antigravity CLI：
 
 ```sh
-node roamcat-0.0.1/connector/install.mjs --extension-id afpeggkplomdjjiemgajjgcajieincng --backend grok
+node roamcat-0.0.1/connector/install.mjs --extension-id afpeggkplomdjjiemgajjgcajieincng
 ```
 
-不带 `--backend` 时默认是 ChatGPT（Codex），也可以传 `antigravity`。免构建的预发布安装包会在发布后附在 [Releases](https://github.com/dapao-777/roamcat/releases) 中。
+一条命令会注册本机已经装好 CLI 的全部通道（Codex、Grok、`agy`），没装的会跳过。只注册一个通道时再加 `--backend grok`（或 `chatgpt` / `antigravity`）。免构建的预发布安装包会在发布后附在 [Releases](https://github.com/dapao-777/roamcat/releases) 中。
 
 ## 🔒 本地优先的边界
 

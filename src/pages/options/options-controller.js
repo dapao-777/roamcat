@@ -81,12 +81,8 @@ function optionsProviderKind() { const kind=optionsState?.settings?.providerKind
 function optionsSubscriptionKind(){const kind=optionsProviderKind();return kind==='grok'||kind==='antigravity'?kind:'chatgpt';}
 function optionsInstallCommand(){
   const id=window.chrome?.runtime?.id||'YOUR_EXTENSION_ID';
-  const kind=optionsSubscriptionKind();
-  return kind==='grok'
-    ? `node connector/install.mjs --extension-id ${id} --backend grok`
-    : kind==='antigravity'
-    ? `node connector/install.mjs --extension-id ${id} --backend antigravity`
-    : `node connector/install.mjs --extension-id ${id}`;
+  // 安装器默认一次注册本机找得到 CLI 的全部订阅通道，三个通道共用同一条命令。
+  return `node connector/install.mjs --extension-id ${id}`;
 }
 function optionsLookupKey(){const key=optionsState?.settings?.lookupKey;return typeof key==='string'&&/^[A-Z]$/.test(key)?key:'D';}
 function optionsRenderLookupKey(){const key=optionsLookupKey();optionsEls.lookupKey.value=key;for(const copy of optionsLookupKeyCopies)copy.textContent=key;}
@@ -168,9 +164,41 @@ function optionsRenderSubscription(){
     :kind==='antigravity'
     ?T('ctl.noteAgy')
     :T('ctl.noteCodex');
-  const install=document.getElementById('connector-install');
-  if(install.dataset.connected!==String(connected)){install.open=!connected;install.dataset.connected=String(connected);}
+  optionsRenderSetupSteps(kind,label,subscription);
 }
+// 分步清单：安装连接器 → 连接器能启动 CLI → 登录 → 可用。stage 由 subscription.js 依据原生端口的断开原因给出；
+// 只展开当前卡住的那一步，前面的打勾。
+const OPTIONS_SETUP_STEPS=['install','start','login','ready'];
+function optionsRenderSetupSteps(kind,label,subscription){
+  const stage=subscription.stage||'unknown',cli=kind==='grok'?'Grok CLI':kind==='antigravity'?'agy':'Codex';
+  const current=stage==='unknown'?-1:OPTIONS_SETUP_STEPS.indexOf(stage);
+  document.querySelectorAll('#subscription-steps .setup-step').forEach((item,index)=>{
+    const state=current<0?'todo':index<current||stage==='ready'?'done':index===current?'current':'todo';
+    item.dataset.state=state;
+    if(state==='current')item.setAttribute('aria-current','step');else item.removeAttribute('aria-current');
+  });
+  const startTitle=document.getElementById('step-start-title');
+  const startHint=document.getElementById('step-start-hint');
+  const loginTitle=document.getElementById('step-login-title');
+  const loginHint=document.getElementById('step-login-hint');
+  if(startTitle)startTitle.textContent=T('ctl.stepStart',{cli});
+  if(startHint)startHint.textContent=T('ctl.stepStartHint',{cli});
+  if(loginTitle)loginTitle.textContent=T('ctl.stepLogin',{label});
+  if(loginHint)loginHint.textContent=kind==='antigravity'?T('ctl.stepLoginHintAgy'):T('ctl.stepLoginHint',{label});
+  const autocheck=document.getElementById('subscription-autocheck');
+  if(!autocheck)return;
+  autocheck.hidden=!optionsSetupNeedsPolling(kind,stage);
+  autocheck.textContent=current<0?T('ctl.stepChecking'):T('ctl.autoCheck');
+}
+// 装好连接器、修好 CLI、在终端里登录 agy 都发生在扩展之外，没有事件推回来，只能轮询；
+// 已连上的 ChatGPT/Grok 登录由连接器主动推送状态，不轮询，以免重连打断进行中的登录。
+function optionsSetupNeedsPolling(kind,stage){return stage==='install'||stage==='start'||stage==='unknown'||(stage==='login'&&kind==='antigravity');}
+setInterval(()=>{
+  if(document.visibilityState!=='visible'||optionsSubscriptionBusy||optionsProviderKind()==='api')return;
+  if(!optionsEls.subscriptionState?.offsetParent)return;
+  const kind=optionsSubscriptionKind(),stage=optionsState?.subscription?.stage||'unknown';
+  if(optionsSetupNeedsPolling(kind,stage))void optionsRefreshSubscription(false,true);
+},5000);
 function optionsReadingStyleValue(){return globalThis.RoamCatReadingStyle.validate(Object.fromEntries(optionsReadingLayers.map(layer=>{const controls=optionsReadingControls[layer];return[layer,{style:controls.style.value,color:controls.group.dataset.color||'auto',size:Number(controls.size.value)}];})));}
 let optionsReadingDraft=null,optionsReadingWrites=Promise.resolve();
 function optionsSaveReadingStyle(readingStyle,message=T('ctl.styleSaved')){optionsReadingDraft=readingStyle;optionsRenderReadingStyle();const save=async()=>{await optionsSavePatch({readingStyle},message);if(optionsReadingDraft===readingStyle){optionsReadingDraft=null;optionsRenderReadingStyle();}};optionsReadingWrites=optionsReadingWrites.then(save,save);return optionsReadingWrites;}
@@ -375,6 +403,7 @@ function optionsSetNow(id, text, tone) {
   if (!item || !value) return;
   value.textContent = text;
   item.dataset.tone = tone;
+  item.title = text;
 }
 async function optionsRenderNow() {
   const sequence = ++optionsNowSequence;
@@ -436,7 +465,7 @@ function optionsScheduleNow() {
 }
 async function optionsSyncState(){const [state,automation]=await Promise.all([request('STATE_GET'),request('AUTOMATION_GET')]);optionsState=state;optionsAutomation=automation;optionsState.settings.automation=optionsAutomation.automation;window.optionsState=optionsState;if(optionsCurrentSection!=='diagnostics')optionsRenderAll();optionsScheduleNow();}
 async function optionsLoadModels(refresh=false){let loaded=true;try{const result=await request('MODELS_LIST',{refresh,kind:optionsSubscriptionKind()});optionsModels=Array.isArray(result.models)?result.models:[];}catch(error){loaded=false;optionsSetResult(optionsEls.subscriptionResult,T('ctl.modelsFail',{err:optionsErrorText(error)}),true);}if(optionsState){optionsRenderSubscription();optionsRenderDetection();}return loaded;}
-async function optionsRefreshSubscription(refresh=false){if(optionsSubscriptionBusy||optionsProviderKind()==='api')return;optionsSubscriptionBusy=true;optionsRenderSubscription();try{const kind=optionsSubscriptionKind();const subscription=await request('SUBSCRIPTION_STATUS',{kind});optionsState.subscription=subscription;await optionsSyncState();if(!subscription.connected||subscription.error){optionsSetResult(optionsEls.subscriptionResult,'');return;}if(await optionsLoadModels(refresh))optionsSetResult(optionsEls.subscriptionResult,T('ctl.accountUpdated'));}catch(error){optionsSetResult(optionsEls.subscriptionResult,optionsErrorText(error),true);}finally{optionsSubscriptionBusy=false;optionsRenderSubscription();}}
+async function optionsRefreshSubscription(refresh=false,quiet=false){if(optionsSubscriptionBusy||optionsProviderKind()==='api')return;optionsSubscriptionBusy=true;optionsRenderSubscription();try{const kind=optionsSubscriptionKind();const subscription=await request('SUBSCRIPTION_STATUS',quiet?{kind,probe:true}:{kind});optionsState.subscription=subscription;await optionsSyncState();if(!subscription.connected||subscription.error){optionsSetResult(optionsEls.subscriptionResult,'');return;}if(await optionsLoadModels(refresh)&&!quiet)optionsSetResult(optionsEls.subscriptionResult,T('ctl.accountUpdated'));}catch(error){if(!quiet)optionsSetResult(optionsEls.subscriptionResult,optionsErrorText(error),true);}finally{optionsSubscriptionBusy=false;optionsRenderSubscription();}}
 async function optionsSubscriptionAction(type){if(optionsSubscriptionBusy)return;optionsSubscriptionBusy=true;optionsRenderSubscription();try{const kind=optionsSubscriptionKind();optionsState.subscription=await request(type,{kind});await optionsSyncState();optionsSetResult(optionsEls.subscriptionResult,type==='SUBSCRIPTION_LOGOUT'?T('ctl.loggedOut',{label:optionsSubscriptionLabel(kind)}):T('ctl.stateUpdated'));}catch(error){optionsSetResult(optionsEls.subscriptionResult,optionsErrorText(error),true);}finally{optionsSubscriptionBusy=false;optionsRenderSubscription();}}
 async function optionsExportData(){optionsSetResult(optionsEls.dataResult,T('ctl.exporting'));try{const payload=await request('READING_DATA_EXPORT');const url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download=`roamcat-support-data-${new Date().toISOString().slice(0,10)}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),0);optionsSetResult(optionsEls.dataResult,T('ctl.exported'));}catch(error){optionsSetResult(optionsEls.dataResult,optionsErrorText(error),true);}}
 function optionsDiagnosticNumber(value){return Number.isFinite(value)&&value>=0?String(value):'—';}

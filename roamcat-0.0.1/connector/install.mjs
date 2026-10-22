@@ -1,7 +1,8 @@
 /**
  * @file connector/install.mjs
  * 文件职责：连接器安装器——mac/Linux/Win三平台注册与CLI发现。
- * 主要内容：浏览器默认chrome+edge；--extension-id支持多ID；--codex/--grok/--agy指定路径。
+ * 主要内容：默认一次注册本机找得到 CLI 的全部订阅通道（找不到的跳过）；--backend 只装一个；
+ *   浏览器默认chrome+edge；--extension-id支持多ID；--codex/--grok/--agy指定路径。
  * 模块边界：Node CLI；重装不覆盖既有登录态。
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -26,7 +27,7 @@ const source = dirname(fileURLToPath(import.meta.url));
 const quote = value => `'${value.replaceAll("'", "'\\''")}'`;
 
 function options(args) {
-  const result = {browsers:['chrome','edge'],uninstall:false,backend:'chatgpt'};
+  const result = {browsers:['chrome','edge'],uninstall:false,backend:null};
   for (let i=0;i<args.length;i++) {
     const flag = args[i];
     if (flag === '--help') result.help = true;
@@ -236,59 +237,60 @@ function unregisterWindowsHost(key) {
   spawnSync('reg', ['delete', key, '/f'], {encoding:'utf8', timeout:10000, windowsHide: true});
 }
 
-async function main() {
-  const opts = options(process.argv.slice(2));
-  if (opts.help) {
-    console.log('RoamCat · 订阅连接器\n\n安装：node connector/install.mjs --extension-id ID [--backend chatgpt|grok|antigravity] [--codex PATH] [--grok PATH] [--agy PATH]\n浏览器：--browser chrome,edge（默认）；另支持 chromium、chrome-beta、chrome-testing（逗号分隔，仅注册显式指定的浏览器）\n扩展 ID：单个 32 位 a–p 字母，或逗号分隔的多个 ID（多开/多配置共用一个连接器）\n卸载：node connector/install.mjs --uninstall --backend chatgpt|grok|antigravity [--browser chrome,edge]\n\nChatGPT 后端需要 Node.js 20+ 和官方 Codex CLI，支持 macOS / Linux / Windows（Windows 上为 codex.cmd，经 shell 启动；可用 --codex 指定完整路径）。\nGrok 后端需要 Node.js 20+ 和官方 Grok CLI，支持 macOS / Linux / Windows。\nGoogle（Antigravity）后端需要 Node.js 20+ 和官方 Antigravity CLI（agy），支持 macOS / Linux / Windows，使用 Google AI Pro / Ultra 订阅权益。\n仅注册当前用户，不需要管理员权限。\n卸载只移除指定浏览器的连接器注册；保留本机登录数据。要退出账户，请先在插件中退出登录。');
-    return;
-  }
-  if (Number(process.versions.node.split('.')[0]) < 20) throw new Error('需要 Node.js 20 或更新版本。');
-  const backend = opts.backend;
-  const host = HOSTS[backend];
+const BACKENDS = ['chatgpt','grok','antigravity'];
+const BACKEND_LABEL = {chatgpt:'ChatGPT 订阅（Codex）', grok:'Grok 订阅（Grok CLI）', antigravity:'Google 订阅（agy）'};
+const FINDERS = {chatgpt: opts => findCodex(opts.codex), grok: opts => findGrok(opts.grok), antigravity: opts => findAgy(opts.agy)};
+
+function browserTargets(backend, opts) {
   const {root,browsers,windows,registry} = locations(backend);
+  const host = HOSTS[backend];
   const launcher = join(root, windows ? 'launch.exe' : 'launch');
   const manifestPath = join(root, `${host}.json`);
   // 只注册用户显式指定的浏览器，不再静默追加 beta/testing，避免意外覆盖。
-  const targetBrowsers = [...new Set(opts.browsers)];
-  const targets = windows
-    ? targetBrowsers.map(name => {
-        if (!registry[name]) throw new Error(`不支持的浏览器：${name}。`);
-        return {name, key: registry[name]};
-      })
-    : targetBrowsers.map(name => {
-        if (!browsers[name]) throw new Error(`不支持的浏览器：${name}。`);
-        return join(browsers[name],`${host}.json`);
-      });
-  if (opts.uninstall) {
+  const targets = [...new Set(opts.browsers)].map(name => {
     if (windows) {
-      for (const target of targets) {
-        const existing = registryValue(target.key);
-        if (!existing) continue;
-        if (existing !== manifestPath) throw new Error(`注册项不属于此安装，未删除：${target.key}`);
-        unregisterWindowsHost(target.key);
-        console.log(`已移除注册：${target.key}`);
-      }
-    } else {
-      for (const target of targets) {
-        let existing;
-        try { existing = JSON.parse(await readFile(target,'utf8')); }
-        catch (error) { if (error.code === 'ENOENT') continue; throw error; }
-        if (existing.name !== host || existing.path !== launcher) throw new Error(`注册文件不属于此安装，未删除：${target}`);
-        await rm(target);
-        console.log(`已移除注册：${target}`);
-      }
+      if (!registry[name]) throw new Error(`不支持的浏览器：${name}。`);
+      return {name, key: registry[name]};
     }
-    console.log('已卸载所选浏览器的连接器注册。本机登录数据保留；其他浏览器不受影响。');
-    return;
+    if (!browsers[name]) throw new Error(`不支持的浏览器：${name}。`);
+    return join(browsers[name],`${host}.json`);
+  });
+  return {root, host, windows, launcher, manifestPath, targets};
+}
+
+async function uninstallBackend(backend, opts) {
+  const {host, windows, launcher, manifestPath, targets} = browserTargets(backend, opts);
+  let removed = 0;
+  if (windows) {
+    for (const target of targets) {
+      const existing = registryValue(target.key);
+      if (!existing) continue;
+      if (existing !== manifestPath) throw new Error(`注册项不属于此安装，未删除：${target.key}`);
+      unregisterWindowsHost(target.key);
+      console.log(`已移除注册：${target.key}`);
+      removed++;
+    }
+  } else {
+    for (const target of targets) {
+      let existing;
+      try { existing = JSON.parse(await readFile(target,'utf8')); }
+      catch (error) { if (error.code === 'ENOENT') continue; throw error; }
+      if (existing.name !== host || existing.path !== launcher) throw new Error(`注册文件不属于此安装，未删除：${target}`);
+      await rm(target);
+      console.log(`已移除注册：${target}`);
+      removed++;
+    }
   }
-  const ids = await extensionIds(opts.extensionId);
+  return removed;
+}
+
+async function installBackend(backend, cliPath, opts, ids) {
+  const {root, host, windows, launcher, manifestPath, targets} = browserTargets(backend, opts);
   const origins = ids.map(i => `chrome-extension://${i}/`);
   const origin = origins.length === 1 ? origins[0] : origins;
-  const cliPath = backend === 'grok' ? await findGrok(opts.grok) : backend === 'antigravity' ? await findAgy(opts.agy) : await findCodex(opts.codex);
-  const versionArgs = ['--version'];
   // .cmd/.bat shim（如 Windows npm 全局的 codex.cmd）必须经 shell 才能 spawn，否则 EINVAL。
   const cliNeedsShell = process.platform === 'win32' && /\.(cmd|bat)$/i.test(cliPath);
-  const version = spawnSync(cliPath, versionArgs, {encoding:'utf8', timeout:10000, windowsHide: true, ...(cliNeedsShell ? {shell:true} : {})});
+  const version = spawnSync(cliPath, ['--version'], {encoding:'utf8', timeout:10000, windowsHide: true, ...(cliNeedsShell ? {shell:true} : {})});
   const versionText = `${version.stdout || ''}\n${version.stderr || ''}`.trim();
   if (backend === 'chatgpt') {
     if (version.status !== 0 || !/^codex-cli \d+\.\d+\.\d+/m.test(version.stdout || '')) throw new Error('无法运行官方 Codex CLI。请检查 Node.js 与 Codex 的安装。');
@@ -374,12 +376,60 @@ async function main() {
       console.log(`已注册：${target}`);
     }
   }
-  const cliLabel = backend === 'grok' ? 'Grok' : backend === 'antigravity' ? 'Antigravity CLI（agy）' : 'Codex';
-  const loginLabel = backend === 'grok' ? 'Grok' : backend === 'antigravity' ? 'Google' : 'ChatGPT';
-  const loginHint = backend === 'antigravity'
-    ? '首次使用前请先在终端运行 agy，按提示用 Google 账号（Google AI Pro / Ultra 订阅）完成登录，再回扩展刷新。'
-    : `仅首次使用或登录失效时才需要 ${loginLabel} 登录。`;
-  console.log(`\n扩展 ID：${ids.join(', ')}\n${cliLabel}：${versionText.split(/\r?\n/)[0]}\n连接器：${root}\n后端：${backend}\n\n安装 / 更新完成。重新加载扩展，进入“服务”，选择“${loginLabel} 订阅”，点击“刷新账户与模型”。\n已有登录数据保留，无需重新登录；${loginHint}\n更新连接器源码后也需重新运行此安装命令；安装后刷新连接会重启连接器，以加载新代码。\n升级 Node.js / ${cliLabel} 或移动扩展目录后，请重新运行此安装命令。`);
+  return {root, version: versionText.split(/\r?\n/)[0]};
+}
+
+async function main() {
+  const opts = options(process.argv.slice(2));
+  if (opts.help) {
+    console.log('RoamCat · 订阅连接器\n\n安装：node connector/install.mjs --extension-id ID\n  默认一次注册本机已安装的全部订阅通道：ChatGPT（codex）、Grok（grok）、Google（agy）；找不到的通道跳过，装好对应 CLI 后重跑即可补上。\n  只装一个通道：--backend chatgpt|grok|antigravity；指定 CLI 路径：--codex PATH / --grok PATH / --agy PATH\n浏览器：--browser chrome,edge（默认）；另支持 chromium、chrome-beta、chrome-testing（逗号分隔，仅注册显式指定的浏览器）\n扩展 ID：单个 32 位 a–p 字母，或逗号分隔的多个 ID（多开/多配置共用一个连接器）\n卸载：node connector/install.mjs --uninstall [--backend chatgpt|grok|antigravity] [--browser chrome,edge]（不带 --backend 时卸载全部通道）\n\n需要 Node.js 20+；三个通道均支持 macOS / Linux / Windows（Windows 上 npm 全局安装的 codex.cmd 经 shell 启动）。\nGoogle 通道使用 Google AI Pro / Ultra 订阅权益，首次使用前需在终端运行 agy 登录。\n仅注册当前用户，不需要管理员权限。\n卸载只移除指定浏览器的连接器注册；保留本机登录数据。要退出账户，请先在插件中退出登录。');
+    return;
+  }
+  if (Number(process.versions.node.split('.')[0]) < 20) throw new Error('需要 Node.js 20 或更新版本。');
+  const explicit = Boolean(opts.backend);
+  const backends = explicit ? [opts.backend] : BACKENDS;
+  if (opts.uninstall) {
+    for (const backend of backends) await uninstallBackend(backend, opts);
+    console.log('已卸载所选浏览器的连接器注册。本机登录数据保留；其他浏览器不受影响。');
+    return;
+  }
+  const ids = await extensionIds(opts.extensionId);
+  const results = [];
+  for (const backend of backends) {
+    let cliPath;
+    try { cliPath = await FINDERS[backend](opts); }
+    catch (error) {
+      // 指定了 --backend 时找不到 CLI 就是失败；一次装全部时只跳过这个通道。
+      if (explicit) throw error;
+      results.push({backend, skipped:true, reason:error.message});
+      continue;
+    }
+    try { results.push({backend, ...await installBackend(backend, cliPath, opts, ids)}); }
+    catch (error) {
+      if (explicit) throw error;
+      results.push({backend, failed:true, reason:error.message});
+    }
+  }
+  const lines = results.map(item => item.skipped
+    ? `  · ${BACKEND_LABEL[item.backend]}：跳过——${item.reason}`
+    : item.failed
+    ? `  ✗ ${BACKEND_LABEL[item.backend]}：失败——${item.reason}`
+    : `  ✓ ${BACKEND_LABEL[item.backend]}：${item.version}（${item.root}）`);
+  const installed = results.filter(item => !item.skipped && !item.failed);
+  console.log(`\n扩展 ID：${ids.join(', ')}\n${lines.join('\n')}\n`);
+  if (!installed.length) {
+    const failed = results.filter(item => item.failed);
+    throw new Error(failed.length
+      ? `订阅通道注册失败：${failed.map(item => `${BACKEND_LABEL[item.backend]}（${item.reason}）`).join('；')}。`
+      : '没有可注册的订阅通道。请先安装 Codex、Grok CLI 或 agy 中的至少一个，再重新运行此命令。');
+  }
+  const agyHint = installed.some(item => item.backend === 'antigravity')
+    ? '\nGoogle 通道首次使用前，请先在终端运行 agy，用 Google 账号（Google AI Pro / Ultra 订阅）完成登录。' : '';
+  const partial = results.some(item => item.failed);
+  console.log(partial
+    ? `部分通道已注册，失败的见上方说明。回到扩展的“模型服务”页，选择已注册的订阅通道，页面会自动检测。\n已有登录数据保留，无需重新登录。${agyHint}`
+    : `安装 / 更新完成。回到扩展的“模型服务”页，选择对应的订阅通道，页面会自动检测连接并引导登录。\n已有登录数据保留，无需重新登录。${agyHint}\n更新连接器源码、升级 Node.js / CLI 或移动扩展目录后，重新运行此安装命令即可。`);
+  if (partial) process.exitCode = 1;
 }
 const isMain = process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href;
 if (isMain) {
