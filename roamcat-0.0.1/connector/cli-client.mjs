@@ -32,6 +32,7 @@ import {SENTENCE_GROUPS_INSTRUCTIONS,SENTENCE_GROUPS_SCHEMA,normalizeSentenceGro
 import {SUMMARY_INSTRUCTIONS,SUMMARY_SCHEMA,PERSONALIZATION_INSTRUCTIONS,PERSONALIZATION_SCHEMA} from '../extension/personalization.mjs';
 
 export const DEFAULT_TIMEOUT_MS = 90_000;
+export const PROBE_REUSE_MS = 15_000;
 export const MAX_WORK_ITEMS = 3; // Two automatic batches leave capacity for an explicit lookup.
 export const MAX_CACHED_MODELS = 256;
 export const STDERR_REPORT_INTERVAL_MS = 5_000;
@@ -97,6 +98,7 @@ export function parseClassification(value, source) {
 //   env(client) → 子进程环境；prepare(client) → 目录与配置初始化
 //   probeAccount(client) → account|null（抛错表示探测失败）
 //   accountError(error) → 登录态失败的用户可读消息
+//   isAuthError(error) → 可选；探测失败是否属于未登录/登录失效（缺省按通用登录类关键词判断）
 //   statusExtras(client) → {loginPending,userCode} 附加状态字段
 //   authRequired() → 未登录错误（cause:'AUTH_REQUIRED'）
 //   loadModels(client) → models[]；executeTask(client,task) → 解析后的结构化结果
@@ -104,6 +106,12 @@ export function parseClassification(value, source) {
 //   publicError(error)/errorCode(error) → 脱敏消息与诊断码
 //   parseClassification(value) → {domain,source}；suppressPageProgress: page 范围不回进度
 //   beforeClose(client) → 关闭前清理（如停止登录子进程）
+// 账户探测失败分两种：未登录/登录失效（扩展停止自动连接、引导重新登录）与网络抖动、超时等临时失败（之后再试）。
+const AUTH_FAILURE = /authentication required|not signed in|not authenticated|no .*credential|login required|sign.?in|unauthori[sz]ed|(?:invalid|expired)[ _-](?:access[ _-])?token|尚未登录|登录已失效/i;
+function isAuthFailure(hooks, error) {
+  return typeof hooks.isAuthError === 'function' ? hooks.isAuthError(error) : AUTH_FAILURE.test(String(error?.message || error || ''));
+}
+
 export class CliClient extends EventEmitter {
   constructor({ cliPath, dataDir, timeoutMs = DEFAULT_TIMEOUT_MS, spawnImpl = spawn, diagnostic = null, provider, hooks }) {
     super();
@@ -127,6 +135,8 @@ export class CliClient extends EventEmitter {
     this.authGeneration = 0;
     this.stderrReports = new Map();
     this.activeChildren = new Set();
+    this.probeRun = null;
+    this.lastProbe = null;
   }
 
   record(record) {
@@ -155,8 +165,23 @@ export class CliClient extends EventEmitter {
   async #start() {
     await this.hooks.prepare(this);
     this.ready = true;
-    try { this.account = await this.hooks.probeAccount(this); if (this.account) this.loginError = null; } catch { /* reported on next refreshStatus() */ }
+    try { this.account = await this.probeAccountShared(); if (this.account) this.loginError = null; this.authFailed = !this.account; }
+    catch (error) { this.authFailed = isAuthFailure(this.hooks, error); /* message reported on next refreshStatus() */ }
     this.emitStatus();
+  }
+
+  // 账户探测去重：启动时探测完，紧接着扩展发来的 status 又会再探一次（agy 每次约 6 秒）。
+  // 进行中的探测共享同一个 Promise；已登录的结果在 PROBE_REUSE_MS 内、且登录代数未变时直接复用；失败或未登录不缓存。
+  probeAccountShared() {
+    if (this.probeRun) return this.probeRun;
+    const reuse = this.lastProbe;
+    if (reuse && reuse.generation === this.authGeneration && Date.now() - reuse.at < PROBE_REUSE_MS) return reuse.result;
+    const generation = this.authGeneration;
+    const run = Promise.resolve().then(() => this.hooks.probeAccount(this));
+    this.probeRun = run;
+    run.then(account => { this.lastProbe = account ? { at: Date.now(), generation, result: run } : null; }, () => { this.lastProbe = null; })
+      .finally(() => { if (this.probeRun === run) this.probeRun = null; });
+    return run;
   }
 
   env() { return this.hooks.env(this); }
@@ -242,10 +267,12 @@ export class CliClient extends EventEmitter {
     await this.start();
     const previousAccount = this.account;
     try {
-      this.account = await this.hooks.probeAccount(this);
+      this.account = await this.probeAccountShared();
       if (this.account) this.loginError = null;
+      this.authFailed = !this.account;
     } catch (error) {
       this.account = null;
+      this.authFailed = isAuthFailure(this.hooks, error);
       this.loginError = this.hooks.accountError ? this.hooks.accountError(error) : String(error?.message || error);
     }
     if (Boolean(previousAccount) !== Boolean(this.account) || (previousAccount?.email ?? null) !== (this.account?.email ?? null)) {
@@ -262,6 +289,7 @@ export class CliClient extends EventEmitter {
       email: this.account?.email ?? null,
       plan: this.account?.plan ?? null,
       ...this.hooks.statusExtras(this),
+      authFailed: this.account ? false : this.authFailed === true,
       error: this.loginError,
     };
   }

@@ -1,12 +1,13 @@
 /**
  * @file tools/unit/connector-clients.test.mjs
- * 文件职责：为 connector/ 的 GrokClient 与 CodexClient 提供 node:test 集成级单测——两者
+ * 文件职责：为 connector/ 的 GrokClient、CodexClient 与 AntigravityClient 提供 node:test 集成级单测——两者
  *   合计约 1500 行业务逻辑（登录态、模型校验、重试门控、JSON-RPC 会话）此前只有节流脚本
  *   间接覆盖。本文件用可注入的 spawnImpl 与临时数据目录，把 SPEC 第 8 节的关键行为固化为断言。
  * 主要内容：Grok 的格式类错误三次重试后抛出、AUTH/429/超时类错误不重试、--prompt-file
  *   不被支持时的 -p 回退、成功路径单次调用；Codex 的 initialize/account/read 握手、
  *   model/list 校验、thread/turn 任务流（item/completed + turn/completed 驱动解析）、
- *   未连接订阅时的 AUTH_REQUIRED。
+ *   未连接订阅时的 AUTH_REQUIRED；Antigravity 用 agy models 探测账户（与启动探测去重）、区分未登录与临时失败（authFailed），
+ *   常驻 stream-json 进程复用、EOF 换进程重试、协议不认时退回逐次 -p。
  * 模块边界：只注入 spawnImpl 与临时 dataDir，不 mock 任何被测模块内部；真实文件写入限于
  *   系统临时目录；运行方式为在仓库根执行 node:test 自动发现本目录全部 .test.mjs。
  *
@@ -24,6 +25,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {GrokClient} from '../../roamcat-0.0.1/connector/grok.mjs';
 import {CodexClient} from '../../roamcat-0.0.1/connector/codex.mjs';
+import {AntigravityClient} from '../../roamcat-0.0.1/connector/antigravity.mjs';
 
 function tempDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'roamcat-connector-'));
@@ -56,7 +58,7 @@ function createFakeSpawn(handler) {
 }
 
 function grokClient(dataDir, spawnImpl) {
-  return new GrokClient({grokPath: 'grok', dataDir, timeoutMs: 4000, spawnImpl, diagnostic: null});
+  return new GrokClient({grokPath: 'grok', dataDir, timeoutMs: 4000, spawnImpl, diagnostic: null, userAuthPath: path.join(dataDir, 'no-user-grok-auth.json')});
 }
 
 function writeGrokAuth(dataDir) {
@@ -254,4 +256,168 @@ test('Codex 未连接订阅时任务以 AUTH_REQUIRED 失败', async () => {
   // 给一个合法模型名：未认证时应在 listModels 的账户检查处抛 AUTH_REQUIRED，而非输入校验。
   await assert.rejects(client.classify({text: 'PostgreSQL optimizer.', title: '', model: 'gpt-5.6-luna'}), /请先连接 ChatGPT 订阅/u);
   await client.close();
+});
+
+const AGY_MODELS = 'Fetching available models...\ngemini-3.8-flash-low\tGemini 3.8 Flash (Low)\ngemini-3.8-flash-high\tGemini 3.8 Flash (High)\n';
+function agyClient(dataDir, spawnImpl) {
+  return new AntigravityClient({agyPath: 'agy', dataDir, timeoutMs: 4000, spawnImpl, diagnostic: null});
+}
+
+test('Antigravity 用 agy models 探测账户，不再发 -p /usage', async () => {
+  const dataDir = tempDir();
+  const {spawnImpl, calls} = createFakeSpawn(() => ({stdout: AGY_MODELS}));
+  const client = agyClient(dataDir, spawnImpl);
+  const status = await client.refreshStatus();
+  assert.equal(status.authenticated, true);
+  assert.equal(status.authFailed, false);
+  assert.ok(calls.length > 0 && calls.every(call => call.args[0] === 'models'));
+  await client.close();
+});
+
+test('Antigravity 探测遇到网络抖动时标为临时失败，不当作未登录', async () => {
+  const dataDir = tempDir();
+  const {spawnImpl} = createFakeSpawn(() => ({stderr: 'error: Eligibility check failed: Post "https://example.googleapis.com/v1internal:loadCodeAssist": EOF', code: 1}));
+  const client = agyClient(dataDir, spawnImpl);
+  const status = await client.refreshStatus();
+  assert.equal(status.authenticated, false);
+  assert.equal(status.authFailed, false);
+  await client.close();
+});
+
+test('Antigravity 登录失效时标为未登录（authFailed）', async () => {
+  const dataDir = tempDir();
+  const {spawnImpl} = createFakeSpawn(() => ({stderr: 'Error: authentication required. Run agy to sign in.', code: 1}));
+  const client = agyClient(dataDir, spawnImpl);
+  const status = await client.refreshStatus();
+  assert.equal(status.authenticated, false);
+  assert.equal(status.authFailed, true);
+  assert.match(status.error, /尚未登录 Google 账号/u);
+  await client.close();
+});
+
+/**
+ * agy 常驻流式进程的假 spawn：带 stream-json 的进程常驻，按 onTurn({prompt, turn, worker}) 回 result 事件
+ * （返回 {exit:true} 时回完即退出）；其余调用（models、逐次 -p）按 oneShot(args) 回输出后退出。
+ */
+function createAgyFake({onTurn, oneShot}) {
+  const calls = [];
+  let workers = 0;
+  const spawnImpl = (command, args) => {
+    calls.push({args});
+    const child = new EventEmitter();
+    child.stdout = new PassThrough();
+    child.stderr = new PassThrough();
+    child.stdin = new PassThrough();
+    child.killed = false;
+    child.kill = () => { if (!child.killed) { child.killed = true; setImmediate(() => child.emit('exit', null)); } };
+    if (args.includes('stream-json')) {
+      const worker = ++workers;
+      let turn = 0;
+      let buffer = '';
+      child.stdin.on('data', chunk => {
+        buffer += chunk;
+        let index;
+        while ((index = buffer.indexOf('\n')) >= 0) {
+          const line = buffer.slice(0, index);
+          buffer = buffer.slice(index + 1);
+          const message = JSON.parse(line);
+          const reply = onTurn({prompt: message.message?.content, event: message.event, turn: ++turn, worker});
+          setImmediate(() => {
+            child.stdout.write(JSON.stringify({event: 'result', result: reply.result}) + '\n');
+            if (reply.exit) setImmediate(() => { child.killed = true; child.emit('exit', 1); });
+          });
+        }
+      });
+      return child;
+    }
+    const script = oneShot(args) || {};
+    setImmediate(() => {
+      if (script.stdout) child.stdout.write(script.stdout);
+      if (script.stderr) child.stderr.write(script.stderr);
+      setImmediate(() => child.emit('exit', script.code ?? 0));
+    });
+    return child;
+  };
+  return {spawnImpl, calls, streamCalls: () => calls.filter(call => call.args.includes('stream-json')).length};
+}
+
+const pageItem = (text, index) => ({id: `p${index + 1}`, text, context: {title: 'Talk', heading: '', before: '', after: ''}});
+const translated = (prompt, text) => ({status: 'SUCCESS', structured_output: {items: [{id: JSON.parse(prompt.slice(prompt.lastIndexOf('\n\n') + 2)).items[0].id, translation: text}]}});
+
+test('Antigravity 字幕翻译走常驻流式进程：连续两轮复用同一个进程', async () => {
+  const dataDir = tempDir();
+  const fake = createAgyFake({
+    onTurn: ({prompt, worker}) => ({result: translated(prompt, `译文${worker}`)}),
+    oneShot: args => args[0] === 'models' ? {stdout: AGY_MODELS} : {code: 1, stderr: 'unexpected one-shot call'},
+  });
+  const client = agyClient(dataDir, fake.spawnImpl);
+  const first = await client.emergencyTranslate({scope: 'page', items: [pageItem('One line.', 0)], model: 'gemini-3.8-flash-low'});
+  const second = await client.emergencyTranslate({scope: 'page', items: [pageItem('Another line.', 0)], model: 'gemini-3.8-flash-low'});
+  assert.equal(first.items[0].translation, '译文1');
+  assert.equal(second.items[0].translation, '译文1');
+  // 首次用到时多预热一个备用进程，之后不再新开。
+  assert.equal(fake.streamCalls(), 2);
+  assert.equal(fake.calls.filter(call => call.args.includes('-p') && !call.args.includes('stream-json')).length, 0);
+  await client.close();
+});
+
+test('Antigravity 常驻进程遇到 Eligibility EOF 时换一个进程重试一次', async () => {
+  const dataDir = tempDir();
+  const fake = createAgyFake({
+    onTurn: ({prompt, worker}) => worker === 1
+      ? {result: {status: 'ERROR', error: 'Eligibility check failed: Post "https://example.googleapis.com/v1internal:loadCodeAssist": EOF'}, exit: true}
+      : {result: translated(prompt, '重试成功')},
+    oneShot: args => args[0] === 'models' ? {stdout: AGY_MODELS} : {code: 1},
+  });
+  const client = agyClient(dataDir, fake.spawnImpl);
+  const result = await client.emergencyTranslate({scope: 'page', items: [pageItem('One line.', 0)], model: 'gemini-3.8-flash-low'});
+  assert.equal(result.items[0].translation, '重试成功');
+  await client.close();
+});
+
+test('Antigravity 不认流式输入协议时退回逐次 agy -p', async () => {
+  const dataDir = tempDir();
+  const fake = createAgyFake({
+    onTurn: () => ({result: {status: 'ERROR', error: 'stream input message is missing the "event" field'}, exit: true}),
+    oneShot: args => {
+      if (args[0] === 'models') return {stdout: AGY_MODELS};
+      const prompt = args[args.indexOf('-p') + 1];
+      return {stdout: JSON.stringify(translated(prompt, '逐次调用')) + '\n'};
+    },
+  });
+  const client = agyClient(dataDir, fake.spawnImpl);
+  const result = await client.emergencyTranslate({scope: 'page', items: [pageItem('One line.', 0)], model: 'gemini-3.8-flash-low'});
+  assert.equal(result.items[0].translation, '逐次调用');
+  assert.equal(client.agyStreamUnsupported, true);
+  await client.close();
+});
+
+test('Antigravity 启动探测与紧随其后的状态刷新只跑一次 agy models', async () => {
+  const dataDir = tempDir();
+  const fake = createAgyFake({onTurn: () => ({result: {status: 'ERROR', error: 'unused'}}), oneShot: () => ({stdout: AGY_MODELS})});
+  const client = agyClient(dataDir, fake.spawnImpl);
+  await client.start();
+  const status = await client.refreshStatus();
+  await client.listModels();
+  assert.equal(status.authenticated, true);
+  assert.equal(fake.calls.filter(call => call.args[0] === 'models').length, 1);
+  await client.close();
+});
+
+test('Grok 复用本机 grok CLI 已有的登录；在扩展里退出后不再自动复用，也不登出 CLI', async () => {
+  const dataDir = tempDir();
+  const userAuthPath = path.join(dataDir, 'user-grok-auth.json');
+  fs.writeFileSync(userAuthPath, JSON.stringify({default: {email: 'reader@example.com', refresh_token: 'r', principal_type: 'User'}}));
+  const {spawnImpl, calls} = createFakeSpawn(() => ({stdout: GROK_MODELS}));
+  const client = new GrokClient({grokPath: 'grok', dataDir, timeoutMs: 4000, spawnImpl, diagnostic: null, userAuthPath});
+  const status = await client.refreshStatus();
+  assert.equal(status.authenticated, true);
+  assert.equal(status.email, 'reader@example.com');
+  await client.logout();
+  assert.equal(calls.filter(call => call.args[0] === 'logout').length, 0);
+  assert.equal(fs.existsSync(userAuthPath), true);
+  await client.close();
+  const again = new GrokClient({grokPath: 'grok', dataDir, timeoutMs: 4000, spawnImpl, diagnostic: null, userAuthPath});
+  assert.equal((await again.refreshStatus()).authenticated, false);
+  await again.close();
 });

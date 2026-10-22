@@ -1,7 +1,8 @@
 /**
  * @file connector/antigravity.mjs
  * 文件职责：Antigravity后端——经官方agy CLI复用Google订阅权益。
- * 主要内容：agy 专属适配——用户会话环境、/usage 账户探测、ERROR 信封解析、
+ * 主要内容：agy 专属适配——用户会话环境、agy models 账户探测（启动期网络抖动重试一次）、常驻
+ *   stream-json 进程池（按模型 + schema 分池，协议不认时退回逐次 agy -p）、ERROR 信封解析、
  *   --json-schema 剥离 RE2 不支持 pattern、手动终端登录引导；生命周期与任务骨架
  *   由 cli-client.mjs 的 CliClient 承载。
  * 模块边界：连接器层；上游错误只映射分类码，不回显原文。
@@ -154,6 +155,220 @@ function parseClassification(value) {
   throw new Error('Antigravity 返回的领域分类格式无效，请重试。');
 }
 
+// Google 偶发的启动期网络失败（Eligibility check failed … EOF 等）重试一次就过；登录、额度、格式类错误不重试。
+const TRANSIENT_FAILURE = /eligibility check failed|\bEOF\b|ECONNRESET|connection reset|temporarily unavailable|\b50[23]\b/i;
+const TRANSIENT_RETRY_DELAY_MS = 800;
+// agy 改了流式输入协议（或旧版不支持）时的报错：整个客户端退回逐次 `agy -p`。
+const STREAM_UNSUPPORTED = /stream input|is not supported yet|unknown flag|flag provided but not defined|input-format/i;
+
+function rawFailure(message, code) {
+  const error = errorWithDiagnostic(publicAntgravityError({ message }), antigravityErrorCode({ message }), { exitCode: Number.isInteger(code) && code >= 0 ? code : 0 });
+  error.transient = TRANSIENT_FAILURE.test(message);
+  return error;
+}
+
+async function withTransientRetry(run) {
+  try { return await run(); }
+  catch (error) {
+    if (!error?.transient) throw error;
+    await new Promise(resolveDelay => setTimeout(resolveDelay, TRANSIENT_RETRY_DELAY_MS));
+    return run();
+  }
+}
+
+async function listAgyModels(client) {
+  const result = await withTransientRetry(() => client.spawnCli(['models'], { timeoutMs: 30_000 }));
+  return parseAntgravityModels(result.stdout);
+}
+
+function taskPrompt({ instructions, payload }) {
+  return `${instructions}\n\n${FIELD_RULES}\n\n${JSON.stringify(payload)}`;
+}
+
+// ── 常驻流式进程 ──
+// 逐次 `agy -p` 每次都要重新拉起 CLI、新开一轮智能体会话：实测 11–16 秒/次，批量大小几乎不影响。
+// `--input-format stream-json` 让一个 agy 进程连续处理多轮：首轮约 9 秒（含启动），之后每轮约 3–4 秒。
+// --json-schema 在启动时固定，所以按「模型 + schema」分池；每池至多 STREAM_PER_KEY 个进程
+// （与扩展后台的两个并发槽对齐），一个进程同一时间只跑一轮。首次用到某个池时顺带预热一个备用进程，
+// 第二路请求不用再等启动。对话历史逐轮累积（每轮约 +100 输入 token），跑满 STREAM_MAX_TURNS 轮
+// 或空闲 STREAM_IDLE_MS 后退役，下次用到再重开。
+const STREAM_PER_KEY = 2;
+const STREAM_MAX_TURNS = 24;
+const STREAM_IDLE_MS = 5 * 60_000;
+
+class AgyStreamWorker {
+  constructor(client, { model, schemaText, onExit }) {
+    this.client = client;
+    this.onExit = onExit;
+    this.turns = 0;
+    this.answered = 0;
+    this.busy = false;
+    this.dead = false;
+    this.pending = null;
+    this.buffer = '';
+    this.stderr = '';
+    this.idleTimer = null;
+    const args = [];
+    if (model) args.push('--model', model);
+    // 与逐次调用相同的隔离：沙箱 + 不展开斜杠命令，工作目录是连接器自己的目录。
+    args.push('--disable-slash-commands', '--sandbox', '-p', '', '--input-format', 'stream-json', '--output-format', 'stream-json');
+    if (schemaText) args.push('--json-schema', schemaText);
+    this.child = client.spawnImpl(client.cliPath, args, { cwd: client.workDir, env: client.env(), stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true });
+    client.activeChildren.add(this.child);
+    this.child.stdout.on('data', chunk => this.#read(chunk));
+    this.child.stderr.on('data', chunk => { this.stderr = (this.stderr + chunk).slice(-4000); });
+    this.child.stdin.on('error', () => {});
+    this.child.on('error', error => this.#end(error));
+    this.child.on('exit', code => this.#end(Object.assign(new Error(this.stderr.trim() || `Antigravity 常驻进程已退出（${code}）。`), { exitCode: code })));
+    this.#scheduleIdle();
+  }
+
+  #read(chunk) {
+    this.buffer += chunk;
+    let index;
+    while ((index = this.buffer.indexOf('\n')) >= 0) {
+      const line = this.buffer.slice(0, index).trim();
+      this.buffer = this.buffer.slice(index + 1);
+      if (!line || !this.pending) continue;
+      let value;
+      try { value = JSON.parse(line); } catch { continue; }
+      if (value?.event !== 'result' || !value.result || typeof value.result !== 'object') continue;
+      const pending = this.pending;
+      this.pending = null;
+      this.answered += 1;
+      pending.resolve(value.result);
+    }
+  }
+
+  #scheduleIdle() {
+    clearTimeout(this.idleTimer);
+    this.idleTimer = setTimeout(() => this.retire(), STREAM_IDLE_MS);
+    this.idleTimer.unref?.();
+  }
+
+  #end(error) {
+    if (this.dead) return;
+    this.dead = true;
+    clearTimeout(this.idleTimer);
+    this.client.activeChildren.delete(this.child);
+    try { this.child.kill('SIGTERM'); } catch { /* already gone */ }
+    this.onExit(this);
+    if (this.pending) {
+      const pending = this.pending;
+      this.pending = null;
+      pending.reject(error);
+    }
+  }
+
+  // 发一轮并等这一轮的 result 事件；超时或进程退出都会让这一轮失败并退役进程。
+  run(prompt, timeoutMs) {
+    if (this.dead) return Promise.reject(new Error('Antigravity 常驻进程已退出。'));
+    this.busy = true;
+    this.turns += 1;
+    clearTimeout(this.idleTimer);
+    return new Promise((resolveTurn, rejectTurn) => {
+      const timer = setTimeout(() => this.#end(new Error('Antigravity 请求超时。')), timeoutMs);
+      this.pending = {
+        resolve: value => { clearTimeout(timer); resolveTurn(value); },
+        reject: error => { clearTimeout(timer); rejectTurn(error); },
+      };
+      try { this.child.stdin.write(JSON.stringify({ event: 'user', message: { role: 'user', content: prompt } }) + '\n'); }
+      catch (error) { this.#end(error); }
+    }).finally(() => {
+      this.busy = false;
+      if (this.dead) return;
+      if (this.turns >= STREAM_MAX_TURNS) this.retire();
+      else this.#scheduleIdle();
+    });
+  }
+
+  retire() { this.#end(new Error('Antigravity 常驻进程已退役。')); }
+}
+
+function streamPool(client) {
+  if (!client.agyStreamPool) client.agyStreamPool = new Map();
+  return client.agyStreamPool;
+}
+
+function spawnStreamWorker(client, entry, model, schemaText) {
+  const worker = new AgyStreamWorker(client, {
+    model,
+    schemaText,
+    onExit: dead => { entry.workers = entry.workers.filter(item => item !== dead); },
+  });
+  entry.workers.push(worker);
+  return worker;
+}
+
+function acquireStreamWorker(client, key, model, schemaText) {
+  const pool = streamPool(client);
+  let entry = pool.get(key);
+  if (!entry) { entry = { workers: [], waiters: [], model, schemaText }; pool.set(key, entry); }
+  const idle = entry.workers.find(worker => !worker.busy && !worker.dead);
+  if (idle) return Promise.resolve(idle);
+  if (entry.workers.length < STREAM_PER_KEY) {
+    const worker = spawnStreamWorker(client, entry, model, schemaText);
+    // 首次用到这个池：顺带预热一个备用进程，第二路请求不用再等 agy 启动。
+    if (entry.workers.length < STREAM_PER_KEY) spawnStreamWorker(client, entry, model, schemaText);
+    return Promise.resolve(worker);
+  }
+  return new Promise((resolveWorker, rejectWorker) => entry.waiters.push({ resolve: resolveWorker, reject: rejectWorker }));
+}
+
+function releaseStreamWorker(client, key) {
+  const entry = streamPool(client).get(key);
+  if (!entry?.waiters.length || client.stopping) return;
+  const next = entry.waiters.shift();
+  const idle = entry.workers.find(worker => !worker.busy && !worker.dead);
+  next.resolve(idle || spawnStreamWorker(client, entry, entry.model, entry.schemaText));
+}
+
+function closeStreamPool(client) {
+  for (const entry of streamPool(client).values()) {
+    for (const waiter of entry.waiters.splice(0)) waiter.reject(new Error('Antigravity 连接已关闭。'));
+    for (const worker of [...entry.workers]) worker.retire();
+  }
+  streamPool(client).clear();
+}
+
+async function runStreamed(client, task) {
+  const schemaText = task.schema ? JSON.stringify(antigravitySchema(task.schema)) : '';
+  const key = `${task.model || ''}\u0000${schemaText}`;
+  const prompt = taskPrompt(task);
+  for (let attempt = 0; ; attempt += 1) {
+    const worker = await acquireStreamWorker(client, key, task.model, schemaText);
+    let envelope;
+    try { envelope = await worker.run(prompt, client.timeoutMs); }
+    catch (error) {
+      releaseStreamWorker(client, key);
+      const message = String(error?.message || '');
+      if (!worker.answered && STREAM_UNSUPPORTED.test(message)) throw Object.assign(new Error(message), { streamUnsupported: true });
+      if (attempt === 0 && TRANSIENT_FAILURE.test(message)) continue;
+      throw rawFailure(message, error?.exitCode);
+    }
+    if (envelope.status === 'SUCCESS') {
+      releaseStreamWorker(client, key);
+      return task.parse(extractAntigravityPayload(envelope));
+    }
+    // 出过错的进程不再复用（Eligibility 这类启动期失败后 agy 会自己退出）；先退役再放行排队的请求。
+    worker.retire();
+    releaseStreamWorker(client, key);
+    const message = typeof envelope.error === 'string' ? envelope.error : '';
+    if (worker.answered === 1 && STREAM_UNSUPPORTED.test(message)) throw Object.assign(new Error(message), { streamUnsupported: true });
+    if (attempt === 0 && TRANSIENT_FAILURE.test(message)) continue;
+    throw rawFailure(message || 'Antigravity 请求未成功，请稍后重试。');
+  }
+}
+
+async function runSpawned(client, task) {
+  const args = [];
+  if (task.model) args.push('--model', task.model);
+  args.push('--disable-slash-commands', '--sandbox', '-p', taskPrompt(task), '--output-format', 'json');
+  if (task.schema) args.push('--json-schema', JSON.stringify(antigravitySchema(task.schema)));
+  const result = await withTransientRetry(() => client.spawnCli(args, { timeoutMs: client.timeoutMs }));
+  return task.parse(extractAntigravityPayload(parseAntgravityEnvelope(result.stdout)));
+}
+
 const agyHooks = {
   label: 'Google',
   env: client => buildAntgravityEnv({ agyPath: client.cliPath, tmpDir: client.tmpDir }),
@@ -166,48 +381,52 @@ const agyHooks = {
     try { await chmod(client.tmpDir, 0o700); } catch { /* Windows may ignore chmod */ }
   },
   async probeAccount(client) {
-    // `/usage` is answered by the CLI itself: instant, zero quota, and it
-    // fails when no valid Google session exists.
-    const result = await client.spawnCli(['-p', '/usage', '--output-format', 'json'], { timeoutMs: 30_000 });
-    const envelope = parseAntgravityEnvelope(result.stdout);
-    if (envelope.status !== 'SUCCESS') throw new Error(envelope.error || 'Google 账号状态检查失败。');
+    // `agy models` needs a valid Google session to list the plan's models, runs no model turn and costs no quota.
+    // (agy 1.4 no longer treats `-p /usage` as a CLI command: it becomes a ~48 s model turn that uses quota and
+    // overran the timeout, so the extension saw the account as signed out.)
+    // 列到的模型顺手缓存，紧随其后的模型列表请求不用再跑一次 `agy models`。
+    const models = await listAgyModels(client);
+    if (!models.length) throw new Error('Google 账号状态检查失败。');
+    client.probedModels = { at: Date.now(), models };
     return { email: null, plan: 'Google' };
   },
+  isAuthError: error => /authentication required|not signed in|not authenticated|no .*credential|login required|sign.?in|unauthori[sz]ed|登录已失效/i.test(String(error?.message || '')),
   accountError(error) {
-    const message = String(error?.message || '');
-    return /authentication required|not signed in|not authenticated|no .*credential|login required|sign.?in|unauthori[sz]ed/i.test(message)
+    return agyHooks.isAuthError(error)
       ? '尚未登录 Google 账号。请在终端运行 agy，用 Google 账号（Google AI Pro / Ultra 订阅）完成登录，再点击“刷新账户与模型”。'
       : publicAntgravityError(error);
   },
   statusExtras: () => ({ loginPending: false, userCode: null }),
   authRequired: () => new Error('请先连接 Google 订阅：在终端运行 agy 完成登录，再点击“刷新账户与模型”。', { cause: 'AUTH_REQUIRED' }),
   async loadModels(client, generation) {
-    const result = await client.spawnCli(['models'], { timeoutMs: 30_000 });
+    const probed = client.probedModels;
+    const models = probed && Date.now() - probed.at < 60_000 ? probed.models : await listAgyModels(client);
     client.ensureModelsFresh(generation);
-    const models = parseAntgravityModels(result.stdout);
     if (!models.length) throw new Error('当前 Google 订阅没有可用模型。');
     client.modelCache = models;
     return models;
   },
-  async executeTask(client, { instructions, payload, schema, model, parse }) {
+  async executeTask(client, task) {
     // Keep user content out of tool reach: sandbox + no slash expansion. The
     // working directory is the isolated connector dir, never the page.
-    const args = [];
-    if (model) args.push('--model', model);
-    args.push('--disable-slash-commands', '--sandbox', '-p', `${instructions}\n\n${FIELD_RULES}\n\n${JSON.stringify(payload)}`, '--output-format', 'json');
-    if (schema) args.push('--json-schema', JSON.stringify(antigravitySchema(schema)));
-    const result = await client.spawnCli(args, { timeoutMs: client.timeoutMs });
-    const envelope = parseAntgravityEnvelope(result.stdout);
-    return parse(extractAntigravityPayload(envelope));
+    if (!client.agyStreamUnsupported) {
+      try { return await runStreamed(client, task); }
+      catch (error) {
+        if (!error?.streamUnsupported) throw error;
+        client.agyStreamUnsupported = true;
+        closeStreamPool(client);
+      }
+    }
+    return runSpawned(client, task);
   },
   exitError(client, { stdout, stderr, code }) {
     // agy prints a machine-readable ERROR envelope on stdout even on failure.
     let envelope = null;
     try { envelope = parseAntgravityEnvelope(stdout); } catch { envelope = null; }
     const envelopeError = envelope && envelope.status === 'ERROR' && typeof envelope.error === 'string' ? envelope.error : '';
-    const message = envelopeError || stderr.trim() || stdout.trim() || 'Antigravity CLI 已退出。';
-    return errorWithDiagnostic(publicAntgravityError({ message }), antigravityErrorCode({ message }), { exitCode: Number.isInteger(code) && code >= 0 ? code : 0 });
+    return rawFailure(envelopeError || stderr.trim() || stdout.trim() || 'Antigravity CLI 已退出。', code);
   },
+  beforeClose: client => closeStreamPool(client),
   publicError: error => publicAntgravityError(error),
   errorCode: error => antigravityErrorCode(error),
   parseClassification: value => parseClassification(value),

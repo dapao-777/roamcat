@@ -38,7 +38,7 @@ export async function syncNativeDiagnostics(payload,kind){
 // stage 给设置页的分步清单用：install=找不到连接器注册，start=连接器起不来（Node/CLI 不可用），
 // login=已连上待登录，ready=已登录，unknown=尚未检测或被主动断开。
 const STAGES = new Set(['install','start','login','ready','unknown']);
-const DISCONNECTED = {connected:false,authenticated:false,email:null,plan:null,loginPending:false,userCode:null,error:null,stage:'unknown'};
+const DISCONNECTED = {connected:false,authenticated:false,email:null,plan:null,loginPending:false,userCode:null,authFailed:null,error:null,stage:'unknown'};
 
 function createConnector({host,label,cliName,loginHosts}) {
   const state = {
@@ -60,6 +60,7 @@ function createConnector({host,label,cliName,loginHosts}) {
       plan:typeof value?.plan === 'string' ? value.plan.slice(0,100) : null,
       loginPending:value?.loginPending === true,
       userCode:typeof value?.userCode === 'string' ? value.userCode.replace(/[^A-Za-z0-9-]/g,'').slice(0,32) : null,
+      authFailed:typeof value?.authFailed === 'boolean' ? value.authFailed : null,
       error:typeof value?.error === 'string' ? value.error.slice(0,600) : null,
     };
     next.stage = next.connected ? (next.authenticated ? 'ready' : 'login') : STAGES.has(value?.stage) ? value.stage : 'unknown';

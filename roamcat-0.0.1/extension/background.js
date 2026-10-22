@@ -20,7 +20,7 @@ import {apiServiceOrigins,apiServiceReady,normalizeApiService,apiServiceKeys,api
 import {listProviderModels,performProviderRequest,providerRequestTimeoutMs} from './api-transport.mjs';
 import { analyze, analyzeBatch, englishTokenStats, ensureLexicon, historyMatches, isKnownTerm, localReferenceFor, resolveCanonicalTerm } from './lexicon.js';
 import { encounter, interact, migrateSupportWord, normalizeKnownAt, normalizeSenseLabel, readingEvidence } from './reading.js';
-import {historyModelSubscription,subscriptionStatus,onNativeDiagnostic,syncNativeDiagnostics,onSubscriptionStatus,ensureSubscription,refreshSubscription,probeSubscription,loginSubscription,cancelSubscription,logoutSubscription,listSubscriptionModels,classifySubscription,supportSubscription,assistSubscription,emergencyTranslateSubscription,sentenceGroupsSubscription,summarizeSubscription,isSubscriptionKind,nativeKind} from './subscription.js';
+import {historyModelSubscription,subscriptionStatus,onNativeDiagnostic,syncNativeDiagnostics,onSubscriptionStatus,refreshSubscription,probeSubscription,loginSubscription,cancelSubscription,logoutSubscription,listSubscriptionModels,classifySubscription,supportSubscription,assistSubscription,emergencyTranslateSubscription,sentenceGroupsSubscription,summarizeSubscription,isSubscriptionKind,nativeKind} from './subscription.js';
 import {ROUTE_VERSION,normalizeDomainRules,resolveRuleDomain} from './domain-routing.js';
 import {classifyLocal} from './local-classifier.js';
 import {assistanceProgress,translationProgress} from './assistance-stream.mjs';
@@ -146,9 +146,10 @@ function configured(settings) { const provider=activeApiProvider(settings);retur
 function serviceNotReady() { return Object.assign(new Error(M('辅助服务尚未连接。本页其它功能仍可用，请到设置里连接服务。','The assist service is not connected. Other features still work; connect a service in Settings.')), {code:'NOT_READY'}); }
 function handleSubscriptionStatus(kind,subscription) {
   if(subscription.connected)void diagnostics.connected();
-  if (kind==='grok') void chrome.storage.local.set({grokSubscriptionLinked:subscription.authenticated});
-  else if (kind==='antigravity') void chrome.storage.local.set({antigravitySubscriptionLinked:subscription.authenticated});
-  else void chrome.storage.local.set({subscriptionLinked:subscription.authenticated});
+  // 只有确实未登录/登录失效才取消“已关联”；网络抖动、探测超时（authFailed=false）或连接器暂时没起来时保留，之后照常自动重连。
+  const linked=subscription.authenticated?true:subscription.connected&&subscription.authFailed!==false?false:null;
+  const linkKey=kind==='grok'?'grokSubscriptionLinked':kind==='antigravity'?'antigravitySubscriptionLinked':'subscriptionLinked';
+  if(linked!==null)void chrome.storage.local.set({[linkKey]:linked});
   void chrome.runtime.sendMessage({type:'SUBSCRIPTION_UPDATED',kind,subscription}).catch(() => {});
   void chrome.storage.local.get('settings').then(async({settings}) => {
     if (nativeKind(settings)!==kind) return;
@@ -164,19 +165,37 @@ onSubscriptionStatus(subscription => handleSubscriptionStatus('antigravity',subs
 // 自动连接本机连接器必须节流：MV3 Service Worker 约 30 秒空闲即被回收，每次唤醒都会重新运行模块代码。
 // 若每次 load()（伴读猫每页都会发 STATE_GET）都同步拉起连接器，就会不断 spawn node 与 codex/agy/grok 进程：
 // 既拖慢每一次消息响应（连接器无响应时 load() 要等满 45 秒超时），也可能耗尽进程与连接资源。
-// 规则：同一浏览器会话内，每个后端最多每 10 分钟自动连接一次；一旦本次会话连接失败即停止自动连接，
-// 直至用户在「模型服务」点击「刷新账户与模型」（refreshSubscription 为用户主动触发，不受此限制）。
+// 规则：已连上就不再自动连接；连上后同一浏览器会话内每个后端最多每 10 分钟确认一次。
+// 失败（含网络抖动、探测超时）不再整场停掉，而是退避重试：1、2、4、8 分钟，封顶 10 分钟；
+// 用户在「模型服务」点击「刷新账户与模型」（refreshSubscription）不受此限制。
 const AUTO_CONNECT_INTERVAL_MS = 10 * 60000;
-async function autoConnectSubscription(kind) {
-  try {
-    const key = 'autoConnect:' + kind;
-    const stored = (await chrome.storage.session.get(key))[key] || {};
-    if (stored.failed) return;
-    if (Number.isFinite(stored.at) && Date.now() - stored.at < AUTO_CONNECT_INTERVAL_MS) return;
-    await chrome.storage.session.set({ [key]: { at: Date.now() } });
-    const status = await ensureSubscription(kind).catch(() => null);
-    if (!status?.connected) await chrome.storage.session.set({ [key]: { failed: true } }).catch(() => {});
-  } catch { /* 自动连接失败不影响阅读功能 */ }
+const AUTO_CONNECT_RETRY_MS = 60000;
+// 进行中的自动连接：字幕与翻译请求遇到“尚未连接”时先等它一会儿，不直接报错。
+const autoConnectRuns = new Map();
+function autoConnectSubscription(kind) {
+  if (autoConnectRuns.has(kind)) return autoConnectRuns.get(kind);
+  const run = (async () => {
+    try {
+      if (subscriptionStatus(kind).authenticated) return;
+      const key = 'autoConnect:' + kind;
+      const stored = (await chrome.storage.session.get(key))[key] || {};
+      const failures = Number.isInteger(stored.failures) ? stored.failures : 0;
+      const wait = failures ? Math.min(AUTO_CONNECT_INTERVAL_MS, AUTO_CONNECT_RETRY_MS * 2 ** (failures - 1)) : AUTO_CONNECT_INTERVAL_MS;
+      if (Number.isFinite(stored.at) && Date.now() - stored.at < wait) return;
+      await chrome.storage.session.set({ [key]: { at: Date.now(), failures } });
+      // probe：没有端口时新建连接，有端口时只重问一次状态；ensure 在同一 Service Worker 生命周期里只会尝试一次。
+      const status = await probeSubscription(kind).catch(() => null);
+      await chrome.storage.session.set({ [key]: { at: Date.now(), failures: status?.authenticated ? 0 : failures + 1 } }).catch(() => {});
+    } catch { /* 自动连接失败不影响阅读功能 */ }
+  })().finally(() => autoConnectRuns.delete(kind));
+  autoConnectRuns.set(kind, run);
+  return run;
+}
+const AUTO_CONNECT_WAIT_MS = 20000;
+async function awaitAutoConnect(settings) {
+  if (!isSubscriptionKind(settings.providerKind) || configured(settings)) return;
+  const run = autoConnectRuns.get(nativeKind(settings));
+  if (run) await Promise.race([run, new Promise(resolve => setTimeout(resolve, AUTO_CONNECT_WAIT_MS))]);
 }
 async function load(includeWords=true) {
   await dataReady;await readingHistory.ready;assertDataAvailable();
@@ -784,6 +803,7 @@ async function emergencyBegin(message, sender, trusted){
 }
 async function translateItems(items,settings,trace,{scope,onProgress,origin,sourceHash,guard}) {
   if(!['page','passage'].includes(scope))throw new Error(M('无效的翻译范围。','Invalid translation scope.'));
+  await awaitAutoConnect(settings);
   if(!configured(settings))throw serviceNotReady();
   const service=settings.providerKind==='api'?apiProviderForTask(settings,'translate'):settings.subscriptionModel;
   if(settings.providerKind==='api')await requireApiPermission(service);

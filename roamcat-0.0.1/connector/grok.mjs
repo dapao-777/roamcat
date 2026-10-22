@@ -2,7 +2,7 @@
  * @file connector/grok.mjs
  * 文件职责：xAI 官方 Grok CLI 的订阅连接器客户端，复用 SuperGrok / X Premium+ 配额。
  * 主要内容：Grok 专属适配——环境隔离 env、device-auth 登录流、--prompt-file/-p 回退、
- *   JSON 输出提取与脱敏错误映射；生命周期与任务骨架由 cli-client.mjs 的 CliClient 承载。
+ *   JSON 输出提取与脱敏错误映射；本机 grok CLI 已登录时复用其登录（退出后不再自动复用）；生命周期与任务骨架由 cli-client.mjs 的 CliClient 承载。
  * 模块边界：连接器层；仅 import extension 共享协议文件、cli-client.mjs 与 Node 内置模块。
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -12,7 +12,7 @@
  */
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { chmod, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, chmod, copyFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { delimiter, dirname, join, resolve } from 'node:path';
 import { homedir } from 'node:os';
 import {
@@ -243,6 +243,22 @@ function trustedAuthUrl(value) {
   }
 }
 
+// 与 ChatGPT 连接器一致：本机 grok CLI 已登录、连接器自己的目录里还没有登录时，复制一份 ~/.grok/auth.json，
+// 用户不用在扩展里再走一遍设备码登录。在扩展里退出登录后留下 NO_IMPORT 标记，之后不再自动复制回来。
+const IMPORTED_MARK = '.imported-from-user';
+const NO_IMPORT_MARK = '.no-auth-import';
+const exists = path => access(path).then(() => true, () => false);
+async function importUserGrokAuth(client) {
+  const target = join(client.grokHome, 'auth.json');
+  const source = client.userAuthPath;
+  try {
+    if (await exists(target) || await exists(join(client.grokHome, NO_IMPORT_MARK)) || !await exists(source)) return;
+    await copyFile(source, target);
+    try { await chmod(target, 0o600); } catch { /* Windows may ignore chmod */ }
+    await writeFile(join(client.grokHome, IMPORTED_MARK), '', { mode: 0o600 });
+  } catch { /* fall back to the connector's own device login */ }
+}
+
 const grokHooks = {
   label: 'Grok',
   // Grok 的 page 范围翻译不回 onProgress 中间进度（整页结果体量大）。
@@ -257,6 +273,7 @@ const grokHooks = {
     const configPath = join(client.grokHome, 'config.toml');
     await writeFile(configPath, buildGrokConfig(), { mode: 0o600 });
     try { await chmod(configPath, 0o600); } catch { /* Windows may ignore chmod */ }
+    await importUserGrokAuth(client);
   },
   probeAccount: client => client.readAccount(),
   accountError: error => publicGrokError(error),
@@ -334,10 +351,11 @@ const grokHooks = {
 };
 
 export class GrokClient extends CliClient {
-  constructor({ grokPath, dataDir, timeoutMs = DEFAULT_TIMEOUT_MS, spawnImpl = spawn, diagnostic = null }) {
+  constructor({ grokPath, dataDir, timeoutMs = DEFAULT_TIMEOUT_MS, spawnImpl = spawn, diagnostic = null, userAuthPath = join(homedir(), '.grok', 'auth.json') }) {
     if (!grokPath || !dataDir) throw new TypeError('grokPath 和 dataDir 为必填项');
     super({ cliPath: resolve(grokPath), dataDir: resolve(dataDir), timeoutMs, spawnImpl, diagnostic, provider: 'grok', hooks: grokHooks });
     this.grokHome = join(this.dataDir, 'grok');
+    this.userAuthPath = userAuthPath;
     this.loginChild = null;
     this.loginAuthUrl = null;
     this.loginUserCode = null;
@@ -451,8 +469,12 @@ export class GrokClient extends CliClient {
     this.modelCache = null;
     this.stopLogin();
     this.emitStatus();
-    try { await this.spawnCli(['logout'], { timeoutMs: 20_000 }); } catch { /* still clear local auth */ }
+    // 复制来的登录与本机 grok CLI 共用同一份令牌：只删连接器里的副本，不调用 grok logout，免得把 CLI 也登出。
+    const imported = await exists(join(this.grokHome, IMPORTED_MARK));
+    if (!imported) { try { await this.spawnCli(['logout'], { timeoutMs: 20_000 }); } catch { /* still clear local auth */ } }
     try { await rm(join(this.grokHome, 'auth.json'), { force: true }); } catch { /* ignore */ }
+    try { await rm(join(this.grokHome, IMPORTED_MARK), { force: true }); } catch { /* ignore */ }
+    try { await writeFile(join(this.grokHome, NO_IMPORT_MARK), '', { mode: 0o600 }); } catch { /* ignore */ }
     this.account = null;
     this.loginError = null;
     return this.emitStatus();

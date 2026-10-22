@@ -10,9 +10,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
  */
-import { readFile } from "node:fs/promises";
+import { readdir, readFile, stat } from "node:fs/promises";
 import { endianness } from "node:os";
-import { resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { CodexClient } from "./codex.mjs";
 import { GrokClient } from "./grok.mjs";
@@ -107,6 +107,24 @@ function validateRequest(message) {
   return { id: message.id, type: message.type, payload: message.payload ?? {}, ...(message.traceId ? { traceId: message.traceId.toLowerCase() } : {}) };
 }
 
+// Codex 桌面版把 CLI 放在 OpenAI/Codex/bin/<哈希>/codex.exe，更新后换成新的哈希目录、旧目录里的 codex.exe 随之消失。
+// 安装时记下的路径失效时，就在同一个 bin 目录下挑最近更新的 codex.exe，不必重跑安装命令。
+export async function resolveCodexPath(recorded) {
+  const path = resolve(recorded);
+  try { await stat(path); return path; } catch { /* look for a sibling build below */ }
+  const binDir = dirname(dirname(path));
+  if (!/codex/i.test(basename(binDir) === 'bin' ? dirname(binDir) : '')) return path;
+  let best = null;
+  try {
+    for (const entry of await readdir(binDir, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const candidate = join(binDir, entry.name, basename(path));
+      try { const info = await stat(candidate); if (info.isFile() && (!best || info.mtimeMs > best.mtimeMs)) best = { path: candidate, mtimeMs: info.mtimeMs }; } catch { /* not in this build */ }
+    }
+  } catch { return path; }
+  return best ? best.path : path;
+}
+
 async function loadConfiguration(configPath, actualOrigin) {
   let config;
   try { config = JSON.parse(await readFile(resolve(configPath), "utf8")); }
@@ -123,7 +141,7 @@ async function loadConfiguration(configPath, actualOrigin) {
     ? { backend, grokPath: resolve(cliPath), dataDir: resolve(config.dataDir) }
     : backend === "antigravity"
     ? { backend, agyPath: resolve(cliPath), dataDir: resolve(config.dataDir) }
-    : { backend, codexPath: resolve(cliPath), dataDir: resolve(config.dataDir) };
+    : { backend, codexPath: await resolveCodexPath(cliPath), dataDir: resolve(config.dataDir) };
 }
 
 function parseHostArgv(argv) {

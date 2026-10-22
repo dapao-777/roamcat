@@ -139,7 +139,14 @@ async function extensionIds(explicit) {
   const manifest = JSON.parse(await readFile(join(extension,'manifest.json'),'utf8'));
   const identity = manifest.key ? Buffer.from(manifest.key,'base64') : extension;
   const computed = createHash('sha256').update(identity).digest('hex').slice(0,32).replace(/[0-9a-f]/g,char => String.fromCharCode(97+parseInt(char,16)));
-  return [computed];
+  // 开发构建（dist/extension）的 manifest 注入了 build/extension-key.json 的固定 key，扩展 ID 与源码目录算出的不同；
+  // 两个都放行，从源码目录或构建产物加载都能连上。
+  const ids = [computed];
+  try {
+    const {id} = JSON.parse(await readFile(join(source,'../../build/extension-key.json'),'utf8'));
+    if (/^[a-p]{32}$/.test(id) && !ids.includes(id)) ids.push(id);
+  } catch { /* 发布包里没有 build/，只用源码目录的 ID。 */ }
+  return ids;
 }
 
 function locations(backend) {
