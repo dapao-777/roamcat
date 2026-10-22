@@ -19,6 +19,7 @@ import {
   ALL_HOSTS,
   VIDEO_HOSTS,
   VIDEO_SUPPORT_ENABLED,
+  youtubeTimedtextUrl,
   pageOrigin,
   sitePattern,
   validateAutomation,
@@ -29,7 +30,10 @@ test('常量导出保持稳定', () => {
   assert.equal(AUTO_SCRIPT_ID, 'ss-auto-start');
   assert.deepEqual(ALL_HOSTS, ['http://*/*', 'https://*/*']);
   assert.deepEqual(VIDEO_HOSTS, ['https://www.youtube.com/*', 'https://m.youtube.com/*']);
-  assert.equal(VIDEO_SUPPORT_ENABLED, false);
+  assert.equal(VIDEO_SUPPORT_ENABLED, true);
+  assert.equal(youtubeTimedtextUrl('https://www.youtube.com/api/timedtext?v=abc&lang=en'), 'https://www.youtube.com/api/timedtext?v=abc&lang=en&fmt=json3');
+  assert.throws(() => youtubeTimedtextUrl('https://evil.example/api/timedtext'), /字幕地址无效/u);
+  assert.throws(() => youtubeTimedtextUrl('https://user:pass@www.youtube.com/api/timedtext'), /字幕地址无效/u);
 });
 
 test('pageOrigin 只接受无凭据的 HTTP(S) origin', () => {
@@ -84,6 +88,22 @@ test('validateVideo 校验枚举并合并当前值', () => {
   assert.throws(() => validateVideo({fontSize: 18}, base), /无效的字幕字号。/u);
   for (const theme of ['auto', 'light', 'dark']) assert.deepEqual(validateVideo({theme}, base), {...base, theme});
   assert.throws(() => validateVideo({theme: 'solar'}, base), /无效的字幕主题。/u);
+  assert.deepEqual(validateVideo({bilingual: true}, base), {...base, bilingual: true});
+  assert.throws(() => validateVideo({bilingual: 'yes'}, base), /无效的双语字幕设置。/u);
   // 未提供的键保持当前值，而不是回落到默认值。
   assert.deepEqual(validateVideo({theme: 'dark'}, {fontSize: 28, theme: 'light'}), {fontSize: 28, theme: 'dark'});
+});
+
+test('validateVideo 校验字幕外观：显示方式、译文位置与颜色、模糊、拖动位置', () => {
+  const base = {display: 'bilingual', translationFirst: true, translationColor: 'white', blur: false, offset: -1};
+  for (const display of ['bilingual', 'original', 'translation']) assert.equal(validateVideo({display}, base).display, display);
+  assert.throws(() => validateVideo({display: 'both'}, base), /无效的字幕显示方式。/u);
+  assert.equal(validateVideo({translationFirst: false}, base).translationFirst, false);
+  assert.throws(() => validateVideo({blur: 1}, base), /无效的字幕设置。/u);
+  assert.equal(validateVideo({karaoke: false}, base).karaoke, false);
+  assert.throws(() => validateVideo({karaoke: 'on'}, base), /无效的字幕设置。/u);
+  for (const translationColor of ['white', 'yellow', 'cyan']) assert.equal(validateVideo({translationColor}, base).translationColor, translationColor);
+  assert.throws(() => validateVideo({translationColor: '#fff'}, base), /无效的译文颜色。/u);
+  for (const offset of [-1, 0, 35, 80]) assert.equal(validateVideo({offset}, base).offset, offset);
+  for (const offset of [-2, 81, 12.5, '10']) assert.throws(() => validateVideo({offset}, base), /无效的字幕位置。/u);
 });

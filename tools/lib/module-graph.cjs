@@ -65,7 +65,7 @@ const CONTENT_SCRIPT_ORDER = Object.freeze(['design.js', 'i18n.js', 'reading-sty
 // 不经 manifest 静态声明、但始终以 classic 方式注入的页面脚本：伴读猫经
 // chrome.scripting 按 floatingPet.enabled 动态注册（pet-quotes.js 作为其语录库先行注入），
 // auto-start.js 按站点规则注册。
-const CLASSIC_DYNAMIC_SCRIPTS = Object.freeze(['pet-quotes.js', 'floating-pet.js', 'auto-start.js']);
+const CLASSIC_DYNAMIC_SCRIPTS = Object.freeze(['pet-quotes.js', 'floating-pet.js', 'auto-start.js', 'youtube-captions-bridge.js']);
 const ESM_PATTERN = /^[ \t]*(?:import|export)[\s({'"]/m;
 const IMPORT_PATTERNS = [
   /import\s+[\s\S]*?\s+from\s*['"]([^'"]+)['"]/g,

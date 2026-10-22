@@ -1,8 +1,8 @@
 /**
  * @file extension/youtube-captions-bridge.js
- * 文件职责：YouTube字幕桥（MAIN world）——JSON3字幕事件解析，改编自第三方MIT代码。
- * 主要内容：只在VIDEO_SUPPORT_ENABLED时由后台注入；详见vendor许可。
- * 模块边界：不可达保留；第三方归属见NOTICE与vendor LICENSE。
+ * 文件职责：YouTube 字幕桥（MAIN world）——从播放器读取字幕轨道，必要时向 Innertube 补查自动字幕。
+ * 主要内容：不改页面播放行为；只有还没有字幕正文时才短暂打开字幕并立刻还原。第三方 timedtext 捕获见文件头 MIT 说明。
+ * 模块边界：只在 YouTube 主世界运行；截下播放器已经请求到的字幕正文，不另发会失效的第二次请求，也不把音频送出页面。
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -27,6 +27,7 @@
   let disposed = false;
   let performanceObserver = null;
   let capturedTrack = null;
+  let cachedCaption = null;
   let originalFetch = null;
   let wrappedFetch = null;
   let originalXhrOpen = null;
@@ -64,6 +65,32 @@
     url.searchParams.delete('tlang');
     capturedTrack = {videoId: currentVideoId, url: url.href, languageCode: url.searchParams.get('lang') || '', kind: url.searchParams.get('kind') || ''};
   }
+  function rememberCaption(rawUrl, text) {
+    const raw = typeof rawUrl === 'string' ? rawUrl : rawUrl?.url || '';
+    if (!raw.includes('timedtext')) return;
+    noteTimedtext(raw);
+    const safeUrl = safeCaptionUrl(rawUrl);
+    if (!safeUrl || !capturedTrack || typeof text !== 'string') return;
+    const noted = new URL(safeUrl);
+    noted.searchParams.delete('tlang');
+    if (capturedTrack.url !== noted.href) return;
+    const body = text.length > 1500000 ? '' : text;
+    if (!body || body.trimStart().startsWith('<') || !/"events"|wireMagic/.test(body)) return;
+    cachedCaption = {videoId: capturedTrack.videoId, languageCode: capturedTrack.languageCode, kind: capturedTrack.kind, text: body};
+  }
+  function captionFor(track) {
+    if (!cachedCaption || cachedCaption.videoId !== videoIdFromLocation() || !cachedCaption.text) return '';
+    const wanted = stringValue(track?.languageCode, 32).toLowerCase();
+    const got = stringValue(cachedCaption.languageCode, 32).toLowerCase();
+    if (wanted && got && got !== wanted && !got.startsWith(wanted.slice(0, 2)) && !wanted.startsWith(got.slice(0, 2))) return '';
+    return cachedCaption.text;
+  }
+  function bodyFromXhr(xhr) {
+    try { if (typeof xhr.responseText === 'string' && xhr.responseText) return xhr.responseText; } catch { /* 非文本 responseType 没有 responseText。 */ }
+    if (typeof xhr.response === 'string') return xhr.response;
+    if (xhr.response && typeof xhr.response === 'object') { try { return JSON.stringify(xhr.response); } catch { return ''; } }
+    return '';
+  }
   function scanResources(entries) {
     for (const entry of entries) if (typeof entry?.name === 'string' && entry.name.includes('/api/timedtext')) noteTimedtext(entry.name);
   }
@@ -96,12 +123,32 @@
     if (button) return button.getAttribute('aria-pressed') === 'true';
     return Boolean(selectedTrack);
   }
-  function isEnglish(track) { return /^en(?:-|$)/i.test(stringValue(track?.languageCode)); }
-  function chooseEnglishTrack(tracks, selected) {
-    if (selected && isEnglish(selected)) return selected;
-    return tracks.find(track => isEnglish(track) && stringValue(track.kind) !== 'asr')
-      || tracks.find(track => isEnglish(track) && stringValue(track.kind) === 'asr')
-      || null;
+  function languageOf(track) { return stringValue(track?.languageCode, 32).toLowerCase(); }
+  function isAsr(track) { return stringValue(track?.kind) === 'asr'; }
+  function videoLanguage(player) {
+    let response = null;
+    try { response = player?.getPlayerResponse?.(); } catch { response = null; }
+    return stringValue(response?.microformat?.playerMicroformatRenderer?.language || '', 32).toLowerCase();
+  }
+  function matchesLanguage(track, language) {
+    if (!language || language === '*') return false;
+    const code = languageOf(track);
+    const wanted = language.toLowerCase();
+    if (!code || !wanted) return false;
+    return code === wanted || code.startsWith(wanted.slice(0, 2)) || wanted.startsWith(code.slice(0, 2));
+  }
+  // 有片源语言时优先原声字幕（人工优于自动），避免先拿到另一语言的译文字幕。
+  function chooseTrack(tracks, language) {
+    const manual = tracks.filter(track => !isAsr(track));
+    const asr = tracks.filter(isAsr);
+    if (language && language !== '*') {
+      const manualMatch = manual.find(track => matchesLanguage(track, language));
+      if (manualMatch) return manualMatch;
+      const asrMatch = asr.find(track => matchesLanguage(track, language));
+      if (asrMatch) return asrMatch;
+    }
+    const fallback = list => list.find(track => /^en(?:-|$)/i.test(languageOf(track))) || list[0] || null;
+    return fallback(manual) || fallback(asr);
   }
   function playerTrackValue(track) {
     return {languageCode: stringValue(track?.languageCode, 32), kind: stringValue(track?.kind, 32), vss_id: stringValue(track?.vssId || track?.vss_id, 128)};
@@ -122,7 +169,7 @@
     const videoId = stringValue(videoData?.video_id || response?.videoDetails?.videoId, 32);
     const tracks = responseTracks(player);
     const selected = readSelectedTrack(player, tracks);
-    const chosen = selected && isEnglish(selected) ? selected : null;
+    const chosen = chooseTrack(tracks, videoLanguage(player));
     const baseUrl = safeCaptionUrl(capturedUrlFor(videoId, chosen) || chosen?.baseUrl);
     return {
       videoId,
@@ -158,7 +205,7 @@
     if (state.toggledVisibility && captionsVisible(state.player, readSelectedTrack(state.player, responseTracks(state.player)))) clickCaptionButton(state.player);
   }
   async function prepareCaptions(language) {
-    if (language !== 'en') return false;
+    if (typeof language !== 'string' || !language || language.length > 32) return false;
     const player = currentPlayer();
     const videoId = videoIdFromLocation();
     if (!player || !videoId) return false;
@@ -166,7 +213,7 @@
     restoreCaptions();
     const tracks = responseTracks(player);
     const previousTrack = readSelectedTrack(player, tracks);
-    const englishTrack = chooseEnglishTrack(tracks, previousTrack);
+    const englishTrack = chooseTrack(tracks, language === '*' ? videoLanguage(player) : language);
     if (!englishTrack) return false;
     const wasVisible = captionsVisible(player, previousTrack);
     const switchedTrack = !previousTrack || trackIdentity(previousTrack) !== trackIdentity(englishTrack);
@@ -186,15 +233,98 @@
     preparedState = {player, videoId, previousTrack, englishTrack, switchedTrack, toggledVisibility};
     return true;
   }
+  async function readCaption() {
+    let shot = snapshot();
+    let text = captionFor(shot.track);
+    if (text) return {...shot, text};
+    const prepared = await prepareCaptions(shot.track?.languageCode || '*');
+    const waitForBody = async milliseconds => {
+      const started = Date.now();
+      while (Date.now() - started < milliseconds) {
+        shot = snapshot();
+        text = captionFor(shot.track);
+        if (text || disposed) return text;
+        await sleep(150);
+      }
+      return '';
+    };
+    text = await waitForBody(2000);
+    if (!text) {
+      const player = currentPlayer();
+      const visible = player && captionsVisible(player, readSelectedTrack(player, responseTracks(player)));
+      if (player && visible) {
+        clickCaptionButton(player);
+        await sleep(200);
+        clickCaptionButton(player);
+        text = await waitForBody(2500);
+      } else if (player && clickCaptionButton(player)) {
+        text = await waitForBody(2500);
+        if (captionsVisible(player, readSelectedTrack(player, responseTracks(player)))) clickCaptionButton(player);
+      }
+    }
+    if (prepared) restoreCaptions();
+    shot = snapshot();
+    return {...shot, prepared, text: text || captionFor(shot.track) || ''};
+  }
+  function innertubeConfig() {
+    const cfg = globalThis.ytcfg;
+    const read = key => {
+      try { if (typeof cfg?.get === 'function') return cfg.get(key); } catch { /* 页面配置读不到时改走播放器响应。 */ }
+      return cfg?.data_?.[key];
+    };
+    return {key: read('INNERTUBE_API_KEY'), context: read('INNERTUBE_CONTEXT')};
+  }
+  async function discoverTracks() {
+    if (disposed) return null;
+    const videoId = videoIdFromLocation();
+    const {key, context} = innertubeConfig();
+    if (typeof key !== 'string' || !key || !context || !videoId) return null;
+    let response;
+    try {
+      response = await fetch(`https://www.youtube.com/youtubei/v1/player?prettyPrint=false&key=${encodeURIComponent(key)}`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {'content-type': 'application/json'},
+        body: JSON.stringify({context, videoId, contentCheckOk: true, racyCheckOk: true}),
+      });
+    } catch { return null; }
+    if (!response?.ok) return null;
+    let data = null;
+    try { data = await response.json(); } catch { return null; }
+    const tracks = data?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+    if (!Array.isArray(tracks) || !tracks.length || videoId !== videoIdFromLocation()) return null;
+    const lang = stringValue(data?.microformat?.playerMicroformatRenderer?.language || '', 32).toLowerCase();
+    const chosen = chooseTrack(tracks, lang);
+    const baseUrl = safeCaptionUrl(chosen?.baseUrl);
+    if (!chosen || !baseUrl) return null;
+    return {
+      videoId,
+      captionVisible: false,
+      track: {
+        key: stringValue(chosen.vssId || chosen.languageCode || chosen.kind, 128),
+        languageCode: stringValue(chosen.languageCode, 32),
+        label: stringValue(displayText(chosen.name), 128),
+        baseUrl,
+        kind: stringValue(chosen.kind, 32),
+      },
+    };
+  }
   async function onRequest(event) {
     const requestId = event.detail?.requestId;
     if (typeof requestId !== 'string' || requestId.length > 96 || !/^roamcat-[a-z0-9-]+$/.test(requestId)) return;
     const command = event.detail?.command || 'snapshot';
-    if (!['snapshot', 'prepare', 'restore'].includes(command)) return;
+    if (!['snapshot', 'prepare', 'restore', 'discover', 'caption'].includes(command)) return;
+    if (command === 'caption') {
+      const result = await readCaption();
+      dispatchEvent(new CustomEvent(RESPONSE_EVENT, {detail: {requestId, ...result}}));
+      return;
+    }
     let prepared = false;
     if (command === 'prepare') prepared = await prepareCaptions(event.detail?.language);
     else if (command === 'restore') restoreCaptions();
-    dispatchEvent(new CustomEvent(RESPONSE_EVENT, {detail: {requestId, prepared, ...snapshot()}}));
+    const shot = snapshot();
+    const found = command === 'discover' && !shot.track ? await discoverTracks() : null;
+    dispatchEvent(new CustomEvent(RESPONSE_EVENT, {detail: {requestId, prepared, ...shot, ...(found || {})}}));
   }
 
   function installNetworkObservers() {
@@ -202,8 +332,16 @@
       originalFetch = globalThis.fetch;
       if (typeof originalFetch === 'function') {
         wrappedFetch = function (input) {
-          try { noteTimedtext(typeof input === 'string' ? input : input?.url); } catch { /* Preserve page fetch behavior. */ }
-          return originalFetch.apply(this, arguments);
+          const pending = originalFetch.apply(this, arguments);
+          try {
+            const rawUrl = typeof input === 'string' ? input : input?.url;
+            if (safeCaptionUrl(rawUrl)) {
+              Promise.resolve(pending).then(response => {
+                response.clone().text().then(text => rememberCaption(rawUrl, text)).catch(() => {});
+              }).catch(() => {});
+            }
+          } catch { /* Preserve page fetch behavior. */ }
+          return pending;
         };
         globalThis.fetch = wrappedFetch;
       }
@@ -217,7 +355,10 @@
         return originalXhrOpen.apply(this, arguments);
       };
       wrappedXhrSend = function () {
-        try { noteTimedtext(xhrUrls.get(this)); } catch { /* Preserve page XHR behavior. */ }
+        try {
+          const rawUrl = xhrUrls.get(this);
+          this.addEventListener('load', () => { try { rememberCaption(rawUrl, bodyFromXhr(this)); } catch { /* Preserve page XHR behavior. */ } });
+        } catch { /* Preserve page XHR behavior. */ }
         return originalXhrSend.apply(this, arguments);
       };
       prototype.open = wrappedXhrOpen;
@@ -235,6 +376,7 @@
     if (xhrPrototype && wrappedXhrOpen && xhrPrototype.open === wrappedXhrOpen) xhrPrototype.open = originalXhrOpen;
     if (xhrPrototype && wrappedXhrSend && xhrPrototype.send === wrappedXhrSend) xhrPrototype.send = originalXhrSend;
     capturedTrack = null;
+    cachedCaption = null;
     delete globalThis[GLOBAL_NAME];
   }
 

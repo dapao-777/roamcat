@@ -15,10 +15,21 @@ export const AUTO_SCRIPT_ID = 'ss-auto-start';
 // 伴读猫改按需注入：仅在 floatingPet.enabled 时经 chrome.scripting 动态注册，
 // 未启用伴读猫的用户不再为每个网页付出 3884 行脚本的解析成本。
 export const PET_SCRIPT_ID = 'ss-floating-pet';
+export const CAPTION_SCRIPT_ID = 'ss-youtube-captions';
 export const ALL_HOSTS = ['http://*/*','https://*/*'];
 export const VIDEO_HOSTS = ['https://www.youtube.com/*','https://m.youtube.com/*'];
-// Temporarily hide video support without erasing saved preferences.
-export const VIDEO_SUPPORT_ENABLED = false;
+// 播放器双语字幕：默认关闭，用户点「双语」后才发送当前字幕文本。
+export const VIDEO_SUPPORT_ENABLED = true;
+
+/** YouTube timedtext 地址：只接受 www.youtube.com 的字幕接口，并固定要 json3。 */
+export function youtubeTimedtextUrl(raw) {
+  let url;
+  try { url = new URL(raw); } catch { throw new Error(M('字幕地址无效。','Invalid caption address.')); }
+  if (url.protocol !== 'https:' || url.username || url.password || url.hostname !== 'www.youtube.com' || url.pathname !== '/api/timedtext') throw new Error(M('字幕地址无效。','Invalid caption address.'));
+  url.searchParams.set('fmt', 'json3');
+  url.hash = '';
+  return url.href;
+}
 
 export function pageOrigin(value) {
   try {
@@ -66,7 +77,7 @@ export function validateAutomation(value, base) {
 
 export function validateVideo(value, base) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(M('无效的视频设置。','Invalid video settings.'));
-  const allowed = new Set(['fontSize','theme']);
+  const allowed = new Set(['fontSize','theme','bilingual','display','translationFirst','translationColor','blur','offset','karaoke']);
   for (const key of Object.keys(value)) if (!allowed.has(key)) throw new Error(M('未知的视频设置。','Unknown video setting.'));
   const result = {...base};
   if (value.fontSize !== undefined) {
@@ -76,6 +87,29 @@ export function validateVideo(value, base) {
   if (value.theme !== undefined) {
     if (!['auto','light','dark'].includes(value.theme)) throw new Error(M('无效的字幕主题。','Invalid caption theme.'));
     result.theme = value.theme;
+  }
+  if (value.bilingual !== undefined) {
+    if (typeof value.bilingual !== 'boolean') throw new Error(M('无效的双语字幕设置。','Invalid bilingual caption setting.'));
+    result.bilingual = value.bilingual;
+  }
+  // 字幕外观：显示方式、译文在上还是在下、译文颜色、模糊译文（悬停显示），以及拖动后的位置
+  // （距画面底部的百分比，-1 表示自动避开控制栏）。
+  if (value.display !== undefined) {
+    if (!['bilingual','original','translation'].includes(value.display)) throw new Error(M('无效的字幕显示方式。','Invalid caption display mode.'));
+    result.display = value.display;
+  }
+  for (const key of ['translationFirst','blur','karaoke']) {
+    if (value[key] === undefined) continue;
+    if (typeof value[key] !== 'boolean') throw new Error(M('无效的字幕设置。','Invalid caption setting.'));
+    result[key] = value[key];
+  }
+  if (value.translationColor !== undefined) {
+    if (!['white','yellow','cyan'].includes(value.translationColor)) throw new Error(M('无效的译文颜色。','Invalid translation color.'));
+    result.translationColor = value.translationColor;
+  }
+  if (value.offset !== undefined) {
+    if (!Number.isInteger(value.offset) || value.offset < -1 || value.offset > 80) throw new Error(M('无效的字幕位置。','Invalid caption position.'));
+    result.offset = value.offset;
   }
   return result;
 }

@@ -17,7 +17,7 @@ const M=(zh,en)=>globalThis.RoamCatI18n?.lang?.()==='en'?en:zh;
 
 export const DOMAINS = {auto:'自动识别',general:'通用阅读',tech:'软件与 AI',data:'数据工程',finance:'金融与商业',medical:'医学与生命科学',legal:'法律',design:'设计与产品'};
 export const API_TASKS = Object.freeze(['assist','support','groups','translate','summary']);
-export const DEFAULT_SETTINGS = {assistanceMode:'ambient',rememberSupport:true,helpLanguage:'zh',lookupKey:'D',lookupDisplay:'card',readingStyle:globalThis.RoamCatReadingStyle.defaults,domain:'auto',providerKind:'chatgpt',subscriptionModel:'',apiServices:[],activeApiServiceId:'',apiRouting:{assist:'',support:'',groups:'',translate:'',summary:''},domainRules:[],domainDetection:{mode:'local',subscriptionModel:'',apiModel:'',useTranslationApi:true,api:{baseUrl:'https://api.openai.com/v1',apiKey:''},jevModel:'typesafe/jev-1.13.0',jevApiKey:'',jevBaseUrl:'https://router.requesty.ai/v1'},customTerms:[],automation:{allSites:false,sentenceGroupsAllSites:false,sites:[],videoSites:false},video:{fontSize:20,theme:'auto'},complexSentenceAssist:true,formulaAssist:true,pdfReader:true,floatingPet:{enabled:true,position:{right:24,bottom:84},themeMode:'auto',scale:1,quotes:{enabled:true,intervalMin:15}}};
+export const DEFAULT_SETTINGS = {assistanceMode:'ambient',rememberSupport:true,helpLanguage:'zh',lookupKey:'D',lookupDisplay:'card',readingStyle:globalThis.RoamCatReadingStyle.defaults,domain:'auto',providerKind:'chatgpt',subscriptionModel:'',apiServices:[],activeApiServiceId:'',apiRouting:{assist:'',support:'',groups:'',translate:'',summary:''},domainRules:[],domainDetection:{mode:'local',subscriptionModel:'',apiModel:'',useTranslationApi:true,api:{baseUrl:'https://api.openai.com/v1',apiKey:''},jevModel:'typesafe/jev-1.13.0',jevApiKey:'',jevBaseUrl:'https://router.requesty.ai/v1'},customTerms:[],automation:{allSites:false,sentenceGroupsAllSites:false,sites:[],videoSites:false},video:{fontSize:20,theme:'auto',bilingual:false,display:'bilingual',translationFirst:true,translationColor:'white',blur:false,offset:-1,karaoke:true},complexSentenceAssist:true,formulaAssist:true,pdfReader:true,floatingPet:{enabled:true,position:{right:24,bottom:84},themeMode:'auto',scale:1,quotes:{enabled:true,intervalMin:15}}};
 // Removed settings must not revive through a spread of an older configuration.
 export function normalizeSettings(value = {}) {
   const pick = (defaults, source) => Object.fromEntries(Object.entries(defaults).map(([key, fallback]) => [key, source?.[key] ?? fallback]));
@@ -85,7 +85,7 @@ export function apiProviderForTask(settings,task) { const id=settings?.apiRoutin
 export const wordId = (term, domain = 'general') => `${domain}:${term.normalize('NFKC').trim().replace(/\s+/g,' ').toLowerCase()}`;
 // 后台侧上限：订阅 assist/翻译/总结 120s，其余 45s，自备 API 25s（阶跃星辰 60s）。
 // 内容侧超时必须留出余量，只在响应丢失时触发（如 SW 被回收、连接器静默），正常流程永远碰不到。
-const LONG_REQUEST_TYPES = new Set(['READER_TRANSLATE','ASSIST','EMERGENCY_BEGIN','EMERGENCY_TRANSLATE','PASSAGE_TRANSLATE','PAGE_SUMMARY','SENTENCE_GROUPS_BATCH','SUPPORT_BATCH']);
+const LONG_REQUEST_TYPES = new Set(['READER_TRANSLATE','ASSIST','EMERGENCY_BEGIN','EMERGENCY_TRANSLATE','PASSAGE_TRANSLATE','VIDEO_CUE_TRANSLATE','PAGE_SUMMARY','SENTENCE_GROUPS_BATCH','SUPPORT_BATCH']);
 const LONG_REQUEST_TIMEOUT = 150000;
 const DEFAULT_REQUEST_TIMEOUT = 60000;
 export async function request(type, payload = {}) {

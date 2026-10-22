@@ -1,6 +1,6 @@
 /**
  * @file extension/background.js
- * 文件职责：Service Worker 总控——74 种消息的注册表派发、设置校验与迁移、API/三订阅链路编排、
+ * 文件职责：Service Worker 总控——76 种消息的注册表派发、设置校验与迁移、API/三订阅链路编排、
  *   缓存/并发/看门狗、订阅端口状态与诊断编排，是扩展侧所有业务的唯一入口。
  * 主要内容：messageHandlers 注册表（与 message-protocol.js MESSAGE_TYPES 一一对应）、STATE_PATCH 编排、
  *   SUPPORT_BATCH/ASSIST/解构/整页翻译/摘要装配、supportCache 等会话缓存、subscription 端口管理。
@@ -25,7 +25,7 @@ import {ROUTE_VERSION,normalizeDomainRules,resolveRuleDomain} from './domain-rou
 import {classifyLocal} from './local-classifier.js';
 import {assistanceProgress,translationProgress} from './assistance-stream.mjs';
 import {SOURCE_DATA_INSTRUCTIONS,SUPPORT_POLICY_VERSION,SUPPORT_INSTRUCTIONS,SUPPORT_SCHEMA,ASSISTANCE_INSTRUCTIONS,assistanceSchema,normalizeSupportItems,prepareSupportItems,inspectSupportResponse,requestSupportWithCorrection,SUPPORT_CORRECTION_INSTRUCTIONS,normalizeSupportResult,normalizeAssistanceCommand,normalizeAssistanceRequest,normalizeAssistanceResult,normalizePreparationContext,EMERGENCY_SCHEMA,EMERGENCY_INSTRUCTIONS,normalizeEmergencyItems,normalizeEmergencyResult,PAGE_TRANSLATION_INSTRUCTIONS,normalizePageTranslationItems,inspectPageTranslationResult,normalizePageTranslationResult,PAGE_SUMMARY_INSTRUCTIONS,PAGE_SUMMARY_SCHEMA,normalizePageSummaryResult} from './gloss.mjs';
-import {AUTO_SCRIPT_ID,PET_SCRIPT_ID,ALL_HOSTS,VIDEO_SUPPORT_ENABLED,pageOrigin,sitePattern,validateAutomation,validateVideo,resolveAutomation,registrationMatches,requiredPermissionOrigins} from './activation.js';
+import {AUTO_SCRIPT_ID,PET_SCRIPT_ID,CAPTION_SCRIPT_ID,ALL_HOSTS,VIDEO_HOSTS,VIDEO_SUPPORT_ENABLED,pageOrigin,sitePattern,validateAutomation,validateVideo,resolveAutomation,registrationMatches,requiredPermissionOrigins,youtubeTimedtextUrl} from './activation.js';
 import {createDiagnostics} from './diagnostic-service.js';
 import {USAGE_STATS_KEY,recordUsageEvent,summarizeUsage} from './usage-stats.mjs';
 import {diagnosticError} from './diagnostics.mjs';
@@ -197,7 +197,7 @@ function publicState(state,trusted) {
     assistanceMode:source.assistanceMode,rememberSupport:source.rememberSupport,
     helpLanguage:source.helpLanguage,lookupKey:source.lookupKey,lookupDisplay:source.lookupDisplay,
     readingStyle:globalThis.RoamCatReadingStyle.normalize(source.readingStyle),domain:source.domain,
-    video:{fontSize:source.video.fontSize,theme:source.video.theme},
+    video:{fontSize:source.video.fontSize,theme:source.video.theme,bilingual:source.video.bilingual===true},
     floatingPet:{enabled:source.floatingPet?.enabled!==false,position:{right:Number.isFinite(source.floatingPet?.position?.right)?source.floatingPet.position.right:24,bottom:Number.isFinite(source.floatingPet?.position?.bottom)?source.floatingPet.position.bottom:84},themeMode:['auto','dark','light'].includes(source.floatingPet?.themeMode)?source.floatingPet.themeMode:'auto',scale:[0.8,1,1.2,1.4,1.6].includes(source.floatingPet?.scale)?source.floatingPet.scale:1,quotes:{enabled:source.floatingPet?.quotes?.enabled!==false,intervalMin:[15,30,60].includes(source.floatingPet?.quotes?.intervalMin)?source.floatingPet.quotes.intervalMin:15}},
     readingHistory:readingHistory.publicConfig(),
   };
@@ -846,6 +846,35 @@ async function emergencyCancelRequest(message,sender){
   await pruneBackgroundQueue();
   return result;
 }
+async function videoCueTranslate(message, sender) {
+  if (!VIDEO_SUPPORT_ENABLED) throw new Error(M('视频字幕功能暂未开放。','Video subtitles are not available yet.'));
+  const source = await readingSource(sender);
+  if (!source.active || await tabPaused(source.tabId)) throw new Error(M('请在当前页面打开双语字幕。','Turn on bilingual captions on the current page.'));
+  // 带 context（视频标题 + 前后句）的字幕走整页翻译的上下文协议，代词和省略句译得更准；
+  // 不带 context 的旧请求仍走选段翻译。两条都不写阅读记录：字幕是跟着播放走的临时文本。
+  const withContext = Array.isArray(message.items) && message.items.some(item => item && typeof item === 'object' && 'context' in item);
+  const items = withContext ? normalizePageTranslationItems(message.items) : normalizeEmergencyItems(message.items);
+  const state = await load();
+  const generation = providerGeneration;
+  const guard = async () => {
+    const [latest, page] = await Promise.all([load(), readingSource(sender)]);
+    if (generation !== providerGeneration || state.supportDataGeneration !== latest.supportDataGeneration || page.sourceHash !== source.sourceHash || !page.active || await tabPaused(source.tabId)) throw staleWork();
+  };
+  return translateItems(items, state.settings, diagnostics.trace(message), {scope: withContext ? 'page' : 'passage', origin: new URL(source.url).origin, guard});
+}
+async function youtubeCaptionFetch(message, sender) {
+  if (!VIDEO_SUPPORT_ENABLED) throw new Error(M('视频字幕功能暂未开放。','Video subtitles are not available yet.'));
+  if (!Number.isInteger(sender.tab?.id) || sender.frameId !== 0) throw new Error(M('字幕只能由当前网页主框架读取。','Captions can only be read by the page main frame.'));
+  const {url: page} = await tabPage(sender.tab.id);
+  if (page.protocol !== 'https:' || !['www.youtube.com', 'm.youtube.com'].includes(page.hostname)) throw new Error(M('字幕只从 YouTube 读取。','Captions are only read from YouTube.'));
+  const target = youtubeTimedtextUrl(message?.url);
+  const response = await fetch(target, {credentials: 'include', redirect: 'follow'});
+  youtubeTimedtextUrl(response.url);
+  if (!response.ok) throw new Error(M('字幕时间轴暂时读不到。','The caption timeline is temporarily unavailable.'));
+  const text = await response.text();
+  if (!text || text.length > 1500000 || text.trimStart().startsWith('<')) throw new Error(M('字幕时间轴暂时读不到。','The caption timeline is temporarily unavailable.'));
+  return {text};
+}
 async function passageTranslate(message,sender) {
   const source=await readingSource(sender);
   if(!source.active||await tabPaused(source.tabId))throw new Error(M('请在当前活动页面选择需要翻译的段落。','Please select the passages to translate on the current active page.'));
@@ -1178,10 +1207,13 @@ async function reconcileAutoScript(settings) {
   const matches = autoCandidates.filter(pattern => allowed.has(pattern));
   const petMatches = petCandidates.filter(pattern => allowed.has(pattern));
   const registrations = await chrome.scripting.getRegisteredContentScripts();
-  const obsolete = registrations.filter(item => item.id === AUTO_SCRIPT_ID || item.id === PET_SCRIPT_ID || item.id.startsWith('ss-auto-start-')).map(item => item.id);
+  const obsolete = registrations.filter(item => item.id === AUTO_SCRIPT_ID || item.id === PET_SCRIPT_ID || item.id === CAPTION_SCRIPT_ID || item.id.startsWith('ss-auto-start-')).map(item => item.id);
   if (obsolete.length) await chrome.scripting.unregisterContentScripts({ids:obsolete});
   const wanted = [];
   if (matches.length) wanted.push({id:AUTO_SCRIPT_ID,matches,js:['auto-start.js'],runAt:'document_start',allFrames:false,persistAcrossSessions:true});
+  const videoMatches = VIDEO_SUPPORT_ENABLED && settings.automation.videoSites ? VIDEO_HOSTS.filter(pattern => allowed.has(pattern)) : [];
+  // 字幕桥必须早于播放器脚本包住 fetch，否则播放器会握住原来的 fetch，签名地址的正文就截不到。
+  if (videoMatches.length) wanted.push({id:CAPTION_SCRIPT_ID,matches:videoMatches,js:['youtube-captions-bridge.js'],world:'MAIN',runAt:'document_start',allFrames:false,persistAcrossSessions:true});
   // floating-pet 挂载即调 RoamCatContentUI.petWidget（design.js 为可选 token 源）：
   // 同 run_at 下动态注册与静态 content_scripts 的顺序不受保证，必须在同一注册项内
   // 显式声明依赖顺序，否则伴读猫可能先于渲染层执行而 TypeError。
@@ -1315,6 +1347,7 @@ const messageHandlers=[
   {type:'PAGE_ACTIVITY_SET',handle:async (message,{sender,trusted})=>{if(!Number.isInteger(sender.tab?.id)||sender.frameId!==0||typeof message.enabled!=='boolean')throw new Error(M('无效的页面活动状态。','Invalid page activity state.'));await setTabPaused(sender.tab.id,!message.enabled);await rememberReadingIntent(sender.tab.id,sender.tab.url||sender.url,message.enabled);return{paused:!message.enabled};}},
   {type:'VIDEO_SETTINGS_PATCH',handle:async (message,{sender,trusted})=>{if(!trusted&&(!Number.isInteger(sender.tab?.id)||sender.frameId!==0))throw new Error(M('视频设置只能由网页主框架更新。','Video settings can only be updated by the page main frame.'));const video=await mutate(state=>{const next=validateVideo(message.patch,state.settings.video);state.settings={...state.settings,video:next};return next;},false,false);await broadcastVideoSettings(video);return{video};}},
   {type:'YOUTUBE_CAPTIONS_BRIDGE',handle:async (message,{sender,trusted})=>{if(!VIDEO_SUPPORT_ENABLED)throw new Error(M('视频字幕功能暂未开放。','Video subtitles are not available yet.'));if(!Number.isInteger(sender.tab?.id)||sender.frameId!==0)throw new Error(M('字幕桥只能由当前网页主框架启用。','The caption bridge can only be enabled by the page main frame.'));const {url}=await tabPage(sender.tab.id);if(url.protocol!=='https:'||!['www.youtube.com','m.youtube.com'].includes(url.hostname))throw new Error(M('字幕桥仅适用于 YouTube。','The caption bridge only works on YouTube.'));await chrome.scripting.executeScript({target:{tabId:sender.tab.id,frameIds:[0]},world:'MAIN',files:['youtube-captions-bridge.js']});return{};}},
+  {type:'YOUTUBE_CAPTION_FETCH',handle:(message,{sender})=>youtubeCaptionFetch(message,sender)},
   {type:'FLOATING_PET_POSITION_SET',handle:async(message,{sender,trusted})=>{if(!trusted)await readingSource(sender);const floatingPet=parseFloatingPetPatch(message);return mutate(state=>{const patch=validatePatch({floatingPet},state.settings);state.settings={...state.settings,...patch};return {floatingPet:patch.floatingPet};},false,false);}},
   {type:'STATE_GET',handle:async (message,{sender,trusted})=>({...publicState(await load(false),trusted),emergencyActive:Number.isInteger(sender.tab?.id)&&Boolean(await emergencySession(sender.tab.id))})},
   {type:'SUBSCRIPTION_STATUS',handle:async (message,{sender,trusted})=>{const kind=isSubscriptionKind(message.kind)?message.kind:nativeKind((await load(false)).settings);return message.probe===true?probeSubscription(kind):refreshSubscription(kind);}},
@@ -1344,6 +1377,7 @@ const messageHandlers=[
   {type:'ASSIST_PREVIEW',handle:(message,{sender,trusted})=>assistPreview(message,sender)},
   {type:'EMERGENCY_BEGIN',handle:(message,{sender,trusted})=>{if(!trusted&&!sender?.tab?.id)throw new Error(M('仅扩展界面或伴读猫可启动双语翻译。','Only extension UI or the companion pet can start bilingual translation.'));return emergencyBegin(message,sender,trusted);}},
   {type:'PASSAGE_TRANSLATE',handle:(message,{sender,trusted})=>passageTranslate(message,sender)},
+  {type:'VIDEO_CUE_TRANSLATE',handle:(message,{sender})=>videoCueTranslate(message,sender)},
   {type:'READER_TRANSLATE',handle:(message,{sender,trusted})=>readerTranslate(message,sender,trusted)},
   {type:'EMERGENCY_TRANSLATE',handle:(message,{sender,trusted})=>emergencyTranslate(message,sender)},
   {type:'EMERGENCY_CANCEL_REQUEST',handle:(message,{sender,trusted})=>emergencyCancelRequest(message,sender)},

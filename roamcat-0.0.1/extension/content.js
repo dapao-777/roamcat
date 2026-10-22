@@ -1304,7 +1304,12 @@ const LIMIT_ERROR = T('c.limit');
       if(state.paused)return;
       if(target.text.length>600 || segments(target.text).length>3){renderHelpCard(target,LIMIT_ERROR);return;}
       return assistTarget(target);
-    },onSettingsChange:async patch=>{const result=await request('VIDEO_SETTINGS_PATCH',{patch});state.settings.video=result.video;return result;}});
+    },onSettingsChange:async patch=>{const result=await request('VIDEO_SETTINGS_PATCH',{patch});state.settings.video=result.video;return result;},
+    onPrepareBridge:()=>request('YOUTUBE_CAPTIONS_BRIDGE',{}),
+    onFetchCaption:async url=>{const result=await request('YOUTUBE_CAPTION_FETCH',{url});return typeof result?.text==='string'?result.text:'';},
+    onTranslate:async items=>request('VIDEO_CUE_TRANSLATE',{requestId:'cap-'+crypto.randomUUID(),items}),
+    // 视频页常常还没判定过领域（state.domain 为 null），这时不传 domain，交给后台按设置推断；传 null 会被判为不支持的领域。
+    onAnalyze:async text=>request('ANALYZE',state.domain?{text,domain:state.domain}:{text})});
   }
   function emergencyText(node) {
     if(node.nodeType===Node.TEXT_NODE)return node.nodeValue.replace(/\s+/g,' ');
