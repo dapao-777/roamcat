@@ -95,7 +95,8 @@ function waitForOutputProbe(entry,signal){
 async function outputMode(service,protocol,signal,onUsage){
   aborted(signal);
   // Step Plan documents JSON Mode as json_object; probing json_schema on /step_plan often 400s.
-  if(service.providerId==='stepfun'||stepfunHost(service.baseUrl))return 'json_object';
+  // SenseNova 文档同样只给出 json_object 结构化输出。
+  if(service.providerId==='stepfun'||stepfunHost(service.baseUrl)||service.providerId==='sensenova')return 'json_object';
   const identity=JSON.stringify([service.providerId,endpointFor(service,protocol).href,service.model,service.apiKey||'',protocol==='chat'?chatThinking(service):responsesThinking(service)]);
   const key=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(identity))),byte=>byte.toString(16).padStart(2,'0')).join('');
   await loadOutputCapabilities();
@@ -220,10 +221,17 @@ function ensureNoForcedReasoning(service){const model=(service.model||'').toLowe
   if(/(?:^|[\/_-])minimax-m2(?:$|[.\/_:-])/i.test(model))throw transportError(M('该 MiniMax 模型始终使用推理，无法关闭思考；请选择 MiniMax-M3。','This MiniMax model always reasons and cannot disable thinking; choose MiniMax-M3.'),'THINKING_REQUIRED');
   if(/(?:^|[\/.])claude-(?:opus-5|sonnet-5|fable-5|mythos)/i.test(model))throw transportError(M('该 Claude 模型始终使用推理，无法关闭思考；请选择支持无思考模式的模型。','This Claude model always reasons and cannot disable thinking; choose a model that supports no-thinking mode.'),'THINKING_REQUIRED');
   if(/(?:^|\/)grok-(?:4\.(?:5|6)(?:$|-)|4\.20-multi-agent|4-1-fast-reasoning)/i.test(model)||/(?:^|\/)grok-4(?:-|$)/i.test(model)&&!model.includes('non-reasoning'))throw transportError(M('该 Grok 模型始终使用推理，无法关闭思考；请选择无推理版本。','This Grok model always reasons and cannot disable thinking; choose a non-reasoning variant.'),'THINKING_REQUIRED');
-  if(/(?:^|[\/_-])(?:gpt-oss|qwq)(?:$|[\/_:.-])|sonar-(?:reasoning|deep-research)|glm-5\.3|(?:^|[\/_-])thinking(?:$|[\/_:.-])/i.test(model))throw transportError(M('该模型无法关闭思考；请选择支持无思考模式的模型。','This model cannot disable thinking; choose a model that supports no-thinking mode.'),'THINKING_REQUIRED');
+  // TokenHub 文档：kimi-k3 与 kimi-k2.7-code 系列不支持关闭思考。千帆文档：ernie-x1 系列为纯思考模型，-think 后缀为思考版。
+  if(service.providerId==='tencent'&&/(?:^|\/)kimi-k(?:3|2\.7-code)(?:$|[-_:])/i.test(model))throw transportError(M('该模型在 TokenHub 上无法关闭思考；请选择 hy3 等支持无思考模式的模型。','This model cannot disable thinking on TokenHub; choose a model such as hy3 that supports no-thinking mode.'),'THINKING_REQUIRED');
+  if(/(?:^|[\/_-])(?:gpt-oss|qwq|ernie-x1(?:\.\d+)?)(?:$|[\/_:.-])|sonar-(?:reasoning|deep-research)|glm-5\.3|(?:^|[\/_-])thinking(?:$|[\/_:.-])/i.test(model)&&!(service.providerId==='qianfan'&&/^ernie-5\.0-thinking-preview$/i.test(model))||service.providerId==='qianfan'&&/-think$/i.test(model))throw transportError(M('该模型无法关闭思考；请选择支持无思考模式的模型。','This model cannot disable thinking; choose a model that supports no-thinking mode.'),'THINKING_REQUIRED');
 }
 function chatThinking(service){const id=service.providerId,model=service.model||'',base=service.baseUrl||'';
-  if(['deepseek','moonshotai','volcengine','minimax'].includes(id))return {thinking:{type:'disabled'}};
+  if(['deepseek','moonshotai','volcengine','minimax','zhipu','xiaomi'].includes(id))return {thinking:{type:'disabled'}};
+  // SenseNova Token Plan 默认 reasoning_effort=high，需显式 none；大装置按量通道的 SenseChat 不认该参数。
+  // TokenHub 与千帆都按模型白名单接受 thinking 参数，名单外的模型（翻译、角色扮演、ERNIE 4.5 等）不带该字段。
+  if(id==='tencent')return /^(?:hy3|hy4|deepseek-v4|glm-5\.2|glm-5v|kimi-k2\.[56]|qwen3\.5)(?:$|[-_.])/i.test(model)?{thinking:{type:'disabled'}}:{};
+  if(id==='qianfan')return /^(?:deepseek-v4|deepseek-v3\.2|kimi-k2\.5|glm-5)(?:$|[-_.])/i.test(model)?{thinking:{type:'disabled'}}:/^ernie-5\.0-thinking-preview$/i.test(model)?{enable_thinking:false}:{};
+  if(id==='sensenova')return service.options?.channel==='sensecore'?{}:{reasoning_effort:'none'};
   if(id==='stepfun'||stepfunHost(base)){
     const effort=reasoningEffortOption(service,'low');
     return {reasoning_effort:effort==='none'?'low':effort};

@@ -1,6 +1,6 @@
 /**
  * @file extension/api-providers.mjs
- * 文件职责：28家自备API服务商目录与8种协议适配——默认模型、并发、密钥可选性与服务归一化。
+ * 文件职责：33家自备API服务商目录与8种协议适配——默认模型、并发、密钥可选性与服务归一化。
  * 主要内容：API_PROVIDERS/getApiProvider/normalizeApiService/apiServiceOrigins；HTTPS-only、本机回环除外；
  *   apiKeys 多密钥轮换池归一化与 apiKeyPoolPick/apiKeyPoolCool 纯函数（运行状态由调用方持有）。
  * 模块边界：领域层，可Node安全import；密钥不进内容脚本；被api-transport/background/options引用。
@@ -43,6 +43,38 @@ const opencodeFields = [
     {value:'go',label:M('Go 订阅 · opencode.ai/zen/go/v1','Go subscription · opencode.ai/zen/go/v1')},
   ]},
 ];
+const sensenovaFields = [
+  {key:'channel',label:M('接口通道','API channel'),type:'select',defaultValue:'tokenplan',options:[
+    {value:'tokenplan',label:M('Token Plan 订阅 · token.sensenova.cn/v1','Token Plan subscription · token.sensenova.cn/v1')},
+    {value:'sensecore',label:M('大装置按量 · api.sensenova.cn/compatible-mode/v2','SenseCore pay-as-you-go · api.sensenova.cn/compatible-mode/v2')},
+  ]},
+];
+const zhipuFields = [
+  {key:'channel',label:M('接口通道','API channel'),type:'select',defaultValue:'open',options:[
+    {value:'open',label:M('开放平台按量 · open.bigmodel.cn/api/paas/v4','Open platform pay-as-you-go · open.bigmodel.cn/api/paas/v4')},
+    {value:'coding',label:M('GLM Coding Plan 订阅 · open.bigmodel.cn/api/coding/paas/v4','GLM Coding Plan · open.bigmodel.cn/api/coding/paas/v4')},
+    {value:'open-intl',label:M('Z.ai 国际站按量 · api.z.ai/api/paas/v4','Z.ai pay-as-you-go · api.z.ai/api/paas/v4')},
+    {value:'coding-intl',label:M('Z.ai Coding Plan · api.z.ai/api/coding/paas/v4','Z.ai Coding Plan · api.z.ai/api/coding/paas/v4')},
+  ]},
+];
+const xiaomiFields = [
+  {key:'channel',label:M('接口通道','API channel'),type:'select',defaultValue:'payg',options:[
+    {value:'payg',label:M('开放平台按量 · api.xiaomimimo.com/v1','Pay-as-you-go · api.xiaomimimo.com/v1')},
+    {value:'tokenplan',label:M('Token Plan 订阅 · token-plan-cn.xiaomimimo.com/v1','Token Plan subscription · token-plan-cn.xiaomimimo.com/v1')},
+  ]},
+];
+const tencentFields = [
+  {key:'channel',label:M('接入地域','Region'),type:'select',defaultValue:'guangzhou',options:[
+    {value:'guangzhou',label:M('广州（中国大陆）· tokenhub.tencentmaas.com/v1','Guangzhou (mainland China) · tokenhub.tencentmaas.com/v1')},
+    {value:'singapore',label:M('新加坡（全球）· tokenhub-intl.tencentmaas.com/v1','Singapore (global) · tokenhub-intl.tencentmaas.com/v1')},
+  ]},
+];
+const moonshotFields = [
+  {key:'channel',label:M('接口通道','API channel'),type:'select',defaultValue:'cn',options:[
+    {value:'cn',label:M('国内站 · api.moonshot.cn/v1','China · api.moonshot.cn/v1')},
+    {value:'intl',label:M('国际站 · api.moonshot.ai/v1','Global · api.moonshot.ai/v1')},
+  ]},
+];
 const compatibleFields = [
   {key:'reasoningEffort',label:M('思考等级','Thinking level'),type:'select',defaultValue:'none',options:reasoningEffortOptions},
 ];
@@ -74,10 +106,15 @@ export const API_PROVIDERS = [
   {id:'fireworks',name:'Fireworks AI',protocol:'chat',baseUrl:'https://api.fireworks.ai/inference/v1',defaultModel:'accounts/fireworks/models/llama-v3p3-70b-instruct',apiKeyUrl:'',keyOptional:false,fields:[]},
   {id:'cerebras',name:'Cerebras',protocol:'chat',baseUrl:'https://api.cerebras.ai/v1',defaultModel:'qwen-3.8-27b',apiKeyUrl:'',keyOptional:false,fields:[]},
   {id:'ollama',name:'Ollama',protocol:'ollama',baseUrl:'http://localhost:11434/api',defaultModel:'gemma3:4b',apiKeyUrl:'',keyOptional:true,fields:[]},
-  {id:'volcengine',name:'Volcengine',protocol:'chat',baseUrl:'https://ark.cn-beijing.volces.com/api/v3',defaultModel:'doubao-seed-1-6-flash-250828',apiKeyUrl:'',keyOptional:false,fields:[]},
-  {id:'alibaba',name:'Alibaba Cloud',protocol:'chat',baseUrl:'https://dashscope.aliyuncs.com/compatible-mode/v1',defaultModel:'qwen3.8-flash',apiKeyUrl:'',keyOptional:false,fields:[]},
-  {id:'moonshotai',name:'Moonshot AI',protocol:'chat',baseUrl:'https://api.moonshot.ai/v1',defaultModel:'kimi-k2.6',apiKeyUrl:'',keyOptional:false,fields:[]},
+  {id:'volcengine',name:M('火山引擎（豆包）','Volcengine (Doubao)'),protocol:'chat',baseUrl:'https://ark.cn-beijing.volces.com/api/v3',defaultModel:'doubao-seed-1-6-flash-250828',apiKeyUrl:'',keyOptional:false,fields:[]},
+  {id:'alibaba',name:M('阿里云百炼','Alibaba Cloud Model Studio'),protocol:'chat',baseUrl:'https://dashscope.aliyuncs.com/compatible-mode/v1',defaultModel:'qwen3.8-flash',apiKeyUrl:'',keyOptional:false,fields:[]},
+  {id:'moonshotai',name:M('月之暗面 Kimi','Moonshot AI (Kimi)'),protocol:'chat',baseUrl:'https://api.moonshot.cn/v1',defaultModel:'kimi-k2.6',apiKeyUrl:'',keyOptional:false,fields:moonshotFields},
   {id:'stepfun',name:M('阶跃星辰','StepFun'),protocol:'chat',baseUrl:'https://api.stepfun.com/v1',defaultModel:'step-3.7-flash',apiKeyUrl:'',keyOptional:false,fields:stepfunFields},
+  {id:'sensenova',name:M('商汤日日新','SenseNova'),protocol:'chat',baseUrl:'https://token.sensenova.cn/v1',defaultModel:'sensenova-6.8-flash-lite',apiKeyUrl:'',keyOptional:false,fields:sensenovaFields},
+  {id:'zhipu',name:M('智谱 GLM','Zhipu GLM'),protocol:'chat',baseUrl:'https://open.bigmodel.cn/api/paas/v4',defaultModel:'glm-4.7-flash',apiKeyUrl:'',keyOptional:false,fields:zhipuFields},
+  {id:'xiaomi',name:M('小米 MiMo','Xiaomi MiMo'),protocol:'chat',baseUrl:'https://api.xiaomimimo.com/v1',defaultModel:'mimo-v2.6-flash',apiKeyUrl:'',keyOptional:false,fields:xiaomiFields},
+  {id:'tencent',name:M('腾讯混元 TokenHub','Tencent Hunyuan TokenHub'),protocol:'chat',baseUrl:'https://tokenhub.tencentmaas.com/v1',defaultModel:'hy3',apiKeyUrl:'',keyOptional:false,fields:tencentFields},
+  {id:'qianfan',name:M('百度千帆','Baidu Qianfan'),protocol:'chat',baseUrl:'https://qianfan.baidubce.com/v2',defaultModel:'ernie-4.5-turbo-128k',apiKeyUrl:'',keyOptional:false,fields:[]},
   {id:'huggingface',name:'Hugging Face',protocol:'chat',baseUrl:'https://router.huggingface.co/v1',defaultModel:'Qwen/Qwen2.5-7B-Instruct-1M',apiKeyUrl:'',keyOptional:false,fields:[]},
 ];
 
@@ -132,6 +169,28 @@ export function apiProviderBaseUrl(providerId,options={}) {
   if (providerId==='opencode') {
     if (normalized.channel==='go') return 'https://opencode.ai/zen/go/v1';
     return 'https://opencode.ai/zen/v1';
+  }
+  if (providerId==='sensenova') {
+    if (normalized.channel==='sensecore') return 'https://api.sensenova.cn/compatible-mode/v2';
+    return 'https://token.sensenova.cn/v1';
+  }
+  if (providerId==='zhipu') {
+    if (normalized.channel==='coding') return 'https://open.bigmodel.cn/api/coding/paas/v4';
+    if (normalized.channel==='open-intl') return 'https://api.z.ai/api/paas/v4';
+    if (normalized.channel==='coding-intl') return 'https://api.z.ai/api/coding/paas/v4';
+    return 'https://open.bigmodel.cn/api/paas/v4';
+  }
+  if (providerId==='xiaomi') {
+    if (normalized.channel==='tokenplan') return 'https://token-plan-cn.xiaomimimo.com/v1';
+    return 'https://api.xiaomimimo.com/v1';
+  }
+  if (providerId==='tencent') {
+    if (normalized.channel==='singapore') return 'https://tokenhub-intl.tencentmaas.com/v1';
+    return 'https://tokenhub.tencentmaas.com/v1';
+  }
+  if (providerId==='moonshotai') {
+    if (normalized.channel==='intl') return 'https://api.moonshot.ai/v1';
+    return 'https://api.moonshot.cn/v1';
   }
   return provider.baseUrl;
 }
