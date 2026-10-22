@@ -16,7 +16,7 @@
 <p align="center">
   <a href="LICENSE"><img alt="License: MPL-2.0" src="https://img.shields.io/badge/license-MPL--2.0-blue"></a>
   <a href="https://github.com/dapao-777/roamcat/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/dapao-777/roamcat/actions/workflows/ci.yml/badge.svg"></a>
-  <img alt="版本 0.0.1 预发布" src="https://img.shields.io/badge/version-0.0.1%20prerelease-orange">
+  <img alt="版本 0.1.0" src="https://img.shields.io/badge/version-0.1.0-blue">
   <img alt="Chrome / Edge 125+" src="https://img.shields.io/badge/Chrome%20%2F%20Edge-125%2B-green">
   <img alt="Manifest V3" src="https://img.shields.io/badge/manifest-V3-blueviolet">
 </p>
@@ -45,7 +45,7 @@
 </p>
 
 > [!NOTE]
-> **0.0.1 预发布版**：目前通过开发者模式从源码安装（两条命令，见[快速开始](#-快速开始)），尚未上架扩展商店。本项目是对开源项目 [RelyLess](https://github.com/rockythink/relyless) 的重构、优化与修复，详见[致谢](#-致谢)。
+> **0.1.0 首个正式版**：从 [Releases](https://github.com/dapao-777/roamcat/releases/latest) 下载安装包或从源码构建，再以开发者模式加载（见[快速开始](#-快速开始)），尚未上架扩展商店。本项目是对开源项目 [RelyLess](https://github.com/rockythink/relyless) 的重构、优化与修复，详见[致谢](#-致谢)。
 
 ## ✨ 亮点
 
@@ -116,7 +116,11 @@
 
 ## 🚀 快速开始
 
-需要 **Chrome 或 Edge 125+** 与 **Node.js 20.11+**。
+需要 **Chrome 或 Edge 125+**。
+
+**方式 A：Release 安装包。** 从 [Releases](https://github.com/dapao-777/roamcat/releases/latest) 下载 `roamcat-0.1.0-extension.zip` 并解压。打开 `chrome://extensions`（或 `edge://extensions`），开启**开发者模式**，点**加载已解压的扩展**，选择解压出的 **`roamcat-0.1.0/extension`** 文件夹。要用订阅连接器，在解压目录里运行 `node roamcat-0.1.0/connector/install.mjs`（需要 Node.js 20.11+）；它会按这个文件夹算出扩展 ID，移动文件夹后要重新运行。
+
+**方式 B：从源码构建**（需要 Node.js 20.11+）：
 
 ```sh
 git clone https://github.com/dapao-777/roamcat.git
@@ -140,7 +144,7 @@ node roamcat-0.0.1/connector/install.mjs --extension-id afpeggkplomdjjiemgajjgca
 ## 🔒 本地优先的边界
 
 - 阅读记录默认关闭且按站授权，无痕页面不采集；API Key 只存在 `chrome.storage.local`。
-- 密钥不进内容脚本、诊断日志或连接器；内容脚本只能使用 74 种消息中的 **33 种白名单类型**。
+- 密钥不进内容脚本、诊断日志或连接器；内容脚本只能使用 76 种消息中的 **35 种白名单类型**。
 - 模型输出全部经结构化校验（`gloss.mjs`）才进入界面；自定义 API 地址强制 HTTPS（仅本机回环允许 HTTP）。
 - 页面文本只在你主动调用模型功能时离开本机，直达你配置的服务商。完整说明见[隐私政策](roamcat-0.0.1/PRIVACY.md)。
 
@@ -238,7 +242,7 @@ node roamcat-0.0.1/connector/install.mjs --extension-id afpeggkplomdjjiemgajjgca
 │   · floating-pet.js 伴读猫 · auto-start.js 自动开启                      │
 ├────────────────────────────────────────────────────────────────────────┤
 │ Service Worker：background.js（ES module，无状态）                       │
-│   74 种消息路由 · 设置校验与迁移 · 缓存 / 并发 / 看门狗 · 订阅端口          │
+│   76 种消息路由 · 设置校验与迁移 · 缓存 / 并发 / 看门狗 · 订阅端口          │
 ├────────────────────────────────────────────────────────────────────────┤
 │ 扩展页面：popup / options / welcome / reader                            │
 │   src/ 下的 Lit 应用，经 Vite 构建到 dist/extension/ui/                   │
@@ -251,8 +255,8 @@ node roamcat-0.0.1/connector/install.mjs --extension-id afpeggkplomdjjiemgajjgca
 
 </details>
 
-- **信任边界**——扩展页（可信）→ 内容脚本（33 种白名单消息）→ 模型输出（校验后才进界面）→ 网页 DOM（只以数据身份进入提示词）。
-- **消息协议唯一事实源**——`extension/message-protocol.js` 登记全部 74 种消息与载荷解析器，契约测试保证路由表同步。
+- **信任边界**——扩展页（可信）→ 内容脚本（35 种白名单消息）→ 模型输出（校验后才进界面）→ 网页 DOM（只以数据身份进入提示词）。
+- **消息协议唯一事实源**——`extension/message-protocol.js` 登记全部 76 种消息与载荷解析器，契约测试保证路由表同步。
 - **唯一的双语运行时**——`extension/i18n.js` 收录 1,657 个中英对齐键，扩展页、内容脚本与 Service Worker 共用。
 - **无状态 Service Worker**——跨调用状态落在 `chrome.storage` 与 IndexedDB；写操作串行化，长操作带看门狗。
 
@@ -263,7 +267,7 @@ node roamcat-0.0.1/connector/install.mjs --extension-id afpeggkplomdjjiemgajjgca
 | 命令 | 用途 |
 |---|---|
 | `npm run build` · `npm run build:watch` | Vite 开发构建 → `dist/extension`（扩展 ID 固定） |
-| `npm test` | 202 例单元测试（经 `tools/run-unit-tests.mjs` 调用 `node --test`） |
+| `npm test` | 204 例单元测试（经 `tools/run-unit-tests.mjs` 调用 `node --test`） |
 | `npm run verify` | 模块图门禁 R1–R11：加载契约、无环、分层方向、文件头、manifest 资源 |
 | `npm run verify:build` | 构建产物门禁：字节比对 + Edge 实际加载冒烟 |
 | `npm run verify:ui` | 81 项全界面门禁：页面与挂件遍历、明暗主题、中英文断言，截图 → `preview/ui-audit/` |

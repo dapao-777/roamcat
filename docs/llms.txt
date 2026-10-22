@@ -5,7 +5,7 @@
 ## Project
 
 - [Repository](https://github.com/dapao-777/roamcat): source, issues and releases
-- [Releases](https://github.com/dapao-777/roamcat/releases): prerelease zip (coming soon; build from source in the meantime)
+- [Releases](https://github.com/dapao-777/roamcat/releases): 0.1.0 extension package (zip) with SHA256SUMS
 - [README (English)](https://github.com/dapao-777/roamcat/blob/main/README.md): features, modes, quick start, architecture
 - [README (中文)](https://github.com/dapao-777/roamcat/blob/main/README.zh-CN.md): 中文说明
 - [Site (中文)](https://dapao-777.github.io/roamcat/zh.html): Chinese landing page

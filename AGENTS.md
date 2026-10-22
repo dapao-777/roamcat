@@ -12,7 +12,9 @@
 | `npm test` | 单元测试：`tools/run-unit-tests.mjs` 列出 `tools/unit/*.test.mjs` 再交给 `node --test`（Node 20 不展开通配符，故不直接传 glob） |
 | `npm run verify:build` | 构建产物门禁：字节比对 + Edge 实际加载 `dist/extension` 冒烟 |
 | `npm run verify:ui` | 全界面 UI 门禁：Edge 加载 `dist/extension`，遍历 popup/options 全分区/welcome/reader 与页内挂件（词卡 HUD/任务条/解构卡/toast/选区条/伴读猫全状态），双主题截图 + 断言 → `preview/ui-audit/`（先跑 `npm run build`） |
-| `npm run verify:pet` | 伴读猫按钮门禁：真实点击/键盘操作全部悬浮按钮（快捷坞 5 按钮/旋旋翻/缩放/贴边/气泡/摘要窗），断言状态与可及性 → `preview/pet-buttons/` |
+| `npm run verify:pet` | 伴读猫按钮门禁：真实点击/键盘操作全部悬浮按钮（2×2 快捷按钮/旋旋翻/缩放/贴边探头/气泡/摘要窗），断言状态与可及性 → `preview/pet-buttons/` |
+| `npm run verify:options` | 设置页行为门禁：本地 HTTP 服务 `dist/extension` + 模拟 `chrome.*`，断言句子粒度保存/失败回滚、查词按键、阅读记录、宣言弹层、模型列表与「恢复默认阅读偏好」→ `preview/verification.json`（先跑 `npm run build`） |
+| `npm run verify:audit` | 真后台端到端审计：Edge 加载 `dist/extension`（host 权限收窄为 127.0.0.1）+ 本地假模型接口，覆盖设置持久化、规则增删、词卡、解构、整页翻译、摘要、伴读猫等 30 项 → `preview/audit/`（先跑 `npm run build`） |
 | `npm run promo` | 宣传片流水线（`tools/promo/`）：提取品牌 SVG → 合成 chiptune WAV → Playwright 逐帧 `__seek(t)` 截图（1920×1080@30，可多 worker）→ ffmpeg 合成 `preview/promo/roamcat-intro.mp4`（需 `ffmpeg-static`，`--no-save` 安装；`--skip-frames` 复用已有帧） |
 
 ## 结构约定

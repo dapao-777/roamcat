@@ -26,7 +26,7 @@
 - 不做整页默认中文化、不做后台预译整篇。
 - 不做用户能力画像：个性化分析只能提出可逆的提示密度/优先词调整，禁止掌握率、能力等级、敏感画像（`personalization.mjs` 的指令与结果校验强制此约束）。
 - 不自建云服务、不中转请求。
-- 视频字幕支持当前关闭（`activation.js: VIDEO_SUPPORT_ENABLED = false`），代码与许可保留。
+- 视频不听写：没有字幕轨道时不上传音频；双语字幕只在用户打开后发送播放点附近的字幕文本。
 
 ### 1.3 关键产品决策（2026-09-21 起）
 本页双语翻译**不做数据/费用二次确认**：工具栏「翻译本页」与 `Alt+Shift+T` 立即开始；停止不能撤回已发送请求。此决策同步体现在 `README.md`、`manifest.json` 命令描述、`ui/popup.html`（确认面板已移除）、`ui/popup.js`（intent 焦点直接 `popupEmergencyStart()`）。
@@ -50,7 +50,7 @@
 │   · auto-start.js：按站规则自动开启                           │
 ├────────────────────────────────────────────────────────────┤
 │ Service Worker（background.js，ES module）                   │
-│   · 74 种消息路由、设置校验、缓存、并发、诊断、订阅端口管理    │
+│   · 76 种消息路由、设置校验、缓存、并发、诊断、订阅端口管理    │
 │   · roamcat_ui_lang 变更经 storage.onChanged → SS_REFRESH 广播 │
 ├────────────────────────────────────────────────────────────┤
 │ 扩展页面：popup.html / options.html / welcome.html / reader.html │
@@ -72,7 +72,7 @@
 | 来源 | 可信度 | 约束 |
 |---|---|---|
 | 扩展页面（popup/options/welcome/reader） | 高（trusted） | 可访问全部消息；`API_MODELS_LIST` 仅 options 页，`READER_TRANSLATE` 仅扩展页 |
-| 内容脚本（网页上下文） | 低 | 仅 `contentAllowed` 白名单 33 种消息；密钥/历史数据不直接暴露 |
+| 内容脚本（网页上下文） | 低 | 仅 `contentAllowed` 白名单 35 种消息；密钥/历史数据不直接暴露 |
 | 模型返回内容 | 不可信数据 | 全部经 `gloss.mjs` 的结构化校验后才进入 UI |
 | 网页 DOM 文本 | 不可信数据 | 提示词统一声明 `SOURCE_DATA_INSTRUCTIONS`（数据非指令） |
 
@@ -108,7 +108,7 @@
 ### 4.1 Service Worker
 | 文件 | 职责 | 关键约束 |
 |---|---|---|
-| `background.js` | 消息路由（74 种，与 `MESSAGE_TYPES` 一一对应）、设置校验与迁移、四大模型链路编排、缓存/并发/看门狗、订阅端口状态、诊断编排 | 无跨调用内存态假设；所有写操作串行化（`writes` 链）；长操作必须带 `guard()` |
+| `background.js` | 消息路由（76 种，与 `MESSAGE_TYPES` 一一对应）、设置校验与迁移、四大模型链路编排、缓存/并发/看门狗、订阅端口状态、诊断编排 | 无跨调用内存态假设；所有写操作串行化（`writes` 链）；长操作必须带 `guard()` |
 | `subscription.js` | 三个连接器的端口、请求-响应映射、超时（assist/翻译/总结 120s，其余 45s）、进度事件转发 | 端口单例；断开时拒绝全部在途请求 |
 | `diagnostic-service.js` / `diagnostics.mjs` | traceId 贯穿、元数据脱敏、渲染回执、连接器镜像 | 只记录结构化元数据，不记录正文/密钥 |
 | `history-service.js` / `history-store.js` | 阅读记录（IndexedDB）、摘要/个性化引擎装配 | 记录默认关闭，需显式授权 origin |
@@ -118,7 +118,7 @@
 | `activation.js` / `auto-start.js` | 自动开启策略、动态注册 content script、SPA 导航检测；`pageOrigin`/`sitePattern`/`validateAutomation`/`validateVideo`/`registrationMatches` 为纯函数（已纳入领域层 lint 与单测） | `registrationMatches()` 是权限/注册的唯一事实源 |
 | `shared.js` | `DEFAULT_SETTINGS`、`normalizeSettings`、`wordId`、`request()` | 旧配置键不得通过 spread 复活 |
 | `message-router.js` | 类型化消息路由器：注册表构造、重复类型即失败、`parse`+`handle` 两段派发 | 泛型实现，不认识任何具体消息；未知类型抛「未知请求。」 |
-| `message-protocol.js` | 消息协议唯一事实源：`MESSAGE_TYPES`（74 种）、`CONTENT_ALLOWED_TYPES`、纯载荷解析器与自 `background.js` 下沉的 `validatePatch`（设置补丁校验）、`settingsPatchEffects`（STATE_PATCH 副作用计划）、`parseAssistRequest`/`parsePassageRequestRef`（请求身份）、`onDemandSuggestionDecision`（按需建议判定）、`text`/`domain`/`customDetectionService` | 只依赖 `shared.js`、`domain-routing.js`、`api-providers.mjs`、`gloss.mjs` 等领域/协议模块；新增类型必须同步注册表与第 5 节 |
+| `message-protocol.js` | 消息协议唯一事实源：`MESSAGE_TYPES`（76 种）、`CONTENT_ALLOWED_TYPES`、纯载荷解析器与自 `background.js` 下沉的 `validatePatch`（设置补丁校验）、`settingsPatchEffects`（STATE_PATCH 副作用计划）、`parseAssistRequest`/`parsePassageRequestRef`（请求身份）、`onDemandSuggestionDecision`（按需建议判定）、`text`/`domain`/`customDetectionService` | 只依赖 `shared.js`、`domain-routing.js`、`api-providers.mjs`、`gloss.mjs` 等领域/协议模块；新增类型必须同步注册表与第 5 节 |
 | `api-providers.mjs` / `api-transport.mjs` | 28 家服务商目录、8 种协议适配、结构化输出能力探测、模型列表、各协议 usage 抽取（`onUsage` 回调） | HTTPS only（本机回环除外）；同源重定向禁止；密钥不进内容脚本 |
 | `usage-stats.mjs` | 模型用量统计：调用事件规范化、按日/按服务×模型聚合（保留约 62 天、≤60 组合）、`summarizeUsage` UI 汇总 | 纯函数领域模块；只存计数与模型/服务标识，不存正文、密钥或网址；写串行化在 `background.js` |
 | `gloss.mjs` | 提示词、JSON Schema、响应校验/纠正（扩展与连接器共享） | `SUPPORT_POLICY_VERSION` 变更即使全部缓存失效 |
@@ -171,10 +171,10 @@
 - 统一信封：请求 `{type, ...payload}` → 响应 `{ok:true,data,traceId}` / `{ok:false,error,code,traceId}`。
 - `sender.id !== chrome.runtime.id` 一律拒绝；`trusted = sender.url` 以扩展页开头。
 - 全部消息类型登记在 `message-protocol.js` 的 `MESSAGE_TYPES`（唯一事实源），由 `background.js` 的 `messageHandlers` 注册表逐一分派；`createMessageRouter` 构造期拒绝重复类型，未注册类型抛「未知请求。」；`tools/unit/message-router.test.mjs` 的源码契约测试强制注册表与清单一致。
-- 内容脚本仅可用白名单（`contentAllowed`，33 种，以 `CONTENT_ALLOWED_TYPES` 为准）：状态读取、分析、支持批次、解构、求助、翻译、历史信号、诊断回执、伴读猫位置等。
+- 内容脚本仅可用白名单（`contentAllowed`，35 种，以 `CONTENT_ALLOWED_TYPES` 为准）：状态读取、分析、支持批次、解构、求助、翻译、历史信号、诊断回执、伴读猫位置等。
 - 数据变更类消息进入 `activeDataRequests` 集合，供清理时排空（`clearReadingData`）。
 
-### 5.2 消息分组（74 种，与 `MESSAGE_TYPES` 顺序一致）
+### 5.2 消息分组（76 种，与 `MESSAGE_TYPES` 顺序一致）
 | 分组 | 类型 |
 |---|---|
 | 状态与设置（8） | `STATE_GET` `STATE_PATCH` `AUTOMATION_GET` `AUTOMATION_PATCH` `PAGE_ACTIVITY_SET` `VIDEO_SETTINGS_PATCH` `FLOATING_PET_POSITION_SET` `OPEN_OPTIONS` |
@@ -182,9 +182,9 @@
 | 领域识别（4） | `RESOLVE_DOMAIN` `PAGE_DOMAIN_GET` `PAGE_DOMAIN_SET` `DOMAIN_TEST` |
 | 阅读辅助（12） | `ANALYZE` `SUPPORT_BATCH` `ASSIST` `ASSIST_PREVIEW` `ASSIST_COMMIT` `PREPARED_SUPPORT` `PREPARED_ASSIST` `ENCOUNTER` `INTERACT` `READING_ACTIVITY` `WORD_PREFERENCE_SET` `ON_DEMAND_SUGGESTION` |
 | 阅读解构（5） | `SENTENCE_GROUPS_GET` `SENTENCE_GROUPS_SET` `SENTENCE_GROUPS_DENSITY_SET` `SENTENCE_GROUPS_LINE_STYLE_SET` `SENTENCE_GROUPS_BATCH` |
-| 翻译（7） | `EMERGENCY_BEGIN` `EMERGENCY_TRANSLATE` `EMERGENCY_CANCEL_REQUEST` `EMERGENCY_END` `PASSAGE_TRANSLATE` `PAGE_SUMMARY` `READER_TRANSLATE` |
+| 翻译（8） | `EMERGENCY_BEGIN` `EMERGENCY_TRANSLATE` `EMERGENCY_CANCEL_REQUEST` `EMERGENCY_END` `PASSAGE_TRANSLATE` `VIDEO_CUE_TRANSLATE` `PAGE_SUMMARY` `READER_TRANSLATE` |
 | 历史与个性化（17） | `HISTORY_GET` `HISTORY_CONFIG` `HISTORY_BEGIN` `HISTORY_TICK` `HISTORY_COMMIT` `HISTORY_ANNOTATION` `HISTORY_DELETE` `HISTORY_SUMMARY_EDIT` `HISTORY_CLEAR` `HISTORY_EXPORT` `HISTORY_RULE_SET` `PERSONALIZATION_GET` `PERSONALIZATION_ANALYZE` `PERSONALIZATION_APPLY` `PERSONALIZATION_DISMISS` `PERSONALIZATION_ROLLBACK` `PERSONALIZATION_RESET` |
-| 数据与诊断（14） | `READING_DATA_EXPORT` `MEMORY_CLEAR` `DIAGNOSTICS_GET` `DIAGNOSTICS_EXPORT` `DIAGNOSTICS_SET` `DIAGNOSTICS_CLEAR` `DIAGNOSTICS_RENDER` `USAGE_STATS_GET` `USAGE_STATS_CLEAR` `POPUP_INTENT_TAKE` `PAGE_UI_INJECT` `ENSURE_PAGE_UI` `AUTO_BOOTSTRAP_CHECK` `YOUTUBE_CAPTIONS_BRIDGE` |
+| 数据与诊断（15） | `READING_DATA_EXPORT` `MEMORY_CLEAR` `DIAGNOSTICS_GET` `DIAGNOSTICS_EXPORT` `DIAGNOSTICS_SET` `DIAGNOSTICS_CLEAR` `DIAGNOSTICS_RENDER` `USAGE_STATS_GET` `USAGE_STATS_CLEAR` `POPUP_INTENT_TAKE` `PAGE_UI_INJECT` `ENSURE_PAGE_UI` `AUTO_BOOTSTRAP_CHECK` `YOUTUBE_CAPTIONS_BRIDGE` `YOUTUBE_CAPTION_FETCH` |
 
 ### 5.3 页面 → 后台 的旁路消息（`tabs.sendMessage`）
 `SS_STATUS` `SS_SET_ENABLED` `SS_REFRESH` `SS_AUTO_START` `SS_CONTEXT_HELP` `SS_SET_SENTENCE_GROUPS` `SS_SET_SENTENCE_DENSITY` `SS_SET_SENTENCE_LINE_STYLE` `SS_EMERGENCY_START/STOP/RETRY/END` `SS_HELP_LANGUAGE` `SS_READING_STYLE` `SS_VIDEO_SETTINGS` `SS_TRANSLATION_PROGRESS` `SS_ASSIST_PROGRESS` `SS_WORD_PREFERENCE`。
@@ -199,7 +199,7 @@
 3. 呈现：每区块最多 2 条显著提示（个性化 sparse 时 1 条），阶段 `hint/mark/quiet` 由渐退状态机决定。
 
 ### 6.2 查词（ASSIST）
-- 入口：按住 `lookupKey`（默认 D）+ 单击（卡片或顶部词注两种呈现）、右键「帮助理解选中内容」、视频字幕（暂关）。
+- 入口：按住 `lookupKey`（默认 D）+ 单击（卡片或顶部词注两种呈现）、右键「帮助理解选中内容」、视频字幕里的「这句」。
 - 链路：`ASSIST_PREVIEW`（旧参考义即时展示）∥ `ASSIST`（流式）→ 结果校验 → `ASSIST_COMMIT`（写入词档案义项与渐退计数）。
 - 缓存：会话内 `pendingAssists:`（请求幂等，5 分钟）+ `assistResultCache:`（结果，5 分钟）+ `supportCache` 复用已预备解释。
 - 竞态防护：requestId 幂等、页面/设置/服务变更即 STALE。
@@ -216,6 +216,12 @@
 - 渲染：article/content 单元在原文下插块级译文行；chrome 单元用 `data-zone="chrome"` 走内联译文（跟在原文后、弱化样式），避免撑破导航与侧栏布局；flex/grid 容器的直接文本子节点仍按 `skipped` 跳过。
 - 失败：段落级失败可单独重试；成功译文仅入 5 分钟/256 项内存缓存；返回英文只移除扩展插入物。
 - 本页结果容错（`inspectPageTranslationResult`）：思考模型常在合法译文外加代码围栏、前后说明、额外字段或首尾空白。这些先剥掉再校验；导航/专名等短标签允许保留英文。带句号或从句的正文仍必须含汉字。选段翻译（`normalizeEmergencyResult`）保持严格字段集。
+
+### 6.4.1 视频双语字幕
+- 开关：`VIDEO_SUPPORT_ENABLED=true`。播放器按钮为「双语 / 这句 / 原文」。`video.bilingual` 默认 false，打开后才调用模型。
+- 字幕来源：YouTube 播放器轨道（人工优先于自动，优先片源语言）与 HTML `textTracks`。播放器暂时没有轨道时，主世界再问一次 YouTube 播放器接口。字幕正文只从 `www.youtube.com/api/timedtext` 拉取。
+- 翻译：把相邻字幕收成短句，从播放点起每批最多 4 句、向前约 12 句，走 `VIDEO_CUE_TRANSLATE`（复用选段翻译，不写阅读记录）。点击原文行仍走原来的单句求助。
+- 没有文字轨道时不采集、不上传音频。画面上若已有平台字幕，只翻译当前这一行。
 
 ### 6.5 领域识别
 `手动固定 > 个人站点规则 > 全局固定 > 本地 MiniLM > 远程（订阅/API/Jev）`，结果 4 小时缓存（≤128 条）；本地不自信时回退个性化 `domainBias` 或 `general`。Jev 增强识别采用专用决策判定协议（`protocol: 'jev'`），支持自定义接口地址（Base URL）、模型 ID 及自定义 API Key，发送结构化问答后提取单选结果与置信度。Base URL 指向 `*.typesafe.ai` 时走官方 `/systemone` 原生协议（body 为 `{model, state, questions}`，模型自动去 `typesafe/` 前缀）；其余地址走 Requesty `chat/completions` 转发（`response_format: {type:'questions'}`）。
@@ -333,7 +339,7 @@
 | 层 | 工具 | 覆盖 |
 |---|---|---|
 | 连接器单测 | `tools/verify-summary-timeout.mjs`（chrome mock + 定时器拦截） | 原生消息超时与计时器释放 |
-| 单元测试 | `npm test` → `tools/run-unit-tests.mjs` 显式列出 `tools/unit/*.test.mjs` 交给 `node --test`（Node 20.11+；阅读器用例依赖 `fflate`，CI 先 `npm ci`；202 例） | `gloss.mjs` 四类协议的准备/校验/纠正重试与失败码；`reading.js` 渐退状态机、迁移与读者证据；`lexicon.js` 词提名（排除规则/优先级/出现位置）；`activation.js` 自动化策略；`message-router/protocol` 注册表契约、载荷解析、设置补丁与副作用计划；`connector/host.mjs` 帧协议与来源校验；`background.js` mock 浏览器冒烟（注册表构造、信任边界、真实派发） |
+| 单元测试 | `npm test` → `tools/run-unit-tests.mjs` 显式列出 `tools/unit/*.test.mjs` 交给 `node --test`（Node 20.11+；阅读器用例依赖 `fflate`，CI 先 `npm ci`；204 例） | `gloss.mjs` 四类协议的准备/校验/纠正重试与失败码；`reading.js` 渐退状态机、迁移与读者证据；`lexicon.js` 词提名（排除规则/优先级/出现位置）；`activation.js` 自动化策略；`message-router/protocol` 注册表契约、载荷解析、设置补丁与副作用计划；`connector/host.mjs` 帧协议与来源校验；`background.js` mock 浏览器冒烟（注册表构造、信任边界、真实派发） |
 | 静态检查 | `node tools/verify-module-graph.cjs`（12 条规则：加载契约、import 解析、无环、连接器闭包纯净、分层方向、无反向依赖、文件头注释、无重复 ID、无内联脚本、manifest 资源存在、classic 脚本 `node --check` 语法、字号档位）；`node tools/verify-deadcode.cjs`（未使用导出/导入，报告型） | 模块依赖方向、页面契约、语法与死代码 |
 | 真实扩展回归 | `tools/audit-extension.cjs`（playwright-core + 系统 Edge 无头，本地 fixture 文章 + 模拟模型服务） | 截至 2026-09-22：完整回归 29 项 + 摘要补充回归 22 项（去重 30 场景）：设置持久化、12 分区明暗/窄窗、术语/规则、API 模型列表、内容脚本开关、真实按键查词卡片、语言切换、已认识词撤销、历史导出清理、句子结构、整页翻译显示与清除、本地模型零请求分类、个性化空态、摘要防重与切换文章/模型过期、伴读猫拖拽持久化、欢迎页 |
 | 专项回归 | `tools/verify-bilingual-shortcut.cjs` 等（另有 `verify-catalog/jev/connector-throttle/pet-actions/popup-colors/popup-emergency/summary-timeout`） | 快捷键（页面触发/输入框忽略/旋旋翻开关/工具栏入口）、服务目录、Jev 判定、连接器节流、伴读猫操作、弹窗配色与应急翻译、摘要超时 |
@@ -416,7 +422,7 @@ MV3 下改代码必须重载扩展：service worker 变更需重载扩展本身�
 
 
 ### 14.2 遗留 / 观察项
-- 视频字幕代码（`video-subtitles.js`、`youtube-captions-bridge.js`、vendor 许可）因 `VIDEO_SUPPORT_ENABLED=false` 不可达，保留待启用。
+- 视频双语字幕已启用（`VIDEO_SUPPORT_ENABLED=true`）。播放器提供「双语 / 这句 / 原文」；双语只翻译播放点附近的字幕文本（含 YouTube 自动字幕），不上传音频，没有字幕轨道时不听写。
 - API 模式每个新 (provider, endpoint, model, key) 组合会多发一次 128-token 能力探测请求（1 小时缓存）。
 - 伴读猫默认开启、经 `chrome.scripting` 按需注册到普通网页（关闭后不注入）。
 - Linux 连接器实测覆盖不足；Google 高思考模型等待时间是独立性能问题。

@@ -16,7 +16,7 @@
 <p align="center">
   <a href="LICENSE"><img alt="License: MPL-2.0" src="https://img.shields.io/badge/license-MPL--2.0-blue"></a>
   <a href="https://github.com/dapao-777/roamcat/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/dapao-777/roamcat/actions/workflows/ci.yml/badge.svg"></a>
-  <img alt="Version 0.0.1 prerelease" src="https://img.shields.io/badge/version-0.0.1%20prerelease-orange">
+  <img alt="Version 0.1.0" src="https://img.shields.io/badge/version-0.1.0-blue">
   <img alt="Chrome / Edge 125+" src="https://img.shields.io/badge/Chrome%20%2F%20Edge-125%2B-green">
   <img alt="Manifest V3" src="https://img.shields.io/badge/manifest-V3-blueviolet">
 </p>
@@ -45,7 +45,7 @@
 </p>
 
 > [!NOTE]
-> **0.0.1 prerelease.** Install it from source in developer mode (two commands, see [Quick start](#-quick-start)); it is not on any extension store yet. RoamCat rebuilds, optimizes and repairs the open-source [RelyLess](https://github.com/rockythink/relyless) — see [Acknowledgements](#-acknowledgements).
+> **0.1.0 — first stable release.** Download the package from [Releases](https://github.com/dapao-777/roamcat/releases/latest) or build from source, then load it in developer mode (see [Quick start](#-quick-start)); it is not on any extension store yet. RoamCat rebuilds, optimizes and repairs the open-source [RelyLess](https://github.com/rockythink/relyless) — see [Acknowledgements](#-acknowledgements).
 
 ## ✨ Highlights
 
@@ -116,7 +116,11 @@ Failed passages retry on a graded backoff (2.5s → 6s → 14s, classified by er
 
 ## 🚀 Quick start
 
-Requires **Chrome or Edge 125+** and **Node.js 20.11+**.
+Requires **Chrome or Edge 125+**.
+
+**Option A — Release package.** Download `roamcat-0.1.0-extension.zip` from [Releases](https://github.com/dapao-777/roamcat/releases/latest) and unzip it. Open `chrome://extensions` (or `edge://extensions`), turn on **Developer mode**, choose **Load unpacked** and pick the unzipped **`roamcat-0.1.0/extension`** folder. For the subscription connector, run `node roamcat-0.1.0/connector/install.mjs` from the unzipped folder (Node.js 20.11+); it works out the extension ID from that folder, so rerun it if you move the folder.
+
+**Option B — build from source** (Node.js 20.11+):
 
 ```sh
 git clone https://github.com/dapao-777/roamcat.git
@@ -264,7 +268,7 @@ The full engineering spec is in [`SPEC.md`](roamcat-0.0.1/SPEC.md) (Chinese).
 | Command | What it does |
 |---|---|
 | `npm run build` · `npm run build:watch` | Vite dev build → `dist/extension` (fixed extension ID) |
-| `npm test` | 202 unit tests (`node --test` via `tools/run-unit-tests.mjs`) |
+| `npm test` | 204 unit tests (`node --test` via `tools/run-unit-tests.mjs`) |
 | `npm run verify` | Module-graph gates R1–R12: load contract, no cycles, layering, file headers, manifest resources, font-size scale |
 | `npm run verify:build` | Build-artifact gates: byte comparison + real Edge load smoke test |
 | `npm run verify:ui` | 81-check UI sweep: every page and widget, light + dark, zh + en, screenshots → `preview/ui-audit/` |
