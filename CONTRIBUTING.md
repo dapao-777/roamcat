@@ -13,8 +13,8 @@ git clone https://github.com/dapao-777/roamcat.git
 cd roamcat
 npm ci
 npm run build         # Vite 构建 → dist/extension（dev 注入固定 key）
-npm run verify        # 模块图静态门禁（11 条规则）
-npm test              # 单元测试（tools/run-unit-tests.mjs → node --test，204 例）
+npm run verify        # 模块图静态门禁（R1–R12）
+npm test              # 单元测试（tools/run-unit-tests.mjs → node --test，224 例）
 npm run verify:build  # 构建产物门禁（改构建链后必跑）
 ```
 

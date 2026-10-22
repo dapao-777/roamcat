@@ -110,7 +110,7 @@ Failed passages retry on a graded backoff (2.5s → 6s → 14s, classified by er
 
 | Source | What you get |
 |---|---|
-| **Bring-your-own API** | 28 providers across 8 protocols — OpenAI / DeepSeek / Gemini / Anthropic / xAI / OpenRouter / Ollama / Alibaba Cloud / Volcano Engine / Kimi / StepFun and more. Structured output is probed first, then gracefully degraded. |
+| **Bring-your-own API** | 33 providers across 8 protocols — OpenAI / DeepSeek / Gemini / Anthropic / xAI / OpenRouter / Ollama / Alibaba Cloud / Volcano Engine / Kimi / StepFun and more. Structured output is probed first, then gracefully degraded. |
 | **Subscription connector** | A local Native Messaging host reuses your official CLI entitlements — Codex CLI (ChatGPT), Grok CLI (SuperGrok / X Premium+), Antigravity `agy` (Google AI Pro / Ultra). No API key needed. |
 | **Local model** | Bundled `Xenova/all-MiniLM-L6-v2` classifies page domains in an offscreen document — fully offline, nothing to download. |
 
@@ -268,12 +268,15 @@ The full engineering spec is in [`SPEC.md`](roamcat-0.0.1/SPEC.md) (Chinese).
 | Command | What it does |
 |---|---|
 | `npm run build` · `npm run build:watch` | Vite dev build → `dist/extension` (fixed extension ID) |
-| `npm test` | 204 unit tests (`node --test` via `tools/run-unit-tests.mjs`) |
+| `npm test` | 224 unit tests (`node --test` via `tools/run-unit-tests.mjs`) |
 | `npm run verify` | Module-graph gates R1–R12: load contract, no cycles, layering, file headers, manifest resources, font-size scale |
 | `npm run verify:build` | Build-artifact gates: byte comparison + real Edge load smoke test |
-| `npm run verify:ui` | 81-check UI sweep: every page and widget, light + dark, zh + en, screenshots → `preview/ui-audit/` |
-| `npm run verify:pet` | 65-check companion-cat sweep: every floating button clicked for real |
+| `npm run verify:ui` | 79-check UI sweep: every page and widget, light + dark, zh + en, screenshots → `preview/ui-audit/` |
+| `npm run verify:pet` | 68-check companion-cat sweep: every floating button clicked for real |
 | `npm run verify:sites` | Site-profile end-to-end checks against real-URL fixtures (`--live` rechecks real sites) |
+| `npm run verify:options` | Settings-page behaviour checks (saving, rollback on failure, reset, model list) |
+| `npm run verify:audit` | 30-check end-to-end audit: real background + local mock model in Edge |
+| `npm run build:release` · `node tools/package-release.mjs` | Release build (no dev key) → `dist/release/roamcat-<version>-extension.zip` + `SHA256SUMS` |
 | `npm run gen:tokens` · `node tools/check-dict.cjs` | Regenerate `extension/design.js` from tokens · zh/en dictionary parity |
 
 Browser checks need Playwright (`npm ci` installs `playwright-core`) and a local Edge. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before contributing and report security issues privately per [SECURITY.md](SECURITY.md).

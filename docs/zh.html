@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>RoamCat · 随心阅 — 中英双语阅读扩展（Chrome / Edge）</title>
-<meta name="description" content="RoamCat 随心阅是免费开源（MPL-2.0）的双模式英文阅读扩展：本页双语翻译 + 稀疏提示阅读辅助，保留英文原文。本地优先、无遥测，支持 28 家自备 API 或复用 ChatGPT / Grok / Google 订阅。适用于 Chrome 与 Edge（Manifest V3）。">
+<meta name="description" content="RoamCat 随心阅是免费开源（MPL-2.0）的双模式英文阅读扩展：本页双语翻译 + 稀疏提示阅读辅助，保留英文原文。本地优先、无遥测，支持 33 家自备 API 或复用 ChatGPT / Grok / Google 订阅。适用于 Chrome 与 Edge（Manifest V3）。">
 <link rel="canonical" href="https://dapao-777.github.io/roamcat/zh.html">
 <link rel="alternate" hreflang="en" href="https://dapao-777.github.io/roamcat/">
 <link rel="alternate" hreflang="zh-CN" href="https://dapao-777.github.io/roamcat/zh.html">
@@ -132,7 +132,7 @@ footer .links{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:10px}
     <span class="pill">MANIFEST V3</span>
     <span class="pill">CHROME / EDGE 125+</span>
     <span class="pill">本地优先 · 无遥测</span>
-    <span class="pill">自备 API × 28 家</span>
+    <span class="pill">自备 API × 33 家</span>
     <span class="pill">中英双语界面</span>
   </div>
   <div class="cta">
@@ -180,7 +180,7 @@ footer .links{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:10px}
   <h2>模型服务，自选来源</h2>
   <p class="sub">AI 能力来自你选的服务，而不是被绑定的厂商。</p>
   <div class="grid">
-    <div class="card"><h3>自备 API</h3><p>28 家服务商、8 种协议——OpenAI、DeepSeek、Gemini、Anthropic、xAI、OpenRouter、Ollama、阿里云、火山、Kimi、阶跃等。结构化输出能力先探测后降级。</p></div>
+    <div class="card"><h3>自备 API</h3><p>33 家服务商、8 种协议——OpenAI、DeepSeek、Gemini、Anthropic、xAI、OpenRouter、Ollama、阿里云、火山、Kimi、阶跃等。结构化输出能力先探测后降级。</p></div>
     <div class="card"><h3>订阅连接器</h3><p>本机 Native Messaging 复用官方 CLI 权益——Codex CLI（ChatGPT 订阅）、Grok CLI（SuperGrok / X Premium+）、Antigravity <code>agy</code>（Google AI Pro / Ultra），免 API Key。</p></div>
     <div class="card"><h3>本地模型</h3><p>内置 Xenova/all-MiniLM-L6-v2 在离屏文档中做页面领域识别——全程离线，无需下载。</p></div>
   </div>
@@ -191,7 +191,7 @@ footer .links{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:10px}
   <ul class="tight">
     <li>不经营服务器、不采集遥测；阅读记录默认关闭且按站授权；无痕页面不采集。</li>
     <li>API Key 只存 <code>chrome.storage.local</code>——不进内容脚本、诊断日志或连接器。</li>
-    <li>内容脚本仅可用 74 种消息中的 33 种白名单类型；模型输出全部经结构化校验才进入 UI。</li>
+    <li>内容脚本仅可用 76 种消息中的 35 种白名单类型；模型输出全部经结构化校验才进入 UI。</li>
     <li>自定义 API 地址强制 HTTPS（仅本机回环允许 HTTP）；无远端代码执行。</li>
   </ul>
 </section>
@@ -203,7 +203,7 @@ footer .links{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:10px}
     <tr><th></th><th>RoamCat</th><th>沉浸式翻译</th><th>Relingo</th><th>彩云小译</th></tr>
     <tr><td>思路</td><td>双语对照<em>或</em>保留原文为主的稀疏辅助</td><td>整页双语翻译</td><td>按词频分级高亮</td><td>整页与划词翻译</td></tr>
     <tr><td>开源</td><td>✅ MPL-2.0</td><td>❌ 闭源</td><td>❌ 闭源</td><td>❌ 闭源</td></tr>
-    <tr><td>模型来源</td><td>28 家自备 API、本地模型，或复用已有 AI 订阅</td><td>内置服务 + 部分 AI 可自备 Key</td><td>内置</td><td>内置</td></tr>
+    <tr><td>模型来源</td><td>33 家自备 API、本地模型，或复用已有 AI 订阅</td><td>内置服务 + 部分 AI 可自备 Key</td><td>内置</td><td>内置</td></tr>
     <tr><td>费用</td><td>免费</td><td>订阅制免费额度</td><td>订阅制</td><td>订阅制</td></tr>
     <tr><td>平台</td><td>Chrome / Edge 125+</td><td>Chrome、Edge、Firefox、Safari、移动端</td><td>Chrome、Edge</td><td>Chrome、Edge、App</td></tr>
   </table>
@@ -217,7 +217,7 @@ footer .links{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:10px}
   <details><summary>支持哪些浏览器？</summary><p>桌面端 Chrome 与 Edge 125+（Manifest V3）。暂不支持 Firefox 与 Safari。</p></details>
   <details><summary>能整页翻译吗？</summary><p>能——双语翻译模式按阅读位置逐段插入中文对照。阅读辅助模式则保持整页英文，只给随读渐退的稀疏提示。</p></details>
   <details><summary>支持 PDF 和 EPUB 吗？</summary><p>支持——内置阅读器可打开本地 PDF / EPUB 或粘贴的文章，共用同一套双语引擎。</p></details>
-  <details><summary>可以用哪些模型？</summary><p>28 家自备 API（OpenAI、DeepSeek、Gemini、Anthropic、xAI、OpenRouter、Ollama、阿里云、火山、Kimi、阶跃……）、内置本地领域识别模型，或经本机连接器复用已登录的 ChatGPT / Grok / Antigravity CLI 订阅——免 API Key。</p></details>
+  <details><summary>可以用哪些模型？</summary><p>33 家自备 API（OpenAI、DeepSeek、Gemini、Anthropic、xAI、OpenRouter、Ollama、阿里云、火山、Kimi、阶跃……）、内置本地领域识别模型，或经本机连接器复用已登录的 ChatGPT / Grok / Antigravity CLI 订阅——免 API Key。</p></details>
 </section>
 
 <section id="install">

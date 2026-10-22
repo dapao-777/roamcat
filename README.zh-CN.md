@@ -52,7 +52,7 @@
 - **两种模式，一个引擎**——要么整页中英对照，要么保留英文原文、只在卡住时搭把手。
 - **读得懂真实网页**——为 GitHub、Reddit、Hacker News、Stack Exchange、Discourse、dev.to、Lobsters 准备了站点档案，代码、diff、投票署名等构件不打扰阅读；公式原样保留。
 - **PDF / EPUB 阅读器**——本地文件和粘贴的文章共用同一套双语引擎。
-- **模型自己选**——28 家自备 API、内置离线模型，或复用本机 ChatGPT / Grok / Google CLI 订阅。
+- **模型自己选**——33 家自备 API、内置离线模型，或复用本机 ChatGPT / Grok / Google CLI 订阅。
 - **本地优先**——没有 RoamCat 服务器、没有遥测，阅读记录默认关闭、按站授权。
 - **全界面中英双语**——所有界面都能在中英文间切换；页边还有一只伴读猫陪你读，亮色和深色各有一身打扮。
 
@@ -110,7 +110,7 @@
 
 | 来源 | 内容 |
 |---|---|
-| **自备 API** | 28 家服务商、8 种协议——OpenAI / DeepSeek / Gemini / Anthropic / xAI / OpenRouter / Ollama / 阿里云 / 火山 / Kimi / 阶跃等。结构化输出能力先探测后降级。 |
+| **自备 API** | 33 家服务商、8 种协议——OpenAI / DeepSeek / Gemini / Anthropic / xAI / OpenRouter / Ollama / 阿里云 / 火山 / Kimi / 阶跃等。结构化输出能力先探测后降级。 |
 | **订阅连接器** | 本机 Native Messaging 复用官方 CLI 权益——Codex CLI（ChatGPT 订阅）、Grok CLI（SuperGrok / X Premium+）、Antigravity `agy`（Google AI Pro / Ultra），免 API Key。 |
 | **本地模型** | 内置 `Xenova/all-MiniLM-L6-v2` 在离屏文档中做页面领域识别，不联网、无需下载。 |
 
@@ -157,7 +157,7 @@ node roamcat-0.0.1/connector/install.mjs --extension-id afpeggkplomdjjiemgajjgca
 | **思路** | 双模式：双语对照*或*保留原文为主的稀疏阅读辅助 | 整页双语翻译 | 按词频分级高亮 + 查词 | 整页与划词翻译 |
 | **开源** | ✅ MPL-2.0 | ❌ 闭源 | ❌ 闭源 | ❌ 闭源 |
 | **数据路径** | 无自有服务器、无遥测，阅读记录默认关闭 | 文本发往所选翻译服务，另有云端功能 | 云账户体系 | 云端服务 |
-| **模型来源** | 28 家自备 API、内置本地模型，或复用本机 ChatGPT / Grok / Google CLI 订阅 | 内置服务 + 部分 AI 模型可自备 Key | 内置 | 内置 |
+| **模型来源** | 33 家自备 API、内置本地模型，或复用本机 ChatGPT / Grok / Google CLI 订阅 | 内置服务 + 部分 AI 模型可自备 Key | 内置 | 内置 |
 | **费用** | 免费——只有自选付费 API 才产生费用 | 订阅制免费额度 | 订阅制 | 订阅制 |
 | **平台** | Chrome / Edge 125+ | Chrome、Edge、Firefox、Safari、移动端 | Chrome、Edge | Chrome、Edge、App |
 
@@ -198,7 +198,7 @@ node roamcat-0.0.1/connector/install.mjs --extension-id afpeggkplomdjjiemgajjgca
 <details>
 <summary><strong>可以用哪些模型？</strong></summary>
 
-28 家自备 API（OpenAI、DeepSeek、Gemini、Anthropic、xAI、OpenRouter、Ollama、阿里云、火山、Kimi、阶跃……）、内置本地领域识别模型，或经本机连接器复用已登录的 ChatGPT / Grok / Antigravity CLI 订阅——免 API Key。
+33 家自备 API（OpenAI、DeepSeek、Gemini、Anthropic、xAI、OpenRouter、Ollama、阿里云、火山、Kimi、阶跃……）、内置本地领域识别模型，或经本机连接器复用已登录的 ChatGPT / Grok / Antigravity CLI 订阅——免 API Key。
 </details>
 
 <details>
@@ -267,12 +267,15 @@ node roamcat-0.0.1/connector/install.mjs --extension-id afpeggkplomdjjiemgajjgca
 | 命令 | 用途 |
 |---|---|
 | `npm run build` · `npm run build:watch` | Vite 开发构建 → `dist/extension`（扩展 ID 固定） |
-| `npm test` | 204 例单元测试（经 `tools/run-unit-tests.mjs` 调用 `node --test`） |
+| `npm test` | 224 例单元测试（经 `tools/run-unit-tests.mjs` 调用 `node --test`） |
 | `npm run verify` | 模块图门禁 R1–R11：加载契约、无环、分层方向、文件头、manifest 资源 |
 | `npm run verify:build` | 构建产物门禁：字节比对 + Edge 实际加载冒烟 |
-| `npm run verify:ui` | 81 项全界面门禁：页面与挂件遍历、明暗主题、中英文断言，截图 → `preview/ui-audit/` |
-| `npm run verify:pet` | 65 项伴读猫门禁：真实点击全部悬浮按钮 |
+| `npm run verify:ui` | 79 项全界面门禁：页面与挂件遍历、明暗主题、中英文断言，截图 → `preview/ui-audit/` |
+| `npm run verify:pet` | 68 项伴读猫门禁：真实点击全部悬浮按钮 |
 | `npm run verify:sites` | 站点档案端到端检查：fixture 按真实 URL 路由（`--live` 复核真站） |
+| `npm run verify:options` | 设置页行为门禁：保存、失败回滚、重置、模型列表等 |
+| `npm run verify:audit` | 30 项端到端审计：Edge 加载真实后台 + 本地假模型 |
+| `npm run build:release` · `node tools/package-release.mjs` | 发布构建（不带开发 key）→ `dist/release/roamcat-<版本>-extension.zip` 与 `SHA256SUMS` |
 | `npm run gen:tokens` · `node tools/check-dict.cjs` | 由 tokens.css 重新生成 `extension/design.js` · 中英字典对齐校验 |
 
 浏览器门禁需要 Playwright（`npm ci` 会安装 `playwright-core`）和本机 Edge。贡献前请读 [CONTRIBUTING.md](CONTRIBUTING.md)；安全漏洞请按 [SECURITY.md](SECURITY.md) 私下报告。

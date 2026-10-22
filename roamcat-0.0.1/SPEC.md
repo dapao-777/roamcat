@@ -119,7 +119,7 @@
 | `shared.js` | `DEFAULT_SETTINGS`、`normalizeSettings`、`wordId`、`request()` | 旧配置键不得通过 spread 复活 |
 | `message-router.js` | 类型化消息路由器：注册表构造、重复类型即失败、`parse`+`handle` 两段派发 | 泛型实现，不认识任何具体消息；未知类型抛「未知请求。」 |
 | `message-protocol.js` | 消息协议唯一事实源：`MESSAGE_TYPES`（76 种）、`CONTENT_ALLOWED_TYPES`、纯载荷解析器与自 `background.js` 下沉的 `validatePatch`（设置补丁校验）、`settingsPatchEffects`（STATE_PATCH 副作用计划）、`parseAssistRequest`/`parsePassageRequestRef`（请求身份）、`onDemandSuggestionDecision`（按需建议判定）、`text`/`domain`/`customDetectionService` | 只依赖 `shared.js`、`domain-routing.js`、`api-providers.mjs`、`gloss.mjs` 等领域/协议模块；新增类型必须同步注册表与第 5 节 |
-| `api-providers.mjs` / `api-transport.mjs` | 28 家服务商目录、8 种协议适配、结构化输出能力探测、模型列表、各协议 usage 抽取（`onUsage` 回调） | HTTPS only（本机回环除外）；同源重定向禁止；密钥不进内容脚本 |
+| `api-providers.mjs` / `api-transport.mjs` | 33 家服务商目录、8 种协议适配、结构化输出能力探测、模型列表、各协议 usage 抽取（`onUsage` 回调） | HTTPS only（本机回环除外）；同源重定向禁止；密钥不进内容脚本 |
 | `usage-stats.mjs` | 模型用量统计：调用事件规范化、按日/按服务×模型聚合（保留约 62 天、≤60 组合）、`summarizeUsage` UI 汇总 | 纯函数领域模块；只存计数与模型/服务标识，不存正文、密钥或网址；写串行化在 `background.js` |
 | `gloss.mjs` | 提示词、JSON Schema、响应校验/纠正（扩展与连接器共享） | `SUPPORT_POLICY_VERSION` 变更即使全部缓存失效 |
 | `sentence-groups.mjs` / `assistance-stream.mjs` / `personalization.mjs` | 解构协议与修复、流式进度解析、个性化策略机 | 共享文件被连接器安装副本引用，改动需双边同步 |
@@ -243,7 +243,7 @@
 ### 7.1 三种服务来源
 | 模式 | 说明 |
 |---|---|
-| `api` | 自备 API：28 家服务商、8 种协议（chat/responses/anthropic/google/bedrock/cohere/ollama/jev），每服务独立并发（默认 2，1–10 可调） |
+| `api` | 自备 API：33 家服务商、8 种协议（chat/responses/anthropic/google/bedrock/cohere/ollama/jev），每服务独立并发（默认 2，1–10 可调） |
 | `chatgpt` | 本机连接器 → 官方 Codex CLI（`app-server --stdio` JSON-RPC，隔离 config.toml 关闭全部工具/沙箱/更新） |
 | `grok` | 本机连接器 → 官方 Grok CLI（`--json-schema` + prompt 文件） |
 | `antigravity` | 本机连接器 → 官方 Antigravity CLI `agy`（`--json-schema`，剥离 RE2 不支持的 `pattern`） |
@@ -339,12 +339,12 @@
 | 层 | 工具 | 覆盖 |
 |---|---|---|
 | 连接器单测 | `tools/verify-summary-timeout.mjs`（chrome mock + 定时器拦截） | 原生消息超时与计时器释放 |
-| 单元测试 | `npm test` → `tools/run-unit-tests.mjs` 显式列出 `tools/unit/*.test.mjs` 交给 `node --test`（Node 20.11+；阅读器用例依赖 `fflate`，CI 先 `npm ci`；204 例） | `gloss.mjs` 四类协议的准备/校验/纠正重试与失败码；`reading.js` 渐退状态机、迁移与读者证据；`lexicon.js` 词提名（排除规则/优先级/出现位置）；`activation.js` 自动化策略；`message-router/protocol` 注册表契约、载荷解析、设置补丁与副作用计划；`connector/host.mjs` 帧协议与来源校验；`background.js` mock 浏览器冒烟（注册表构造、信任边界、真实派发） |
+| 单元测试 | `npm test` → `tools/run-unit-tests.mjs` 显式列出 `tools/unit/*.test.mjs` 交给 `node --test`（Node 20.11+；阅读器用例依赖 `fflate`，CI 先 `npm ci`；224 例） | `gloss.mjs` 四类协议的准备/校验/纠正重试与失败码；`reading.js` 渐退状态机、迁移与读者证据；`lexicon.js` 词提名（排除规则/优先级/出现位置）；`activation.js` 自动化策略；`message-router/protocol` 注册表契约、载荷解析、设置补丁与副作用计划；`connector/host.mjs` 帧协议与来源校验；`background.js` mock 浏览器冒烟（注册表构造、信任边界、真实派发） |
 | 静态检查 | `node tools/verify-module-graph.cjs`（12 条规则：加载契约、import 解析、无环、连接器闭包纯净、分层方向、无反向依赖、文件头注释、无重复 ID、无内联脚本、manifest 资源存在、classic 脚本 `node --check` 语法、字号档位）；`node tools/verify-deadcode.cjs`（未使用导出/导入，报告型） | 模块依赖方向、页面契约、语法与死代码 |
 | 真实扩展回归 | `tools/audit-extension.cjs`（playwright-core + 系统 Edge 无头，本地 fixture 文章 + 模拟模型服务） | 截至 2026-09-22：完整回归 29 项 + 摘要补充回归 22 项（去重 30 场景）：设置持久化、12 分区明暗/窄窗、术语/规则、API 模型列表、内容脚本开关、真实按键查词卡片、语言切换、已认识词撤销、历史导出清理、句子结构、整页翻译显示与清除、本地模型零请求分类、个性化空态、摘要防重与切换文章/模型过期、伴读猫拖拽持久化、欢迎页 |
 | 专项回归 | `tools/verify-bilingual-shortcut.cjs` 等（另有 `verify-catalog/jev/connector-throttle/pet-actions/popup-colors/popup-emergency/summary-timeout`） | 快捷键（页面触发/输入框忽略/旋旋翻开关/工具栏入口）、服务目录、Jev 判定、连接器节流、伴读猫操作、弹窗配色与应急翻译、摘要超时 |
-| 全界面门禁 | `npm run verify:ui`（`tools/verify-ui-all.cjs`，81 项断言；每轮先清理旧截图） | options 全 12 分区明暗/窄窗、welcome/reader/popup、页内挂件（词卡/任务条/解构卡/toast/选区条/伴读猫）、中英文档断言、横向溢出、控制台错误 |
-| 伴读猫门禁 | `npm run verify:pet`（`tools/verify-pet-buttons.cjs`，65 项断言） | 快捷坞/旋旋翻/缩放/贴边/气泡/摘要窗全部按钮的真实点击与键盘操作、文案键解析 |
+| 全界面门禁 | `npm run verify:ui`（`tools/verify-ui-all.cjs`，79 项断言；每轮先清理旧截图） | options 全 12 分区明暗/窄窗、welcome/reader/popup、页内挂件（词卡/任务条/解构卡/toast/选区条/伴读猫）、中英文档断言、横向溢出、控制台错误 |
+| 伴读猫门禁 | `npm run verify:pet`（`tools/verify-pet-buttons.cjs`，68 项断言） | 快捷坞/旋旋翻/缩放/贴边/气泡/摘要窗全部按钮的真实点击与键盘操作、文案键解析 |
 | 连接器行为 | 临时脚本（假 spawn） | Grok 重试门控（AUTH/429 不重试、格式错误重试、过长不重试） |
 
 模块图七规则（`tools/lib/module-graph.cjs`，零依赖，可由 `audit-extension.cjs` 在浏览器回归前自动执行，失败即中止）：

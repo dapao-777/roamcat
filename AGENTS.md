@@ -6,6 +6,7 @@
 |---|---|
 | `npm run build` | Vite 开发构建 → `dist/extension/`（manifest 注入固定 key，供 chrome://extensions 加载） |
 | `npm run build:release` | 生产构建（minify、无 key） |
+| `node tools/package-release.mjs` | 发布打包：在 `build:release` 之后运行，按白名单生成 `dist/release/roamcat-<版本>-extension.zip` 与 `SHA256SUMS`（只打包、不上传） |
 | `npm run build:watch` | watch 模式持续构建 |
 | `npm run verify` | 模块图静态门禁（R1–R12；R1–R11 只扫 `roamcat-0.0.1/extension` 与 `connector`，R12 字号档位另扫 `src/`） |
 | `npm run verify:sites` | 站点档案端到端：fixture 按真实 URL 路由进 Edge 断言 inspect()（加 `--live` 复核真站） |

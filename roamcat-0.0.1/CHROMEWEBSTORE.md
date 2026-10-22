@@ -229,7 +229,7 @@ https://github.com/dapao-777/roamcat
 - [ ] 至少 1 张 1280×800 截图（候选素材已列出，需裁剪）
 - [ ] 128×128 商店图标就绪
 - [x] 无混淆代码；第三方许可声明齐全
-- [x] 已在真实 Edge 无头回归验证主要功能（截至 2026-10-21：单元 193 项；`verify:ui` 全界面门禁 81 项含明暗主题与中英文断言；`verify:pet` 伴读猫门禁 65 项；`verify:build` 10 项；CI 在 Node 20/22/24 全绿；报告见 `preview/`）
+- [x] 已在真实 Edge 无头回归验证主要功能（截至 2026-10-22（v0.1.0）：单元 224 项；`verify:ui` 全界面门禁 79 项含明暗主题与中英文断言；`verify:pet` 伴读猫门禁 68 项；`verify:build` 10 项；`verify:audit` 端到端 30 项；`verify:sites` 25 项；CI 在 Node 20/22/24 全绿；报告见 `preview/`）
 
 ### Rejection History
 （暂无）
