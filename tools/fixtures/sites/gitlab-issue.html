@@ -1,0 +1,20 @@
+<!doctype html><html lang="en"><head><title>Publish provenance (#1) · GitLab</title></head>
+<body>
+<header class="navbar-gitlab"><div>GitLab navigation chrome marker</div></header>
+<main>
+<div class="issue-details">
+<div class="detail-page-description"><div class="md">
+<p>The pipeline should publish provenance with the package so downstream builds can verify the artifact.</p>
+<p>Reviewers asked for the attestation to be stored next to the release asset rather than only in the job log.</p>
+<p>The signature should be verifiable offline so a mirror can check the artifact without calling back to the forge.</p>
+</div></div>
+<ul class="notes"><li class="note">
+<div class="note-header">maintainer commented <time>2 days ago</time></div>
+<div class="note-text"><p>I pushed a follow-up that writes the attestation into the release metadata when signing is skipped.</p></div>
+</li></ul>
+<div class="labels">documentation label text</div>
+</div>
+<aside class="right-sidebar"><p>Assignee sidebar wording for this issue.</p></aside>
+<div class="diff-content"><div class="line-content">const attestation = sign(artifact);</div></div>
+</main>
+</body></html>

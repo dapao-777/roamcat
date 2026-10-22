@@ -1,0 +1,22 @@
+<!doctype html><html lang="en"><head><title>How do you read a long code review : r/programming</title></head>
+<body>
+<main id="main-content">
+<shreddit-post>
+<h1 slot="title">How do you read a long code review without losing the thread</h1>
+<div slot="text-body">
+<p>This post collects practical ways to follow a long code review when the discussion and the diff share one page.</p>
+<p>The useful part is the prose around the change, not the timestamps or the source lines beside the comment.</p>
+</div>
+</shreddit-post>
+<shreddit-comment id="shadow-comment"></shreddit-comment>
+</main>
+<script>
+customElements.define('shreddit-comment', class extends HTMLElement {
+  constructor() {
+    super();
+    const root = this.attachShadow({mode: 'open'});
+    root.innerHTML = '<div class="md"><p>The shadow comment explains why the token stream rewrite made the error messages easier to diagnose.</p></div><shreddit-comment-action-row>reply award share</shreddit-comment-action-row><faceplate-timeago>2 days ago</faceplate-timeago>';
+  }
+});
+</script>
+</body></html>

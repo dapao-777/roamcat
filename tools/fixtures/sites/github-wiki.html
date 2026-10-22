@@ -1,0 +1,12 @@
+<!doctype html><html lang="en"><head><title>Architecture notes · Wiki · microsoft/vscode</title></head>
+<body>
+<div id="wiki-wrapper">
+<div id="wiki-body"><div class="markdown-body">
+<h1>Architecture notes</h1>
+<p>The language server keeps a snapshot of open buffers and incrementally reparses only the ranges that changed.</p>
+<p>Diagnostics are published on a separate channel so the editor can render squiggles without a full typecheck.</p>
+<p>The snapshot is replaced only after the new parse succeeds, so a syntax error never erases the last good view of the file.</p>
+</div></div>
+<div id="wiki-rightbar"><p>Pages sidebar wording about unrelated wiki links and page history.</p></div>
+</div>
+</body></html>

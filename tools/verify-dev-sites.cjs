@@ -57,11 +57,30 @@ const cases = [
     chromeOnly: []
   },
   {
+    slug: 'github-actions', url: 'https://github.com/microsoft/vscode/actions/runs/1', site: 'github',
+    mustRead: ['publishing release artifacts', 'leave the command log below'],
+    mustNotRead: ['npm ERR! code E401', 'unexpected error occurred during publish'],
+    mustNotTranslate: ['npm ERR! code E401', 'unexpected error occurred during publish']
+  },
+  {
+    slug: 'github-wiki', url: 'https://github.com/microsoft/vscode/wiki/Architecture-notes', site: 'github',
+    mustRead: ['language server keeps a snapshot', 'Diagnostics are published on a separate'],
+    mustNotRead: ['Pages sidebar wording'],
+    chromeOnly: ['Pages sidebar wording']
+  },
+  {
     slug: 'reddit-post', url: 'https://www.reddit.com/r/learnprogramming/comments/1wkbpei/fixture/', site: 'reddit',
     mustRead: ['share the small programming project they built', 'toy parser using a proper token stream', 'requestAnimationFrame timing actually behaves', 'comparing the two implementations taught me more'],
     mustNotRead: ['promoted bootcamp advertisement', 'community header wording', 'Posted by u/curiousstudent', 'reply award share'],
     mustNotTranslate: ['promoted bootcamp advertisement', 'Posted by u/curiousstudent', 'days ago', 'reply award share'],
     chromeOnly: ['reddit navigation chrome marker', 'community header wording', 'Community details sidebar']
+  },
+  {
+    slug: 'reddit-shadow', url: 'https://www.reddit.com/r/programming/comments/1shadow/fixture/', site: 'reddit',
+    mustRead: ['follow a long code review', 'prose around the change', 'shadow comment explains why the token stream'],
+    mustNotRead: ['reply award share', '2 days ago'],
+    mustNotTranslate: ['reply award share', '2 days ago'],
+    articleUnits: ['shadow comment explains why the token stream']
   },
   {
     slug: 'oldreddit-post', url: 'https://old.reddit.com/r/learnprogramming/comments/1wkbpei/fixture/', site: 'reddit',
@@ -106,8 +125,49 @@ const cases = [
     chromeOnly: ['navigation chrome wording']
   },
   {
-    // 无站点档案的通用页：<main> 为 display:contents（MDN 同款），正文必须作为 article 单元进入翻译。
-    slug: 'contents-main', url: 'https://developer.mozilla.org/en-US/docs/Web/Performance/Guides/Fundamentals', site: null,
+    slug: 'gitlab-issue', url: 'https://gitlab.com/gitlab-org/gitlab/-/issues/1', site: 'gitlab',
+    mustRead: ['publish provenance with the package', 'writes the attestation into the release'],
+    mustNotRead: ['2 days ago', 'const attestation', 'documentation label text', 'Assignee sidebar wording'],
+    mustNotTranslate: ['2 days ago', 'const attestation', 'documentation label text'],
+    chromeOnly: ['Assignee sidebar wording', 'GitLab navigation chrome marker']
+  },
+  {
+    slug: 'npm-package', url: 'https://www.npmjs.com/package/left-pad', site: 'npm',
+    mustRead: ['pads a string on the left', 'already long enough'],
+    mustNotRead: ['Weekly downloads sidebar count', 'npm navigation chrome marker'],
+    chromeOnly: ['Weekly downloads sidebar count', 'npm navigation chrome marker']
+  },
+  {
+    slug: 'huggingface-model', url: 'https://huggingface.co/bert-base-uncased', site: 'huggingface',
+    mustRead: ['contextual vectors', 'not a general purpose'],
+    mustNotRead: ['from transformers', 'Model card sidebar wording'],
+    mustNotTranslate: ['from transformers'],
+    chromeOnly: ['Model card sidebar wording', 'Hugging Face navigation chrome marker']
+  },
+  {
+    slug: 'arxiv-abs', url: 'https://arxiv.org/abs/1706.03762', site: 'arxiv',
+    mustRead: ['dominant sequence transduction models', 'the Transformer, based solely'],
+    mustNotRead: ['Ashish Vaswani', 'arxiv.org header chrome marker'],
+    mustNotTranslate: ['Ashish Vaswani'],
+    chromeOnly: ['arxiv.org header chrome marker']
+  },
+  {
+    slug: 'readthedocs', url: 'https://requests.readthedocs.io/en/latest/index.html', site: 'readthedocs',
+    mustRead: ['reuse the underlying connection', 'default waits indefinitely'],
+    mustNotRead: ['requests.get', 'Documentation sidebar wording'],
+    mustNotTranslate: ['requests.get'],
+    chromeOnly: ['Documentation sidebar wording']
+  },
+  {
+    slug: 'docs-rs', url: 'https://docs.rs/serde/latest/serde/', site: 'docsrs',
+    mustRead: ['immutable client once build', 'distinct clients that share no mutable'],
+    mustNotRead: ['impl Builder', 'Crate navigation sidebar wording'],
+    mustNotTranslate: ['impl Builder'],
+    chromeOnly: ['Crate navigation sidebar wording']
+  },
+  {
+    // MDN 文档页：<main> 为 display:contents（自身无布局盒子），正文必须作为 article 单元进入翻译。
+    slug: 'contents-main', url: 'https://developer.mozilla.org/en-US/docs/Web/Performance/Guides/Fundamentals', site: 'mdn',
     articleUnits: ['Performance means efficiency in the context of web apps', 'user-perceived performance is the only performance', 'how the rendering engine contributes to performance'],
     mustNotTranslate: ['Hidden dropdown panel wording'],
     chromeOnly: ['Understanding latency sidebar wording', 'Table of contents aside wording']
@@ -279,7 +339,12 @@ const liveSites = [
   {slug: 'so-question', url: 'https://stackoverflow.com/questions/11227809', contentPage: true},
   {slug: 'discourse-topic', url: 'https://discuss.python.org/t/notes-from-python-packaging-councils-first-meeting/109203', contentPage: true},
   {slug: 'devto-article', url: 'https://dev.to/devteam/join-the-kaggle-benchmarking-challenge-2500-in-prizes-for-five-winners-18ml', contentPage: true},
-  {slug: 'lobsters-story', url: 'https://lobste.rs/s/68n22g/lobsters_rename_vibecoding_llms', contentPage: true}
+  {slug: 'lobsters-story', url: 'https://lobste.rs/s/68n22g/lobsters_rename_vibecoding_llms', contentPage: true},
+  {slug: 'npm-package', url: 'https://www.npmjs.com/package/react', contentPage: true},
+  {slug: 'mdn-guide', url: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide', contentPage: true},
+  {slug: 'arxiv-abs', url: 'https://arxiv.org/abs/1706.03762', contentPage: true},
+  {slug: 'docs-rs', url: 'https://docs.rs/serde/latest/serde/', contentPage: true},
+  {slug: 'readthedocs', url: 'https://requests.readthedocs.io/en/latest/', contentPage: true}
 ];
 async function runLive() {
   const session = await launchExtension({headless: true, extensionDir});

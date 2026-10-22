@@ -1,0 +1,11 @@
+<!doctype html><html lang="en"><head><title>Builder in serde - Rust</title></head>
+<body>
+<nav class="sidebar"><p>Crate navigation sidebar wording for modules and structs.</p></nav>
+<main id="main-content"><div class="docblock">
+<h1>Struct Builder</h1>
+<p>The builder accumulates configuration and produces an immutable client once build is called.</p>
+<p>Calling build twice returns distinct clients that share no mutable state after construction.</p>
+<p>Configuration values are copied into the client, so later edits to the builder do not change clients already built.</p>
+<pre class="code-header"><code>impl Builder { fn build(self) -&gt; Client }</code></pre>
+</div></main>
+</body></html>

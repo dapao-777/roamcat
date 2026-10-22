@@ -3,7 +3,7 @@
  * 文件职责：内容脚本阅读引擎（classic script，禁 ESM 语法）——阅读根识别、文本映射、自动标注、
  *   查词卡片与顶部词注、选段翻译、阅读解构高亮、整页翻译引擎、历史采集与重载侦察。
  * 主要内容：BLOCK/SKIP 选择器与文本节点拆分、ANALYZE 提名、ASSIST 查词卡片、SENTENCE_GROUPS 高亮、
- *   emergencyBlocks 整页翻译（document.body 全区域扫描、article/content/chrome 分区渲染与调度、
+ *   emergencyBlocks 整页翻译（document.body 全区域扫描、开放 shadow root 内的正文、article/content/chrome 分区渲染与调度、
  *   chrome 文本去重缓存）、site-profiles.js 站点档案（阅读根/跳过/构件选择器注入 SKIP 体系）、
  *   generation 校验、rAF 批量 DOM 更新、可见性门控的重载 toast。
  * 模块边界：只拆文本节点不重建强调/链接；密钥与历史数据不直接读取，经白名单消息走后台；
@@ -35,6 +35,12 @@
   const SKIP_HARD = `pre,video,audio,.html5-video-player,input,textarea,button,form,script,style,noscript,template,select,option,dialog,[role="dialog"],[aria-hidden="true"],[hidden],[inert],${EDITABLE},${MATH_SELECTOR}${SITE.skip.length?','+SITE.skip.join(','):''}`;
   const SKIP_CHROME = `nav,menu,aside,body>header,footer,[role="complementary"],[role="banner"],[role="contentinfo"],[role="navigation"],[role="menu"],[role="toolbar"]${SITE.chrome.length?','+SITE.chrome.join(','):''}`;
   const SKIP = SKIP_HARD+','+SKIP_CHROME;
+  // 开放 shadow root（Reddit 评论、部分自定义元素）里的正文不在 light DOM。
+  // closest/contains 不穿过 shadow，沿 host 链补上；关闭的 shadow 读不到，不进入。
+  function composedRootHost(node){const root=node?.getRootNode?.();return root instanceof ShadowRoot?root.host:null;}
+  function containsDeep(ancestor,node){if(!ancestor||!node)return false;if(ancestor.contains(node))return true;const host=composedRootHost(node);return host?containsDeep(ancestor,host):false;}
+  function composedClosest(element,selector){let current=element;while(current){if(current.nodeType===1){const hit=current.closest?.(selector);if(hit)return hit;}current=composedRootHost(current);}return null;}
+  function queryAllDeep(root,selector){if(!root?.querySelectorAll)return [];const found=[...root.querySelectorAll(selector)];for(const el of root.querySelectorAll('*')){if(!el.shadowRoot||el.matches(SKIP))continue;found.push(...queryAllDeep(el.shadowRoot,selector));}return found;}
   const LOOKUP_CONTROLS='input,textarea,select,button,[role="button"],[role="combobox"],[role="searchbox"],[role="spinbutton"],[role="slider"],[role="checkbox"],[role="radio"],[role="switch"],'+EDITABLE;
   // term/hint/annotation 与长难句、公式标记包的都是原文，查词照常放行；其余 RoamCat 挂件不当作单词。
   const LOOKUP_UI='['+OWN+']:not(['+OWN+'="term"]):not(['+OWN+'="hint"]):not(['+OWN+'="annotation"]):not(['+OWN+'="complex"]):not(['+OWN+'="formula"])';
@@ -220,8 +226,10 @@ const LIMIT_ERROR = T('c.limit');
       // display:contents 元素自身不生成盒子（getClientRects 为空）：MDN 的 <main> 是这样，正文照常渲染；
       // 但下拉菜单等隐藏容器也常是 display:contents。只有当它至少有一个子节点真正渲染出来时才算可见，
       // 否则曾出现两种错误：整页正文被漏掉，或隐藏菜单里的条目被翻译后浮在页面上。
-      if(!element.getClientRects().length&&!(getComputedStyle(element).display==='contents'&&rendersContent(element)))return false;
-      for(let parent=element;parent;parent=parent.parentElement)if(hiddenStyle(getComputedStyle(parent)))return false;
+      // 自定义元素把正文画在开放 shadow 里时，宿主自己可能没有 light DOM 盒子，要看 shadow 里有没有渲染出来的内容。
+      const style=getComputedStyle(element);
+      if(!element.getClientRects().length&&!(style.display==='contents'&&rendersContent(element))&&!(element.shadowRoot&&rendersContent(element.shadowRoot)))return false;
+      for(let parent=element;parent;parent=parent.parentElement||composedRootHost(parent))if(parent.nodeType===1&&hiddenStyle(getComputedStyle(parent)))return false;
       return true;
     }
   const inRect = rect => rect.width > 0 && rect.height > 0 && rect.bottom > 0 && rect.top < innerHeight && rect.right > 0 && rect.left < innerWidth;
@@ -393,9 +401,9 @@ const LIMIT_ERROR = T('c.limit');
   const blockText = block => textMap(block).text;
   function eligibleBlocks(root) {
       if(!root)return [];
-      const candidates=[...(root.matches?.(BLOCK_SELECTOR)?[root]:[]),...root.querySelectorAll(BLOCK_SELECTOR)],page=location.href.split('#')[0];
+      const candidates=[...(root.matches?.(BLOCK_SELECTOR)?[root]:[]),...queryAllDeep(root,BLOCK_SELECTOR)],page=location.href.split('#')[0];
       return candidates.filter(block=>{
-        if(block.closest(SKIP)||block.closest('['+OWN+']')||!isVisible(block))return false;
+        if(composedClosest(block,SKIP)||composedClosest(block,'['+OWN+']')||!isVisible(block))return false;
         const mapping=textMap(block),text=mapping.text,latin=(text.match(/[A-Za-z]/g)||[]).length,letters=(text.match(/[A-Za-z\u00c0-\u024f\u4e00-\u9fff]/g)||[]).length;
         if(latin<(/^H[1-6]$/.test(block.tagName)?4:12)||latin/Math.max(letters,1)<.58)return false;
         if(/^(DIV|SECTION|ARTICLE|MAIN)$/.test(block.tagName)&&(text.match(/[A-Za-z]+/g)||[]).length<8)return false;
@@ -424,20 +432,20 @@ const LIMIT_ERROR = T('c.limit');
       const all=eligibleBlocks(document.body);
       function score(element){
         if(!element||element===document.body||!isVisible(element)||element.closest(SKIP))return null;
-        const blocks=all.filter(block=>element.contains(block)),prose=blocks.map(blockText).join(' '),latin=(prose.match(/[A-Za-z]/g)||[]).length;
+        const blocks=all.filter(block=>containsDeep(element,block)),prose=blocks.map(blockText).join(' '),latin=(prose.match(/[A-Za-z]/g)||[]).length;
         let links=0;for(const block of blocks)for(const {node}of textMap(block).nodes)if(node.parentElement.closest('a'))links+=node.nodeValue.length;
         return blocks.length>=2&&latin>=200&&links/Math.max(prose.length,1)<.35?{element,blocks,latin}:null;
       }
       function best(candidates){return candidates.filter(Boolean).reduce((chosen,item)=>{
         if(!chosen)return item;
-        const nested=chosen.element.contains(item.element)||item.element.contains(chosen.element);
-        if(nested&&chosen.blocks.length===item.blocks.length)return chosen.element.contains(item.element)?item:chosen;
+        const nested=containsDeep(chosen.element,item.element)||containsDeep(item.element,chosen.element);
+        if(nested&&chosen.blocks.length===item.blocks.length)return containsDeep(chosen.element,item.element)?item:chosen;
         return item.latin>chosen.latin?item:chosen;
       },null);}
-      for(const selector of SITE.root){const hit=best([...document.querySelectorAll(selector)].map(score));if(hit)return hit;}
-      const article=best([...document.querySelectorAll('article')].map(score)),main=best([...document.querySelectorAll('main,[role="main"]')].map(score));
-      if(article&&(!main||main.element.contains(article.element)&&article.latin>=main.latin/2)){
-        const lead=main?main.blocks.filter(block=>!article.element.contains(block)&&/^(P|H1|BLOCKQUOTE)$/.test(block.tagName)&&(block.compareDocumentPosition(article.element)&Node.DOCUMENT_POSITION_FOLLOWING)):[];
+      for(const selector of SITE.root){const hit=best(queryAllDeep(document.body,selector).map(score));if(hit)return hit;}
+      const article=best(queryAllDeep(document.body,'article').map(score)),main=best(queryAllDeep(document.body,'main,[role="main"]').map(score));
+      if(article&&(!main||containsDeep(main.element,article.element)&&article.latin>=main.latin/2)){
+        const lead=main?main.blocks.filter(block=>!containsDeep(article.element,block)&&/^(P|H1|BLOCKQUOTE)$/.test(block.tagName)&&(block.compareDocumentPosition(article.element)&Node.DOCUMENT_POSITION_FOLLOWING)):[];
         return lead.length?{element:main.element,blocks:[...lead,...article.blocks],latin:article.latin+lead.reduce((sum,block)=>sum+(blockText(block).match(/[A-Za-z]/g)||[]).length,0)}:article;
       }
       const semantic=best([article,main]);if(semantic)return semantic;
@@ -1202,8 +1210,8 @@ const LIMIT_ERROR = T('c.limit');
       const block=readingBlockFor(range.startContainer);if(!block||unsafe(block))return null;blocks=[block];
     }else{
       const boundaryBlocks=[readingBlockFor(range.startContainer),readingBlockFor(range.endContainer)].filter(Boolean),eligible=eligibleBlocks(document.body);
-      blocks=[...new Set([...eligible,...document.querySelectorAll(BLOCK_SELECTOR),...boundaryBlocks])].filter(block=>{
-        if(!block.isConnected||block.closest(SKIP_HARD)||block.closest('['+OWN+']')||!isVisible(block))return false;
+      blocks=[...new Set([...eligible,...queryAllDeep(document.body,BLOCK_SELECTOR),...boundaryBlocks])].filter(block=>{
+        if(!block.isConnected||composedClosest(block,SKIP_HARD)||composedClosest(block,'['+OWN+']')||!isVisible(block))return false;
         try{return range.intersectsNode(block);}catch{return false;}
       }).sort((a,b)=>a===b?0:a.compareDocumentPosition(b)&Node.DOCUMENT_POSITION_FOLLOWING?-1:1);
     }
@@ -1328,7 +1336,7 @@ const LIMIT_ERROR = T('c.limit');
       const layout=/^(inline-)?(grid|flex)$/.test(getComputedStyle(parent).display);
       // 页面区域分级：chrome（导航/侧栏/页眉页脚构件）、article（正文容器）、content（其余英文区域）。
       // chrome 区域用更低阈值（菜单项很短）并走内联渲染；article/content 保持块级译文。
-      const zone=parent.closest(SKIP_CHROME)?'chrome':parent.closest(SITE.root.length?'article,main,[role="main"],'+SITE.root.join(','):'article,main,[role="main"]')?'article':'content';let nodes=[];
+      const zone=composedClosest(parent,SKIP_CHROME)?'chrome':composedClosest(parent,SITE.root.length?'article,main,[role="main"],'+SITE.root.join(','):'article,main,[role="main"]')?'article':'content';let nodes=[];
       const flush=()=>{const text=nodes.map(emergencyText).join(''),threshold=parent.matches('h1,h2,h3,h4,h5,h6,td,th')||zone==='chrome'?2:12;if((text.match(/[A-Za-z]/g)||[]).length>=threshold)units.push({parent,nodes,text,skipped:layout,zone});nodes=[];};
       const inChrome=zone==='chrome';
       for(const node of parent.childNodes){
@@ -1337,17 +1345,19 @@ const LIMIT_ERROR = T('c.limit');
           if(node.matches(SKIP_HARD)||node.namespaceURI!==parent.namespaceURI||hiddenStyle(getComputedStyle(node))){flush();continue;}
           // 构件子树（自定义元素/行内容器常是 inline 盒）单独 visit，避免并入父级 content 单元。
           const display=getComputedStyle(node).display;
-          if(!inChrome&&node.matches(SKIP_CHROME)||layout||node.matches(BLOCK_SELECTOR)||!/^inline(?:$|-)/.test(display)&&display!=='contents'&&node.tagName!=='BR'){flush();visit(node);continue;}
+          if(!inChrome&&node.matches(SKIP_CHROME)||layout||node.matches(BLOCK_SELECTOR)||node.shadowRoot&&!node.matches(SKIP_HARD)||!/^inline(?:$|-)/.test(display)&&display!=='contents'&&node.tagName!=='BR'){flush();visit(node);continue;}
         }
         if(node.nodeType===Node.TEXT_NODE||node.nodeType===Node.ELEMENT_NODE)nodes.push(node);
       }flush();
+      // 构件自己的 shadow 多是菜单和按钮，不进翻译；正文自定义元素里的开放 shadow 要进去。
+      if(parent.shadowRoot&&zone!=='chrome')for(const child of parent.shadowRoot.children)visit(child);
     }visit(root);return units;
   }
   function splitEmergencyText(text) {
     const chunks=[];let rest=text;while(rest.length>4000){const prefix=rest.slice(0,4001);let cut=0;for(const match of prefix.matchAll(/[.!?](?:["’”)]*)\s+|\n+/g))if(match.index+match[0].length<=4000)cut=match.index+match[0].length;if(cut<2000){cut=Math.max(rest.lastIndexOf(' ',4000),rest.lastIndexOf('\n',4000));if(cut<2000)cut=4000;}if(/[\uD800-\uDBFF]/.test(rest[cut-1])&&/[\uDC00-\uDFFF]/.test(rest[cut]))cut--;chunks.push(rest.slice(0,cut));rest=rest.slice(cut);}if(rest)chunks.push(rest);return chunks;
   }
   function validEmergencyUnit(unit,session){
-    if(unit.invalid||state.emergency!==session||!sameArticle(session.source,location.href)||!session.root.isConnected||!unit.parent.isConnected||!session.root.contains(unit.parent)||!isVisible(unit.parent)||unit.parent.closest(SKIP_HARD))return false;
+    if(unit.invalid||state.emergency!==session||!sameArticle(session.source,location.href)||!session.root.isConnected||!unit.parent.isConnected||!containsDeep(session.root,unit.parent)||!isVisible(unit.parent)||composedClosest(unit.parent,SKIP_HARD))return false;
     if(unit.nodes.some(node=>node.parentNode!==unit.parent))return false;
     let index=0;for(let node=unit.nodes[0];node;node=node.nextSibling){if(node.nodeType===1&&node.hasAttribute(OWN)&&!['term','annotation'].includes(node.getAttribute(OWN)))continue;if(node!==unit.nodes[index++])return false;if(index===unit.nodes.length)break;}
     return index===unit.nodes.length&&unit.nodes.map(emergencyText).join('')===unit.text;
@@ -1374,7 +1384,7 @@ const LIMIT_ERROR = T('c.limit');
    session.colorScheme=matchMedia('(prefers-color-scheme: dark)');session.colorScheme.addEventListener('change',session.syncStyles);
   }
   
-  function removeEmergencyTranslations(){document.querySelectorAll('['+OWN+'="emergency-translation"]').forEach(node=>node.remove());}
+  function removeEmergencyTranslations(){for(const node of queryAllDeep(document.documentElement,'['+OWN+'="emergency-translation"]'))node.remove();}
   function finishEmergency(remove=true,notify=true) {
     const session=state.emergency;if(!session){if(remove){removeEmergencyTranslations();setPageStatus('emergency',null);globalThis.RoamCatPet?.onEmergencyStatusChange?.(emergencyStatus());}return;}
     session.active=false;session.generation++;session.phase='stopped';
@@ -1429,7 +1439,7 @@ const LIMIT_ERROR = T('c.limit');
   const zoneRank=zone=>zone==='article'?0:zone==='chrome'?2:1;
   const emergencyUnitKey=text=>text.replace(/\s+/g,' ').trim();
   function emergencyTableHeaders(cell,session){
-    const table=cell.closest('table');if(cell.tagName==='TH'||!table||!session.root.contains(table))return [];
+    const table=cell.closest('table');if(cell.tagName==='TH'||!table||!containsDeep(session.root,table))return [];
     const visible=header=>header?.tagName==='TH'&&header.closest('table')===table&&!header.closest(SKIP_HARD)&&isVisible(header);
     if(cell.headers){const explicit=cell.headers.split(/\s+/).map(id=>document.getElementById(id)).filter(visible);if(explicit.length)return explicit;}
     const column=[...cell.parentElement.cells].slice(0,cell.cellIndex).reduce((sum,item)=>sum+item.colSpan,0),headers=[];
@@ -1443,7 +1453,7 @@ const LIMIT_ERROR = T('c.limit');
     return JSON.stringify(context)===unit.contextSignature;
   }
   function updateEmergencyContexts(session){
-    const headings=[...session.root.querySelectorAll('h1,h2,h3,h4,h5,h6')].filter(node=>isVisible(node)&&!node.closest(SKIP)&&!node.closest('['+OWN+']')),headingTexts=new Map(headings.map(node=>[node,emergencySlice(emergencyText(node),160)]));
+    const headings=[...queryAllDeep(session.root,'h1,h2,h3,h4,h5,h6')].filter(node=>isVisible(node)&&!composedClosest(node,SKIP)&&!composedClosest(node,'['+OWN+']')),headingTexts=new Map(headings.map(node=>[node,emergencySlice(emergencyText(node),160)]));
     let index=0,heading=null;const dependencies=new Map();const depend=(node,unit)=>{if(!node)return;if(!dependencies.has(node))dependencies.set(node,new Set());dependencies.get(node).add(unit);};
     for(const unit of session.units){while(index<headings.length&&(headings[index]===unit.parent||headings[index].compareDocumentPosition(unit.nodes[0])&Node.DOCUMENT_POSITION_FOLLOWING))heading=headings[index++];unit.section=heading;}
     for(let i=0;i<session.units.length;i++){
@@ -1619,8 +1629,8 @@ const LIMIT_ERROR = T('c.limit');
   }
   function scanEmergency(session,roots=[session.root]){
     if(state.emergency!==session)return 0;if(!sameArticle(session.source,location.href)||!session.root.isConnected){finishEmergency(true,true);return 0;}
-    roots=roots.filter(root=>root.isConnected&&session.root.contains(root));roots=roots.filter((root,index)=>!roots.some((other,otherIndex)=>index!==otherIndex&&other.contains(root)));
-    const previous=session.units,affected=previous.filter(unit=>!unit.parent.isConnected||roots.some(root=>root.contains(unit.parent))),next=previous.filter(unit=>!affected.includes(unit));let added=0;
+    roots=roots.filter(root=>root.isConnected&&containsDeep(session.root,root));roots=roots.filter((root,index)=>!roots.some((other,otherIndex)=>index!==otherIndex&&containsDeep(other,root)));
+    const previous=session.units,affected=previous.filter(unit=>!unit.parent.isConnected||roots.some(root=>containsDeep(root,unit.parent))),next=previous.filter(unit=>!affected.includes(unit));let added=0;
     for(const root of roots)for(const descriptor of emergencyBlocks(root)){
       let unit=affected.find(value=>!value.invalid&&value.parent===descriptor.parent&&value.nodes.length===descriptor.nodes.length&&value.nodes.every((node,index)=>node===descriptor.nodes[index])&&value.text===descriptor.text&&value.skipped===descriptor.skipped&&value.zone===descriptor.zone);
       if(!unit){unit={...descriptor,version:++session.version,chunks:splitEmergencyText(descriptor.text),done:new Set(),autoRetries:0,retryAt:0,state:descriptor.skipped?'skipped':'deferred'};added++;}next.push(unit);
@@ -1630,7 +1640,7 @@ const LIMIT_ERROR = T('c.limit');
     const byParent=new Map();for(const unit of next){if(!byParent.has(unit.parent))byParent.set(unit.parent,new Set());byParent.get(unit.parent).add(unit);}
     for(const parent of session.byParent.keys())if(!byParent.has(parent)){session.intersections?.unobserve(parent);session.near.delete(parent);}
     for(const parent of byParent.keys())if(!session.byParent.has(parent)){session.intersections?.observe(parent);const rect=parent.getBoundingClientRect();if(rect.bottom>=-600&&rect.top<=innerHeight+600)session.near.add(parent);}
-    session.byParent=byParent;updateEmergencyContexts(session);emergencyReady(session);updateEmergencyStatus(session);if(session.active)void runEmergency(session);return added;
+    session.byParent=byParent;updateEmergencyContexts(session);emergencyReady(session);updateEmergencyStatus(session);observeEmergencyShadows(session);if(session.active)void runEmergency(session);return added;
   }
   function observeEmergencyContent(session){
     session.intersections=new IntersectionObserver(entries=>{for(const entry of entries)if(entry.isIntersecting)session.near.add(entry.target);else session.near.delete(entry.target);scheduleEmergency(session);},{rootMargin:'600px 0px 600px 0px'});for(const parent of session.byParent.keys())session.intersections.observe(parent);
@@ -1638,14 +1648,15 @@ const LIMIT_ERROR = T('c.limit');
     session.contentObserver=new MutationObserver(mutations=>{
       if(!session.root.isConnected||!sameArticle(session.source,location.href)){finishEmergency(true,true);return;}
       let changed=false;for(const mutation of mutations){let target=nodeElement(mutation.target);if(!target||target.closest('['+OWN+']')||mutation.type!=='attributes'&&target.closest(SKIP_HARD))continue;if(mutation.type==='childList'&&![...mutation.addedNodes,...mutation.removedNodes].some(node=>!nodeElement(node)?.closest('['+OWN+']')))continue;
-        if(!session.root.contains(target)){
+        if(!containsDeep(session.root,target)){
           // 祖先链节点：仅当 childList 变更触及根本身（移除/替换/包裹）才整体标脏；
           // 兄弟增删与祖先 class/style 变化不再触发全量重扫。
-          if(!target.contains(session.root))continue;
+          if(!containsDeep(target,session.root))continue;
           if(mutation.type!=='childList'||![...mutation.addedNodes,...mutation.removedNodes].some(node=>node===session.root||node.contains?.(session.root)))continue;
           target=session.root;
         }
-        while(target!==session.root&&!target.matches(BLOCK_SELECTOR)&&!session.byParent.has(target))target=target.parentElement;
+        while(target&&target!==session.root&&!target.matches(BLOCK_SELECTOR)&&!session.byParent.has(target))target=target.parentElement||composedRootHost(target);
+        if(!target)continue;
         session.dirty.add(target);changed=true;
         for(const [node,units]of session.contextDependencies){const touched=mutation.type==='childList'?(node===target||node.contains(target)||[...mutation.removedNodes].some(removed=>removed===node||removed.contains?.(node))):target.contains(node)||node.contains(target);if(touched)for(const unit of units)if(!validEmergencyContext(unit,session))invalidateEmergencyUnit(unit,session,false);}
         if(mutation.type==='childList'&&mutation.addedNodes.length){for(const added of mutation.addedNodes){if(added.nodeType===1&&added.matches(SKIP_HARD)||added.nodeType===3&&!added.nodeValue.trim())continue;let before=null,after=null;for(const unit of session.units){if(unit.nodes.at(-1).compareDocumentPosition(added)&Node.DOCUMENT_POSITION_FOLLOWING)before=unit;else if(added.compareDocumentPosition(unit.nodes[0])&Node.DOCUMENT_POSITION_FOLLOWING){after=unit;break;}}for(const unit of [before,after])if(unit)invalidateEmergencyUnit(unit,session,false);}}
@@ -1656,6 +1667,12 @@ const LIMIT_ERROR = T('c.limit');
     // childList 观察以捕获根被移除（回调首行 isConnected 检查负责收尾）。
     session.contentObserver.observe(session.root,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['hidden','class','style','aria-hidden']});
     for(let ancestor=session.root.parentElement;ancestor;ancestor=ancestor.parentElement)session.contentObserver.observe(ancestor,{childList:true});
+    observeEmergencyShadows(session);
+  }
+  function observeEmergencyShadows(session){
+    if(!session.contentObserver)return;
+    const seen=session.shadowRoots||(session.shadowRoots=new Set());
+    for(const unit of session.units){const rootNode=unit.parent.getRootNode();if(!(rootNode instanceof ShadowRoot)||seen.has(rootNode))continue;seen.add(rootNode);session.contentObserver.observe(rootNode,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['hidden','class','style','aria-hidden']});}
   }
   async function startEmergency(token,resume) {
     if(typeof token!=='string'||!token||typeof resume!=='boolean')throw new Error(T('c.em.noAuth'));
@@ -1703,7 +1720,7 @@ const LIMIT_ERROR = T('c.limit');
       const relevant=Boolean(root&&(!root.isConnected||!isVisible(root)))||mutations.some(mutation=>{
         if(mutation.type==='attributes'||!originalNode(mutation.target))return false;
         if(mutation.type==='childList'&&[...mutation.addedNodes,...mutation.removedNodes].every(node=>!originalNode(node)))return false;
-        if(root?.isConnected&&!root.contains(mutation.target))return false;
+        if(root?.isConnected&&!containsDeep(root,mutation.target))return false;
         const block=nodeElement(mutation.target)?.closest(BLOCK_SELECTOR)||document.body;
         if(!block||!sourceTexts.has(block))return true;
         if(!checked.has(block)){const before=sourceTexts.get(block),after=blockText(block);sourceTexts.set(block,after);checked.set(block,before!==after);}
@@ -1848,7 +1865,7 @@ const LIMIT_ERROR = T('c.limit');
   }
   const toggleEmergencyTranslation = async () => {
     const current = state.emergency;
-    const isDisplayed = Boolean(current?.containers?.size || document.querySelector('['+OWN+'="emergency-translation"]'));
+    const isDisplayed = Boolean(current?.containers?.size || queryAllDeep(document.documentElement,'['+OWN+'="emergency-translation"]').length);
     if (current && (current.active || current.phase === 'translating' || isDisplayed)) {
       finishEmergency(true, true);
       const st = emergencyStatus();

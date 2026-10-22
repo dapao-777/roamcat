@@ -4,7 +4,7 @@
  *   方式求值（与 manifest 加载形态一致），断言 hostname/generator 匹配契约与
  *   selectors() 返回形状。
  * 主要内容：精确/后缀/generator 命中、大小写与尾点归一、形似域名的拒绝
- *   （evil-github.com、github.com.evil.com、docs.github.com）、未知站点回退、
+ *   （evil-github.com、github.com.evil.com、docs.github.com）、文档站/仓库宿主、未知站点回退、
  *   GENERIC_SKIP 前置合并、返回数组为全新副本、档案字段完整性。
  * 模块边界：node:test + node:vm，不启动浏览器；只读 extension/site-profiles.js。
  *
@@ -44,6 +44,20 @@ const matchCases = [
   ['discuss.python.org', undefined, null],
   ['dev.to', undefined, 'forem'],
   ['lobste.rs', undefined, 'lobsters'],
+  ['gitlab.com', undefined, 'gitlab'],
+  ['docs.gitlab.com', undefined, 'gitlab'],
+  ['gitlab.com.evil.com', undefined, null],
+  ['www.npmjs.com', undefined, 'npm'],
+  ['npmjs.com', undefined, 'npm'],
+  ['huggingface.co', undefined, 'huggingface'],
+  ['arxiv.org', undefined, 'arxiv'],
+  ['ar5iv.labs.arxiv.org', undefined, 'arxiv'],
+  ['requests.readthedocs.io', undefined, 'readthedocs'],
+  ['readthedocs.io', undefined, 'readthedocs'],
+  ['notreadthedocs.io', undefined, null],
+  ['docs.rs', undefined, 'docsrs'],
+  ['developer.mozilla.org', undefined, 'mdn'],
+  ['developer.mozilla.org.evil.com', undefined, null],
   ['example.com', undefined, null]
 ];
 
@@ -69,6 +83,8 @@ test('selectors() github 命中时 skip 以 GENERIC_SKIP 开头且数组合并',
   const generic = Array.from(sites.GENERIC_SKIP);
   assert.deepEqual(Array.from(result.skip).slice(0, generic.length), generic);
   assert.ok(result.skip.length > generic.length, 'github 应有站点级 skip');
+  assert.ok(result.root.includes('#readme'), 'github 阅读根应落到 README 容器');
+  assert.ok(!result.root.some(sel => sel === '.markdown-body' || sel === '.comment-body'), '单条评论不能当阅读根');
 });
 
 test('selectors() 每次返回全新数组，互不影响', () => {

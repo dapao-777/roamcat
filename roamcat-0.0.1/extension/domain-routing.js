@@ -13,19 +13,30 @@ import {DOMAINS} from './shared.js';
 
 const M=(zh,en)=>globalThis.RoamCatI18n?.lang?.()==='en'?en:zh;
 
-export const ROUTE_VERSION = 1;
-// Only narrowly scoped professional sites/paths; user-generated-content hosts are not whole-site rules.
+export const ROUTE_VERSION = 2;
+// Path-scoped documentation hosts only. github.com, reddit.com, gitlab.com and other
+// user-generated hosts are not whole-site rules: a README or thread can be any domain.
+// The fourth field turns on subdomain matching (readthedocs project hosts).
 const BUILTIN_RULES = [
   ['www.postgresql.org','/docs','data'], ['postgresql.org','/docs','data'],
   ['dev.mysql.com','/doc','data'], ['kafka.apache.org','/documentation','data'],
   ['nightlies.apache.org','/flink','data'], ['spark.apache.org','/docs','data'],
   ['docs.python.org','/','tech'], ['developer.mozilla.org','/en-US/docs','tech'],
   ['docs.github.com','/','tech'], ['developer.apple.com','/documentation','tech'],
+  ['www.npmjs.com','/package','tech'], ['npmjs.com','/package','tech'],
+  ['docs.rs','/','tech'], ['pkg.go.dev','/','tech'], ['doc.rust-lang.org','/','tech'],
+  ['crates.io','/crates','tech'], ['developer.chrome.com','/docs','tech'],
+  ['react.dev','/reference','tech'], ['react.dev','/learn','tech'],
+  ['nodejs.org','/api','tech'], ['nodejs.org','/docs','tech'],
+  ['www.typescriptlang.org','/docs','tech'], ['typescriptlang.org','/docs','tech'],
+  ['kubernetes.io','/docs','tech'], ['docs.gitlab.com','/','tech'],
+  ['huggingface.co','/docs','tech'], ['stackoverflow.com','/questions','tech'],
+  ['readthedocs.io','/','tech',true],
   ['www.law.cornell.edu','/wex','legal'], ['www.law.cornell.edu','/uscode','legal'],
   ['www.law.cornell.edu','/cfr','legal'], ['pubmed.ncbi.nlm.nih.gov','/','medical'],
   ['www.ncbi.nlm.nih.gov','/books','medical'], ['help.figma.com','/','design'],
   ['www.investopedia.com','/terms','finance'], ['www.sec.gov','/Archives/edgar','finance'],
-].map(([host,pathPrefix,domain]) => ({host,pathPrefix,domain,includeSubdomains:false}));
+].map(([host,pathPrefix,domain,includeSubdomains]) => ({host,pathPrefix,domain,includeSubdomains:includeSubdomains===true}));
 
 export function normalizeDomainRules(rules) {
   if (!Array.isArray(rules) || rules.length > 200) throw new Error(M('网站规则最多保存 200 条。','At most 200 site rules can be saved.'));

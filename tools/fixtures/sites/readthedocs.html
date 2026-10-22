@@ -1,0 +1,11 @@
+<!doctype html><html lang="en"><head><title>Quickstart — Requests</title></head>
+<body>
+<nav class="wy-nav-side"><p>Documentation sidebar wording for the project contents.</p></nav>
+<div class="rst-content" role="main">
+<h1>Quickstart</h1>
+<p>Install the library and pass a session to the client so requests reuse the underlying connection pool.</p>
+<p>Timeouts should be set explicitly because the default waits indefinitely when the remote server stalls.</p>
+<p>A session object stores cookies across calls so later requests stay authenticated without repeating the login step.</p>
+<div class="highlight"><pre>requests.get(url, timeout=5)</pre></div>
+</div>
+</body></html>
