@@ -14,7 +14,7 @@
  */
 import {LitElement, html} from 'lit';
 import {t} from '../../i18n-runtime.js';
-import {shellTop, mainToolbar, nowStatus, heroBlock, telemetryFooter, shellDialog} from './shell.js';
+import {shellTop, mainToolbar, heroBlock, telemetryFooter, shellDialog} from './shell.js';
 import {
   assistanceSection, appearanceSection, sitesSection, advancedSection,
   termsSection, personalizationSection, historySection, privacySection,
@@ -130,7 +130,6 @@ class RoamcatOptions extends LitElement {
     <main class="main-panel" data-purpose="settings-main-canvas">
       ${mainToolbar}
       <div class="main-canvas-content">
-        ${nowStatus}
         ${heroBlock}
         ${SECTIONS.map(name => SECTION_TEMPLATES[name])}
       </div>

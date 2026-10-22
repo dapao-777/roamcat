@@ -225,6 +225,22 @@ export const shellTop = html`
         </nav>
       </div>
 
+      <!-- 运行状态：阅读 / 模型 / 最近请求，常驻侧栏底部 -->
+      <section id="now-status" class="now-status" aria-label="${t('opt.now.aria')}">
+        <div class="now-status-item" id="now-reading-item" data-tone="progress">
+          <span class="now-status-k">${t('opt.now.reading')}</span>
+          <strong id="now-reading">${t('opt.now.readingNone')}</strong>
+        </div>
+        <div class="now-status-item" id="now-model-item" data-tone="progress">
+          <span class="now-status-k">${t('opt.now.model')}</span>
+          <strong id="now-model">${t('opt.now.modelNone')}</strong>
+        </div>
+        <div class="now-status-item" id="now-request-item" data-tone="progress">
+          <span class="now-status-k">${t('opt.now.request')}</span>
+          <strong id="now-request">${t('opt.now.requestOk')}</strong>
+        </div>
+      </section>
+
             <!-- Bottom 随心阅 Stamp Card (Free Roam · 麻薯猫) -->
       <div class="sidebar-user-card-wrap" data-purpose="user-status-card">
         <div class="nav-group-header stamp-group-header">${t('opt.brandSeal')}</div>
@@ -290,16 +306,6 @@ export const mainToolbar = html`
               <span id="theme-toggle-label">${t('opt.themeBtnLabel', {label: t('opt.themeAuto')})}</span>
             </button>
           </div>
-          <div class="theme-switch-wrap">
-            <button type="button" id="lang-toggle-btn" class="theme-switch-btn" title="${t('opt.langToggleTitle',{lang:t('common.langAuto')})}">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" aria-hidden="true">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="2" y1="12" x2="22" y2="12"></line>
-                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-              </svg>
-              <span id="lang-toggle-label">${t('opt.langBtnLabel', {label: t('common.langAuto')})}</span>
-            </button>
-          </div>
           <button type="button" id="preview-hud-btn" class="preview-hud-btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" aria-hidden="true">
               <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -312,30 +318,9 @@ export const mainToolbar = html`
 
 `;
 
-export const nowStatus = html`
-        <section id="now-status" class="now-status" aria-label="${t('opt.now.aria')}">
-          <div class="now-status-item" id="now-reading-item" data-tone="progress">
-            <span class="now-status-k">${t('opt.now.reading')}</span>
-            <strong id="now-reading">${t('opt.now.readingNone')}</strong>
-          </div>
-          <div class="now-status-item" id="now-model-item" data-tone="progress">
-            <span class="now-status-k">${t('opt.now.model')}</span>
-            <strong id="now-model">${t('opt.now.modelNone')}</strong>
-          </div>
-          <div class="now-status-item" id="now-request-item" data-tone="progress">
-            <span class="now-status-k">${t('opt.now.request')}</span>
-            <strong id="now-request">${t('opt.now.requestOk')}</strong>
-          </div>
-        </section>
-`;
-
 export const heroBlock = html`
         <header id="common-workspace-header" class="compact-hero-banner" data-purpose="hero-header">
           <div class="hero-left">
-            <div class="hero-tag-row">
-              <span id="hero-category-badge" class="hero-pill-badge">${t('opt.group.reading')}</span>
-              <span id="hero-stage-badge" class="hero-stage-chip">${t('opt.heroStage')}</span>
-            </div>
             <h1 id="section-title" class="hero-title" tabindex="-1">${t('opt.meta.assistance.title')}</h1>
             <p id="hero-desc" class="hero-desc">${t('opt.meta.assistance.desc')}</p>
           </div>
@@ -403,7 +388,7 @@ export const shellDialog = html`
           </div>
         </div>
         <div class="stamp-dialog-footer">
-          <button type="button" id="stamp-modal-goto-pet" class="secondary-button" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:6px 14px;border-radius:4px;cursor:pointer;">
+          <button type="button" id="stamp-modal-goto-pet" class="secondary-button" style="display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-1, 12px);padding:6px 14px;border-radius:4px;cursor:pointer;">
             ${icon('paw', {size: 14})}<span>${t('opt.stampGotoPet')}</span>
           </button>
           <button type="button" class="js-open-welcome stamp-dialog-link">

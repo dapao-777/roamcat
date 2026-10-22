@@ -52,6 +52,9 @@ const ICONS = {
   stop: svg`<rect x="6" y="6" width="12" height="12" rx="2"></rect>`,
   minus: svg`<path d="M5 12h14"></path>`,
   plus: svg`<path d="M5 12h14"></path><path d="M12 5v14"></path>`,
+  ban: svg`<circle cx="12" cy="12" r="10"></circle><path d="m4.9 4.9 14.2 14.2"></path>`,
+  'chevron-right': svg`<path d="m9 18 6-6-6-6"></path>`,
+  grid: svg`<rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect>`,
 };
 
 export function icon(name, {size = 16, cls = ''} = {}) {

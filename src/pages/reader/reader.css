@@ -17,10 +17,10 @@ body {
   backdrop-filter: saturate(1.1) blur(10px);
   -webkit-backdrop-filter: saturate(1.1) blur(10px);
   border-bottom: 1px solid var(--rim-soft, var(--line));
-  box-shadow: var(--edge-hi, none), var(--cast, var(--shadow-low));
+  box-shadow: var(--elev-0);
 }
 .reader-brand { display: flex; align-items: baseline; gap: var(--space-2); min-width: 0; }
-.reader-logo { font-family: var(--font-display); font-weight: var(--weight-regular); font-size: 15px; letter-spacing: .05em; color: var(--ink); }
+.reader-logo { font-family: var(--font-display); font-weight: var(--weight-regular); font-size: var(--fs-4); letter-spacing: .05em; color: var(--ink); }
 .reader-title { max-width: 42vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: var(--type-support, 13px); }
 .reader-actions { display: flex; align-items: center; gap: var(--space-2); flex-shrink: 0; }
 .reader-progress { font-size: var(--type-support, 13px); color: var(--muted); }
@@ -57,7 +57,7 @@ body {
   max-width: 480px; width: min(480px, 100%); padding: var(--space-8) var(--space-6); text-align: center;
   background-color: var(--surface); background-image: var(--face-raised, var(--face, none));
   border: 1px solid var(--rim-soft, var(--line)); border-radius: var(--radius-card, 12px);
-  box-shadow: var(--edge-hi, none), var(--inset-soft, none), var(--cast, var(--shadow-high));
+  box-shadow: var(--elev-0);
   animation: rc-enter-pop var(--rc-dur-med, .28s) var(--rc-spring-soft, ease) both;
 }
 .reader-hero-art { width: 128px; margin: 0 auto var(--space-4); color: var(--ink); }
@@ -65,7 +65,7 @@ body {
 .reader-status-card h1 { margin: 0 0 var(--space-3); font: var(--weight-semibold) var(--type-section-title)/1.35 var(--ui); }
 .reader-status-card p { margin: 0 0 var(--space-4); color: var(--muted-strong, var(--ink)); }
 .reader-format-chips { display: flex; justify-content: center; flex-wrap: wrap; gap: var(--space-2); margin: 0 0 var(--space-5); }
-.reader-format-chips span { padding: 3px 10px; border: 1px solid var(--rim-soft, var(--line)); border-radius: var(--radius-pill); background-color: var(--surface-subtle); background-image: var(--face-well, none); box-shadow: var(--well-shadow, none); font: var(--weight-medium) 11px/1.5 var(--mono); color: var(--muted-strong, var(--ink)); }
+.reader-format-chips span { padding: 3px 10px; border: 1px solid var(--rim-soft, var(--line)); border-radius: var(--radius-pill); background-color: var(--surface-subtle); background-image: var(--face-well, none); box-shadow: var(--well-shadow, none); font: var(--weight-medium) var(--fs-1)/1.5 var(--mono); color: var(--muted-strong, var(--ink)); }
 .reader-status-card .rc-button { min-height: 36px; padding-inline: var(--space-5); }
 .reader-hint { margin: var(--space-4) 0 0 !important; font-size: var(--type-support, 13px); color: var(--muted) !important; }
 .reader-error p { color: var(--danger, var(--accent)); }

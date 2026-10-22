@@ -96,8 +96,50 @@ export const serviceSection = html`
 <p id="subscription-detail">
 </p>
 </div>
-<button id="refresh-subscription" class="secondary-button" type="button">${t('sec.svc.refresh')}</button>
+<button id="refresh-subscription" class="icon-text-button" type="button">${t('sec.svc.recheck')}</button>
 </div>
+<ol id="subscription-steps" class="setup-steps" aria-label=${t('sec.svc.stepsAria')}>
+<li class="setup-step" data-step="install">
+<span class="setup-step-mark" aria-hidden="true"></span>
+<div class="setup-step-body">
+<b>${t('sec.svc.stepInstall')}</b>
+<div class="setup-step-detail">
+<p id="install-prereq">${t('sec.svc.prereq')}</p>
+<div class="copy-command">
+<code id="install-command">
+</code>
+<button id="copy-install-command" class="secondary-button" type="button">${t('sec.svc.copy')}</button>
+</div>
+<p id="install-note" class="field-help">${t('sec.svc.installNote')}</p>
+</div>
+</div>
+</li>
+<li class="setup-step" data-step="start">
+<span class="setup-step-mark" aria-hidden="true"></span>
+<div class="setup-step-body">
+<b id="step-start-title">${t('sec.svc.stepStart')}</b>
+<div class="setup-step-detail">
+<p id="step-start-hint" class="field-help"></p>
+</div>
+</div>
+</li>
+<li class="setup-step" data-step="login">
+<span class="setup-step-mark" aria-hidden="true"></span>
+<div class="setup-step-body">
+<b id="step-login-title">${t('sec.svc.stepLogin')}</b>
+<div class="setup-step-detail">
+<p id="step-login-hint" class="field-help"></p>
+</div>
+</div>
+</li>
+<li class="setup-step" data-step="ready">
+<span class="setup-step-mark" aria-hidden="true"></span>
+<div class="setup-step-body">
+<b>${t('sec.svc.stepReady')}</b>
+</div>
+</li>
+</ol>
+<p id="subscription-autocheck" class="field-help setup-autocheck" aria-live="polite" hidden></p>
 <dl id="subscription-account" class="account-details" hidden="">
 <div>
 <dt>${t('sec.svc.account')}</dt>
@@ -125,16 +167,6 @@ export const serviceSection = html`
 </div>
 <p id="subscription-user-code" class="field-help" hidden=""></p>
 </div>
-<details id="connector-install" class="installation-note">
-<summary>${t('sec.svc.connector')}</summary>
-<p id="install-prereq">${t('sec.svc.prereq')}</p>
-<div class="copy-command">
-<code id="install-command">
-</code>
-<button id="copy-install-command" class="secondary-button" type="button">${t('sec.svc.copy')}</button>
-</div>
-<p id="install-note">${t('sec.svc.installNote')}</p>
-</details>
 </div>
       <div id="api-panel" class="provider-panel" hidden="">
         <div class="paper-card form-stack api-service-card">

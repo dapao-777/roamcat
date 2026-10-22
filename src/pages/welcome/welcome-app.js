@@ -245,7 +245,7 @@ class RoamcatWelcome extends LitElement {
             <span class="brand-name">ROAMCAT</span>
             <span class="brand-version-pill">v${chrome.runtime.getManifest?.().version ?? '0.0.1'}</span>
           </div>
-          <span class="brand-sub">${t('pop.brand')} · FREE-ROAM READING</span>
+          <span class="brand-sub">${t('pop.brand')}</span>
         </div>
       </div>
       <div class="welcome-header-actions">
@@ -279,7 +279,6 @@ class RoamcatWelcome extends LitElement {
       <div class="welcome-hero-main">
         <div class="welcome-tag-row">
           <span class="welcome-code-tag">${t('wel.codeTag')}</span>
-          <span class="welcome-matrix-tag">FREE-ROAM READING ENGINE</span>
         </div>
         <h1 id="welcome-hero-title" class="welcome-hero-title">
           <span class="hero-title-pixel">ROAMCAT</span>
@@ -316,8 +315,7 @@ class RoamcatWelcome extends LitElement {
     <section class="welcome-step-card" id="step-sandbox" aria-labelledby="sandbox-heading">
       <div class="step-card-header">
         <div class="step-badge-row">
-          <span class="step-num-badge">STEP 01</span>
-          <span class="step-cat-badge">INTERACTIVE SANDBOX</span>
+          <span class="step-num-badge">${t('wel.stepN',{n:1})}</span>
         </div>
         <h2 id="sandbox-heading" class="step-title">${t('wel.sandboxTitle')}</h2>
         <p class="step-desc">${t('wel.sandboxDescA')}<code class="code-word">latency</code>${t('wel.sandboxDescB')}</p>
@@ -330,7 +328,7 @@ class RoamcatWelcome extends LitElement {
           ${this.#renderModeButton('structure', t('wel.modeStruct'))}
         </div>
         <div class="sandbox-badge-info">
-          <span class="live-pill">● LIVE PREVIEW</span>
+          <span class="live-pill">${t('wel.livePill')}</span>
         </div>
       </div>
 
@@ -377,7 +375,6 @@ class RoamcatWelcome extends LitElement {
                 <button type="button" class="hud-action-btn" id="hud-sentence-btn"
                   @click=${() => { this.#sentenceTransOpen = !this.#sentenceTransOpen; this.requestUpdate(); }}>${this.#sentenceTransOpen ? t('wel.sTransClose') : t('wel.sTransOpen')}</button>
               </div>
-              <span class="hud-engine-chip">DS-V3 Context</span>
             </div>
             <div class="hud-sentence-translation" id="hud-sentence-trans" ?hidden=${!this.#sentenceTransOpen}>
               <p>${t('wel.demoTrans')}</p>
@@ -395,8 +392,7 @@ class RoamcatWelcome extends LitElement {
     <section class="welcome-step-card" id="step-preferences" aria-labelledby="preferences-heading">
       <div class="step-card-header">
         <div class="step-badge-row">
-          <span class="step-num-badge">STEP 02</span>
-          <span class="step-cat-badge">QUICK CONFIGURATION</span>
+          <span class="step-num-badge">${t('wel.stepN',{n:2})}</span>
         </div>
         <h2 id="preferences-heading" class="step-title">${t('wel.prefTitle')}</h2>
         <p class="step-desc">${t('wel.prefDesc')}</p>
@@ -462,8 +458,7 @@ class RoamcatWelcome extends LitElement {
     <section class="welcome-step-card" id="step-cheatsheet" aria-labelledby="cheatsheet-heading">
       <div class="step-card-header">
         <div class="step-badge-row">
-          <span class="step-num-badge">STEP 03</span>
-          <span class="step-cat-badge">CHEATSHEET MATRIX</span>
+          <span class="step-num-badge">${t('wel.stepN',{n:3})}</span>
         </div>
         <h2 id="cheatsheet-heading" class="step-title">${t('wel.csTitle')}</h2>
         <p class="step-desc">${t('wel.csDesc')}</p>
@@ -555,11 +550,9 @@ class RoamcatWelcome extends LitElement {
 
   <footer class="welcome-footer">
     <div class="footer-left">
-      <span class="footer-brand">RoamCat Engine</span>
+      <span class="footer-brand">RoamCat</span>
       <span class="footer-sep">·</span>
-      <span>Anti-Dependency Matrix Architecture</span>
-      <span class="footer-sep">·</span>
-      <span>AES-256 GCM Local Protected</span>
+      <span>${t('wel.footerLocal')}</span>
     </div>
     <div class="footer-right">
       <a href="options.html#guide" class="footer-link">${t('wel.manual')}</a>

@@ -372,22 +372,8 @@ class RoamcatPopup extends LitElement {
     return text[this.#emergency.phase] || t('pop.phase.idle');
   }
 
-  #langName() {
-    const pref = globalThis.RoamCatI18n?.pref?.() || 'auto';
-    return t(`common.lang${pref === 'auto' ? 'Auto' : pref === 'zh' ? 'Zh' : 'En'}`);
-  }
-
-  #langShort() {
-    const pref = globalThis.RoamCatI18n?.pref?.() || 'auto';
-    return t(pref === 'auto' ? 'pop.langAuto' : pref === 'zh' ? 'pop.langZh' : 'pop.langEn');
-  }
-
-  #cycleUiLang() {
-    const i18n = globalThis.RoamCatI18n;
-    if (!i18n) return;
-    const order = ['auto', 'zh', 'en'];
-    i18n.setPref(order[(order.indexOf(i18n.pref()) + 1) % order.length]);
-    this.requestUpdate();
+  #openReader() {
+    void chrome.tabs.create({url: chrome.runtime.getURL('ui/reader.html')}).catch(() => {});
   }
 
   #openOptions(section = '') {
@@ -455,20 +441,11 @@ class RoamcatPopup extends LitElement {
           <span class="popup-brand-badge">${t('pop.brand')}</span>
         </div>
       </div>
-      <button id="lang-toggle-btn" class="popup-header-btn" type="button" title=${t('opt.langToggleTitle',{lang:this.#langName()})} @click=${() => this.#cycleUiLang()}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" aria-hidden="true">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="2" y1="12" x2="22" y2="12"></line>
-          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4 10z"></path>
-        </svg>
-        <span>${this.#langShort()}</span>
-      </button>
-      <button id="open-options" class="popup-header-btn" type="button" title=${t('pop.openOptions')} @click=${() => this.#openOptions()}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13">
+      <button id="open-options" class="popup-header-btn" type="button" title=${t('pop.openOptions')} aria-label=${t('pop.options')} @click=${() => this.#openOptions()}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" aria-hidden="true">
           <circle cx="12" cy="12" r="3"></circle>
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
         </svg>
-        <span>${t('pop.options')}</span>
       </button>
     </header>
 
@@ -478,46 +455,23 @@ class RoamcatPopup extends LitElement {
         <div class="popup-alert-info">
           <b>${t('pop.svcDown')}</b>
           <p id="service-warning-copy">${serviceProblem || ''}</p>
-          <button id="repair-service" class="popup-btn-warning" type="button" @click=${() => this.#openOptions('service')}>${t('pop.svcFix')}</button>
+          <button id="repair-service" class="popup-alert-link" type="button" @click=${() => this.#openOptions('service')}>${t('pop.svcFix')}</button>
         </div>
       </section>
 
-      <section class="popup-card service-switch-panel" aria-labelledby="service-switch-title">
-        <div class="feature-card-header">
-          <div class="feature-card-title-wrap">
-            <div class="feature-icon-badge service-provider-badge">
-              ${serviceCurrent ? html`<img src=${serviceIconUrl(serviceCurrent.icon)} width="15" height="15" alt="" aria-hidden="true">` : icon('zap', {size: 15})}
-            </div>
-            <div>
-              <h2 id="service-switch-title">${t('pop.svcTitle')}</h2>
-              <p id="service-current-note" aria-live="polite">${serviceCurrent ? serviceCurrent.name + (serviceCurrent.model ? ' · ' + serviceCurrent.model : '') : t('pop.svcNone')}</p>
-            </div>
-          </div>
-          <button id="service-menu-toggle" class="secondary-button popup-service-btn" type="button"
-            aria-expanded=${this.#serviceMenuOpen ? 'true' : 'false'} aria-controls="service-menu"
-            .disabled=${this.#busy || !this.#state}
-            @click=${() => { this.#serviceMenuOpen = !this.#serviceMenuOpen; this.requestUpdate(); }}>${this.#serviceMenuOpen ? t('pop.svcCollapse') : t('pop.svcSwitch')}</button>
-        </div>
-        <div id="service-menu" class="service-menu" role="listbox" aria-label=${t('pop.svcMenuLabel')} ?hidden=${!this.#serviceMenuOpen}>
-          ${serviceChoices.map(choice => html`
-            <button type="button" role="option" aria-selected=${choice.key === serviceCurrent?.key ? 'true' : 'false'}
-              class=${classMap({'service-menu-item': true, active: choice.key === serviceCurrent?.key})}
-              .disabled=${this.#busy} @click=${() => void this.#pickService(choice.key)}>
-              <img class="service-menu-icon" src=${serviceIconUrl(choice.icon)} width="15" height="15" alt="" aria-hidden="true">
-              <span class="service-menu-name">${choice.name}</span>
-              <span class="service-menu-note">${choice.note}</span>
-              ${choice.key === serviceCurrent?.key ? html`<span class="service-menu-check">${icon('check', {size: 12})}</span>` : ''}
-            </button>`)}
-          <button type="button" class="service-menu-item service-menu-manage" @click=${() => this.#openOptions('service')}>
-            ${icon('settings', {size: 14, cls: 'service-menu-gear'})}
-            <span class="service-menu-name">${t('pop.svcManage')}</span>
-            <span class="service-menu-note">${t('pop.options')}</span>
-          </button>
-        </div>
-        <p id="service-switch-error" class="inline-message error" role="alert" ?hidden=${!this.#errors.service}>${this.#errors.service}</p>
+      <section class="popup-unsupported" ?hidden=${supported} aria-labelledby="unsupported-title">
+        <div class="popup-unsupported-icon">${icon('ban', {size: 20})}</div>
+        <h2 id="unsupported-title">${t('pop.unsupTitle')}</h2>
+        <p class="popup-unsupported-host">${this.#hostname}</p>
+        <p class="muted">${t('pop.unsupHint')}</p>
       </section>
 
-      <section class="popup-card activation-panel" aria-labelledby="activation-title">
+      <nav class="popup-quick-links" aria-label=${t('pop.quickLinks')} ?hidden=${supported}>
+        <button type="button" class="popup-quick-link" @click=${() => this.#openReader()}>${icon('book-open', {size: 16})}<span>${t('pop.openReader')}</span>${icon('chevron-right', {size: 14})}</button>
+        <button type="button" class="popup-quick-link" @click=${() => this.#openOptions('terms')}>${icon('grid', {size: 16})}<span>${t('pop.openVocab')}</span>${icon('chevron-right', {size: 14})}</button>
+      </nav>
+
+      <section class="popup-card activation-panel" aria-labelledby="activation-title" ?hidden=${!supported}>
         <div class="page-context">
           <div class="site-host-wrap">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" class="site-host-icon"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
@@ -548,7 +502,8 @@ class RoamcatPopup extends LitElement {
         <p id="site-auto-error" class="inline-message error" role="alert" ?hidden=${!this.#errors.siteAuto}>${this.#errors.siteAuto}</p>
       </section>
 
-      <section class="popup-card sentence-groups-panel" aria-labelledby="sentence-groups-title">
+      <section class="popup-card popup-feature-group" aria-label=${t('pop.featuresLabel')} ?hidden=${!supported}>
+      <div class="feature-row sentence-groups-panel" role="group" aria-labelledby="sentence-groups-title">
         <div class="feature-card-header">
           <div class="feature-card-title-wrap">
             <div class="feature-icon-badge">${icon('layers', {size: 16})}</div>
@@ -564,9 +519,9 @@ class RoamcatPopup extends LitElement {
         </div>
         <p id="sentence-structure-key" class="sentence-structure-key">${t('pop.sgKey')}</p>
         <p id="sentence-groups-error" class="inline-message error" role="alert" ?hidden=${!this.#errors.sentenceGroups}>${this.#errors.sentenceGroups}</p>
-      </section>
+      </div>
 
-      <section id="emergency-panel" class="popup-card emergency-panel" aria-labelledby="emergency-title" tabindex="-1">
+      <div id="emergency-panel" class="feature-row emergency-panel" role="group" aria-labelledby="emergency-title" tabindex="-1">
         <div class="emergency-heading">
           <div class="feature-card-title-wrap">
             <div class="feature-icon-badge">${icon('languages', {size: 16})}</div>
@@ -599,12 +554,48 @@ class RoamcatPopup extends LitElement {
             .disabled=${this.#busy || !emergencyVisible} @click=${() => void this.#emergencyAction('SS_EMERGENCY_END')}>${t('pop.emEnd')}</button>
         </div>
         <p id="emergency-result" class=${classMap({'inline-message': true, error: this.#emergencyResult.error})} role="status" aria-live="polite" ?hidden=${!this.#emergencyResult.text}>${this.#emergencyResult.text}</p>
+      </div>
       </section>
 
       <section id="on-demand-suggestion" class="popup-card suggestion-panel" ?hidden=${!this.#suggestionVisible}>
         <b>${t('pop.quietTitle')}</b>
         <p>${t('pop.quietBodyA')} <span data-lookup-key>${this.#lookupKey}</span> ${t('pop.quietBodyB')}</p>
         <button id="choose-on-demand" class="secondary-button" type="button" @click=${() => void this.#chooseOnDemand()}>${t('pop.quietBtn')}</button>
+      </section>
+
+      <section class="popup-card service-switch-panel popup-service-card" aria-labelledby="service-switch-title">
+        <div class="feature-card-header">
+          <div class="feature-card-title-wrap">
+            <div class="feature-icon-badge service-provider-badge">
+              ${serviceCurrent ? html`<img src=${serviceIconUrl(serviceCurrent.icon)} width="15" height="15" alt="" aria-hidden="true">` : icon('zap', {size: 15})}
+            </div>
+            <div>
+              <h2 id="service-switch-title">${t('pop.svcTitle')}</h2>
+              <p id="service-current-note" aria-live="polite">${serviceCurrent ? serviceCurrent.name + (serviceCurrent.model ? ' · ' + serviceCurrent.model : '') : t('pop.svcNone')}</p>
+            </div>
+          </div>
+          <button id="service-menu-toggle" class="secondary-button popup-service-btn" type="button"
+            aria-expanded=${this.#serviceMenuOpen ? 'true' : 'false'} aria-controls="service-menu"
+            .disabled=${this.#busy || !this.#state}
+            @click=${() => { this.#serviceMenuOpen = !this.#serviceMenuOpen; this.requestUpdate(); }}>${this.#serviceMenuOpen ? t('pop.svcCollapse') : t('pop.svcSwitch')}</button>
+        </div>
+        <div id="service-menu" class="service-menu" role="listbox" aria-label=${t('pop.svcMenuLabel')} ?hidden=${!this.#serviceMenuOpen}>
+          ${serviceChoices.map(choice => html`
+            <button type="button" role="option" aria-selected=${choice.key === serviceCurrent?.key ? 'true' : 'false'}
+              class=${classMap({'service-menu-item': true, active: choice.key === serviceCurrent?.key})}
+              .disabled=${this.#busy} @click=${() => void this.#pickService(choice.key)}>
+              <img class="service-menu-icon" src=${serviceIconUrl(choice.icon)} width="15" height="15" alt="" aria-hidden="true">
+              <span class="service-menu-name">${choice.name}</span>
+              <span class="service-menu-note">${choice.note}</span>
+              ${choice.key === serviceCurrent?.key ? html`<span class="service-menu-check">${icon('check', {size: 12})}</span>` : ''}
+            </button>`)}
+          <button type="button" class="service-menu-item service-menu-manage" @click=${() => this.#openOptions('service')}>
+            ${icon('settings', {size: 14, cls: 'service-menu-gear'})}
+            <span class="service-menu-name">${t('pop.svcManage')}</span>
+            <span class="service-menu-note">${t('pop.options')}</span>
+          </button>
+        </div>
+        <p id="service-switch-error" class="inline-message error" role="alert" ?hidden=${!this.#errors.service}>${this.#errors.service}</p>
       </section>
     </div>
 

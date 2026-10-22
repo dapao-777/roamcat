@@ -88,14 +88,14 @@
 
 .brand-name {
   font-family: var(--font-display, 'Silkscreen', monospace);
-  font-size: 14px;
+  font-size: var(--fs-3);
   font-weight: 700;
   letter-spacing: 1px;
   color: var(--color-text-primary, #f1f5f9);
 }
 
 .brand-version-pill {
-  font-size: 9.5px;
+  font-size: var(--fs-1);
   font-family: var(--font-mono, monospace);
   font-weight: 700;
   padding: 1px 6px;
@@ -114,7 +114,7 @@
 }
 
 .brand-sub {
-  font-size: 10px;
+  font-size: var(--fs-1);
   font-family: var(--font-mono, monospace);
   color: var(--color-text-muted, #94a3b8);
   letter-spacing: 0.05em;
@@ -137,7 +137,7 @@ button.welcome-options-link {
   gap: 6px;
   padding: 6px 14px;
   border-radius: 7px;
-  font-size: 12px;
+  font-size: var(--fs-1);
   font-weight: 600;
   font-family: var(--font-sans, inherit);
   text-decoration: none;
@@ -205,7 +205,7 @@ button.welcome-options-link {
 }
 
 .welcome-code-tag {
-  font-size: 10.5px;
+  font-size: var(--fs-1);
   font-family: var(--font-mono, monospace);
   font-weight: 700;
   padding: 3px 9px;
@@ -217,7 +217,7 @@ button.welcome-options-link {
 }
 
 .welcome-matrix-tag {
-  font-size: 10.5px;
+  font-size: var(--fs-1);
   font-family: var(--font-mono, monospace);
   font-weight: 600;
   color: var(--color-text-muted, #94a3b8);
@@ -242,7 +242,7 @@ button.welcome-options-link {
 .hero-title-serif {
   display: block;
   font-family: var(--font-serif, serif);
-  font-size: 30px;
+  font-size: var(--fs-6);
   font-weight: 700;
   letter-spacing: 0.04em;
   color: var(--color-text-primary);
@@ -251,7 +251,7 @@ button.welcome-options-link {
 
 .welcome-hero-desc {
   font-family: var(--font-serif, serif);
-  font-size: 15px;
+  font-size: var(--fs-4);
   line-height: 1.85;
   color: var(--color-text-secondary, #94a3b8);
   margin: 18px 0 24px 0;
@@ -278,7 +278,7 @@ button.welcome-options-link {
   border-radius: var(--radius-xs, 3px);
   box-shadow: var(--lacquer-skirt, var(--lacquer-inset, none)), var(--cast, none);
   font-family: var(--font-mono, monospace);
-  font-size: 13px;
+  font-size: var(--fs-2);
   font-weight: 700;
   letter-spacing: 0.1em;
   text-decoration: none;
@@ -290,7 +290,7 @@ button.welcome-options-link {
 
 .hero-cta-ghost {
   font-family: var(--font-mono, monospace);
-  font-size: 12.5px;
+  font-size: var(--fs-1);
   font-weight: 600;
   color: var(--color-text-secondary);
   text-decoration: none;
@@ -343,13 +343,13 @@ button.welcome-options-link {
 
 .pill-text strong {
   font-family: var(--font-serif, serif);
-  font-size: 13px;
+  font-size: var(--fs-2);
   color: var(--color-text-primary, #f1f5f9);
   font-weight: 700;
 }
 
 .pill-text span {
-  font-size: 11.5px;
+  font-size: var(--fs-1);
   color: var(--color-text-dim, #94a3b8);
 }
 
@@ -373,7 +373,7 @@ button.welcome-options-link {
 
 .hero-art-caption {
   font-family: var(--font-mono, monospace);
-  font-size: 9.5px;
+  font-size: var(--fs-1);
   letter-spacing: 0.18em;
   color: var(--color-text-muted);
   text-transform: uppercase;
@@ -389,7 +389,7 @@ button.welcome-options-link {
   .welcome-hero-card { flex-direction: column; padding: 32px 28px; }
   .welcome-hero-art { width: 160px; align-self: center; order: -1; }
   .hero-title-pixel { font-size: 44px; }
-  .hero-title-serif { font-size: 23px; }
+  .hero-title-serif { font-size: var(--fs-5); }
 }
 
 /* Common Step Card Architecture */
@@ -420,7 +420,7 @@ button.welcome-options-link {
 }
 
 .step-num-badge {
-  font-size: 11px;
+  font-size: var(--fs-1);
   font-family: var(--font-mono, monospace);
   font-weight: 800;
   padding: 2px 8px;
@@ -430,7 +430,7 @@ button.welcome-options-link {
 }
 
 .step-cat-badge {
-  font-size: 11px;
+  font-size: var(--fs-1);
   font-family: var(--font-mono, monospace);
   font-weight: 600;
   color: var(--color-text-muted, #94a3b8);
@@ -438,7 +438,7 @@ button.welcome-options-link {
 }
 
 .step-title {
-  font-size: 20px;
+  font-size: var(--fs-5);
   font-weight: 700;
   letter-spacing: -0.015em;
   color: var(--color-text-primary, #ffffff);
@@ -446,7 +446,7 @@ button.welcome-options-link {
 }
 
 .step-desc {
-  font-size: 13.5px;
+  font-size: var(--fs-3);
   color: var(--color-text-secondary, #94a3b8);
   margin: 0;
   line-height: 1.6;
@@ -495,7 +495,7 @@ button.welcome-options-link {
   border: none;
   background: transparent;
   color: var(--color-text-secondary, #94a3b8);
-  font-size: 13px;
+  font-size: var(--fs-2);
   font-weight: 600;
   font-family: var(--font-sans, inherit);
   cursor: pointer;
@@ -520,7 +520,7 @@ button.welcome-options-link {
 }
 
 .live-pill {
-  font-size: 11px;
+  font-size: var(--fs-1);
   font-family: var(--font-mono, monospace);
   font-weight: 700;
   color: var(--color-brand-green);
@@ -575,7 +575,7 @@ button.welcome-options-link {
   border-radius: 6px;
   padding: 5px 12px;
   font-family: var(--font-mono, monospace);
-  font-size: 11.5px;
+  font-size: var(--fs-1);
   color: var(--color-text-dim, #64748b);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -583,7 +583,7 @@ button.welcome-options-link {
 }
 
 .browser-status-pill {
-  font-size: 10px;
+  font-size: var(--fs-1);
   font-family: var(--font-mono, monospace);
   font-weight: 700;
   padding: 2px 7px;
@@ -604,7 +604,7 @@ button.welcome-options-link {
 }
 
 .sandbox-paragraph {
-  font-size: 17px;
+  font-size: var(--fs-4);
   line-height: 1.9;
   color: var(--color-text-primary, #e2e8f0);
   font-family: var(--font-sans, inherit);
@@ -645,7 +645,7 @@ button.welcome-options-link {
 }
 
 .sandbox-paragraph rt {
-  font-size: 11px;
+  font-size: var(--fs-1);
   font-weight: 600;
   color: var(--color-brand-green);
   font-family: var(--font-sans, inherit);
@@ -680,7 +680,7 @@ button.welcome-options-link {
   border: 1px solid var(--color-border-card, #2c3342);
   border-radius: 12px;
   padding: 16px 20px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--color-brand-green-border);
+  box-shadow: var(--elev-2), 0 0 0 1px var(--color-brand-green-border);
   animation: hudSlideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   margin-top: 6px;
   position: relative;
@@ -711,14 +711,14 @@ button.welcome-options-link {
 }
 
 .hud-term {
-  font-size: 17px;
+  font-size: var(--fs-4);
   font-weight: 800;
   font-family: var(--font-mono, monospace);
   color: var(--color-text-primary, #ffffff);
 }
 
 .hud-phonetic {
-  font-size: 13px;
+  font-size: var(--fs-2);
   font-family: var(--font-mono, monospace);
   color: var(--color-text-dim, #94a3b8);
 }
@@ -744,7 +744,7 @@ button.welcome-options-link {
 }
 
 .hud-tag {
-  font-size: 10px;
+  font-size: var(--fs-1);
   font-family: var(--font-mono, monospace);
   font-weight: 700;
   padding: 2px 7px;
@@ -762,7 +762,7 @@ button.welcome-options-link {
 }
 
 .hud-definition {
-  font-size: 14px;
+  font-size: var(--fs-3);
   line-height: 1.55;
   color: var(--color-text-primary, #f1f5f9);
   margin: 0;
@@ -773,7 +773,7 @@ button.welcome-options-link {
   background: var(--color-card-inset, #0d0f12);
   border-radius: 6px;
   padding: 8px 12px;
-  font-size: 12.5px;
+  font-size: var(--fs-1);
   line-height: 1.5;
   color: var(--color-text-secondary, #94a3b8);
   border-left: 3px solid var(--color-brand-green);
@@ -808,7 +808,7 @@ button.welcome-options-link {
   height: 28px;
   padding: 0 11px;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: var(--fs-1);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -829,7 +829,7 @@ button.welcome-options-link {
 }
 
 .hud-engine-chip {
-  font-size: 10px;
+  font-size: var(--fs-1);
   font-family: var(--font-mono, monospace);
   color: var(--color-text-muted, #64748b);
 }
@@ -840,7 +840,7 @@ button.welcome-options-link {
   background: var(--color-card-inset, #0d0f12);
   border-radius: 6px;
   border: 1px dashed var(--color-border-mid, #333d4e);
-  font-size: 13px;
+  font-size: var(--fs-2);
   color: var(--color-brand-green);
   line-height: 1.5;
 }
@@ -852,7 +852,7 @@ button.welcome-options-link {
   padding: 12px 20px;
   background: var(--color-card-bg, #14171d);
   border-top: 1px solid var(--color-border-subtle, #1e222b);
-  font-size: 12.5px;
+  font-size: var(--fs-1);
   color: var(--color-text-secondary, #94a3b8);
 }
 
@@ -860,7 +860,7 @@ button.welcome-options-link {
   display: inline-block;
   padding: 1px 6px;
   font-family: var(--font-mono, monospace);
-  font-size: 11px;
+  font-size: var(--fs-1);
   font-weight: 700;
   color: var(--color-text-primary, #ffffff);
   background: var(--keycap-bg, #1e232d);
@@ -901,7 +901,7 @@ button.welcome-options-link {
 }
 
 .config-num {
-  font-size: 13px;
+  font-size: var(--fs-2);
   font-family: var(--font-mono, monospace);
   font-weight: 800;
   color: var(--color-brand-green);
@@ -916,14 +916,14 @@ button.welcome-options-link {
 }
 
 .config-title {
-  font-size: 15px;
+  font-size: var(--fs-4);
   font-weight: 700;
   color: var(--color-text-primary, #ffffff);
   margin: 0 0 4px 0;
 }
 
 .config-desc {
-  font-size: 12px;
+  font-size: var(--fs-1);
   color: var(--color-text-dim, #94a3b8);
   margin: 0;
   line-height: 1.45;
@@ -957,10 +957,10 @@ button.welcome-options-link {
   align-items: center;
   justify-content: center;
   font-family: var(--font-mono, monospace);
-  font-size: 20px;
+  font-size: var(--fs-5);
   font-weight: 800;
   color: var(--color-brand-green);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--elev-0);
   flex-shrink: 0;
   cursor: pointer;
   transition: transform 0.1s ease, border-bottom-width 0.1s ease;
@@ -979,7 +979,7 @@ button.welcome-options-link {
 }
 
 .keycap-state-label {
-  font-size: 13px;
+  font-size: var(--fs-2);
   font-weight: 700;
   color: var(--color-text-primary, #ffffff);
 }
@@ -990,7 +990,7 @@ button.welcome-options-link {
 }
 
 .keycap-state-sub {
-  font-size: 11.5px;
+  font-size: var(--fs-1);
   color: var(--color-text-dim, #94a3b8);
 }
 
@@ -1004,7 +1004,7 @@ button.welcome-options-link {
   height: 32px;
   padding: 0 12px;
   font-family: var(--font-mono, monospace);
-  font-size: 12px;
+  font-size: var(--fs-1);
   font-weight: 700;
   border-radius: 6px;
   border: 1px solid var(--color-border-card, #232834);
@@ -1079,7 +1079,7 @@ button.welcome-options-link {
 }
 
 .choice-title {
-  font-size: 13.5px;
+  font-size: var(--fs-3);
   font-weight: 700;
   color: var(--choice-unselected-text, #e2e8f0);
 }
@@ -1089,7 +1089,7 @@ button.welcome-options-link {
 }
 
 .choice-badge {
-  font-size: 9.5px;
+  font-size: var(--fs-1);
   font-family: var(--font-mono, monospace);
   font-weight: 700;
   padding: 2px 6px;
@@ -1122,7 +1122,7 @@ button.welcome-options-link {
 }
 
 .choice-text {
-  font-size: 12px;
+  font-size: var(--fs-1);
   line-height: 1.5;
   color: var(--choice-unselected-desc, #94a3b8);
   margin: 0;
@@ -1173,24 +1173,24 @@ button.welcome-options-link {
   height: 30px;
   padding: 0 8px;
   font-family: var(--font-mono, monospace);
-  font-size: 12.5px;
+  font-size: var(--fs-1);
   font-weight: 700;
   color: var(--color-brand-green);
   background: var(--keycap-bg, #1a1e27);
   border: 1px solid var(--keycap-border, #333d4e);
   border-bottom: 3px solid var(--keycap-border-bottom, #0d0f14);
   border-radius: 6px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--elev-0);
 }
 
 .cs-plus {
-  font-size: 12px;
+  font-size: var(--fs-1);
   font-weight: 700;
   color: var(--color-text-dim, #64748b);
 }
 
 .cs-mouse {
-  font-size: 12px;
+  font-size: var(--fs-1);
   font-weight: 600;
   color: var(--color-text-secondary, #94a3b8);
   background: var(--badge-bg, rgba(255, 255, 255, 0.06));
@@ -1206,14 +1206,14 @@ button.welcome-options-link {
 }
 
 .cs-title {
-  font-size: 14px;
+  font-size: var(--fs-3);
   font-weight: 700;
   color: var(--color-text-primary, #ffffff);
   margin: 0;
 }
 
 .cs-desc {
-  font-size: 12px;
+  font-size: var(--fs-1);
   line-height: 1.5;
   color: var(--color-text-dim, #94a3b8);
   margin: 0;
@@ -1250,7 +1250,7 @@ button.welcome-options-link {
 }
 
 .launch-title {
-  font-size: 24px;
+  font-size: var(--fs-5);
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--color-text-primary, #ffffff);
@@ -1258,7 +1258,7 @@ button.welcome-options-link {
 }
 
 .launch-desc {
-  font-size: 14px;
+  font-size: var(--fs-3);
   line-height: 1.6;
   color: var(--color-text-secondary, #94a3b8);
   margin: 0 0 28px 0;
@@ -1280,7 +1280,7 @@ button.welcome-options-link {
   height: 48px;
   padding: 0 32px;
   border-radius: var(--radius-sm, 5px);
-  font-size: 15px;
+  font-size: var(--fs-4);
   font-weight: 700;
   font-family: var(--font-sans, inherit);
   color: var(--btn-primary-color);
@@ -1309,7 +1309,7 @@ button.welcome-options-link {
   height: 48px;
   padding: 0 24px;
   border-radius: var(--radius-sm, 5px);
-  font-size: 14px;
+  font-size: var(--fs-3);
   font-weight: 600;
   font-family: var(--font-sans, inherit);
   text-decoration: none;
@@ -1336,7 +1336,7 @@ button.welcome-options-link {
   background: var(--color-amber-soft);
   border: 1px solid var(--color-amber);
   color: var(--color-amber);
-  font-size: 13px;
+  font-size: var(--fs-2);
   font-weight: 600;
   animation: toastFade 0.25s ease;
 }
@@ -1375,7 +1375,7 @@ button.welcome-options-link {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 11.5px;
+  font-size: var(--fs-1);
   font-family: var(--font-mono, monospace);
   color: var(--color-text-dim, #64748b);
 }
@@ -1396,7 +1396,7 @@ button.welcome-options-link {
 }
 
 .footer-link {
-  font-size: 12px;
+  font-size: var(--fs-1);
   font-family: var(--font-sans, inherit);
   color: var(--color-text-secondary, #94a3b8);
   text-decoration: none;
