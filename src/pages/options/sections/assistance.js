@@ -1,9 +1,10 @@
 /**
  * @file src/pages/options/sections/assistance.js
- * 文件职责：设置页静态分区模板——最初从
- *   extension/ui/options.html 机械切片生成（切片脚本已移除）；id/控件契约与原页完全一致。
+ * 文件职责：设置页「阅读偏好」分区模板——查词 / 伴读猫 / 阅读增强三组设置。
  * 主要内容：无绑定静态模板（动态内容由 options-controller.js 命令式填充），
- *   分区可见性由 options-app 统一驱动。
+ *   每组 = 组标题 + 一张 opt-card，卡内逐行 opt-row（左说明、右控件）；
+ *   控件 id/name 与控制器契约保持不变。默认领域已移到「领域识别」，
+ *   句子解构粒度只在「显示与解构」调整。
  * 模块边界：纯展示模板。
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -13,321 +14,218 @@
  */
 import {html} from 'lit';
 import {t} from '../../../i18n-runtime.js';
-import {icon} from '../../../components/icons.js';
+
+const selectArrow = html`<div class="swiss-select-arrow">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+    <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"></path>
+  </svg>
+</div>`;
+
+const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
 export const assistanceSection = html`
         <section id="assistance" class="settings-section" aria-labelledby="section-title">
-          <!-- Cards Stack -->
-          <div class="settings-cards-stack">
-            <!-- 1. 辅助方式 (Assistance Trigger Mode) -->
-            <div class="swiss-card card-subtle-shadow" data-purpose="setting-block-assistance">
-              <div class="swiss-card-header">
-                <div>
-                  <div class="sec-label-row">
-                    <span class="sec-code-badge">01</span>
-                    <label class="sec-heading">${t('sec.assist.mode')}</label>
-                  </div>
-                  <p class="sec-desc">${t('sec.assist.modeDesc')}</p>
-                </div>
-                <span class="rec-badge">${t('sec.assist.reco')}</span>
-              </div>
-              <div class="choice-card-grid two-col">
-                <!-- Option A: 自动给少量提示 -->
-                <label class="choice-card-item is-selected">
-                  <input type="radio" name="assistance-mode" value="ambient" checked>
-                  <div class="choice-card-content"><span class="choice-illustration art-ambient" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><b></b></span>
-                    <div class="choice-card-header">
-                      <span class="choice-card-title">${t('sec.assist.auto')}</span>
-                      <span class="choice-card-badge cloze">${t('sec.assist.autoBadge')}</span>
-                    </div>
-                    <p class="choice-card-desc">
-                      ${t('sec.assist.autoDesc')}
-                    </p>
-                  </div>
-                </label>
-                <!-- Option B: 只在主动求助时 -->
-                <label class="choice-card-item">
-                  <input type="radio" name="assistance-mode" value="on-demand">
-                  <div class="choice-card-content"><span class="choice-illustration art-demand" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><b></b></span>
-                    <div class="choice-card-header">
-                      <span class="choice-card-title">${t('sec.assist.manual')}</span>
-                      <span class="choice-card-badge manual">${t('sec.assist.manualBadge')}</span>
-                    </div>
-                    <p class="choice-card-desc">
-                      ${t('sec.assist.manualDesc')}
-                    </p>
-                  </div>
-                </label>
-              </div>
+          <!-- 查词：触发方式与显示方式 -->
+          <div class="opt-group" data-purpose="setting-block-assistance">
+            <div class="opt-group-head">
+              <h2>${t('sec.assist.gLookup')}</h2>
+              <p>${t('sec.assist.gLookupDesc')}</p>
             </div>
-
-            <!-- 2. 查词按键 (Lookup Hotkey) -->
-            <div class="swiss-card card-subtle-shadow" data-purpose="setting-block-hotkey">
-              <div class="hotkey-card-body">
-                <div>
-                  <div class="sec-label-row">
-                    <span class="sec-code-badge">02</span>
-                    <label class="sec-heading">${t('sec.assist.key')}</label>
-                  </div>
-                  <p class="sec-desc">${t('sec.assist.keyDesc')}</p>
+            <div class="opt-card">
+              <div class="opt-row opt-row-stack">
+                <div class="opt-row-text">
+                  <span class="opt-row-label">${t('sec.assist.mode')}</span>
+                  <p class="opt-row-desc">${t('sec.assist.modeDesc')}</p>
                 </div>
-                <div class="hotkey-control-wrap">
-                  <div class="swiss-select-wrap min-w-select">
+                <div class="choice-card-grid two-col">
+                  <label class="choice-card-item is-selected">
+                    <input type="radio" name="assistance-mode" value="ambient" checked>
+                    <div class="choice-card-content"><span class="choice-illustration art-ambient" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><b></b></span>
+                      <div class="choice-card-header"><span class="choice-card-title">${t('sec.assist.auto')}</span></div>
+                      <p class="choice-card-desc">${t('sec.assist.autoDesc')}</p>
+                    </div>
+                  </label>
+                  <label class="choice-card-item">
+                    <input type="radio" name="assistance-mode" value="on-demand">
+                    <div class="choice-card-content"><span class="choice-illustration art-demand" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><b></b></span>
+                      <div class="choice-card-header"><span class="choice-card-title">${t('sec.assist.manual')}</span></div>
+                      <p class="choice-card-desc">${t('sec.assist.manualDesc')}</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div class="opt-row opt-row-stack" data-purpose="setting-block-display-mode">
+                <div class="opt-row-text">
+                  <span class="opt-row-label">${t('sec.assist.hud')}</span>
+                  <p class="opt-row-desc">${t('sec.assist.hudDesc')}</p>
+                </div>
+                <div class="choice-card-grid two-col">
+                  <label class="choice-card-item is-selected">
+                    <input type="radio" name="lookup-display" value="card" checked>
+                    <div class="choice-card-content"><span class="choice-illustration art-card" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><b></b></span>
+                      <div class="choice-card-header"><span class="choice-card-title">${t('sec.assist.card')}</span></div>
+                      <p class="choice-card-desc">${t('sec.assist.cardDesc')}</p>
+                    </div>
+                  </label>
+                  <label class="choice-card-item">
+                    <input type="radio" name="lookup-display" value="annotation">
+                    <div class="choice-card-content"><span class="choice-illustration art-annotation" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><b></b></span>
+                      <div class="choice-card-header"><span class="choice-card-title">${t('sec.assist.ruby')}</span></div>
+                      <p class="choice-card-desc">${t('sec.assist.rubyDesc')}</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div class="opt-row" data-purpose="setting-block-hotkey">
+                <div class="opt-row-text">
+                  <label for="lookup-key" class="opt-row-label">${t('sec.assist.key')}</label>
+                  <p class="opt-row-desc">${t('sec.assist.keyDesc')}</p>
+                </div>
+                <div class="opt-row-control">
+                  <div id="keycap-badge" class="keycap-box" data-lookup-key title="${t('sec.assist.keyTitle')}" aria-hidden="true">D</div>
+                  <div class="swiss-select-wrap opt-select-narrow">
                     <select id="lookup-key" class="swiss-select">
-                      <option>A</option><option>B</option><option>C</option><option selected="">D</option>
-                      <option>E</option><option>F</option><option>G</option><option>H</option>
-                      <option>I</option><option>J</option><option>K</option><option>L</option>
-                      <option>M</option><option>N</option><option>O</option><option>P</option>
-                      <option>Q</option><option>R</option><option>S</option><option>T</option>
-                      <option>U</option><option>V</option><option>W</option><option>X</option>
-                      <option>Y</option><option>Z</option>
+                      ${LETTERS.map(letter => html`<option ?selected=${letter === 'D'}>${letter}</option>`)}
                     </select>
-                    <div class="swiss-select-arrow">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-                        <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"></path>
-                      </svg>
-                    </div>
+                    ${selectArrow}
                   </div>
-                  <div id="keycap-badge" class="keycap-box" data-lookup-key title="${t('sec.assist.keyTitle')}">D</div>
                 </div>
               </div>
-            </div>
 
-            <!-- 3. 查词显示方式 (HUD Style) -->
-            <div class="swiss-card card-subtle-shadow" data-purpose="setting-block-display-mode">
-              <div class="swiss-card-header">
-                <div>
-                  <div class="sec-label-row">
-                    <span class="sec-code-badge">03</span>
-                    <label class="sec-heading">${t('sec.assist.hud')}</label>
-                  </div>
-                  <p class="sec-desc">${t('sec.assist.hudDesc')}</p>
+              <div class="opt-row">
+                <div class="opt-row-text">
+                  <label for="help-language" class="opt-row-label">${t('sec.assist.lang')}</label>
+                  <p class="opt-row-desc">${t('sec.assist.langDesc')}</p>
                 </div>
-              </div>
-              <div class="choice-card-grid two-col">
-                <!-- Option A: 解释卡片 -->
-                <label class="choice-card-item is-selected">
-                  <input type="radio" name="lookup-display" value="card" checked>
-                  <div class="choice-card-content"><span class="choice-illustration art-card" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><b></b></span>
-                    <div class="choice-card-header">
-                      <span class="choice-card-title">${t('sec.assist.card')}</span>
-                      <span class="choice-tag-pill popup">${t('sec.assist.cardBadge')}</span>
-                    </div>
-                    <p class="choice-card-desc">
-                      ${t('sec.assist.cardDesc')}
-                    </p>
-                  </div>
-                </label>
-                <!-- Option B: 顶部释义 -->
-                <label class="choice-card-item">
-                  <input type="radio" name="lookup-display" value="annotation">
-                  <div class="choice-card-content"><span class="choice-illustration art-annotation" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><b></b></span>
-                    <div class="choice-card-header">
-                      <span class="choice-card-title">${t('sec.assist.ruby')}</span>
-                      <span class="choice-tag-pill ruby">${t('sec.assist.rubyBadge')}</span>
-                    </div>
-                    <p class="choice-card-desc">
-                      ${t('sec.assist.rubyDesc')}
-                    </p>
-                  </div>
-                </label>
-              </div>
-            </div>
-
-            <!-- 4 & 5. 默认领域 & 解释语言 (Two Columns Grid) -->
-            <div class="swiss-cards-grid-2" data-purpose="setting-block-domain-language">
-              <!-- 默认领域 -->
-              <div class="swiss-card card-subtle-shadow">
-                <div class="sec-label-row">
-                  <span class="sec-code-badge">04</span>
-                  <label for="reading-domain" class="sec-heading">${t('sec.assist.domain')}</label>
-                </div>
-                <p class="sec-desc">${t('sec.assist.domainDesc')}</p>
-                <div class="swiss-select-wrap mt-3">
-                  <select id="reading-domain" class="swiss-select"></select>
-                  <div class="swiss-select-arrow">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-                      <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"></path>
-                    </svg>
-                  </div>
-                </div>
-              </div>
-              <!-- 解释语言 -->
-              <div class="swiss-card card-subtle-shadow">
-                <div class="sec-label-row">
-                  <span class="sec-code-badge">05</span>
-                  <label for="help-language" class="sec-heading">${t('sec.assist.lang')}</label>
-                </div>
-                <p class="sec-desc">${t('sec.assist.langDesc')}</p>
-                <div class="swiss-select-wrap mt-3">
-                  <select id="help-language" class="swiss-select">
-                    <option value="zh">${t('sec.assist.langZh')}</option>
-                    <option value="en">${t('sec.assist.langEn')}</option>
-                  </select>
-                  <div class="swiss-select-arrow">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-                      <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"></path>
-                    </svg>
+                <div class="opt-row-control">
+                  <div class="swiss-select-wrap">
+                    <select id="help-language" class="swiss-select">
+                      <option value="zh">${t('sec.assist.langZh')}</option>
+                      <option value="en">${t('sec.assist.langEn')}</option>
+                    </select>
+                    ${selectArrow}
                   </div>
                 </div>
               </div>
             </div>
+          </div>
 
-            <!-- 6. 母语依赖抑制阈值 / 脱敏矩阵控制 (Scientific Desensitization Meter) -->
-            <div class="swiss-card card-subtle-shadow" data-purpose="setting-block-reliance-index">
-              <div class="swiss-card-header">
-                <div>
-                  <div class="sec-label-row">
-                    <span class="sec-code-badge">06</span>
-                    <label class="sec-heading">${t('sec.assist.density')}</label>
-                    <span class="phase-badge">${t('sec.assist.densityBadge')}</span>
-                  </div>
-                  <p class="sec-desc">
-                    ${t('sec.assist.densityDesc')}
-                  </p>
-                </div>
-                <!-- Big Ticket Number Percentage -->
-                <div class="threshold-stat-display">
-                  <span id="threshold-stat-num" class="stat-number">02</span>
-                  <span class="stat-unit">${t('sec.assist.level')}</span>
-                </div>
-              </div>
-
-              <!-- Slider & Discrete Meter Steps -->
-              <div class="matrix-meter-wrap">
-                <div class="matrix-range-slider-box">
-                  <input type="range" id="matrix-index-range" min="1" max="3" step="1" value="2" class="swiss-range-input" aria-label="${t('sec.assist.density')}" aria-valuetext="${t('sec.assist.dMedium')}">
-                </div>
-                <!-- Scientific Halftone Step Gradient Bar -->
-                <div id="matrix-step-gradient" class="matrix-step-gradient-bar" aria-hidden="true"><span class="matrix-step-cell"></span><span class="matrix-step-cell"></span><span class="matrix-step-cell"></span><span class="matrix-step-cell"></span><span class="matrix-step-cell"></span><span class="matrix-step-cell"></span><span class="matrix-step-cell"></span><span class="matrix-step-cell"></span><span class="matrix-step-cell"></span><span class="matrix-step-cell"></span><span class="matrix-step-cell"></span><span class="matrix-step-cell"></span><span class="matrix-step-cell"></span><span class="matrix-step-cell"></span><span class="matrix-step-cell"></span><span class="matrix-step-cell"></span><span class="matrix-step-cell"></span><span class="matrix-step-cell"></span><span class="matrix-step-cell"></span><span class="matrix-step-cell"></span><span class="matrix-step-cell"></span><span class="matrix-step-cell"></span><span class="matrix-step-cell"></span><span class="matrix-step-cell"></span><span class="matrix-step-cell"></span><span class="matrix-step-cell"></span><span class="matrix-step-cell"></span><span class="matrix-step-cell"></span><span class="matrix-step-cell"></span><span class="matrix-step-cell"></span></div>
-                <!-- Scale Labels -->
-                <div class="matrix-scale-legend">
-                  <span>${t('sec.assist.dCoarse')}</span>
-                  <span id="matrix-step-badge" class="scale-badge">${t('sec.assist.dMedium')}</span>
-                  <span>${t('sec.assist.dFine')}</span>
-                </div>
-                <p id="detail-meter-result" class="inline-message" aria-live="polite" hidden></p>
-              </div>
+          <!-- 伴读猫 -->
+          <div id="setting-block-floating-pet" class="opt-group" data-purpose="setting-block-floating-pet">
+            <div class="opt-group-head">
+              <h2>${t('sec.assist.pet')}</h2>
+              <p>${t('sec.assist.petDesc')}</p>
             </div>
-
-            <!-- 7. 网页伴读猫（悬浮宠物） (RoamCat Floating Pet) -->
-            <div id="setting-block-floating-pet" class="swiss-card card-subtle-shadow" data-purpose="setting-block-floating-pet">
-              <div class="swiss-card-header">
-                <div>
-                  <div class="sec-label-row">
-                    <span class="sec-code-badge">07</span>
-                    <label class="sec-heading">${t('sec.assist.pet')}</label>
-                    <span class="phase-badge">${t('sec.assist.petBadge')}</span>
-                  </div>
-                  <p class="sec-desc">
-                    ${t('sec.assist.petDesc')}
-                  </p>
+            <div class="opt-card">
+              <div class="opt-row">
+                <div class="opt-row-text">
+                  <label for="floating-pet-enabled" class="opt-row-label">${t('sec.assist.petEnable')}</label>
+                  <p class="opt-row-desc">${t('sec.assist.petEnableDesc')}</p>
                 </div>
-              </div>
-              <div class="pet-card-body">
-                <div class="pet-control-row">
-                  <div class="pet-control-info">
-                    <strong class="pet-control-label">${t('sec.assist.petEnable')}</strong>
-                    <span class="pet-control-caption">${t('sec.assist.petEnableDesc')}</span>
-                  </div>
+                <div class="opt-row-control">
                   <label class="switch" title="${t('sec.assist.petSwitch')}">
                     <input id="floating-pet-enabled" type="checkbox" checked>
                     <span aria-hidden="true"></span>
                     <span class="sr-only">${t('sec.assist.petEnable')}</span>
                   </label>
                 </div>
-                <div class="pet-control-row">
-                  <div class="pet-control-info">
-                    <strong class="pet-control-label">${t('sec.assist.petTheme')}</strong>
-                    <span class="pet-control-caption">${t('sec.assist.petThemeDesc')}</span>
-                  </div>
-                  <select id="floating-pet-theme" class="swiss-select">
-                    <option value="auto">${t('sec.assist.petAuto')}</option>
-                    <option value="dark">${t('sec.assist.petDark')}</option>
-                    <option value="light">${t('sec.assist.petLight')}</option>
-                  </select>
+              </div>
+              <div class="opt-row">
+                <div class="opt-row-text">
+                  <label for="floating-pet-theme" class="opt-row-label">${t('sec.assist.petTheme')}</label>
+                  <p class="opt-row-desc">${t('sec.assist.petThemeDesc')}</p>
                 </div>
-                <div class="pet-control-row">
-                  <div class="pet-control-info">
-                    <strong class="pet-control-label">${t('sec.assist.petQuotes')}</strong>
-                    <span class="pet-control-caption">${t('sec.assist.petQuotesDesc')}</span>
+                <div class="opt-row-control">
+                  <div class="swiss-select-wrap">
+                    <select id="floating-pet-theme" class="swiss-select">
+                      <option value="auto">${t('sec.assist.petAuto')}</option>
+                      <option value="dark">${t('sec.assist.petDark')}</option>
+                      <option value="light">${t('sec.assist.petLight')}</option>
+                    </select>
+                    ${selectArrow}
                   </div>
-                  <div class="pet-quote-controls">
-                    <label class="switch" title="${t('sec.assist.petQuotesSwitch')}">
-                      <input id="floating-pet-quotes-enabled" type="checkbox" checked>
-                      <span aria-hidden="true"></span>
-                      <span class="sr-only">${t('sec.assist.petQuotes')}</span>
-                    </label>
-                    <select id="floating-pet-quotes-interval" class="swiss-select" title="${t('sec.assist.petQuotesInterval')}">
+                </div>
+              </div>
+              <div class="opt-row">
+                <div class="opt-row-text">
+                  <label for="floating-pet-quotes-enabled" class="opt-row-label">${t('sec.assist.petQuotes')}</label>
+                  <p class="opt-row-desc">${t('sec.assist.petQuotesDesc')}</p>
+                </div>
+                <div class="opt-row-control">
+                  <div class="swiss-select-wrap opt-select-narrow">
+                    <select id="floating-pet-quotes-interval" class="swiss-select" title="${t('sec.assist.petQuotesInterval')}" aria-label="${t('sec.assist.petQuotesInterval')}">
                       <option value="15">${t('sec.assist.pet15')}</option>
                       <option value="30">${t('sec.assist.pet30')}</option>
                       <option value="60">${t('sec.assist.pet60')}</option>
                     </select>
+                    ${selectArrow}
                   </div>
+                  <label class="switch" title="${t('sec.assist.petQuotesSwitch')}">
+                    <input id="floating-pet-quotes-enabled" type="checkbox" checked>
+                    <span aria-hidden="true"></span>
+                    <span class="sr-only">${t('sec.assist.petQuotes')}</span>
+                  </label>
                 </div>
-                <div class="pet-feature-tags">
-                  <span class="pet-tag"><span class="pet-tag-icon">${icon('paw', {size: 13})}</span> ${t('sec.assist.petTagDock')}</span>
-                  <span class="pet-tag"><span class="pet-tag-icon">${icon('languages', {size: 13})}</span> ${t('sec.assist.petTagFlip')}</span>
-                  <span class="pet-tag"><span class="pet-tag-icon">${icon('file-text', {size: 13})}</span> ${t('sec.assist.petTagDigest')}</span>
-                  <span class="pet-tag"><span class="pet-tag-icon">${icon('keyboard', {size: 13})}</span> ${t('sec.assist.petTagKey')}</span>
+              </div>
+              <div class="opt-row">
+                <div class="opt-row-text">
+                  <span class="opt-row-label">${t('sec.assist.petResetLabel')}</span>
+                  <p class="opt-row-desc">${t('sec.assist.petResetHint')}</p>
                 </div>
-                <div class="pet-footer-row">
-                  <span class="pet-hint-text">${t('sec.assist.petResetHint')}</span>
-                  <button type="button" id="floating-pet-reset-pos" class="secondary-button pet-reset-btn">${t('sec.assist.petReset')}</button>
+                <div class="opt-row-control">
+                  <button type="button" id="floating-pet-reset-pos" class="secondary-button">${t('sec.assist.petReset')}</button>
                 </div>
               </div>
             </div>
+          </div>
 
-            <!-- 8. 阅读增强（长难句/公式/PDF·电子书） -->
-            <div class="swiss-card card-subtle-shadow" data-purpose="setting-block-reading-boost">
-              <div class="swiss-card-header">
-                <div>
-                  <div class="sec-label-row">
-                    <span class="sec-code-badge">08</span>
-                    <label class="sec-heading">${t('sec.assist.enhance')}</label>
-                    <span class="phase-badge">${t('sec.assist.enhanceBadge')}</span>
-                  </div>
-                  <p class="sec-desc">
-                    ${t('sec.assist.enhanceDesc')}
-                  </p>
+          <!-- 阅读增强：长难句 / 公式 / PDF·电子书 -->
+          <div class="opt-group" data-purpose="setting-block-reading-boost">
+            <div class="opt-group-head">
+              <h2>${t('sec.assist.enhance')}</h2>
+              <p>${t('sec.assist.enhanceDesc')}</p>
+            </div>
+            <div class="opt-card">
+              <div class="opt-row">
+                <div class="opt-row-text">
+                  <label for="complex-assist-enabled" class="opt-row-label">${t('sec.assist.hard')}</label>
+                  <p class="opt-row-desc">${t('sec.assist.hardDesc')}</p>
                 </div>
-              </div>
-              <div class="pet-card-body">
-                <div class="pet-control-row">
-                  <div class="pet-control-info">
-                    <strong class="pet-control-label">${t('sec.assist.hard')}</strong>
-                    <span class="pet-control-caption">${t('sec.assist.hardDesc')}</span>
-                  </div>
+                <div class="opt-row-control">
                   <label class="switch" title="${t('sec.assist.hardSwitch')}">
                     <input id="complex-assist-enabled" type="checkbox" checked>
                     <span aria-hidden="true"></span>
                     <span class="sr-only">${t('sec.assist.hard')}</span>
                   </label>
                 </div>
-                <div class="pet-control-row">
-                  <div class="pet-control-info">
-                    <strong class="pet-control-label">${t('sec.assist.formula')}</strong>
-                    <span class="pet-control-caption">${t('sec.assist.formulaDesc')}</span>
-                  </div>
+              </div>
+              <div class="opt-row">
+                <div class="opt-row-text">
+                  <label for="formula-assist-enabled" class="opt-row-label">${t('sec.assist.formula')}</label>
+                  <p class="opt-row-desc">${t('sec.assist.formulaDesc')}</p>
+                </div>
+                <div class="opt-row-control">
                   <label class="switch" title="${t('sec.assist.formulaSwitch')}">
                     <input id="formula-assist-enabled" type="checkbox" checked>
                     <span aria-hidden="true"></span>
                     <span class="sr-only">${t('sec.assist.formula')}</span>
                   </label>
                 </div>
-                <div class="pet-control-row">
-                  <div class="pet-control-info">
-                    <strong class="pet-control-label">${t('sec.assist.reader')}</strong>
-                    <span class="pet-control-caption">${t('sec.assist.readerDesc')}</span>
-                  </div>
-                  <div class="pet-quote-controls">
-                    <label class="switch" title="${t('sec.assist.readerSwitch')}">
-                      <input id="pdf-reader-enabled" type="checkbox" checked>
-                      <span aria-hidden="true"></span>
-                      <span class="sr-only">${t('sec.assist.reader')}</span>
-                    </label>
-                    <a class="secondary-button pet-reset-btn" href="reader.html" target="_blank" rel="noopener">${t('sec.assist.readerOpen')}</a>
-                  </div>
+              </div>
+              <div class="opt-row">
+                <div class="opt-row-text">
+                  <label for="pdf-reader-enabled" class="opt-row-label">${t('sec.assist.reader')}</label>
+                  <p class="opt-row-desc">${t('sec.assist.readerDesc')}</p>
+                </div>
+                <div class="opt-row-control">
+                  <a class="text-link-button" href="reader.html" target="_blank" rel="noopener">${t('sec.assist.readerOpen')}</a>
+                  <label class="switch" title="${t('sec.assist.readerSwitch')}">
+                    <input id="pdf-reader-enabled" type="checkbox" checked>
+                    <span aria-hidden="true"></span>
+                    <span class="sr-only">${t('sec.assist.reader')}</span>
+                  </label>
                 </div>
               </div>
             </div>

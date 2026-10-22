@@ -20,6 +20,8 @@ export const termsSection = html`
 <h2 id="terms-heading" class="sr-only">${t('sec.terms.title')}</h2>
 <p>${t('sec.terms.desc')}</p>
 </div>
+<div class="opt-group">
+<div class="opt-group-head"><h2>${t('sec.terms.gAdd')}</h2><p>${t('sec.terms.gAddDesc')}</p></div>
 <div class="paper-card">
 <form id="term-form" class="inline-form">
 <label class="field">
@@ -41,6 +43,7 @@ export const termsSection = html`
 </div>
 <div id="term-empty" class="empty-state compact-empty" hidden="">
 <h3>${t('sec.terms.empty')}</h3>
+</div>
 </div>
 </div>
 </section>

@@ -61,3 +61,47 @@ roamcat-popup { display: contents; }
 .status-chip.active {
   animation: rc-enter-pop var(--rc-dur-fast) var(--rc-ease-out);
 }
+
+/* 版式：两张卡——「本页」放当前页的全部动作（阅读辅助、本页双语、阅读解构），
+   「长期设置」放此网站自动开启与模型服务。卡内每行同一节奏：左说明、右控件、细线分隔。 */
+.popup-content-body { gap: 10px; }
+.popup-card { padding: 4px 14px; box-shadow: none; background-image: none; }
+.popup-card:hover { border-color: var(--rim-soft, var(--color-border-card)); }
+.activation-panel .page-context { margin: 0 -14px; padding: 9px 14px; border-bottom: 1px solid var(--line); background: var(--color-card-inset); }
+.activation-panel .activation-control-row { padding: 12px 0; }
+.popup-card .feature-row { padding: 11px 0; }
+.popup-card .feature-row + .feature-row,
+.activation-panel .activation-control-row + .feature-row,
+.activation-panel #action-error + .feature-row { border-top: 1px solid var(--line); }
+.popup-card .site-auto-panel { margin: 0; border-top: 0; }
+.popup-card .site-auto-panel[hidden] { display: none; }
+.popup-settings-card .site-auto-panel + .inline-message + .feature-card-header,
+.popup-settings-card .site-auto-panel:not([hidden]) ~ .feature-card-header { border-top: 1px solid var(--line); }
+.popup-settings-card > .feature-card-header { padding: 11px 0; }
+.popup-card :is(.feature-row, .site-auto-panel) h2,
+.popup-card .site-auto-copy h3,
+.popup-settings-card h2 { font-size: var(--fs-2); font-weight: 600; margin: 0; }
+.popup-card :is(.feature-row, .site-auto-panel, .feature-card-header) p { font-size: var(--fs-1); line-height: 1.5; }
+.activation-heading h2 { font-size: var(--fs-3); }
+.popup-card .feature-icon-badge { width: 24px; height: 24px; background: none; border: 0; box-shadow: none; }
+.popup-card .sentence-structure-key { margin: 6px 0 0 32px; font-size: var(--fs-1); color: var(--muted); }
+.popup-master-btn { min-height: 36px; padding: 6px 14px; font-size: var(--fs-2); }
+.popup-alert-card { padding: 10px 12px; }
+.popup-alert-info p { font-size: var(--fs-1); line-height: 1.5; }
+.activation-panel .feature-icon-badge { display: none; }
+.activation-panel .feature-card-title-wrap { gap: 0; }
+.popup-card .sentence-structure-key { margin-left: 0; }
+.popup-settings-card .service-provider-badge { width: 20px; height: 20px; }
+
+/* 排版收敛：品牌名回正文字体；站点自动开启行隐藏时（不支持的页面）不再留下一条孤立分隔线 */
+.popup-brand-name { font-family: var(--font-sans); font-size: var(--fs-2); font-weight: 600; letter-spacing: 0; }
+.popup-settings-card .site-auto-panel[hidden] + .inline-message + .feature-card-header { border-top: 0; }
+.popup-settings-card .site-auto-panel[hidden] ~ .feature-card-header { padding-top: 11px; }
+/* 服务商图标多为深色单色，深色主题下会隐没：与设置页 provider-logo 一样垫白底小方块 */
+.popup-settings-card .service-provider-badge img,
+.service-menu-icon { box-sizing: content-box; padding: 2px; background: #fff; border-radius: 4px; }
+/* 底栏：去掉装饰圆点，提示与版本号同一基线 */
+.popup-footer-dot { display: none; }
+.popup-footer { padding: 8px 14px; }
+/* 本页卡片的说明文字统一一档灰度，结构说明不再像第二段正文 */
+.popup-card .sentence-structure-key { margin-top: 2px; }

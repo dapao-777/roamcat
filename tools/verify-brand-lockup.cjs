@@ -118,7 +118,7 @@ function mockChrome() {
     assert.ok(docTitle.startsWith('RoamCat · 随心阅 · '), 'Document title must start with full brand name');
 
     // Check navigation to other sections updates document.title
-    const sections = ['appearance', 'sites', 'advanced', 'service', 'diagnostics', 'guide'];
+    const sections = ['appearance', 'sites', 'service', 'diagnostics', 'guide'];
     for (const sec of sections) {
       await page.locator(`[data-section="${sec}"]`).click();
       await page.waitForTimeout(200);

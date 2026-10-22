@@ -85,8 +85,10 @@ function* walkFiles(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:tr
    await page.goto(`chrome-extension://${id}/ui/popup.html`);
 
    await check('Popup renders in built extension',async()=>{
-     await page.locator('#toggle-page').waitFor();
-     assert.equal(await page.locator('.popup-brand-name').textContent(),'ROAMCAT');
+     // 直接打开弹窗时背后没有可辅助的网页，开关面板按设计隐藏；只要求它已渲染进 DOM。
+     await page.locator('.popup-brand-name').waitFor();
+     await page.locator('#toggle-page').waitFor({state:'attached'});
+     assert.equal(await page.locator('.popup-brand-name').textContent(),'RoamCat');
      assert.equal(await page.evaluate(()=>getComputedStyle(document.body).width),'360px','样式表未生效');
      assert.equal(await page.evaluate(()=>document.documentElement.dataset.theme||''),'dark','theme-init.js 未执行');
      await page.screenshot({path:path.join(out,'build-popup.png')});
@@ -96,13 +98,13 @@ function* walkFiles(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:tr
    await check('Options renders and routes in built extension',async()=>{
      await page.goto(`chrome-extension://${id}/ui/options.html`);
      await page.locator('#sidebar-collapse-btn').waitFor();
-     assert.equal(await page.locator('#section-title').textContent(),'阅读偏好设置');
+     assert.equal(await page.locator('#section-title').textContent(),'阅读偏好');
      assert.ok(await page.locator('#assistance').isVisible(),'默认分区未显示');
      assert.ok(!(await page.locator('#terms').isVisible()),'非活跃分区应隐藏');
      await page.locator('[data-section="terms"]').click();
      await page.waitForFunction(()=>!document.getElementById('terms').hidden&&document.getElementById('assistance').hidden,null,{timeout:5000});
-     assert.equal(await page.locator('#section-title').textContent(),'生词');
-     assert.equal(await page.locator('#toolbar-breadcrumb-title').textContent(),'生词');
+     assert.equal(await page.locator('#section-title').textContent(),'术语表');
+     assert.equal(await page.locator('#toolbar-breadcrumb-title').textContent(),'术语表');
      await page.locator('#theme-toggle-btn').click();
      const theme=await page.evaluate(()=>document.documentElement.dataset.theme||'auto');
      assert.match(theme,/^(dark|light|auto)$/u);
@@ -153,7 +155,7 @@ function* walkFiles(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:tr
        const detail=probe(shadow=>globalThis.RoamCatContentUI.sentenceDetail(shadow,{brandIconUrl:'x',onClose(){}}));
        const toast=probe(shadow=>globalThis.RoamCatContentUI.knownFeedback(shadow,{brandIconUrl:'x',term:'t',onUndo(){}}));
        const pet=probe(shadow=>globalThis.RoamCatContentUI.petWidget(shadow,{domainKey:'general',domainName:'通用阅读',catSvg:'<svg></svg>',peekingCatSvg:'<svg></svg>',onEdgeTabClick(){}}));
-       const petIds=['roamcat-edge-tab','roamcat-flip-btn','quick-reading','quick-summary','quick-options','quick-dock','cat-speech','cat-mode-roaming','cat-mode-peeking','roamcat-zoom-controls','zoom-out','zoom-label','zoom-in','summary-domain-badge','summary-header-refresh','summary-close','summary-content','summary-meta','summary-footer-refresh','summary-copy-btn','copy-btn-text'].every(id=>pet.container.getRootNode().getElementById?.(id)||pet.summaryWindow.querySelector('#'+id));
+       const petIds=['roamcat-edge-tab','roamcat-flip-btn','quick-reading','quick-summary','quick-options','cat-speech','cat-mode-roaming','cat-mode-peeking','roamcat-zoom-controls','zoom-out','zoom-label','zoom-in','summary-domain-badge','summary-header-refresh','summary-close','summary-content','summary-meta','summary-footer-refresh','summary-copy-btn','copy-btn-text'].every(id=>pet.container.getRootNode().getElementById?.(id)||pet.summaryWindow.querySelector('#'+id));
       const menuDomainSvg=Boolean(pet.container.getRootNode().getElementById?.('summary-domain-badge')?.querySelector('svg'));
        const dd=document.createElement('dd');dd.textContent='old';globalThis.RoamCatContentUI.renderExplanationText(dd,'new text','x');const firstOk=dd.textContent==='new text';dd.textContent='again';globalThis.RoamCatContentUI.renderExplanationText(dd,'second','x');const secondOk=dd.textContent==='second';
        return {

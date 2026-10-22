@@ -1,8 +1,8 @@
 /**
  * @file src/pages/options/options-app.js
- * 文件职责：设置页 Lit 应用壳——12 分区 hash 路由（含 view transitions）、
- *   侧栏折叠、主题切换、宣言弹层、密码可见性切换、选择卡高亮委托。
- * 主要内容：渲染 shell.js + 12 个静态分区模板（light DOM 保留全部 id 契约）；
+ * 文件职责：设置页 Lit 应用壳——11 分区 hash 路由（旧 #advanced 重定向至 #sites）（含 view transitions）、
+ *   侧栏折叠（中等宽度自动收为图标栏）、主题切换、宣言弹层、密码可见性切换、选择卡高亮委托。
+ * 主要内容：渲染 shell.js + 11 个静态分区模板（light DOM 保留全部 id 契约）；
  *   首帧渲染完成后动态加载 options-controller.js 与 history.js，二者沿用原
  *   imperative DOM 契约填充动态内容；optionsSectionEnter 负责分区进入钩子。
  * 模块边界：扩展页受信上下文；路由与外壳状态唯一来源为本组件。
@@ -16,20 +16,22 @@ import {LitElement, html} from 'lit';
 import {t} from '../../i18n-runtime.js';
 import {shellTop, mainToolbar, heroBlock, telemetryFooter, shellDialog} from './shell.js';
 import {
-  assistanceSection, appearanceSection, sitesSection, advancedSection,
+  assistanceSection, appearanceSection, sitesSection,
   termsSection, personalizationSection, historySection, privacySection,
   serviceSection, diagnosticsSection, guideSection, shortcutsSection,
 } from './sections/index.js';
 
-const SECTIONS = ['assistance', 'appearance', 'sites', 'advanced', 'terms', 'personalization', 'history', 'privacy', 'service', 'diagnostics', 'shortcuts', 'guide'];
+const SECTIONS = ['assistance', 'appearance', 'sites', 'service', 'terms', 'personalization', 'history', 'privacy', 'shortcuts', 'guide', 'diagnostics'];
+// 已并入其他分区的旧锚点：hash → [分区, 分区内滚动目标]
+const SECTION_ALIASES = {advanced: ['sites', 'domain-detection']};
 const SECTION_TEMPLATES = {
   assistance: assistanceSection, appearance: appearanceSection, sites: sitesSection,
-  advanced: advancedSection, terms: termsSection, personalization: personalizationSection,
+  terms: termsSection, personalization: personalizationSection,
   history: historySection, privacy: privacySection, service: serviceSection,
   diagnostics: diagnosticsSection, shortcuts: shortcutsSection, guide: guideSection,
 };
 const LABELS = {
-  assistance: 'opt.nav.assist', appearance: 'opt.nav.appearance', sites: 'opt.nav.sites', advanced: 'opt.nav.advanced',
+  assistance: 'opt.nav.assist', appearance: 'opt.nav.appearance', sites: 'opt.nav.sites',
   terms: 'opt.nav.terms', personalization: 'opt.nav.personalization', history: 'opt.nav.history',
   privacy: 'opt.nav.privacy', service: 'opt.nav.model', diagnostics: 'opt.nav.diagnostics',
   shortcuts: 'opt.nav.shortcuts', guide: 'opt.nav.guide',
@@ -38,22 +40,21 @@ const SECTION_META = {
   assistance: {title: 'opt.meta.assistance.title', category: 'opt.group.reading', stage: 'opt.meta.assistance.stage', desc: 'opt.meta.assistance.desc'},
   appearance: {title: 'opt.meta.appearance.title', category: 'opt.group.reading', stage: 'opt.meta.appearance.stage', desc: 'opt.meta.appearance.desc'},
   sites: {title: 'opt.meta.sites.title', category: 'opt.group.reading', stage: 'opt.meta.sites.stage', desc: 'opt.meta.sites.desc'},
-  advanced: {title: 'opt.meta.advanced.title', category: 'opt.group.reading', stage: 'opt.meta.advanced.stage', desc: 'opt.meta.advanced.desc'},
   terms: {title: 'opt.meta.terms.title', category: 'opt.group.memory', stage: 'opt.meta.terms.stage', desc: 'opt.meta.terms.desc'},
   personalization: {title: 'opt.meta.personalization.title', category: 'opt.group.memory', stage: 'opt.meta.personalization.stage', desc: 'opt.meta.personalization.desc'},
   history: {title: 'opt.meta.history.title', category: 'opt.group.memory', stage: 'opt.meta.history.stage', desc: 'opt.meta.history.desc'},
   privacy: {title: 'opt.meta.privacy.title', category: 'opt.group.memory', stage: 'opt.meta.privacy.stage', desc: 'opt.meta.privacy.desc'},
-  service: {title: 'opt.meta.service.title', category: 'opt.group.system', stage: 'opt.meta.service.stage', desc: 'opt.meta.service.desc'},
-  diagnostics: {title: 'opt.meta.diagnostics.title', category: 'opt.group.system', stage: 'opt.meta.diagnostics.stage', desc: 'opt.meta.diagnostics.desc'},
+  service: {title: 'opt.meta.service.title', category: 'opt.group.reading', stage: 'opt.meta.service.stage', desc: 'opt.meta.service.desc'},
+  diagnostics: {title: 'opt.meta.diagnostics.title', category: 'opt.group.help', stage: 'opt.meta.diagnostics.stage', desc: 'opt.meta.diagnostics.desc'},
   shortcuts: {title: 'opt.meta.shortcuts.title', category: 'opt.group.help', stage: 'opt.meta.shortcuts.stage', desc: 'opt.meta.shortcuts.desc'},
   guide: {title: 'opt.meta.guide.title', category: 'opt.group.help', stage: 'opt.meta.guide.stage', desc: 'opt.meta.guide.desc'},
 };
 const BREADCRUMBS = {
   assistance: ['opt.group.reading', 'opt.nav.assist'], appearance: ['opt.group.reading', 'opt.nav.appearance'],
-  sites: ['opt.group.reading', 'opt.nav.sites'], advanced: ['opt.group.reading', 'opt.nav.advanced'],
+  sites: ['opt.group.reading', 'opt.nav.sites'], service: ['opt.group.reading', 'opt.nav.model'],
   terms: ['opt.group.memory', 'opt.meta.terms.crumb'], personalization: ['opt.group.memory', 'opt.meta.personalization.crumb'],
   history: ['opt.group.memory', 'opt.nav.history'], privacy: ['opt.group.memory', 'opt.nav.privacy'],
-  service: ['opt.group.system', 'opt.nav.model'], diagnostics: ['opt.group.system', 'opt.nav.diagnostics'],
+  diagnostics: ['opt.group.help', 'opt.nav.diagnostics'],
   shortcuts: ['opt.group.help', 'opt.meta.shortcuts.crumb'],
   guide: ['opt.group.help', 'opt.meta.guide.crumb'],
 };
@@ -74,14 +75,18 @@ class RoamcatOptions extends LitElement {
   #section = '';
   #controller = null;
   #collapsed = localStorage.getItem('roamcat_sidebar_collapsed') === 'true';
+  // 中等宽度（761–1023px）自动收成图标栏；此时手动展开只在本次窄屏内有效，不改写保存的偏好。
+  #narrowQuery = matchMedia('(min-width: 761px) and (max-width: 1023px)');
+  #narrowExpanded = false;
+  #onNarrowChange = () => { this.#narrowExpanded = false; this.#applyCollapsed(); };
   #theme = localStorage.getItem('roamcat_ui_theme') || 'auto';
 
   #onHashChange = () => this.#applyRoute();
   #onClick = event => {
     const collapseBtn = event.target.closest('#sidebar-collapse-btn');
-    if (collapseBtn) { this.#setCollapsed(!this.#collapsed); return; }
+    if (collapseBtn) { this.#setCollapsed(!this.#isCollapsed()); return; }
     if (event.target.closest('#sidebar-brand-logo')) {
-      if (this.#collapsed) this.#setCollapsed(false);
+      if (this.#isCollapsed()) this.#setCollapsed(false);
       return;
     }
     if (event.target.closest('#theme-toggle-btn')) { this.#cycleTheme(); return; }
@@ -112,11 +117,41 @@ class RoamcatOptions extends LitElement {
     }
   };
   #onKeydown = event => {
+    if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === 'k') {
+      const field = event.target.closest?.('input, textarea, select, [contenteditable="true"]');
+      if (field && field.id !== 'sidebar-search') return;
+      event.preventDefault();
+      if (this.#isCollapsed()) this.#setCollapsed(false);
+      const search = $('sidebar-search');
+      search?.focus();
+      search?.select();
+      return;
+    }
     const stampCard = event.target.closest('#sidebar-stamp-card');
     if (stampCard && (event.key === 'Enter' || event.key === ' ')) {
       event.preventDefault();
       this.#openStampModal();
     }
+  };
+  #onInput = event => {
+    if (event.target?.id === 'sidebar-search') this.#filterNav(event.target.value);
+  };
+  #filterNav(raw) {
+    const query = raw.trim().toLowerCase();
+    let matches = 0;
+    document.querySelectorAll('.sidebar-nav-menu .nav-group').forEach(group => {
+      let visible = 0;
+      group.querySelectorAll('.cyber-nav-item').forEach(item => {
+        const text = item.querySelector('.nav-text')?.textContent || '';
+        const show = !query || text.toLowerCase().includes(query);
+        item.hidden = !show;
+        if (show) visible += 1;
+      });
+      group.hidden = visible === 0;
+      matches += visible;
+    });
+    const empty = $('sidebar-search-empty');
+    if (empty) empty.hidden = !query || matches > 0;
   };
   #onChange = event => {
     if (event.target.matches?.('input[type="radio"]')) this.#syncChoiceCards();
@@ -141,17 +176,23 @@ class RoamcatOptions extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     this.#applyTheme(this.#theme);
-    this.#setCollapsed(this.#collapsed, {silent: true});
+    this.#applyCollapsed();
+    this.#narrowQuery.addEventListener('change', this.#onNarrowChange);
     window.addEventListener('hashchange', this.#onHashChange);
     document.addEventListener('click', this.#onClick);
     document.addEventListener('keydown', this.#onKeydown);
+    document.addEventListener('input', this.#onInput);
     document.addEventListener('change', this.#onChange);
+    const kbd = document.querySelector('.sidebar-search-kbd');
+    if (kbd) kbd.textContent = /Mac|iPhone|iPad/u.test(navigator.platform || navigator.userAgent) ? '⌘K' : 'Ctrl+K';
   }
 
   disconnectedCallback() {
     window.removeEventListener('hashchange', this.#onHashChange);
+    this.#narrowQuery.removeEventListener('change', this.#onNarrowChange);
     document.removeEventListener('click', this.#onClick);
     document.removeEventListener('keydown', this.#onKeydown);
+    document.removeEventListener('input', this.#onInput);
     document.removeEventListener('change', this.#onChange);
     super.disconnectedCallback();
   }
@@ -174,6 +215,7 @@ class RoamcatOptions extends LitElement {
 
   #requestedSection() {
     const raw = location.hash.replace('#', '');
+    if (SECTION_ALIASES[raw]) return SECTION_ALIASES[raw][0];
     return SECTIONS.includes(raw) ? raw : 'assistance';
   }
 
@@ -181,6 +223,8 @@ class RoamcatOptions extends LitElement {
     const requested = location.hash.replace('#', '');
     const section = this.#requestedSection();
     if (requested !== section) history.replaceState(null, '', `#${section}`);
+    const anchor = SECTION_ALIASES[requested]?.[1];
+    if (anchor) setTimeout(() => $(anchor)?.scrollIntoView({block: 'start'}), 150);
     const previous = this.#section;
     if (section === previous && !initial) return;
     const mutate = () => {
@@ -281,12 +325,23 @@ class RoamcatOptions extends LitElement {
     setTimeout(() => location.reload(), 120);
   }
 
-  #setCollapsed(collapsed, {silent = false} = {}) {
-    this.#collapsed = collapsed;
+  #isCollapsed() {
+    return this.#narrowQuery.matches ? !this.#narrowExpanded : this.#collapsed;
+  }
+
+  #setCollapsed(collapsed) {
+    if (this.#narrowQuery.matches) this.#narrowExpanded = !collapsed;
+    else {
+      this.#collapsed = collapsed;
+      localStorage.setItem('roamcat_sidebar_collapsed', String(collapsed));
+    }
+    this.#applyCollapsed();
+  }
+
+  #applyCollapsed() {
+    const collapsed = this.#isCollapsed();
     document.documentElement.classList.toggle('sidebar-collapsed', collapsed);
     document.body.classList.toggle('sidebar-collapsed', collapsed);
-    if (!silent) localStorage.setItem('roamcat_sidebar_collapsed', String(collapsed));
-    else localStorage.setItem('roamcat_sidebar_collapsed', String(collapsed));
     const btn = $('sidebar-collapse-btn');
     if (btn) {
       const title = collapsed ? t('opt.expandSidebar') : t('opt.collapseSidebar');

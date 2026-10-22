@@ -17,15 +17,15 @@ import {createProviderPicker} from '@ext/ui/provider-picker.js';
 import {VIDEO_SUPPORT_ENABLED} from '@ext/activation.js';
 import {serviceCatalog} from '@ext/ui/options-service-catalog.js';
 
-const optionsSections = ['assistance','appearance','sites','advanced','terms','personalization','history','privacy','service','diagnostics','shortcuts','guide'];
+const optionsSections = ['assistance','appearance','sites','service','terms','personalization','history','privacy','shortcuts','guide','diagnostics'];
 const T=(k,v)=>globalThis.RoamCatI18n?.t(k,v)??k;
-const optionsLabels = {assistance:'opt.nav.assist',appearance:'opt.nav.appearance',sites:'opt.nav.sites',advanced:'opt.nav.advanced',terms:'opt.nav.terms',personalization:'opt.nav.personalization',history:'opt.nav.history',privacy:'opt.nav.privacy',service:'opt.nav.model',diagnostics:'opt.nav.diagnostics',shortcuts:'opt.nav.shortcuts',guide:'opt.nav.guide'};
+const optionsLabels = {assistance:'opt.nav.assist',appearance:'opt.nav.appearance',sites:'opt.nav.sites',terms:'opt.nav.terms',personalization:'opt.nav.personalization',history:'opt.nav.history',privacy:'opt.nav.privacy',service:'opt.nav.model',diagnostics:'opt.nav.diagnostics',shortcuts:'opt.nav.shortcuts',guide:'opt.nav.guide'};
 const optionsSourceLabels = {personalized:'src.personalized',manual:'src.manual','site-user':'src.site-user',global:'src.global','site-built-in':'src.site-built-in','local-model':'src.local-model',chatgpt:'src.chatgpt',grok:'src.grok',antigravity:'src.antigravity',api:'src.api',jev:'src.jev',general:'src.general'};
 const diagnosticOperationLabels = {PAGE_SUMMARY:'diag.op.PAGE_SUMMARY',SENTENCE_GROUPS_BATCH:'diag.op.SENTENCE_GROUPS_BATCH',HISTORY_SUMMARY:'diag.op.HISTORY_SUMMARY',PERSONALIZATION_ANALYZE:'diag.op.PERSONALIZATION_ANALYZE',ASSIST_COMMIT:'diag.op.ASSIST_COMMIT',ASSIST:'diag.op.ASSIST',SUPPORT_BATCH:'diag.op.SUPPORT_BATCH',PASSAGE_TRANSLATE:'diag.op.PASSAGE_TRANSLATE',EMERGENCY_TRANSLATE:'diag.op.EMERGENCY_TRANSLATE',RESOLVE_DOMAIN:'diag.op.RESOLVE_DOMAIN',PROVIDER_TEST:'diag.op.PROVIDER_TEST',CONNECTION:'diag.op.CONNECTION',ANALYZE:'diag.op.ANALYZE',PREPARED_ASSIST:'diag.op.PREPARED_ASSIST',PREPARED_SUPPORT:'diag.op.PREPARED_SUPPORT'};
 const diagnosticStageLabels = {request:'diag.stage.request',provider:'diag.stage.provider',first_content:'diag.stage.first_content',validation:'diag.stage.validation',render:'diag.stage.render',connection:'diag.stage.connection',rpc:'diag.stage.rpc',stderr:'diag.stage.stderr'};
 const diagnosticStatusLabels = {start:'diag.status.start',ok:'diag.status.ok',error:'diag.status.error',cancelled:'diag.status.cancelled'};
 const diagnosticCodeLabels = {STARTUP_FAILED:'diag.code.STARTUP_FAILED',CODEX_EXIT:'diag.code.CODEX_EXIT',RPC_TIMEOUT:'diag.code.RPC_TIMEOUT',TURN_FAILED:'diag.code.TURN_FAILED',UNKNOWN:'diag.code.UNKNOWN',OK:'diag.code.OK',LOCAL_RESULT:'diag.code.LOCAL_RESULT',CACHE_HIT:'diag.code.CACHE_HIT',TIMEOUT:'diag.code.TIMEOUT',NETWORK:'diag.code.NETWORK',AUTH:'diag.code.AUTH',QUOTA:'diag.code.QUOTA',RATE_LIMIT:'diag.code.RATE_LIMIT',HTTP:'diag.code.HTTP',JSON_INVALID:'diag.code.JSON_INVALID',OUTPUT_INVALID:'diag.code.OUTPUT_INVALID',BATCH_SHAPE:'diag.code.BATCH_SHAPE',BATCH_COUNT:'diag.code.BATCH_COUNT',ITEM_FIELDS:'diag.code.ITEM_FIELDS',ITEM_ID:'diag.code.ITEM_ID',ITEM_DUPLICATE:'diag.code.ITEM_DUPLICATE',TRANSLATION_TYPE:'diag.code.TRANSLATION_TYPE',TRANSLATION_EMPTY:'diag.code.TRANSLATION_EMPTY',TRANSLATION_WHITESPACE:'diag.code.TRANSLATION_WHITESPACE',TRANSLATION_LENGTH:'diag.code.TRANSLATION_LENGTH',TRANSLATION_NO_HAN:'diag.code.TRANSLATION_NO_HAN',STALE:'diag.code.STALE',CANCELLED:'diag.code.CANCELLED',NOT_READY:'diag.code.NOT_READY',DISCONNECTED:'diag.code.DISCONNECTED',NATIVE_START:'diag.code.NATIVE_START',NATIVE_EXIT:'diag.code.NATIVE_EXIT',NATIVE_RPC:'diag.code.NATIVE_RPC',NATIVE_STDERR:'diag.code.NATIVE_STDERR',STDERR_AUTH:'diag.code.STDERR_AUTH',STDERR_RATE_LIMIT:'diag.code.STDERR_RATE_LIMIT',STDERR_TIMEOUT:'diag.code.STDERR_TIMEOUT',STDERR_UNKNOWN:'diag.code.STDERR_UNKNOWN',STORAGE_ERROR:'diag.code.STORAGE_ERROR',RENDER_INVALID:'diag.code.RENDER_INVALID',NOT_DISPLAYED:'diag.code.NOT_DISPLAYED',INTERRUPTED:'diag.code.INTERRUPTED',SLOW_REQUEST:'diag.code.SLOW_REQUEST',REPEATED_FAILURE:'diag.code.REPEATED_FAILURE'};
-const optionsIds = ['section-title','save-state','global-error','reading-domain','lookup-key','automation-all-sites','automation-video-sites','automation-site-form','automation-site-origin','automation-result','automation-site-list','automation-site-empty','video-font-size','video-theme','detection-chatgpt','detection-api','detection-jev','detection-jev-model','detection-jev-url','detection-jev-key','detection-jev-key-state','clear-detection-jev-key','detection-subscription-model','detection-use-translation-api','detection-api-model','detection-api-fields','detection-api-url','detection-api-key','detection-key-state','clear-detection-key','save-recognition','domain-test-text','run-domain-test','domain-test-result','domain-rule-form','rule-host','rule-path','rule-domain','rule-subdomains','domain-rule-result','domain-rule-list','domain-rule-empty','term-form','term-source','term-translation','term-domain','term-list','term-empty','subscription-panel','api-panel','subscription-dot','subscription-state','subscription-detail','refresh-subscription','subscription-account','subscription-email','subscription-plan','subscription-model','subscription-model-note','login-subscription','cancel-subscription','logout-subscription','test-subscription','subscription-result','subscription-user-code','install-command','install-prereq','install-note','copy-install-command','provider-form','provider-url','provider-concurrency','provider-model','provider-key','key-state','test-provider','disconnect-provider','provider-result','remember-support','export-data','clear-memory','data-result','open-extension-manager','help-language','api-service-select','new-api-service','provider-name','delete-api-service','cancel-api-service','api-routing','route-assist','route-support','route-groups','route-translate','route-summary','usage-stats-refresh','usage-stats-clear','usage-stats-totals','usage-stats-empty','usage-stats-wrap','usage-stats-body','usage-stats-result', 'reading-style-preview', 'reset-reading-style', 'diagnostics-storage-error','diagnostics-enabled','diagnostics-recording-note','diagnostics-native-dot','diagnostics-native-state','diagnostics-native-note','diagnostics-requests','diagnostics-failures','diagnostics-slow','diagnostics-pending','diagnostics-updated','diagnostics-issues','diagnostics-issues-empty','diagnostics-events','diagnostics-events-empty','export-diagnostics','clear-diagnostics','diagnostics-result','reload-extension'];
+const optionsIds = ['section-title','save-state','global-error','reading-domain','lookup-key','automation-all-sites','automation-video-sites','automation-site-form','automation-site-origin','automation-result','automation-site-list','automation-site-empty','video-font-size','video-theme','video-bilingual','detection-chatgpt','detection-api','detection-jev','detection-jev-model','detection-jev-url','detection-jev-key','detection-jev-key-state','clear-detection-jev-key','detection-subscription-model','detection-use-translation-api','detection-api-model','detection-api-fields','detection-api-url','detection-api-key','detection-key-state','clear-detection-key','save-recognition','domain-test-text','run-domain-test','domain-test-result','domain-rule-form','rule-host','rule-path','rule-domain','rule-subdomains','domain-rule-result','domain-rule-list','domain-rule-empty','term-form','term-source','term-translation','term-domain','term-list','term-empty','subscription-panel','api-panel','subscription-dot','subscription-state','subscription-detail','refresh-subscription','subscription-account','subscription-email','subscription-plan','subscription-model','subscription-model-note','login-subscription','cancel-subscription','logout-subscription','test-subscription','subscription-result','subscription-user-code','install-command','install-prereq','install-note','copy-install-command','provider-form','provider-url','provider-concurrency','provider-model','provider-key','key-state','test-provider','disconnect-provider','provider-result','remember-support','export-data','clear-memory','data-result','open-extension-manager','help-language','api-service-select','new-api-service','provider-name','delete-api-service','cancel-api-service','api-routing','route-assist','route-support','route-groups','route-translate','route-summary','usage-stats-refresh','usage-stats-clear','usage-stats-totals','usage-stats-empty','usage-stats-wrap','usage-stats-body','usage-stats-result', 'reading-style-preview', 'reset-reading-style', 'diagnostics-storage-error','diagnostics-enabled','diagnostics-recording-note','diagnostics-native-dot','diagnostics-native-state','diagnostics-native-note','diagnostics-requests','diagnostics-failures','diagnostics-slow','diagnostics-pending','diagnostics-updated','diagnostics-issues','diagnostics-issues-empty','diagnostics-events','diagnostics-events-empty','export-diagnostics','clear-diagnostics','diagnostics-result','reload-extension'];
 const optionsEls = Object.fromEntries(optionsIds.map(id => [id.replace(/-([a-z])/g,(_match,char)=>char.toUpperCase()),document.querySelector(`#${id}`)]));
 optionsEls.dataProblem = document.querySelector('#data-problem');
 Object.assign(optionsEls,Object.fromEntries(['provider-id','provider-key-link','provider-fields','provider-model-list','provider-model-note','list-provider-models'].map(id=>[id.replace(/-([a-z])/g,(_match,char)=>char.toUpperCase()),document.querySelector('#'+id)])));
@@ -72,7 +72,7 @@ const optionsVideoPreviewStyle=document.createElement('style');
 document.head.append(optionsVideoPreviewStyle);
 
 function optionsErrorText(error) { return error instanceof Error ? error.message : String(error); }
-function optionsSetResult(element,message,isError=false) { element.textContent=message;element.hidden=!message;element.classList.toggle('error',isError); }
+function optionsSetResult(element,message,isError=false) { if(!element)return;element.textContent=message;element.hidden=!message;element.classList.toggle('error',isError); }
 function optionsShowError(error) { optionsSetResult(optionsEls.globalError,optionsErrorText(error),true); }
 function optionsClearError() { optionsSetResult(optionsEls.globalError,''); }
 function optionsShowSaved(message=T('ctl.saved')) { clearTimeout(optionsSaveTimer);optionsEls.saveState.textContent=message;optionsSaveTimer=setTimeout(()=>{optionsEls.saveState.textContent='';},1800); }
@@ -224,7 +224,7 @@ function optionsDiscardProviderDraft(){return !optionsProviderDirty||confirm(T('
 function optionsProviderOptions(){return Object.fromEntries([...optionsEls.providerFields.querySelectorAll('[data-provider-option]')].map(input=>[input.dataset.providerOption,input.value.trim()]));}
 function optionsRenderProviderFields(meta,values={}){
   optionsEls.providerFields.replaceChildren();
-  for(const field of meta.fields||[]){const label=document.createElement('label');label.className='field';const title=document.createElement('span');title.textContent=field.label;let input;if(field.type==='select'){input=document.createElement('select');for(const choice of field.options||[])input.append(new Option(choice.label,choice.value));}else{input=document.createElement('input');input.type='text';input.autocomplete='off';input.spellcheck=false;if(field.placeholder)input.placeholder=field.placeholder;}input.dataset.providerOption=field.key;input.value=values[field.key]??field.defaultValue??'';input.required=true;input.addEventListener('input',()=>{optionsProviderDirty=true;optionsInvalidateProviderModels();if(meta.id==='azure'&&(field.key==='resourceName'||field.key==='apiMode'))optionsEls.providerUrl.value=apiProviderBaseUrl(meta.id,optionsProviderOptions());});input.addEventListener('change',()=>{optionsProviderDirty=true;optionsInvalidateProviderModels();if(meta.id==='azure'||meta.id==='bedrock'||meta.id==='stepfun'||meta.id==='opencode')optionsEls.providerUrl.value=apiProviderBaseUrl(meta.id,optionsProviderOptions());});label.append(title,input);optionsEls.providerFields.append(label);}
+  for(const field of meta.fields||[]){const label=document.createElement('label');label.className='field';const title=document.createElement('span');title.textContent=field.label;let input;if(field.type==='select'){input=document.createElement('select');for(const choice of field.options||[])input.append(new Option(choice.label,choice.value));}else{input=document.createElement('input');input.type='text';input.autocomplete='off';input.spellcheck=false;if(field.placeholder)input.placeholder=field.placeholder;}input.dataset.providerOption=field.key;input.value=values[field.key]??field.defaultValue??'';input.required=true;input.addEventListener('input',()=>{optionsProviderDirty=true;optionsInvalidateProviderModels();if(meta.id==='azure'&&(field.key==='resourceName'||field.key==='apiMode'))optionsEls.providerUrl.value=apiProviderBaseUrl(meta.id,optionsProviderOptions());});input.addEventListener('change',()=>{optionsProviderDirty=true;optionsInvalidateProviderModels();if(meta.id==='azure'||meta.id==='bedrock'||field.key==='channel')optionsEls.providerUrl.value=apiProviderBaseUrl(meta.id,optionsProviderOptions());});label.append(title,input);optionsEls.providerFields.append(label);}
 }
 function optionsModelScope(service){return JSON.stringify([service.providerId,service.baseUrl,service.apiKeys||service.apiKey,service.options]);}
 const optionsRouteTasks=[['assist','routeAssist'],['support','routeSupport'],['groups','routeGroups'],['translate','routeTranslate'],['summary','routeSummary']];
@@ -354,6 +354,7 @@ function optionsRenderAll(){
   optionsSetResult(optionsEls.dataProblem,optionsState.dataProblem||'',Boolean(optionsState.dataProblem));
   const video=optionsState.settings.video||{fontSize:20,theme:'auto'};
   optionsEls.videoFontSize.value=String(video.fontSize||20);optionsEls.videoTheme.value=video.theme||'auto';
+  if(optionsEls.videoBilingual)optionsEls.videoBilingual.checked=video.bilingual===true;
   optionsRenderAutomation();optionsRenderSentenceAllSites();optionsRenderDetection();optionsRenderReadingStyle();optionsRenderSentenceDensity();optionsRenderSentenceLineStyle();optionsRenderRules();optionsRenderTerms();optionsRenderProvider();void optionsRefreshStructurePreview();syncChoiceCards();
 }
 async function optionsSavePatch(patch,message=T('ctl.saved')){optionsClearError();try{optionsState=await request('STATE_PATCH',{patch});window.optionsState=optionsState;optionsRenderAll();optionsShowSaved(message);return true;}catch(error){optionsShowError(error);optionsRenderAll();return false;}}
@@ -370,10 +371,10 @@ async function optionsSetSentenceDensity(density){
   if(!['coarse','medium','fine'].includes(density))return;
   const showResult=(message,isError=false)=>{optionsSetResult(optionsSentenceDensityResult,message,isError);optionsSetResult(document.querySelector('#detail-meter-result'),message,isError);};
   const previous=optionsSentenceDensity;optionsSentenceDensity=density;optionsRenderSentenceDensity();optionsRenderStructurePreview();
-  optionsSentenceDensityInputs.forEach(input=>{input.disabled=true;});document.querySelector('#matrix-index-range').disabled=true;showResult(T('ctl.saving'));
+  optionsSentenceDensityInputs.forEach(input=>{input.disabled=true;});const matrixRange=document.querySelector('#matrix-index-range');if(matrixRange)matrixRange.disabled=true;showResult(T('ctl.saving'));
   try{const saved=await request('SENTENCE_GROUPS_DENSITY_SET',{density});optionsSentenceDensity=['coarse','medium','fine'].includes(saved?.density)?saved.density:density;optionsRenderSentenceDensity();optionsRenderStructurePreview();showResult(T('ctl.densitySaved'));optionsShowSaved(T('ctl.densitySavedShort'));}
   catch(error){optionsSentenceDensity=previous;optionsRenderSentenceDensity();optionsRenderStructurePreview();showResult(optionsErrorText(error),true);}
-  finally{optionsSentenceDensityInputs.forEach(input=>{input.disabled=false;});document.querySelector('#matrix-index-range').disabled=false;}
+  finally{optionsSentenceDensityInputs.forEach(input=>{input.disabled=false;});if(matrixRange)matrixRange.disabled=false;}
 }
 async function optionsToggleSite(site,enabled){const sites=optionsAutomation.automation.sites.filter(item=>item.origin!==site.origin);if(enabled!==null)sites.push({...site,enabled});await optionsPatchAutomation({sites},enabled===null?T('ctl.siteRemoved'):T('ctl.siteSaved'));}
 function optionsParseProviderURL(value){const baseUrl=value.trim();if(!baseUrl||baseUrl.length>2048)throw new Error(T('ctl.apiUrlInvalid'));let url;try{url=new URL(baseUrl);}catch{throw new Error(T('ctl.apiUrlInvalid'));}const loopback=['localhost','127.0.0.1','[::1]'].includes(url.hostname);if(!url.hostname||(url.protocol!=='https:'&&!(url.protocol==='http:'&&loopback)))throw new Error(T('ctl.apiUrlHttps'));if(url.username||url.password||url.search||url.hash)throw new Error(T('ctl.apiUrlClean'));return{baseUrl:baseUrl.replace(/\/+$/,''),url};}
@@ -400,10 +401,11 @@ let optionsNowSequence = 0;
 function optionsSetNow(id, text, tone) {
   const item = document.getElementById(id);
   const value = item?.querySelector('strong');
+  const label = item?.querySelector('.now-status-k')?.textContent?.trim() || '';
   if (!item || !value) return;
   value.textContent = text;
   item.dataset.tone = tone;
-  item.title = text;
+  item.title = label ? `${label}：${text}` : text;
 }
 async function optionsRenderNow() {
   const sequence = ++optionsNowSequence;
@@ -532,6 +534,7 @@ optionsEls.automationAllSites.addEventListener('change',async()=>{const enabled=
 optionsEls.automationVideoSites.addEventListener('change',async()=>{const enabled=optionsEls.automationVideoSites.checked;try{if(enabled&&!await chrome.permissions.request({origins:['https://www.youtube.com/*','https://m.youtube.com/*']}))throw new Error(T('ctl.permVideoDenied'));await optionsPatchAutomation({videoSites:enabled},enabled?T('ctl.videoOn'):T('ctl.videoOff'));}catch(error){optionsShowError(error);optionsRenderAutomation();}});
 optionsEls.automationSiteForm.addEventListener('submit',async event=>{event.preventDefault();try{const origin=optionsParseOrigin(optionsEls.automationSiteOrigin.value);if(!await chrome.permissions.request({origins:[`${origin}/*`]}))throw new Error(T('ctl.permSiteDenied'));const sites=optionsAutomation.automation.sites.filter(site=>site.origin!==origin);if(await optionsPatchAutomation({sites:[...sites,{origin,enabled:true}]},T('ctl.siteAutoOn'))){event.target.reset();optionsSetResult(optionsEls.automationResult,T('ctl.siteAdded'));}}catch(error){optionsSetResult(optionsEls.automationResult,optionsErrorText(error),true);}});
 [[optionsEls.videoFontSize,'fontSize',Number],[optionsEls.videoTheme,'theme',String]].forEach(([input,key,convert])=>input.addEventListener('change',async()=>{try{const result=await request('VIDEO_SETTINGS_PATCH',{patch:{[key]:convert(input.value)}});optionsState.settings.video=result.video;optionsRenderAll();optionsShowSaved(T('ctl.videoSaved'));}catch(error){optionsShowError(error);optionsRenderAll();}}));
+optionsEls.videoBilingual?.addEventListener('change',async()=>{try{const result=await request('VIDEO_SETTINGS_PATCH',{patch:{bilingual:optionsEls.videoBilingual.checked}});optionsState.settings.video=result.video;optionsRenderAll();optionsShowSaved(T('ctl.videoSaved'));}catch(error){optionsShowError(error);optionsRenderAll();}});
 document.querySelectorAll('input[name="domain-detection-mode"]').forEach(input=>input.addEventListener('change',()=>{optionsDetectionDirty=true;optionsEls.detectionChatgpt.hidden=input.value!=='chatgpt'&&input.value!=='grok'&&input.value!=='antigravity';optionsEls.detectionApi.hidden=input.value!=='api';if(optionsEls.detectionJev)optionsEls.detectionJev.hidden=input.value!=='jev';optionsSyncDetectionSave(input.value);if(OPTIONS_DETECTION_AUTOSAVE.has(input.value))void optionsSaveDetection();}));
 optionsEls.detectionSubscriptionModel.addEventListener('change',()=>{const mode=document.querySelector('input[name="domain-detection-mode"]:checked')?.value;if(OPTIONS_DETECTION_AUTOSAVE.has(mode))void optionsSaveDetection();});
 [optionsEls.detectionSubscriptionModel,optionsEls.detectionUseTranslationApi,optionsEls.detectionApiModel,optionsEls.detectionApiUrl,optionsEls.detectionApiKey,optionsEls.detectionJevModel,optionsEls.detectionJevUrl,optionsEls.detectionJevKey].filter(Boolean).forEach(input=>input.addEventListener('input',()=>{optionsDetectionDirty=true;optionsEls.detectionApiFields.hidden=optionsEls.detectionUseTranslationApi.checked;}));
@@ -670,14 +673,7 @@ function optionsInitCyberHUD() {
     void optionsSavePatch({pdfReader: enabled}, enabled ? T('ctl.pdfOn') : T('ctl.pdfOff'));
   });
 
-  const previewBtn = document.querySelector('#preview-hud-btn');
-  if (previewBtn) {
-    previewBtn.addEventListener('click', () => {
-      location.hash = '#appearance';
-    });
-  }
-
-  const resetConfigBtn = document.querySelector('#footer-reset-config');
+  const resetConfigBtn = document.querySelector('#reset-config');
   if (resetConfigBtn) {
     resetConfigBtn.addEventListener('click', async () => {
       if (!confirm(T('ctl.resetPrefs'))) return;
@@ -706,14 +702,17 @@ export async function optionsInit(initialSection='assistance'){optionsCurrentSec
 function optionsRenderDetailMeter(density=optionsSentenceDensity) {
   const level=Math.max(1,['coarse','medium','fine'].indexOf(density)+1);
   const labels=[T('ctl.d1'),T('ctl.d2'),T('ctl.d3')];
+  // 阅读偏好页不再重复放粒度滑杆（统一在「显示与解构」调），元素缺席时直接跳过。
   const range=document.querySelector('#matrix-index-range');
+  if(!range)return;
   range.value=String(level);range.setAttribute('aria-valuetext',labels[level-1]);
-  document.querySelector('#threshold-stat-num').textContent=String(level).padStart(2,'0');
-  document.querySelector('#matrix-step-badge').textContent=labels[level-1];
+  const statNum=document.querySelector('#threshold-stat-num');if(statNum)statNum.textContent=String(level).padStart(2,'0');
+  const stepBadge=document.querySelector('#matrix-step-badge');if(stepBadge)stepBadge.textContent=labels[level-1];
   document.querySelectorAll('#matrix-step-gradient .matrix-step-cell').forEach((cell,i)=>{cell.classList.toggle('active',i<level*10);cell.classList.toggle('current',i===level*10-1);});
 }
 function optionsRenderReadingReadout() {
   const settings=optionsState?.settings||{};
-  document.querySelector('#readout-mode').textContent=settings.assistanceMode==='on-demand'?T('ctl.modeOnDemand'):T('ctl.modeAmbient');
-  document.querySelector('#readout-display').textContent=settings.lookupDisplay==='annotation'?T('ctl.displayAnno'):T('ctl.displayCard');
+  const mode=document.querySelector('#readout-mode'),display=document.querySelector('#readout-display');
+  if(mode)mode.textContent=settings.assistanceMode==='on-demand'?T('ctl.modeOnDemand'):T('ctl.modeAmbient');
+  if(display)display.textContent=settings.lookupDisplay==='annotation'?T('ctl.displayAnno'):T('ctl.displayCard');
 }

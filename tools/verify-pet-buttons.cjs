@@ -109,13 +109,20 @@ const warn = (name, detail) => report.warnings.push(detail ? `${name} — ${deta
       JSON.stringify({cls: st?.cls, expanded: st?.expanded, inert: st?.inert}));
     check('点击有果冻/粒子反馈', reacted);
     await shot('dock-open');
+    // 快捷按钮 2×2 方阵：上下两排按列对齐（贴右缘时右侧列离猫最近）
+    const grid = await petCall(`() => {
+      const sr = document.querySelector('#roamcat-pet-host').shadowRoot;
+      const r = sel => { const b = sr.querySelector(sel).getBoundingClientRect(); return {x: Math.round(b.x), y: Math.round(b.y)}; };
+      return {sum: r('#quick-summary'), opt: r('#quick-options'), flip: r('#roamcat-flip-btn'), read: r('#quick-reading')};
+    }`);
+    check('快捷按钮 2×2 方阵列对齐', grid && Math.abs(grid.sum.x - grid.flip.x) <= 1 && Math.abs(grid.opt.x - grid.read.x) <= 1
+      && grid.sum.y < grid.flip.y, JSON.stringify(grid));
 
-    // ---------- 4. 悬停播报：五个按钮 + 旋旋翻各播一条气泡 ----------
+    // ---------- 4. 悬停播报：三个按钮 + 旋旋翻各播一条气泡 ----------
     const hoverCases = [
       ['#quick-reading', '阅读辅助：点击开合本页提示 喵~'],
       ['#quick-summary', '提炼整篇精华，喂我一下就好 喵~'],
       ['#quick-options', '打开扩展偏好设置 喵~'],
-      ['#quick-dock', '贴边折叠，需要时再戳我 喵~'],
       ['.roamcat-flip-btn', '旋旋翻：一键双语对照 喵~'],
     ];
     for (const [sel, expectText] of hoverCases) {
@@ -296,12 +303,10 @@ const warn = (name, detail) => report.warnings.push(detail ? `${name} — ${deta
     check('×按钮关闭摘要窗', await tab.locator('.roamcat-summary-window.open').count() === 0);
 
     // ---------- 12. 贴边折叠与唤醒 ----------
-    await avatar.click();
-    await tab.waitForTimeout(350);
-    await tab.locator('#quick-dock').click();
-    await tab.waitForTimeout(500);
+    await avatar.dblclick();
+    await tab.waitForTimeout(600);
     st = await petState();
-    check('贴边折叠生效', st?.cls.includes('docked'), `cls=${st?.cls}`);
+    check('双击猫头贴边折叠', st?.cls.includes('docked'), `cls=${st?.cls}`);
     const hostRect = await tab.locator('#roamcat-pet-host').boundingBox();
     check('贴边后吸附右缘', Boolean(hostRect) && Math.abs(hostRect.x + hostRect.width - 1440) < 90,
       `right=${hostRect ? Math.round(hostRect.x + hostRect.width) : 'n/a'}`);
@@ -314,24 +319,26 @@ const warn = (name, detail) => report.warnings.push(detail ? `${name} — ${deta
     }`);
     check('贴边标签可及性（role+tabindex）', edgeTabInfo?.role === 'button' && edgeTabInfo.tabIndex >= 0,
       JSON.stringify(edgeTabInfo));
-    // 设计：鼠标悬停挂件时猫探出、标签淡出并让位（pointer-events:none）——
-    // 移开鼠标后标签才是可点目标；点中猫则走头像唤醒兜底，两条路径同结果。
+    // 探头猫贴住屏幕边：挂件右缘落在视口右缘（不再整体平移出屏裁掉爪子）
+    const peekBox = await widget.boundingBox();
+    check('贴边探头贴住右缘', Boolean(peekBox) && Math.abs(peekBox.x + peekBox.width - 1440) <= 1,
+      `right=${peekBox ? Math.round(peekBox.x + peekBox.width) : 'n/a'}`);
+    // 贴边态悬停只探头，不弹快捷按钮方阵
+    const pb = await avatar.boundingBox();
+    await tab.mouse.move(pb.x + pb.width / 2, pb.y + pb.height / 2);
+    await tab.waitForTimeout(450);
+    const dockedHover = await tab.locator('#quick-reading').evaluate(el => {
+      const s = getComputedStyle(el);
+      return {opacity: s.opacity, pe: s.pointerEvents};
+    });
+    check('贴边悬停不弹快捷按钮', dockedHover.pe === 'none' && Number(dockedHover.opacity) < 0.1, JSON.stringify(dockedHover));
+    await shot('docked-hover');
+    // 贴边标签仅作键盘入口：平时透明且不占命中区
     await tab.mouse.move(30, 30);
     await tab.waitForTimeout(400);
-    const edgeBox = await tab.locator('#roamcat-edge-tab').boundingBox();
-    let edgeHit = '';
-    if (edgeBox) {
-      for (const fx of [1, Math.round(edgeBox.width / 2), edgeBox.width - 1]) {
-        edgeHit = await tab.evaluate(({x, y}) => {
-          const sr = document.querySelector('#roamcat-pet-host')?.shadowRoot;
-          const el = sr?.elementFromPoint?.(x, y) || document.elementFromPoint(x, y);
-          return String(el?.id || el?.className || el?.tagName || 'none');
-        }, {x: edgeBox.x + fx, y: edgeBox.y + edgeBox.height / 2});
-        if (edgeHit.includes('edge-tab')) break;
-      }
-    }
-    check('鼠标移开后贴边标签可点', edgeHit.includes('edge-tab'), `hit=${edgeHit}`);
-    // 标签自身 @click 接线验证（真实命中路径被悬停让位覆盖，属设计行为）
+    const tabIdle = await tab.locator('#roamcat-edge-tab').evaluate(el => ({opacity: getComputedStyle(el).opacity, pe: getComputedStyle(el).pointerEvents}));
+    check('贴边标签平时隐藏', Number(tabIdle.opacity) === 0 && tabIdle.pe === 'none', JSON.stringify(tabIdle));
+    // 标签自身 @click 接线验证
     await tab.locator('#roamcat-edge-tab').dispatchEvent('click');
     await tab.waitForTimeout(500);
     st = await petState();
@@ -342,7 +349,13 @@ const warn = (name, detail) => report.warnings.push(detail ? `${name} — ${deta
     await tab.waitForTimeout(600);
     st = await petState();
     check('双击再贴边', st?.cls.includes('docked'), `cls=${st?.cls}`);
-    await tab.locator('#roamcat-edge-tab').focus();
+    // 从猫头 Shift+Tab 回到标签：键盘导航才会命中 :focus-visible
+    await avatar.focus();
+    await tab.keyboard.press('Shift+Tab');
+    await tab.waitForTimeout(250);
+    const tabFocused = await tab.locator('#roamcat-edge-tab').evaluate(el => ({opacity: Number(getComputedStyle(el).opacity), fv: el.matches(':focus-visible')}));
+    check('贴边标签键盘聚焦可见', tabFocused.fv && tabFocused.opacity > 0.9, JSON.stringify(tabFocused));
+    await shot('docked-tab-focus');
     await tab.keyboard.press('Enter');
     await tab.waitForTimeout(500);
     st = await petState();
@@ -357,6 +370,15 @@ const warn = (name, detail) => report.warnings.push(detail ? `${name} — ${deta
     await tab.waitForTimeout(500);
     st = await petState();
     check('贴边态单击唤醒', st && !st.cls.includes('docked'), `cls=${st?.cls}`);
+
+    // 贴边态猫头 Enter 与单击一致：直接唤醒
+    await avatar.dblclick();
+    await tab.waitForTimeout(600);
+    await avatar.focus();
+    await tab.keyboard.press('Enter');
+    await tab.waitForTimeout(500);
+    st = await petState();
+    check('贴边态猫头 Enter 唤醒', st && !st.cls.includes('docked'), `cls=${st?.cls}`);
 
     // ---------- 13. 拖拽位移并抑制误触 ----------
     const before = await tab.locator('#roamcat-pet-host').boundingBox();

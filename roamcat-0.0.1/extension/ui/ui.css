@@ -912,10 +912,9 @@ html.options-document, body.options-body {
   box-shadow: inset -1px 0 0 var(--edge-hi, transparent);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
   user-select: none;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: visible;
   position: sticky;
   top: 0;
   z-index: 40;
@@ -925,10 +924,13 @@ html.options-document, body.options-body {
 }
 
 .sidebar-top-section {
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
+  overflow: hidden;
   transition: padding 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -1074,38 +1076,104 @@ html.options-document, body.options-body {
   flex-shrink: 0;
 }
 
-.sidebar-header-actions {
+.sidebar-search {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-shrink: 0;
+  flex: none;
+  height: 36px;
+  margin: 0;
+  padding: 0 8px 0 10px;
+  border: 1px solid var(--color-border-card);
+  border-radius: 10px;
+  background: var(--color-card-inset);
+  color: var(--color-text-muted);
+}
+
+.sidebar-search:focus-within {
+  border-color: var(--color-border-mid);
+  color: var(--color-text-secondary);
+}
+
+.sidebar-search svg {
+  flex: none;
+  width: 15px;
+  height: 15px;
+}
+
+.sidebar-search input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  outline: none;
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--fs-2);
+  user-select: text;
+}
+
+.sidebar-search input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.sidebar-search-kbd {
+  flex: none;
+  padding: 2px 6px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 6px;
+  background: var(--color-card-bg);
+  color: var(--color-text-muted);
+  font-family: var(--font-sans);
+  font-size: var(--fs-1);
+  line-height: 1.4;
+}
+
+.sidebar-search:focus-within .sidebar-search-kbd,
+.sidebar-search:has(input:not(:placeholder-shown)) .sidebar-search-kbd {
+  display: none;
+}
+
+.sidebar-search-empty {
+  flex: none;
+  margin: -8px 2px 0;
+  color: var(--color-text-muted);
+  font-size: var(--fs-1);
+  line-height: 1.5;
 }
 
 .sidebar-collapse-btn {
+  position: absolute;
+  top: 34px;
+  right: -14px;
+  z-index: 2;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: var(--radius-sm);
+  width: 28px;
+  height: 28px;
+  min-height: 0;
+  border-radius: 50%;
   border: 1px solid var(--color-border-card);
-  background: var(--color-card-inset);
+  background-color: var(--color-card-bg);
+  background-image: none;
+  box-shadow: var(--elev-0);
+  text-shadow: none;
   color: var(--color-text-secondary);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
   padding: 0;
-  flex-shrink: 0;
 }
 
 .sidebar-collapse-btn:hover {
   color: var(--color-text-primary);
-  background: var(--color-card-bg);
+  background: var(--color-card-inset);
   border-color: var(--color-border-mid);
-  transform: translateY(-1px);
 }
 
 .sidebar-collapse-btn:active {
-  transform: scale(0.95);
+  transform: scale(0.96);
 }
 
 .collapse-icon {
@@ -1118,6 +1186,15 @@ html.options-document, body.options-body {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.cyber-nav-item[hidden],
+.nav-group[hidden] {
+  display: none !important;
 }
 
 .nav-group {
@@ -1428,52 +1505,75 @@ html.options-document, body.options-body {
    MINI COLLAPSED SIDEBAR (ICON-ONLY MODE)
    ========================================================================== */
 .sidebar-collapsed .sidebar {
-  width: 68px;
-  min-width: 68px;
-  max-width: 68px;
+  width: 64px;
+  min-width: 64px;
+  max-width: 64px;
 }
 
 .sidebar-collapsed .sidebar-top-section {
-  padding: 16px 8px;
-  gap: 14px;
+  align-items: center;
+  padding: 10px 0 6px;
+  gap: 8px;
 }
 
+/* 收起后不再叠猫标、箭头和点阵分隔线，顶上只留一颗与导航同尺寸的展开按钮。 */
 .sidebar-collapsed .sidebar-brand-lockup {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding-bottom: 12px;
-  gap: 10px;
+  width: 100%;
+  padding: 0;
+  gap: 0;
+  border-bottom: 0;
+}
+
+.sidebar-collapsed .sidebar-brand-lockup::after {
+  content: none;
 }
 
 .sidebar-collapsed .sidebar-brand-left {
-  justify-content: center;
-  gap: 0;
+  display: none;
 }
 
 .sidebar-collapsed .brand-info-wrap {
   display: none !important;
 }
 
-.sidebar-collapsed .sidebar-header-actions {
-  width: 100%;
-  justify-content: center;
+.sidebar-collapsed .sidebar-search,
+.sidebar-collapsed .sidebar-search-empty {
+  display: none;
+}
+
+.sidebar-collapsed .sidebar-collapse-btn {
+  top: 18px;
 }
 
 .sidebar-collapsed .sidebar-collapse-btn .collapse-icon {
+  width: 16px;
+  height: 16px;
   transform: rotate(180deg);
 }
 
+.sidebar-collapsed .sidebar-nav-menu {
+  gap: 2px;
+  width: 100%;
+}
+
 .sidebar-collapsed .nav-group {
-  gap: 6px;
+  gap: 2px;
   align-items: center;
+  width: 100%;
+}
+
+.sidebar-collapsed .nav-group:first-child > .nav-group-header {
+  display: none;
 }
 
 .sidebar-collapsed .nav-group-header {
-  width: 28px;
+  width: 16px;
   height: 1px;
   padding: 0;
-  margin: 6px auto;
+  margin: 8px auto 6px;
   background: var(--color-border-subtle);
   overflow: hidden;
   border-radius: 1px;
@@ -1484,11 +1584,16 @@ html.options-document, body.options-body {
 }
 
 .sidebar-collapsed .cyber-nav-item {
-  width: 42px;
-  height: 42px;
+  width: 40px;
+  height: 40px;
   padding: 0;
   margin: 0 auto;
   justify-content: center;
+  border-radius: 10px;
+}
+
+.sidebar-collapsed .cyber-nav-item.active {
+  box-shadow: none;
 }
 
 .sidebar-collapsed .nav-item-left {
@@ -1542,11 +1647,9 @@ html.options-document, body.options-body {
   transform: translateY(-50%) translateX(0);
 }
 
-/* Collapsed User Stamp Card */
+/* 收起后底部「品牌印记」印章会再画出一只猫，与顶栏猫标重复，直接不显示。 */
 .sidebar-collapsed .sidebar-user-card-wrap {
-  padding: 12px 8px 16px 8px;
-  display: flex;
-  justify-content: center;
+  display: none;
 }
 
 .sidebar-collapsed .matrix-stamp-card {
@@ -1621,13 +1724,14 @@ html.options-document, body.options-body {
 
 /* Sticky Toolbar */
 .settings-toolbar {
-  height: 58px;
-  min-height: 58px;
-  padding: 0 40px;
+  height: 64px;
+  min-height: 64px;
+  padding: 0 32px;
   border-bottom: 1px solid var(--rim-soft, var(--color-border-subtle));
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 32px;
   background-color: var(--color-toolbar-bg);
   background-image: var(--face-raised, none);
   backdrop-filter: blur(12px);
@@ -1641,15 +1745,37 @@ html.options-document, body.options-body {
 .toolbar-left, .toolbar-right {
   display: flex;
   align-items: center;
-  gap: 14px;
+  min-width: 0;
+}
+
+.toolbar-left {
+  flex: 1 1 auto;
+}
+
+.toolbar-right {
+  flex: 0 0 auto;
+  gap: 28px;
+}
+
+.toolbar-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.toolbar-switches {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .toolbar-breadcrumb {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: var(--fs-1);
-  font-family: var(--font-mono);
+  gap: 10px;
+  min-width: 0;
+  font-size: var(--fs-2);
+  font-family: var(--font-sans);
   color: var(--color-text-dim);
 }
 
@@ -1666,22 +1792,19 @@ html.options-document, body.options-body {
   color: var(--color-border-mid);
 }
 
-/* 徽章：凹刻铭牌——井面内陷 + 阴刻字 */
+/* 顶栏里的运行提示只留圆点和文字，不再套铭牌，避免和右侧切换按钮挤成一排盒子。 */
 .toolbar-engine-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   font-size: var(--fs-1);
-  font-family: var(--font-mono);
-  font-weight: 600;
+  font-family: var(--font-sans);
+  font-weight: 500;
   color: var(--color-text-secondary);
-  background-color: var(--color-card-inset);
-  background-image: var(--face-well, none);
-  border: 1px solid var(--rim-soft, var(--color-border-subtle));
-  box-shadow: var(--well-shadow, none);
-  text-shadow: var(--engrave, none);
-  padding: 3px 9px;
-  border-radius: 999px;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
 }
 
 .engine-pulse-dot {
@@ -1745,31 +1868,6 @@ html.options-document, body.options-body {
   color: var(--color-brand-green);
   width: 14px;
   height: 14px;
-}
-
-.preview-hud-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 16px;
-  background: var(--btn-primary-bg);
-  color: var(--btn-primary-color);
-  font-size: var(--fs-1);
-  font-weight: 600;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--btn-primary-border);
-  box-shadow: var(--elev-0);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.preview-hud-btn:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
-}
-
-.preview-hud-btn:active {
-  transform: scale(0.98);
 }
 
 /* Main Canvas Content */

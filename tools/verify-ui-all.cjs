@@ -30,7 +30,7 @@ const server = http.createServer((req, res) => {
   });
 });
 
-const OPTION_SECTIONS = ['assistance', 'appearance', 'sites', 'advanced', 'terms', 'personalization', 'history', 'privacy', 'service', 'diagnostics', 'shortcuts', 'guide'];
+const OPTION_SECTIONS = ['assistance', 'appearance', 'sites', 'service', 'terms', 'personalization', 'history', 'privacy', 'shortcuts', 'guide', 'diagnostics'];
 const THEMES = ['light', 'dark'];
 
 const report = {checks: [], failures: [], warnings: [], consoleErrors: {}, overflow: [], widgets: {}};
@@ -453,9 +453,9 @@ const setTheme = async (page, theme) => {
     const enPet = await execInTab(`() => {
       const I = globalThis.RoamCatI18n;
       const speech = document.querySelector('#roamcat-pet-host')?.shadowRoot?.querySelector('#speech-text')?.textContent || '';
-      return {lang: I?.lang(), hover: I?.t('fp.hover.dock'), speech};
+      return {lang: I?.lang(), hover: I?.t('fp.hover.sum'), speech};
     }`);
-    check('content script 英文档生效', enPet?.lang === 'en' && enPet.hover === 'Dock to the edge — poke me when needed, meow~' && !/[一-鿿]/.test(enPet.speech), JSON.stringify(enPet));
+    check('content script 英文档生效', enPet?.lang === 'en' && enPet.hover === 'Distill the whole article — just feed me, meow~' && !/[一-鿿]/.test(enPet.speech), JSON.stringify(enPet));
     await shot(tab, 'pet-en');
 
     // 复位语言偏好，避免污染本地调试

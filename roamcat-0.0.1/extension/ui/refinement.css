@@ -39,9 +39,17 @@ button, input, select, textarea { font-family: var(--font-sans); }
 .options-body .sidebar-brand-icon img { width: 38px; height: 38px; border-radius: 10px !important; box-shadow: 0 2px 6px rgba(70, 50, 30, 0.18); }
 .options-body .brand-title { font-size: var(--fs-3); letter-spacing: .01em; }
 .options-body .brand-pro-tag { font: var(--fs-1)/1.1 var(--font-display); padding: 1px 5px; }
-.options-body .sidebar-collapse-btn { width: 24px; height: 24px; }
+.options-body .sidebar-collapse-btn { width: 28px; height: 28px; border-radius: 50%; }
 .options-body .brand-live-dot { width: 7px; height: 7px; border-width: 1.5px; box-shadow: none; }
-.options-body .main-canvas-content { max-width: 1200px; margin: 0 auto; padding: 32px 40px 64px; }
+.options-body { --opt-column: 920px; --opt-pad: 36px; }
+.options-body .main-canvas-content { max-width: var(--opt-column); margin-inline: auto; padding: 28px var(--opt-pad) 72px; }
+/* 顶栏和底栏跟正文同一栏宽，并在主区域里居中，避免按钮贴在窗口最右侧。 */
+.options-body .settings-toolbar,
+.options-body .telemetry-bar {
+  padding-left: max(var(--opt-pad), calc((100% - var(--opt-column)) / 2 + var(--opt-pad)));
+  padding-right: max(var(--opt-pad), calc((100% - var(--opt-column)) / 2 + var(--opt-pad)));
+}
+.options-body .telemetry-right { margin-left: auto; }
 /* 页头不再是卡片：标题 + 一句说明直接放在内容区顶部 */
 .options-body .compact-hero-banner { position: relative; padding: 0 0 8px; border: 0; border-radius: 0; background: none; box-shadow: none; gap: 32px; }
 .options-body .hero-pill-badge { border: 0; padding: 0; background: none; font: var(--fs-1) var(--font-display); letter-spacing: .05em; }
@@ -121,7 +129,8 @@ button, input, select, textarea { font-family: var(--font-sans); }
   .options-body .toolbar-engine-badge { display: none; }
   .options-body .toolbar-left { min-width: 0; }
   .options-body .toolbar-sync-state { display: none; }
-  .options-body .main-canvas-content { padding: 26px 24px 48px; }
+  .options-body { --opt-pad: 24px; }
+  .options-body .main-canvas-content { padding: 24px var(--opt-pad) 48px; }
   .options-body .compact-hero-banner { gap: 20px; }
   .options-body .reading-readout { width: 250px; padding: 16px; }
   .options-body .hero-title { font-size: var(--fs-6); }
@@ -129,8 +138,10 @@ button, input, select, textarea { font-family: var(--font-sans); }
 }
 @media (max-width:800px) {
   .options-body .main-panel { padding: 0; }
-  .options-body .settings-toolbar { padding: 12px 20px; min-height: 60px; height: auto; }
+  .options-body { --opt-pad: 20px; }
+  .options-body .settings-toolbar { padding-top: 12px; padding-bottom: 12px; min-height: 60px; height: auto; }
   .options-body .toolbar-left { display: none; }
+  .options-body .toolbar-right { margin-left: auto; }
   .options-body .compact-hero-banner { flex-direction: column; align-items: stretch; }
   .options-body .reading-readout { box-sizing: border-box; width: 100%; }
   .readout-main { margin: 10px 0; }
@@ -141,18 +152,18 @@ button, input, select, textarea { font-family: var(--font-sans); }
 @media (max-width:600px) {
   .options-body .sidebar { width: 60px; min-width: 60px; max-width: 60px; box-sizing: border-box; padding: 0; }
   .options-body .sidebar-top-section { padding: 16px 8px; gap: 20px; }
-  .options-body .sidebar :is(.brand-info-wrap,.sidebar-header-actions,.nav-group-header,.nav-text,.cyber-nav-badge,.nav-active-pill-dot,.sidebar-user-card-wrap,.now-status) { display: none; }
+  .options-body .sidebar :is(.brand-info-wrap,.sidebar-header-actions,.sidebar-search,.sidebar-search-empty,.sidebar-collapse-btn,.nav-group-header,.nav-text,.cyber-nav-badge,.nav-active-pill-dot,.sidebar-user-card-wrap,.now-status) { display: none; }
   .options-body .sidebar nav { display: flex; flex-direction: column; overflow: visible; gap: 18px; }
   .options-body .sidebar nav svg { display: block; }
   .options-body .sidebar nav a { flex: initial; border-radius: 4px; padding: 12px; }
   .options-body .sidebar-brand-lockup { padding: 0; justify-content: center; }
   .options-body .cyber-nav-item { justify-content: center; padding: 12px 8px; }
-  .options-body .main-canvas-content { padding: 20px 12px 36px; }
-  .options-body .settings-toolbar { padding: 10px 12px; gap: 8px; flex-wrap: wrap; height: auto; }
+  .options-body { --opt-pad: 12px; }
+  .options-body .main-canvas-content { padding: 20px var(--opt-pad) 36px; }
+  .options-body .settings-toolbar { padding-top: 10px; padding-bottom: 10px; gap: 8px; flex-wrap: wrap; height: auto; }
   .options-body .toolbar-left { display: none; }
   .options-body .toolbar-right { gap: 8px; flex-wrap: wrap; }
   .options-body .sync-status { display: none; }
-  .options-body .preview-hud-btn { padding: 8px; }
   .options-body .hero-title { font-size: var(--fs-5); }
   .options-body .choice-card-item { padding: 14px; }
   .options-body .swiss-card-header { flex-wrap: wrap; gap: 16px; }

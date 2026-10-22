@@ -20,38 +20,8 @@ export const appearanceSection = html`
 <h2 id="appearance-heading" class="sr-only">${t('sec.ap.title')}</h2>
 <p>${t('sec.ap.desc')}</p>
 </div>
-<div class="paper-card">
-<div class="settings-group">
-<h3>${t('common.language')}</h3>
-<p class="group-desc">${t('sec.ap.langCard')}</p>
-<fieldset class="sentence-density">
-<legend class="sr-only">${t('common.language')}</legend>
-<div class="sentence-density-options">
-              <label>
-<input type="radio" name="ui-lang" value="auto">
-<span>
-<b>${t('sec.ap.langAutoS')}</b>
-<small>${t('sec.ap.langAutoD')}</small>
-</span>
-</label>
-<label>
-<input type="radio" name="ui-lang" value="zh">
-<span>
-<b>${t('common.langZh')}</b>
-<small>${t('common.langZhDesc')}</small>
-</span>
-</label>
-<label>
-<input type="radio" name="ui-lang" value="en">
-<span>
-<b>${t('common.langEn')}</b>
-<small>${t('common.langEnDesc')}</small>
-</span>
-</label>
-            </div>
-</fieldset>
-</div>
-</div>
+<div class="opt-group">
+<div class="opt-group-head"><h2>${t('sec.ap.gStyle')}</h2><p>${t('sec.ap.gStyleDesc')}</p></div>
 <div class="paper-card reading-style-workspace">
 <div class="section-tabs appearance-tabs" role="tablist" aria-label="${t('sec.ap.tabs')}">
 <button id="appearance-tab-structure" type="button" role="tab" data-appearance-tab="structure" aria-controls="appearance-panel-structure" aria-selected="true" tabindex="0">${t('sec.ap.tabStructure')}</button>
@@ -252,6 +222,11 @@ export const appearanceSection = html`
 </fieldset>
 </div>
 <div id="appearance-panel-video" role="tabpanel" aria-labelledby="appearance-tab-video" data-appearance-panel="video" hidden="">
+<label class="field">
+<span>${t('sec.ap.videoBilingual')}</span>
+<input id="video-bilingual" type="checkbox">
+</label>
+<p class="field-help">${t('sec.ap.videoBilingualDesc')}</p>
 <div class="form-grid">
 <label class="field">
 <span>${t('sec.ap.fontSize')}</span>
@@ -303,6 +278,7 @@ export const appearanceSection = html`
 </aside>
           </div>
         </div>
+</div>
 </section>
 
 `;

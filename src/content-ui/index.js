@@ -331,7 +331,6 @@ export function petWidget(shadow, {domainKey = 'general', domainName = '', catSv
       <div class="roamcat-edge-tab" id="roamcat-edge-tab" role="button" tabindex="0" aria-label=${T('pet.edgeAria')} title=${T('pet.edgeTitle')} @click=${event => { event.stopPropagation(); onEdgeTabClick?.(); }} @keydown=${event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); event.stopPropagation(); onEdgeTabClick?.(); } }}>
         <div class="edge-tab-inner">
           <span class="edge-tab-paw">${icon('paw', {size: 14})}</span>
-          <span class="edge-tab-dot"></span>
         </div>
       </div>
       <div class="roamcat-zoom-controls" id="roamcat-zoom-controls" inert>
@@ -357,10 +356,6 @@ export function petWidget(shadow, {domainKey = 'general', domainName = '', catSv
         <button type="button" class="roamcat-quick-btn" id="quick-reading" tabindex="-1" aria-label=${T('pet.readAria')} title=${T('pet.readTip')} aria-pressed="false">
           <span class="quick-glyph" aria-hidden="true">${icon('book-open', {size: 15})}</span>
           <span class="quick-tooltip">${T('pet.readTip')}</span>
-        </button>
-        <button type="button" class="roamcat-quick-btn" id="quick-dock" tabindex="-1" aria-label=${T('pet.dockAria')} title=${T('pet.dockTip')} aria-pressed="false">
-          <span class="quick-glyph" aria-hidden="true">${icon('dock-edge', {size: 15, cls: 'icon-dock-edge'})}</span>
-          <span class="quick-tooltip">${T('pet.dockTip')}</span>
         </button>
       </div>
       <div class="roamcat-cat-menu" id="roamcat-cat-menu">

@@ -437,7 +437,7 @@ class RoamcatPopup extends LitElement {
       <div class="brand-lockup">
         <img class="brand-icon rc-logo-light" src=${chrome.runtime.getURL('icons/roamcat-light.svg')} width="24" height="24" alt="RoamCat"><img class="brand-icon rc-logo-dark" src=${chrome.runtime.getURL('icons/roamcat.svg')} width="24" height="24" alt="RoamCat">
         <div class="brand-text-col">
-          <span id="brand-title" class="popup-brand-name">ROAMCAT</span>
+          <span id="brand-title" class="popup-brand-name">RoamCat</span>
           <span class="popup-brand-badge">${t('pop.brand')}</span>
         </div>
       </div>
@@ -491,36 +491,6 @@ class RoamcatPopup extends LitElement {
         </div>
         <p id="action-error" class="inline-message error" role="alert" ?hidden=${!this.#errors.action}>${this.#errors.action}</p>
 
-        <div class="site-auto-panel">
-          <div class="site-auto-copy">
-            <h3 id="site-auto-title">${t('pop.siteAuto')}</h3>
-            <p id="site-auto-note">${siteAutoNote}</p>
-          </div>
-          <rc-switch id="site-auto" .checked=${Boolean(supported && configured)} .disabled=${this.#busy || !supported || !this.#automation}
-            label=${t('pop.siteAuto')} @change=${event => void this.#toggleSite(event)}></rc-switch>
-        </div>
-        <p id="site-auto-error" class="inline-message error" role="alert" ?hidden=${!this.#errors.siteAuto}>${this.#errors.siteAuto}</p>
-      </section>
-
-      <section class="popup-card popup-feature-group" aria-label=${t('pop.featuresLabel')} ?hidden=${!supported}>
-      <div class="feature-row sentence-groups-panel" role="group" aria-labelledby="sentence-groups-title">
-        <div class="feature-card-header">
-          <div class="feature-card-title-wrap">
-            <div class="feature-icon-badge">${icon('layers', {size: 16})}</div>
-            <div>
-              <h2 id="sentence-groups-title">${t('pop.sgTitle')}</h2>
-              <p id="sentence-groups-note" aria-live="polite">${sgNote}</p>
-            </div>
-          </div>
-          <rc-switch id="sentence-groups" .checked=${Boolean(this.#sentenceGroupsLoaded && this.#sentenceGroups.enabled)}
-            .disabled=${this.#busy || !supported || !this.#sentenceGroupsLoaded}
-            describedby="sentence-groups-note sentence-structure-key sentence-groups-error"
-            label=${t('pop.sgTitle')} @change=${event => void this.#toggleSentenceGroups(event)}></rc-switch>
-        </div>
-        <p id="sentence-structure-key" class="sentence-structure-key">${t('pop.sgKey')}</p>
-        <p id="sentence-groups-error" class="inline-message error" role="alert" ?hidden=${!this.#errors.sentenceGroups}>${this.#errors.sentenceGroups}</p>
-      </div>
-
       <div id="emergency-panel" class="feature-row emergency-panel" role="group" aria-labelledby="emergency-title" tabindex="-1">
         <div class="emergency-heading">
           <div class="feature-card-title-wrap">
@@ -555,6 +525,24 @@ class RoamcatPopup extends LitElement {
         </div>
         <p id="emergency-result" class=${classMap({'inline-message': true, error: this.#emergencyResult.error})} role="status" aria-live="polite" ?hidden=${!this.#emergencyResult.text}>${this.#emergencyResult.text}</p>
       </div>
+      <div class="feature-row sentence-groups-panel" role="group" aria-labelledby="sentence-groups-title">
+        <div class="feature-card-header">
+          <div class="feature-card-title-wrap">
+            <div class="feature-icon-badge">${icon('layers', {size: 16})}</div>
+            <div>
+              <h2 id="sentence-groups-title">${t('pop.sgTitle')}</h2>
+              <p id="sentence-groups-note" aria-live="polite">${sgNote}</p>
+            </div>
+          </div>
+          <rc-switch id="sentence-groups" .checked=${Boolean(this.#sentenceGroupsLoaded && this.#sentenceGroups.enabled)}
+            .disabled=${this.#busy || !supported || !this.#sentenceGroupsLoaded}
+            describedby="sentence-groups-note sentence-structure-key sentence-groups-error"
+            label=${t('pop.sgTitle')} @change=${event => void this.#toggleSentenceGroups(event)}></rc-switch>
+        </div>
+        <p id="sentence-structure-key" class="sentence-structure-key">${t('pop.sgKey')}</p>
+        <p id="sentence-groups-error" class="inline-message error" role="alert" ?hidden=${!this.#errors.sentenceGroups}>${this.#errors.sentenceGroups}</p>
+      </div>
+
       </section>
 
       <section id="on-demand-suggestion" class="popup-card suggestion-panel" ?hidden=${!this.#suggestionVisible}>
@@ -563,7 +551,16 @@ class RoamcatPopup extends LitElement {
         <button id="choose-on-demand" class="secondary-button" type="button" @click=${() => void this.#chooseOnDemand()}>${t('pop.quietBtn')}</button>
       </section>
 
-      <section class="popup-card service-switch-panel popup-service-card" aria-labelledby="service-switch-title">
+      <section class="popup-card service-switch-panel popup-service-card popup-settings-card" aria-labelledby="service-switch-title">
+        <div class="site-auto-panel feature-row" ?hidden=${!supported}>
+          <div class="site-auto-copy">
+            <h3 id="site-auto-title">${t('pop.siteAuto')}</h3>
+            <p id="site-auto-note">${siteAutoNote}</p>
+          </div>
+          <rc-switch id="site-auto" .checked=${Boolean(supported && configured)} .disabled=${this.#busy || !supported || !this.#automation}
+            label=${t('pop.siteAuto')} @change=${event => void this.#toggleSite(event)}></rc-switch>
+        </div>
+        <p id="site-auto-error" class="inline-message error" role="alert" ?hidden=${!this.#errors.siteAuto}>${this.#errors.siteAuto}</p>
         <div class="feature-card-header">
           <div class="feature-card-title-wrap">
             <div class="feature-icon-badge service-provider-badge">

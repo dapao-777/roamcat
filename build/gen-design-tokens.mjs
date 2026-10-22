@@ -113,7 +113,7 @@ ${dark}
       if (savedTheme === 'dark' || savedTheme === 'light') {
         document.documentElement.setAttribute('data-theme', savedTheme);
       }
-      if (localStorage.getItem('roamcat_sidebar_collapsed') === 'true') {
+      if (localStorage.getItem('roamcat_sidebar_collapsed') === 'true' || matchMedia('(min-width: 761px) and (max-width: 1023px)').matches) {
         document.documentElement.classList.add('sidebar-collapsed');
       }
     } catch {}

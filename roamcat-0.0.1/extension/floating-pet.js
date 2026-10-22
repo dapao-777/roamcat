@@ -282,19 +282,19 @@
         --pet-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
         --pet-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.04);
         --pet-shadow-lg: 0 16px 36px rgba(0, 0, 0, 0.16), 0 4px 12px rgba(0, 0, 0, 0.06);
-        /* 拟物材质：左上光源的象牙瓷扣。face=受光面渐变；rim=外圈刻线；
-           inset=顶部棱线高光+底部接触阴影+内圈提亮；cast=接触影+环境影；
-           press=按下时内陷阴影；emboss=字形压印。 */
-        --pet-btn-face: radial-gradient(135% 135% at 30% 18%, #fffdf7 0%, rgba(255, 253, 247, 0) 52%), linear-gradient(180deg, #fbf7ec 0%, #f1e9d6 58%, #e7dbbf 100%);
-        --pet-btn-rim: rgba(96, 74, 38, 0.34);
-        --pet-btn-inset: inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 -1.5px 2.5px rgba(122, 95, 49, 0.32), inset 0 0 0 1px rgba(255, 255, 255, 0.3);
-        --pet-btn-cast: 0 1px 1.5px rgba(64, 48, 21, 0.26), 0 4px 10px rgba(64, 48, 21, 0.14);
-        --pet-btn-press: inset 0 2px 4px rgba(88, 64, 26, 0.42), inset 0 -1px 0 rgba(255, 255, 255, 0.55);
-        --pet-btn-glow: inset 0 0 7px rgba(217, 119, 87, 0.28);
-        --pet-btn-active-face: radial-gradient(135% 135% at 30% 18%, #fce7df 0%, rgba(252, 231, 223, 0) 55%), linear-gradient(180deg, #f3bca8 0%, #e58d72 60%, #d97757 100%);
-        --pet-btn-active-ink: #4e2214;
-        --pet-glyph: #463b28;
-        --pet-glyph-emboss: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.72));
+        /* 扁平按钮（elev-2 浮层）：face=实色面；rim=1px 边线；inset/glow 置空；
+           cast=浮于网页之上的柔和投影；active=主色实底 + 白色字形。 */
+        --pet-btn-face: var(--pet-surface-elevated, #ffffff);
+        --pet-btn-rim: rgba(15, 23, 42, 0.12);
+        --pet-btn-inset: 0 0 0 0 transparent;
+        --pet-btn-cast: 0 1px 2px rgba(15, 23, 42, 0.06), 0 4px 12px rgba(15, 23, 42, 0.1);
+        --pet-btn-press: 0 1px 2px rgba(15, 23, 42, 0.1);
+        --pet-btn-glow: 0 0 0 0 transparent;
+        --pet-btn-hover-face: color-mix(in srgb, var(--pet-primary, #d97757) 10%, var(--pet-surface-elevated, #ffffff));
+        --pet-btn-active-face: var(--pet-primary, #d97757);
+        --pet-btn-active-ink: #ffffff;
+        --pet-glyph: #3f3a33;
+        --pet-glyph-emboss: none;
       }
 
       :host([data-theme="dark"]) {
@@ -339,17 +339,18 @@
         --pet-shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.5);
         --pet-shadow-md: 0 12px 36px rgba(0, 0, 0, 0.6);
         --pet-shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.7);
-        /* 暗色拟物：砚台石墨扣 + 暖瓷刃口。棱线高光减弱、接触影加深、字形改凹版压印。 */
-        --pet-btn-face: radial-gradient(135% 135% at 30% 18%, rgba(255, 240, 214, 0.09) 0%, rgba(255, 240, 214, 0) 55%), linear-gradient(180deg, #333d4c 0%, #262e3b 58%, #1b222d 100%);
-        --pet-btn-rim: rgba(0, 0, 0, 0.62);
-        --pet-btn-inset: inset 0 1px 0 rgba(255, 240, 214, 0.18), inset 0 -1.5px 2.5px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(255, 240, 214, 0.05);
-        --pet-btn-cast: 0 1px 1.5px rgba(0, 0, 0, 0.6), 0 5px 12px rgba(0, 0, 0, 0.45);
-        --pet-btn-press: inset 0 2px 5px rgba(0, 0, 0, 0.65), inset 0 -1px 0 rgba(255, 240, 214, 0.08);
-        --pet-btn-glow: inset 0 0 8px rgba(224, 122, 95, 0.32);
-        --pet-btn-active-face: radial-gradient(135% 135% at 30% 18%, #f0947b 0%, rgba(240, 148, 123, 0) 55%), linear-gradient(180deg, #e07a5f 0%, #b8583e 62%, #93422b 100%);
-        --pet-btn-active-ink: #241108;
+        /* 暗色扁平按钮：石墨实色面 + 浅色细边线，投影加深以从深色网页上浮起。 */
+        --pet-btn-face: var(--pet-surface-elevated, #222b39);
+        --pet-btn-rim: rgba(237, 231, 214, 0.14);
+        --pet-btn-inset: 0 0 0 0 transparent;
+        --pet-btn-cast: 0 1px 2px rgba(0, 0, 0, 0.5), 0 6px 16px rgba(0, 0, 0, 0.45);
+        --pet-btn-press: 0 1px 2px rgba(0, 0, 0, 0.5);
+        --pet-btn-glow: 0 0 0 0 transparent;
+        --pet-btn-hover-face: color-mix(in srgb, var(--pet-primary, #e07a5f) 18%, var(--pet-surface-elevated, #222b39));
+        --pet-btn-active-face: var(--pet-primary, #e07a5f);
+        --pet-btn-active-ink: #1b1210;
         --pet-glyph: #ece7d9;
-        --pet-glyph-emboss: drop-shadow(0 -1px 1px rgba(0, 0, 0, 0.75));
+        --pet-glyph-emboss: none;
       }
 
       @media (prefers-color-scheme: dark) {
@@ -395,16 +396,18 @@
           --pet-shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.5);
           --pet-shadow-md: 0 12px 36px rgba(0, 0, 0, 0.6);
           --pet-shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.7);
-          --pet-btn-face: radial-gradient(135% 135% at 30% 18%, rgba(255, 240, 214, 0.09) 0%, rgba(255, 240, 214, 0) 55%), linear-gradient(180deg, #333d4c 0%, #262e3b 58%, #1b222d 100%);
-          --pet-btn-rim: rgba(0, 0, 0, 0.62);
-          --pet-btn-inset: inset 0 1px 0 rgba(255, 240, 214, 0.18), inset 0 -1.5px 2.5px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(255, 240, 214, 0.05);
-          --pet-btn-cast: 0 1px 1.5px rgba(0, 0, 0, 0.6), 0 5px 12px rgba(0, 0, 0, 0.45);
-          --pet-btn-press: inset 0 2px 5px rgba(0, 0, 0, 0.65), inset 0 -1px 0 rgba(255, 240, 214, 0.08);
-          --pet-btn-glow: inset 0 0 8px rgba(224, 122, 95, 0.32);
-          --pet-btn-active-face: radial-gradient(135% 135% at 30% 18%, #f0947b 0%, rgba(240, 148, 123, 0) 55%), linear-gradient(180deg, #e07a5f 0%, #b8583e 62%, #93422b 100%);
-          --pet-btn-active-ink: #241108;
+          /* 暗色扁平按钮：石墨实色面 + 浅色细边线，投影加深以从深色网页上浮起。 */
+          --pet-btn-face: var(--pet-surface-elevated, #222b39);
+          --pet-btn-rim: rgba(237, 231, 214, 0.14);
+          --pet-btn-inset: 0 0 0 0 transparent;
+          --pet-btn-cast: 0 1px 2px rgba(0, 0, 0, 0.5), 0 6px 16px rgba(0, 0, 0, 0.45);
+          --pet-btn-press: 0 1px 2px rgba(0, 0, 0, 0.5);
+          --pet-btn-glow: 0 0 0 0 transparent;
+          --pet-btn-hover-face: color-mix(in srgb, var(--pet-primary, #e07a5f) 18%, var(--pet-surface-elevated, #222b39));
+          --pet-btn-active-face: var(--pet-primary, #e07a5f);
+          --pet-btn-active-ink: #1b1210;
           --pet-glyph: #ece7d9;
-          --pet-glyph-emboss: drop-shadow(0 -1px 1px rgba(0, 0, 0, 0.75));
+          --pet-glyph-emboss: none;
         }
       }
 
@@ -436,88 +439,65 @@
         transition: none;
       }
 
-      /* Edge Docking - Dedicated Peeking Mascot Mode (贴边探头姿态) */
-      .roamcat-pet-widget.docked {
-        transform: translateX(calc(18px * var(--pet-scale, 1)));
-      }
-
-      .roamcat-pet-widget.docked:hover,
-      .roamcat-pet-widget.docked.peek-out,
-      .roamcat-pet-widget.docked.has-speech,
-      .roamcat-pet-widget.docked:has(.cat-speech-bubble.speaking) {
-        transform: translateX(calc(-22px * var(--pet-scale, 1))) !important;
-      }
-
-      .roamcat-pet-widget.is-left.docked {
-        transform: translateX(calc(-18px * var(--pet-scale, 1)));
-      }
-
+      /* 贴边探头姿态：探头 SVG 本身按"右缘 = 屏幕边"绘制（双爪扣在 x=160 的边上），
+         挂件不再整体平移出屏——平移会把爪子和一只眼睛裁掉。悬停/说话时
+         只以屏幕边为轴放大探出，爪子始终扣住边缘。左贴边由 .cat-mode-peeking 镜像。 */
       .roamcat-pet-widget.is-left .cat-mode-peeking {
         transform: scaleX(-1) scale(var(--pet-scale, 1));
       }
 
-      .roamcat-pet-widget.is-left.docked:hover,
-      .roamcat-pet-widget.is-left.docked.peek-out,
-      .roamcat-pet-widget.is-left.docked.has-speech,
-      .roamcat-pet-widget.is-left.docked:has(.cat-speech-bubble.speaking) {
-        transform: translateX(calc(22px * var(--pet-scale, 1))) !important;
+      .roamcat-pet-widget.docked .cat-peeking-svg {
+        transform-origin: 100% 100%;
+        transition: color 0.22s ease, filter 0.22s ease, scale 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
       }
 
+      .roamcat-pet-widget.docked:hover .cat-peeking-svg,
+      .roamcat-pet-widget.docked.peek-out .cat-peeking-svg,
+      .roamcat-pet-widget.docked.has-speech .cat-peeking-svg,
+      .roamcat-pet-widget.docked:has(.cat-speech-bubble.speaking) .cat-peeking-svg {
+        scale: 1.1;
+      }
 
-      /* Edge Tab (贴边吸附毛玻璃胶囊条) */
+      /* 贴边唤醒标签：鼠标用户直接点探头的猫即可唤醒，标签仅作键盘入口——
+         平时透明不占命中区，Tab 聚焦时才在猫朝向页面的一侧显出一颗爪印钮。 */
       .roamcat-edge-tab {
         position: absolute;
-        top: 10px;
-        right: 0;
+        top: 50%;
+        right: calc(100% + 4px);
         left: auto;
-        width: 20px;
-        height: 48px;
-        border-radius: 12px 0 0 12px;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
         background: var(--pet-btn-face, var(--pet-surface-elevated, #ffffff));
-        border: 1.5px solid var(--pet-btn-rim, var(--pet-line, #e2e8f0));
-        border-right: none;
-        box-shadow: var(--pet-btn-inset, none), var(--pet-btn-cast, -2px 3px 12px rgba(0, 0, 0, 0.08));
+        border: 1px solid var(--pet-btn-rim, var(--pet-line, #e2e8f0));
+        box-shadow: var(--pet-btn-cast, 0 4px 12px rgba(0, 0, 0, 0.1));
         display: none;
         align-items: center;
         justify-content: center;
         cursor: pointer;
         z-index: 8;
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
-                    opacity 0.22s ease,
-                    border-color 0.2s ease,
-                    box-shadow 0.2s ease;
+        opacity: 0;
+        pointer-events: none;
+        translate: 0 -50%;
+        transition: opacity 0.18s ease;
         padding: 0;
         user-select: none;
       }
 
       .roamcat-pet-widget.is-left .roamcat-edge-tab {
-        left: 0;
         right: auto;
-        border-radius: 0 12px 12px 0;
-        border-left: none;
-        border-right: 1.5px solid var(--pet-line, #e2e8f0);
-        box-shadow: 2px 3px 12px rgba(0, 0, 0, 0.08);
+        left: calc(100% + 4px);
       }
 
       .roamcat-pet-widget.docked .roamcat-edge-tab {
         display: flex;
-        opacity: 0.92;
       }
 
-      .roamcat-edge-tab:hover {
-        border-color: var(--pet-primary, #f59e0b);
-        box-shadow: 0 4px 16px rgba(245, 158, 11, 0.35);
-      }
-
-      /* 当悬停探出、发声说话、或打开菜单时，贴边胶囊平滑淡出隐藏，让猫猫身躯与功能清爽展露，绝不贴在猫身上！ */
-      .roamcat-pet-widget.docked:hover .roamcat-edge-tab,
-      .roamcat-pet-widget.docked.peek-out .roamcat-edge-tab,
-      .roamcat-pet-widget.docked.has-speech .roamcat-edge-tab,
-      .roamcat-pet-widget.docked:has(.cat-speech-bubble.speaking) .roamcat-edge-tab {
-        opacity: 0 !important;
-        pointer-events: none !important;
+      .roamcat-pet-widget.docked .roamcat-edge-tab:focus-visible {
+        opacity: 1;
+        pointer-events: auto;
+        outline: 2px solid var(--pet-primary, #d97757);
+        outline-offset: 2px;
       }
 
       .edge-tab-inner {
@@ -525,33 +505,17 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 3px;
         pointer-events: none;
       }
 
       .edge-tab-paw {
         line-height: 1;
         color: var(--pet-primary, #f59e0b);
-        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.12));
         display: inline-flex;
         align-items: center;
       }
       .edge-tab-paw svg {
         display: block;
-      }
-
-      .edge-tab-dot {
-        width: 5px;
-        height: 5px;
-        border-radius: 50%;
-        background: var(--pet-primary, #f59e0b);
-        box-shadow: 0 0 6px var(--pet-primary, #f59e0b);
-        animation: edge-dot-pulse 2.2s ease-in-out infinite;
-      }
-
-      @keyframes edge-dot-pulse {
-        0%, 100% { opacity: 0.45; transform: scale(0.85); }
-        50% { opacity: 1; transform: scale(1.25); }
       }
 
       /* =========================================================
@@ -586,10 +550,10 @@
         perspective: 600px;
       }
 
-      .roamcat-flip-btn:hover {
-        transform: scale(1.08) translateY(-1px);
-        box-shadow: var(--pet-btn-inset, none), var(--pet-btn-glow, none), var(--pet-btn-cast, none), 0 0 0 1px var(--pet-primary, #f59e0b);
-        border-color: var(--pet-primary, #f59e0b);
+      .roamcat-flip-btn:not(.is-active):hover {
+        transform: translateY(-1px);
+        background: var(--pet-btn-hover-face, var(--pet-primary-soft, #fbf3ef));
+        border-color: color-mix(in srgb, var(--pet-primary, #d97757) 45%, transparent);
       }
 
       .roamcat-flip-btn:focus-visible {
@@ -597,9 +561,8 @@
         outline-offset: 2px;
       }
 
-      /* 按下=物理按压：内陷阴影取代投影，位移下沉 */
       .roamcat-flip-btn:active {
-        transform: scale(0.94) translateY(1px);
+        transform: scale(0.94);
         box-shadow: var(--pet-btn-press, none);
       }
 
@@ -625,7 +588,7 @@
 
       .coin-face-front {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
-        letter-spacing: -0.3px;
+        letter-spacing: -0.6px;
         line-height: 1;
       }
 
@@ -647,7 +610,7 @@
         font-size: var(--fs-1, 12px);
         color: var(--pet-muted, #9ca3af);
         opacity: 0.6;
-        margin: 0 0.5px;
+        margin: 0 -0.5px;
       }
 
       .glyph-sub {
@@ -724,7 +687,6 @@
         font-size: var(--fs-1, 12px);
         font-weight: 600;
         white-space: nowrap;
-        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
         box-shadow: var(--pet-btn-cast, 0 4px 12px rgba(0,0,0,0.12));
         pointer-events: none;
         opacity: 0;
@@ -752,52 +714,59 @@
       }
 
       /* =========================================================
-         左侧快捷按钮行：阅读开关 / 贴边。提炼和设置在猫身上。
-         位于猫的左下角、横向向左延伸（与上方旋旋翻不重叠）；贴边时随旋旋翻
-         一起隐藏，悬停探出恢复；猫贴左屏时整行翻到右侧。
+         快捷按钮 2×2 方阵：上排 .roamcat-cat-menu（提炼 / 设置），下排
+         .roamcat-quick-dock（旋旋翻 / 阅读开关）。两排同列右对齐、同以猫脚
+         为基线锚定，缩放猫时方阵不被拉散。贴边时整组隐藏（贴边态只探头，
+         点猫唤醒）；猫贴左屏时整组翻到右侧。
          ========================================================= */
-      .roamcat-quick-dock {
+      .roamcat-quick-dock,
+      .roamcat-cat-menu {
         position: absolute;
-        bottom: -8px;
-        left: -8px;
-        transform: translateX(-100%);
+        right: calc(100% + 6px);
+        left: auto;
         display: flex;
         flex-direction: row;
         align-items: center;
         gap: 6px;
-        z-index: 11;
         visibility: hidden;
         /* 容器在收起过渡结束后才隐藏（visibility 延迟衔接子按钮 160ms 收拢动画） */
         transition: visibility 0s 0.36s;
       }
+      .roamcat-quick-dock {
+        bottom: -2px;
+        z-index: 11;
+      }
+      .roamcat-cat-menu {
+        bottom: 34px;
+        z-index: 13;
+      }
 
-      /* 悬停桥：盖住按钮排与猫身之间的 8px 缝（上下再放 14px 余量接住斜移），
+      /* 悬停桥：盖住方阵与猫身之间的 6px 缝（上下各放 3px 接住两排间隙），
          指针从猫移向按钮时不掉 :hover。收起态随容器 visibility:hidden 失效。 */
-      .roamcat-quick-dock::before {
+      .roamcat-quick-dock::before,
+      .roamcat-cat-menu::before {
         content: '';
         position: absolute;
-        top: -14px;
-        right: -16px;
-        bottom: -14px;
-        width: 16px;
-      }
-
-      .roamcat-pet-widget.is-left .roamcat-quick-dock::before {
-        right: auto;
-        left: -16px;
-      }
-
-      /* Pet 贴左屏时按钮行翻到右侧（始终朝向页面中心，避免超出视口）。
-         两侧 DOM 顺序一致：旋旋翻在最左，贴边折叠按钮离猫最近的一侧依 --i 决定。 */
-      .roamcat-pet-widget.is-left .roamcat-quick-dock {
-        left: auto;
+        top: -3px;
         right: -8px;
-        transform: translateX(100%);
+        bottom: -3px;
+        width: 8px;
       }
 
-      /* 显隐两条路：点猫头 dock-open 常驻展开；悬停 widget（含贴边探出）临时展开，
+      .roamcat-pet-widget.is-left :is(.roamcat-quick-dock, .roamcat-cat-menu)::before {
+        right: auto;
+        left: -8px;
+      }
+
+      /* Pet 贴左屏时方阵翻到右侧（始终朝向页面中心，避免超出视口）。 */
+      .roamcat-pet-widget.is-left :is(.roamcat-quick-dock, .roamcat-cat-menu) {
+        right: auto;
+        left: calc(100% + 6px);
+      }
+
+      /* 显隐两条路：点猫头 dock-open 常驻展开；悬停 widget 临时展开，
          移开后经 360ms visibility 延迟收起——窗口内按钮仍可命中，微抖动不闪断。 */
-      .roamcat-pet-widget:is(.dock-open, :hover) .roamcat-quick-dock,
+      .roamcat-pet-widget:is(.dock-open, :hover):not(.docked) :is(.roamcat-quick-dock, .roamcat-cat-menu),
       .roamcat-pet-widget.dock-open .roamcat-zoom-controls {
         visibility: visible;
         transition-delay: 0s;
@@ -805,38 +774,15 @@
 
       /* 子按钮逐个收放：opacity/translate/scale 三个独立属性动画
          （transform 留给 hover/active 等交互态，避免互相覆盖）。
-         --i 为"离猫距离"序号：贴右边时 #quick-dock 最近（--i:0），
-         贴左边时 #roamcat-flip-btn 最近。 */
-      .roamcat-quick-dock > :nth-child(1) { --i: 2; }
-      .roamcat-quick-dock > :nth-child(2) { --i: 1; }
-      .roamcat-quick-dock > :nth-child(3) { --i: 0; }
+         --i 为"离猫距离"序号：贴右边时阅读开关最近（--i:0），
+         贴左边时旋旋翻最近。 */
+      .roamcat-quick-dock > :nth-child(1) { --i: 1; }
+      .roamcat-quick-dock > :nth-child(2) { --i: 0; }
       .roamcat-pet-widget.is-left .roamcat-quick-dock > :nth-child(1) { --i: 0; }
       .roamcat-pet-widget.is-left .roamcat-quick-dock > :nth-child(2) { --i: 1; }
-      .roamcat-pet-widget.is-left .roamcat-quick-dock > :nth-child(3) { --i: 2; }
-
-      /* 提炼和设置在身体侧面、耳朵以下，给耳尖和眼睛留出来。贴左屏时翻到右侧。 */
-      .roamcat-cat-menu {
-        position: absolute;
-        top: 4px;
-        right: calc(100% + 6px);
-        left: auto;
-        display: flex;
-        gap: 6px;
-        z-index: 13;
-        visibility: hidden;
-        transition: visibility 0s 0.36s;
-      }
-      .roamcat-pet-widget.is-left .roamcat-cat-menu {
-        right: auto;
-        left: calc(100% + 6px);
-      }
-      .roamcat-pet-widget:is(.dock-open, :hover) .roamcat-cat-menu {
-        visibility: visible;
-        transition-delay: 0s;
-      }
       .roamcat-cat-menu > .roamcat-quick-btn {
         opacity: 0;
-        translate: 0 8px;
+        translate: 14px 0;
         scale: 0.6;
         pointer-events: none;
         transition:
@@ -848,7 +794,7 @@
           translate 0.16s ease-in,
           scale 0.16s ease-in;
       }
-      .roamcat-pet-widget:is(.dock-open, :hover) .roamcat-cat-menu > .roamcat-quick-btn {
+      .roamcat-pet-widget:is(.dock-open, :hover):not(.docked) .roamcat-cat-menu > .roamcat-quick-btn {
         opacity: 1;
         translate: 0 0;
         scale: 1;
@@ -881,10 +827,10 @@
           translate 0.16s ease-in calc((4 - var(--i, 0)) * 35ms),
           scale 0.16s ease-in calc((4 - var(--i, 0)) * 35ms);
       }
-      .roamcat-pet-widget.is-left .roamcat-quick-dock > * {
+      .roamcat-pet-widget.is-left :is(.roamcat-quick-dock, .roamcat-cat-menu) > * {
         translate: -14px 0;
       }
-      .roamcat-pet-widget:is(.dock-open, :hover) .roamcat-quick-dock > * {
+      .roamcat-pet-widget:is(.dock-open, :hover):not(.docked) .roamcat-quick-dock > * {
         opacity: 1;
         translate: 0 0;
         scale: 1;
@@ -1076,12 +1022,12 @@
         user-select: none;
       }
 
+      /* 悬停：主色淡底 + 主色描边与字形，轻抬 1px */
       .roamcat-quick-btn:hover {
-        transform: scale(1.08) translateY(-1px);
-        /* 悬停=琥珀内辉沿扣面晕开 + 一圈主色环线 */
-        box-shadow: var(--pet-btn-inset, none), var(--pet-btn-glow, none), var(--pet-btn-cast, none), 0 0 0 1px var(--pet-primary, #f59e0b);
-        border-color: var(--pet-primary, #f59e0b);
-        color: var(--pet-primary, #f59e0b);
+        transform: translateY(-1px);
+        background: var(--pet-btn-hover-face, var(--pet-primary-soft, #fbf3ef));
+        border-color: color-mix(in srgb, var(--pet-primary, #d97757) 45%, transparent);
+        color: var(--pet-primary, #d97757);
       }
 
       .roamcat-quick-btn .quick-glyph {
@@ -1100,33 +1046,25 @@
         outline-offset: 2px;
       }
 
-      /* 物理按压：内陷阴影取代投影 */
       .roamcat-quick-btn:active {
-        transform: scale(0.94) translateY(1px);
+        transform: scale(0.94);
         box-shadow: var(--pet-btn-press, none);
       }
 
-      /* 开启态（阅读辅助 / 双语翻译共用）：琥珀釉面 + 持久主色描边 + 右上角
-         实心状态点——扫一眼即可区分开关，不再只依赖面色的微妙变化 */
+      /* 开启态（阅读辅助 / 双语翻译共用）：主色实底 + 反白字形，与关闭态一眼可分 */
       .roamcat-quick-btn.is-active,
       .roamcat-flip-btn.is-active {
-        background: var(--pet-btn-active-face, var(--pet-primary-soft, #fef3c7));
-        border-color: color-mix(in srgb, var(--pet-primary, #f59e0b) 55%, rgba(0, 0, 0, 0.35));
-        color: var(--pet-btn-active-ink, var(--pet-primary, #f59e0b));
-        box-shadow: var(--pet-btn-inset, none), var(--pet-btn-glow, none), var(--pet-btn-cast, var(--pet-shadow-sm)), 0 0 0 1.5px var(--pet-primary, #f59e0b);
+        background: var(--pet-btn-active-face, var(--pet-primary, #d97757));
+        border-color: var(--pet-btn-active-face, var(--pet-primary, #d97757));
+        color: var(--pet-btn-active-ink, #ffffff);
       }
 
-      .roamcat-quick-btn.is-active::after,
-      .roamcat-flip-btn.is-active::after {
-        content: '';
-        position: absolute;
-        top: -1.5px;
-        right: -1.5px;
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: var(--pet-primary, #f59e0b);
-        box-shadow: 0 0 0 1.5px var(--pet-surface-elevated, #ffffff), var(--pet-shadow-sm);
+      .roamcat-quick-btn.is-active:hover,
+      .roamcat-flip-btn.is-active:hover {
+        transform: translateY(-1px);
+        background: var(--pet-primary-hover, #c25e3e);
+        border-color: var(--pet-primary-hover, #c25e3e);
+        color: var(--pet-btn-active-ink, #ffffff);
       }
 
       /* 切换进行中：压暗 + 琥珀细环脉冲，并屏蔽连点 */
@@ -1134,11 +1072,6 @@
         opacity: 0.55;
         pointer-events: none;
         box-shadow: var(--pet-btn-inset, none), 0 0 0 1px var(--pet-primary, #f59e0b);
-      }
-
-      /* 贴左屏时翻转"贴边折叠"箭头朝向 */
-      .roamcat-pet-widget.is-left .icon-dock-edge {
-        transform: scaleX(-1);
       }
 
       .roamcat-quick-btn .quick-tooltip {
@@ -1154,7 +1087,6 @@
         font-size: var(--fs-1, 12px);
         font-weight: 600;
         white-space: nowrap;
-        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
         box-shadow: var(--pet-btn-cast, 0 4px 12px rgba(0, 0, 0, 0.12));
         opacity: 0;
         visibility: hidden;
@@ -1224,7 +1156,6 @@
         overflow-wrap: anywhere;
         line-height: 1.35;
         text-align: left;
-        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
         box-shadow: var(--pet-btn-cast, 0 4px 16px rgba(0,0,0,0.12));
         pointer-events: none;
         opacity: 0;
@@ -1857,21 +1788,15 @@
         filter: var(--pet-cat-glow-hover);
       }
 
-      /* Idle Subtle Breathing Sway in Peeking Mode */
-      .roamcat-pet-widget.docked:not(.is-left) .cat-peeking-svg {
-        animation: peeking-breathe-right 3.8s ease-in-out infinite;
+      /* 探头呼吸：以屏幕边（SVG 右下角）为轴轻点头，爪子不离边。
+         左贴边时父级 .cat-mode-peeking 已镜像，这里两侧共用同一组关键帧
+         （曾在左侧关键帧里再翻一次 scaleX(-1)，叠加后猫反向、爪子朝页面）。 */
+      .roamcat-pet-widget.docked .cat-peeking-svg {
+        animation: peeking-breathe 3.8s ease-in-out infinite;
       }
-      @keyframes peeking-breathe-right {
-        0%, 100% { transform: translateX(0) rotate(0deg); }
-        50% { transform: translateX(-3.5px) rotate(-1.5deg); }
-      }
-
-      .roamcat-pet-widget.is-left.docked .cat-peeking-svg {
-        animation: peeking-breathe-left 3.8s ease-in-out infinite;
-      }
-      @keyframes peeking-breathe-left {
-        0%, 100% { transform: scaleX(-1) translateX(0) rotate(0deg); }
-        50% { transform: scaleX(-1) translateX(-3.5px) rotate(-1.5deg); }
+      @keyframes peeking-breathe {
+        0%, 100% { transform: rotate(0deg); }
+        50% { transform: rotate(-2.5deg); }
       }
 
       /* Peeking Eyes: Blinking & Happy Squint */
@@ -1973,27 +1898,27 @@
         }
         /* 快捷坞显隐降级为纯透明度过渡：120ms、无错峰、无位移缩放 */
         .roamcat-pet-widget .roamcat-quick-dock > *,
-        .roamcat-pet-widget:is(.dock-open, :hover) .roamcat-quick-dock > * {
+        .roamcat-pet-widget:is(.dock-open, :hover):not(.docked) .roamcat-quick-dock > * {
           opacity: var(--dock-opacity, 0);
           translate: none;
           scale: none;
           transition: opacity 0.12s ease !important;
         }
-        .roamcat-pet-widget:is(.dock-open, :hover) .roamcat-quick-dock > * {
+        .roamcat-pet-widget:is(.dock-open, :hover):not(.docked) .roamcat-quick-dock > * {
           --dock-opacity: 1;
         }
         .roamcat-pet-widget .roamcat-cat-menu > .roamcat-quick-btn,
-        .roamcat-pet-widget:is(.dock-open, :hover) .roamcat-cat-menu > .roamcat-quick-btn {
+        .roamcat-pet-widget:is(.dock-open, :hover):not(.docked) .roamcat-cat-menu > .roamcat-quick-btn {
           opacity: var(--dock-opacity, 0);
           translate: none;
           scale: none;
           transition: opacity 0.12s ease !important;
         }
-        .roamcat-pet-widget:is(.dock-open, :hover) .roamcat-cat-menu > .roamcat-quick-btn {
+        .roamcat-pet-widget:is(.dock-open, :hover):not(.docked) .roamcat-cat-menu > .roamcat-quick-btn {
           --dock-opacity: 1;
         }
         .roamcat-quick-dock,
-        .roamcat-pet-widget:is(.dock-open, :hover) .roamcat-quick-dock {
+        .roamcat-pet-widget:is(.dock-open, :hover):not(.docked) .roamcat-quick-dock {
           transition: visibility 0s 0.13s !important;
         }
         .roamcat-zoom-controls,
@@ -2684,7 +2609,6 @@
         {id: '#quick-reading', hover: T('fp.hover.read'), run: () => this.toggleReadingMode()},
         {id: '#quick-summary', hover: T('fp.hover.sum'), closeDock: true, run: () => this.requestArticleSummary()},
         {id: '#quick-options', hover: T('fp.hover.opt'), closeDock: true, run: () => chrome.runtime.sendMessage({ type: 'OPEN_OPTIONS' })},
-        {id: '#quick-dock', hover: T('fp.hover.dock'), closeDock: true, run: () => this.toggleDock()},
       ];
       for (const action of quickActions) {
         const button = this.shadowQuery(action.id);
@@ -2769,11 +2693,15 @@
         this.toggleQuickDock();
       });
 
-      // 键盘可达：Enter / Space 同样开合快捷坞
+      // 键盘可达：Enter / Space 同样开合快捷坞；贴边态下与单击一致，直接唤醒
       this.avatarWrap.addEventListener('keydown', (e) => {
         if (e.key !== 'Enter' && e.key !== ' ') return;
         e.preventDefault();
         e.stopPropagation();
+        if (isDocked) {
+          this.undock();
+          return;
+        }
         this.triggerClickReaction();
         this.toggleQuickDock();
       });
@@ -3271,7 +3199,6 @@
       isDocked = true;
       this.closeQuickDock();
       this.container?.classList.add('docked');
-      this.shadowQuery('#quick-dock')?.setAttribute('aria-pressed', 'true');
       if (side === 'left') {
         currentRight = Math.max(0, window.innerWidth - Math.round(64 * petScale));
         this.container?.classList.add('is-left');
@@ -3290,9 +3217,13 @@
       if (!isDocked) return;
       isDocked = false;
       this.container?.classList.remove('docked');
-      this.shadowQuery('#quick-dock')?.setAttribute('aria-pressed', 'false');
       if (this.avatarWrap) {
         this.avatarWrap.title = T('pet.avatarTitle');
+      }
+      // 点击唤醒时指针仍停在猫上，pointerleave 已不再按贴边态复位——这里收回"探头（点击唤醒）"文案
+      const speechEl = this.shadowQuery('#cat-speech .speech-text');
+      if (speechEl && !this.shadowQuery('#cat-speech')?.classList.contains('speaking')) {
+        speechEl.textContent = T('pet.speechDefault');
       }
       const isLeftSide = currentRight > (window.innerWidth / 2);
       if (isLeftSide) {
