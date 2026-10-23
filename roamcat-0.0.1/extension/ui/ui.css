@@ -1212,7 +1212,7 @@ html.options-document, body.options-body {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #94a3b8;
+  color: var(--muted);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1221,7 +1221,7 @@ html.options-document, body.options-body {
 
 .nav-group-tag {
   font-size: var(--fs-1);
-  color: #cbd5e1;
+  color: var(--muted);
 }
 
 .cyber-nav-item {
@@ -1387,7 +1387,7 @@ html.options-document, body.options-body {
 }
 
 :root[data-theme="light"] .stamp-art-box {
-  background: #f1f5f9;
+  background: var(--surface-subtle);
 }
 
 .stamp-tree-svg {
@@ -1782,7 +1782,7 @@ html.options-document, body.options-body {
 }
 
 .breadcrumb-sep {
-  color: #cbd5e1;
+  color: var(--line-dark);
 }
 
 .breadcrumb-current {
@@ -2122,7 +2122,7 @@ html.options-document, body.options-body {
   font-size: var(--fs-1);
   font-weight: 700;
   font-family: var(--font-mono);
-  color: #3b82f6;
+  color: var(--accent);
   background: rgba(59, 130, 246, 0.12);
   border: 1px solid rgba(59, 130, 246, 0.3);
   padding: 3px 8px;
@@ -2219,7 +2219,7 @@ html.options-document, body.options-body {
 .choice-tag-pill.ruby, .choice-card-badge.ruby {
   background: rgba(245, 158, 11, 0.14);
   border-color: rgba(245, 158, 11, 0.35);
-  color: #f59e0b;
+  color: var(--accent);
 }
 
 .choice-card-badge.cloze {
@@ -2231,7 +2231,7 @@ html.options-document, body.options-body {
 .choice-card-badge.manual {
   background: rgba(100, 116, 139, 0.14);
   border-color: rgba(100, 116, 139, 0.35);
-  color: #94a3b8;
+  color: var(--muted);
 }
 
 .choice-card-desc {
@@ -3070,7 +3070,7 @@ details.history-event { padding: 0; }
 .threshold-stat-display .stat-unit {
   font-size: var(--fs-1);
   font-family: var(--font-mono);
-  color: #64748b;
+  color: var(--muted);
 }
 
 .matrix-meter-wrap {
@@ -3088,7 +3088,7 @@ details.history-event { padding: 0; }
 .swiss-range-input {
   width: 100%;
   height: 6px;
-  background: #e2e8f0;
+  background: var(--line);
   border-radius: 999px;
   appearance: none;
   cursor: pointer;

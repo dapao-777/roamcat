@@ -60,12 +60,12 @@ test('生成的 design.js 暴露完整 RoamCatDesign API', () => {
   assert.ok(design.structureRoles && design.structureColors);
 
   const hostCss = design.cssFor(':host');
-  assert.match(hostCss, /--rc-canvas: #f7f6f2/u, 'light 值缺失');
+  assert.match(hostCss, /--rc-canvas: #f7f6f3/u, 'light 值缺失');
   assert.match(hostCss, /:host\(\[data-theme="dark"\]\)/u, ':host 主题变体缺失');
   assert.match(hostCss, /--paper: var\(--rc-paper\)/u, '旧名别名缺失');
   assert.match(hostCss, /--color-card-bg: var\(--rc-card-bg\)/u, '--color-* 别名缺失');
   assert.match(hostCss, /--rc-spring-soft: linear/u, '动效 token 缺失');
 
   const pageCss = design.cssFor('.roamcat-card', 'dark');
-  assert.match(pageCss, /\.roamcat-card \{[\s\S]*--rc-canvas: #0b0e13/u, 'dark 主题选择器错误');
+  assert.match(pageCss, /\.roamcat-card \{[\s\S]*--rc-canvas: #141312/u, 'dark 主题选择器错误');
 });

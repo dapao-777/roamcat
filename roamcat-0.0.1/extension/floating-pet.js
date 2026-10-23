@@ -265,35 +265,35 @@
         --pet-cat-floor-2: #e6d9cf;
         --pet-cat-bloom: 0.5;
         --pet-cat-chroma: 0.3;
-        --pet-cat-hover: #d97757;
+        --pet-cat-hover: #9f4d25;
         --pet-cat-glow: drop-shadow(0 2px 5px rgba(90, 64, 40, 0.18));
         --pet-cat-glow-hover: drop-shadow(0 3px 10px rgba(249, 191, 224, 0.7));
-        --pet-primary: #d97757;
-        --pet-primary-soft: #fbf3ef;
-        --pet-primary-hover: #c25e3e;
-        --pet-accent: #0f172a;
+        --pet-primary: #9f4d25;
+        --pet-primary-soft: #f7ebe3;
+        --pet-primary-hover: #8c421f;
+        --pet-accent: #1c1b18;
         --pet-surface: #ffffff;
         --pet-surface-elevated: #ffffff;
-        --pet-line: #e2e8f0;
-        --pet-line-subtle: rgba(15, 23, 42, 0.06);
-        --pet-ink: #0f172a;
-        --pet-muted: #64748b;
-        --pet-tag-bg: rgba(0, 0, 0, 0.04);
+        --pet-line: #e6e3dc;
+        --pet-line-subtle: rgba(28, 27, 24, 0.06);
+        --pet-ink: #1c1b18;
+        --pet-muted: #6a655c;
+        --pet-tag-bg: rgba(28, 27, 24, 0.04);
         --pet-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
         --pet-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.04);
         --pet-shadow-lg: 0 16px 36px rgba(0, 0, 0, 0.16), 0 4px 12px rgba(0, 0, 0, 0.06);
         /* 扁平按钮（elev-2 浮层）：face=实色面；rim=1px 边线；inset/glow 置空；
            cast=浮于网页之上的柔和投影；active=主色实底 + 白色字形。 */
         --pet-btn-face: var(--pet-surface-elevated, #ffffff);
-        --pet-btn-rim: rgba(15, 23, 42, 0.12);
+        --pet-btn-rim: rgba(28, 27, 24, 0.12);
         --pet-btn-inset: 0 0 0 0 transparent;
-        --pet-btn-cast: 0 1px 2px rgba(15, 23, 42, 0.06), 0 4px 12px rgba(15, 23, 42, 0.1);
-        --pet-btn-press: 0 1px 2px rgba(15, 23, 42, 0.1);
+        --pet-btn-cast: 0 1px 2px rgba(28, 27, 24, 0.06), 0 4px 12px rgba(28, 27, 24, 0.1);
+        --pet-btn-press: 0 1px 2px rgba(28, 27, 24, 0.1);
         --pet-btn-glow: 0 0 0 0 transparent;
-        --pet-btn-hover-face: color-mix(in srgb, var(--pet-primary, #d97757) 10%, var(--pet-surface-elevated, #ffffff));
-        --pet-btn-active-face: var(--pet-primary, #d97757);
+        --pet-btn-hover-face: color-mix(in srgb, var(--pet-primary, #9f4d25) 10%, var(--pet-surface-elevated, #ffffff));
+        --pet-btn-active-face: var(--pet-primary, #9f4d25);
         --pet-btn-active-ink: #ffffff;
-        --pet-glyph: #3f3a33;
+        --pet-glyph: #3d3a34;
         --pet-glyph-emboss: none;
       }
 
@@ -322,34 +322,34 @@
         --pet-cat-floor-2: #d6ecff;
         --pet-cat-bloom: 0.55;
         --pet-cat-chroma: 0.5;
-        --pet-cat-hover: #e07a5f;
+        --pet-cat-hover: #e8946a;
         --pet-cat-glow: drop-shadow(0 0 6px rgba(190, 220, 255, 0.22));
         --pet-cat-glow-hover: drop-shadow(0 0 12px rgba(255, 214, 236, 0.4));
-        --pet-primary: #e07a5f;
-        --pet-primary-soft: rgba(224, 122, 95, 0.16);
-        --pet-primary-hover: #f0947b;
-        --pet-accent: #f5efeb;
-        --pet-surface: #161d27;
-        --pet-surface-elevated: #222b39;
-        --pet-line: rgba(237, 231, 214, 0.13);
-        --pet-line-subtle: rgba(237, 231, 214, 0.08);
-        --pet-ink: #ece7d9;
-        --pet-muted: #a39e8e;
-        --pet-tag-bg: rgba(237, 231, 214, 0.09);
+        --pet-primary: #e8946a;
+        --pet-primary-soft: rgba(232, 148, 106, 0.16);
+        --pet-primary-hover: #f0aa86;
+        --pet-accent: #edebe6;
+        --pet-surface: #1d1c1a;
+        --pet-surface-elevated: #272522;
+        --pet-line: rgba(255, 250, 240, 0.12);
+        --pet-line-subtle: rgba(255, 250, 240, 0.07);
+        --pet-ink: #edebe6;
+        --pet-muted: #959084;
+        --pet-tag-bg: rgba(255, 250, 240, 0.08);
         --pet-shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.5);
         --pet-shadow-md: 0 12px 36px rgba(0, 0, 0, 0.6);
         --pet-shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.7);
         /* 暗色扁平按钮：石墨实色面 + 浅色细边线，投影加深以从深色网页上浮起。 */
-        --pet-btn-face: var(--pet-surface-elevated, #222b39);
-        --pet-btn-rim: rgba(237, 231, 214, 0.14);
+        --pet-btn-face: var(--pet-surface-elevated, #272522);
+        --pet-btn-rim: rgba(255, 250, 240, 0.14);
         --pet-btn-inset: 0 0 0 0 transparent;
         --pet-btn-cast: 0 1px 2px rgba(0, 0, 0, 0.5), 0 6px 16px rgba(0, 0, 0, 0.45);
         --pet-btn-press: 0 1px 2px rgba(0, 0, 0, 0.5);
         --pet-btn-glow: 0 0 0 0 transparent;
-        --pet-btn-hover-face: color-mix(in srgb, var(--pet-primary, #e07a5f) 18%, var(--pet-surface-elevated, #222b39));
-        --pet-btn-active-face: var(--pet-primary, #e07a5f);
-        --pet-btn-active-ink: #1b1210;
-        --pet-glyph: #ece7d9;
+        --pet-btn-hover-face: color-mix(in srgb, var(--pet-primary, #e8946a) 18%, var(--pet-surface-elevated, #272522));
+        --pet-btn-active-face: var(--pet-primary, #e8946a);
+        --pet-btn-active-ink: #1a1210;
+        --pet-glyph: #edebe6;
         --pet-glyph-emboss: none;
       }
 
@@ -379,34 +379,34 @@
           --pet-cat-floor-2: #d6ecff;
           --pet-cat-bloom: 0.55;
           --pet-cat-chroma: 0.5;
-          --pet-cat-hover: #e07a5f;
+          --pet-cat-hover: #e8946a;
           --pet-cat-glow: drop-shadow(0 0 6px rgba(190, 220, 255, 0.22));
           --pet-cat-glow-hover: drop-shadow(0 0 12px rgba(255, 214, 236, 0.4));
-          --pet-primary: #e07a5f;
-          --pet-primary-soft: rgba(224, 122, 95, 0.16);
-          --pet-primary-hover: #f0947b;
-          --pet-accent: #f5efeb;
-          --pet-surface: #161d27;
-          --pet-surface-elevated: #222b39;
-          --pet-line: rgba(237, 231, 214, 0.13);
-          --pet-line-subtle: rgba(237, 231, 214, 0.08);
-          --pet-ink: #ece7d9;
-          --pet-muted: #a39e8e;
-          --pet-tag-bg: rgba(237, 231, 214, 0.09);
+          --pet-primary: #e8946a;
+          --pet-primary-soft: rgba(232, 148, 106, 0.16);
+          --pet-primary-hover: #f0aa86;
+          --pet-accent: #edebe6;
+          --pet-surface: #1d1c1a;
+          --pet-surface-elevated: #272522;
+          --pet-line: rgba(255, 250, 240, 0.12);
+          --pet-line-subtle: rgba(255, 250, 240, 0.07);
+          --pet-ink: #edebe6;
+          --pet-muted: #959084;
+          --pet-tag-bg: rgba(255, 250, 240, 0.08);
           --pet-shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.5);
           --pet-shadow-md: 0 12px 36px rgba(0, 0, 0, 0.6);
           --pet-shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.7);
           /* 暗色扁平按钮：石墨实色面 + 浅色细边线，投影加深以从深色网页上浮起。 */
-          --pet-btn-face: var(--pet-surface-elevated, #222b39);
-          --pet-btn-rim: rgba(237, 231, 214, 0.14);
+          --pet-btn-face: var(--pet-surface-elevated, #272522);
+          --pet-btn-rim: rgba(255, 250, 240, 0.14);
           --pet-btn-inset: 0 0 0 0 transparent;
           --pet-btn-cast: 0 1px 2px rgba(0, 0, 0, 0.5), 0 6px 16px rgba(0, 0, 0, 0.45);
           --pet-btn-press: 0 1px 2px rgba(0, 0, 0, 0.5);
           --pet-btn-glow: 0 0 0 0 transparent;
-          --pet-btn-hover-face: color-mix(in srgb, var(--pet-primary, #e07a5f) 18%, var(--pet-surface-elevated, #222b39));
-          --pet-btn-active-face: var(--pet-primary, #e07a5f);
-          --pet-btn-active-ink: #1b1210;
-          --pet-glyph: #ece7d9;
+          --pet-btn-hover-face: color-mix(in srgb, var(--pet-primary, #e8946a) 18%, var(--pet-surface-elevated, #272522));
+          --pet-btn-active-face: var(--pet-primary, #e8946a);
+          --pet-btn-active-ink: #1a1210;
+          --pet-glyph: #edebe6;
           --pet-glyph-emboss: none;
         }
       }
@@ -1316,7 +1316,7 @@
 
       /* Error state - Light default */
       .cat-speech-bubble.speaking.is-error {
-        border-color: #ef4444 !important;
+        border-color: #c8462e !important;
         background: #fef2f2 !important;
         color: #991b1b !important;
         box-shadow: 0 4px 16px rgba(239, 68, 68, 0.16) !important;
@@ -2056,9 +2056,9 @@
         background: transparent;
       }
       .summary-close-btn:hover {
-        background: rgba(239, 68, 68, 0.1);
-        border-color: rgba(239, 68, 68, 0.4);
-        color: #ef4444;
+        background: rgba(200, 70, 46, 0.1);
+        border-color: rgba(200, 70, 46, 0.4);
+        color: #c8462e;
       }
 
       .summary-body {
@@ -2233,7 +2233,7 @@
         padding: 10px 14px;
         background: var(--pet-tag-bg);
         border: 1px solid var(--pet-line);
-        border-left: 3px solid #ef4444;
+        border-left: 3px solid #c8462e;
         border-radius: 6px;
         color: var(--pet-muted-strong, var(--pet-ink));
         font-size: var(--fs-2, 13px);
@@ -2245,7 +2245,7 @@
         display: flex;
         align-items: center;
         gap: 6px;
-        color: #ef4444;
+        color: #c8462e;
       }
       .summary-error svg {
         display: block;
