@@ -106,11 +106,12 @@ const setTheme = async (page, theme) => {
       await extPage.evaluate(t => document.documentElement.setAttribute('data-theme', t), theme);
       for (const section of OPTION_SECTIONS) {
         if (section !== OPTION_SECTIONS[0]) {
-          await extPage.locator(`[data-section="${section}"]`).click();
+          await extPage.evaluate(s=>{location.hash='#'+s},`${section}`);
         }
         await extPage.waitForTimeout(450);
         await extPage.locator('.main-panel').evaluate(el => el.scrollTo(0, 0)).catch(() => {});
-        check(`options 分区激活[${section}]`, await extPage.locator(`[data-section="${section}"]`).evaluate(el => el.classList.contains('active')).catch(() => false));
+        // 五个分组：侧栏分组高亮；组内有多个分区时，对应标签也要高亮。
+        check(`options 分区激活[${section}]`, await extPage.evaluate(name => { const tab = document.querySelector(`[data-section="${name}"]`); return Boolean(document.querySelector('[data-group].active')) && (!tab || tab.classList.contains('active')); }, section));
         const filled = await extPage.evaluate(name => {
           const el = document.getElementById(name);
           return el && !el.hidden && el.children.length;
@@ -425,9 +426,9 @@ const setTheme = async (page, theme) => {
     await extPage.waitForTimeout(700);
     const enOpts = await extPage.evaluate(() => ({
       attr: document.documentElement.getAttribute('data-ui-lang'),
-      nav: document.querySelector('[data-section="assistance"] .nav-text')?.textContent?.trim() || '',
+      nav: document.querySelector('[data-group="reading"] .nav-text')?.textContent?.trim() || '',
     }));
-    check('options 英文档生效', enOpts.attr === 'en' && enOpts.nav === 'Reading preferences', JSON.stringify(enOpts));
+    check('options 英文档生效', enOpts.attr === 'en' && enOpts.nav === 'Reading', JSON.stringify(enOpts));
     await shot(extPage, 'options-en');
 
     // 连接器错误串在 SW 侧生成并缓存——触发一次状态刷新让它按当前语言重生成

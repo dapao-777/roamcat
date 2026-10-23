@@ -98,16 +98,18 @@ function* walkFiles(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:tr
    await check('Options renders and routes in built extension',async()=>{
      await page.goto(`chrome-extension://${id}/ui/options.html`);
      await page.locator('#sidebar-collapse-btn').waitFor();
-     assert.equal(await page.locator('#section-title').textContent(),'阅读偏好');
+     assert.equal(await page.locator('#section-title').textContent(),'阅读');
      assert.ok(await page.locator('#assistance').isVisible(),'默认分区未显示');
      assert.ok(!(await page.locator('#terms').isVisible()),'非活跃分区应隐藏');
-     await page.locator('[data-section="terms"]').click();
+     await page.evaluate(s=>{location.hash='#'+s},'terms');
      await page.waitForFunction(()=>!document.getElementById('terms').hidden&&document.getElementById('assistance').hidden,null,{timeout:5000});
-     assert.equal(await page.locator('#section-title').textContent(),'术语表');
+     assert.equal(await page.locator('#section-title').textContent(),'词汇与记录');
      assert.equal(await page.locator('#toolbar-breadcrumb-title').textContent(),'术语表');
      await page.locator('#theme-toggle-btn').click();
      const theme=await page.evaluate(()=>document.documentElement.dataset.theme||'auto');
      assert.match(theme,/^(dark|light|auto)$/u);
+     // 状态行（含伴读猫入口）只在「阅读」页显示。
+     await page.evaluate(s=>{location.hash='#'+s},'assistance');
      await page.locator('#sidebar-stamp-card').click();
      await page.waitForFunction(()=>document.getElementById('stamp-manifesto-modal').open,null,{timeout:5000});
      await page.locator('#stamp-modal-confirm').click();

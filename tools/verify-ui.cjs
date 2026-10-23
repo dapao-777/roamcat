@@ -59,9 +59,9 @@ function mockChrome(){
   await page.reload();await page.waitForTimeout(400);assert.equal(await page.locator('#lookup-key').inputValue(),'F');
   await page.locator('#lookup-key').selectOption('D');await page.waitForTimeout(150);
   report.checks.push('Lookup hotkey saves and survives reload');
-  await page.locator('[data-section="history"]').click();await page.locator('#history-view-stats-tab').click();await page.waitForTimeout(150);
+  await page.evaluate(s=>{location.hash='#'+s},'history');await page.locator('#history-view-stats-tab').click();await page.waitForTimeout(150);
   assert.equal(await page.locator('.history-bar').count()>0,true);
-  await page.locator('#sidebar-stamp-card').click();assert.equal(await page.locator('#stamp-manifesto-modal').evaluate(el=>el.open),true);
+  await page.evaluate(s=>{location.hash='#'+s},'assistance');await page.locator('#sidebar-stamp-card').click();assert.equal(await page.locator('#stamp-manifesto-modal').evaluate(el=>el.open),true);
   await page.locator('#stamp-modal-close').click();assert.equal(await page.locator('#stamp-manifesto-modal').evaluate(el=>el.open),false);
   report.checks.push('History stats render fixture data; manifesto dialog opens and closes');
   report.checks.push('History visualization renders fixture data only; no user history read or modified');
@@ -69,7 +69,7 @@ function mockChrome(){
   await page.setViewportSize({width:1440,height:1000});
   await page.evaluate(()=>{const settings=JSON.parse(localStorage.getItem('qa-settings'));Object.assign(settings,{providerKind:'api',activeApiServiceId:'fixture',apiServices:[{id:'fixture',name:'Fixture',providerId:'openai-compatible',baseUrl:'http://127.0.0.1/v1',model:'fixture-model',apiKey:'fake-local-test-key',options:{}}]});localStorage.setItem('qa-settings',JSON.stringify(settings));});
   await page.reload();await page.waitForTimeout(300);assert.equal(await page.evaluate(()=>qa.events.some(e=>e.type==='SUBSCRIPTION_STATUS')),false);report.checks.push('API-only settings do not contact subscription connector');
-  await page.locator('[data-section="service"]').click();await page.locator('#api-editor').evaluate(e=>e.open=true);await page.locator('#list-provider-models').click();await page.waitForTimeout(100);assert.equal(await page.locator('#provider-model-list option[value="fixture-model"]').count(),1);
+  await page.evaluate(s=>{location.hash='#'+s},'service');await page.locator('#api-editor').evaluate(e=>e.open=true);await page.locator('#list-provider-models').click();await page.waitForTimeout(100);assert.equal(await page.locator('#provider-model-list option[value="fixture-model"]').count(),1);
   await page.locator('#provider-key').fill('changed-fixture-key');assert.equal(await page.locator('#provider-model-list option').count(),1);
   await page.evaluate(()=>qa.modelDelay=350);await page.locator('#list-provider-models').click();await page.locator('#provider-key').fill('newer-fixture-key');await page.waitForTimeout(450);assert.equal(await page.locator('#provider-model-list option').count(),1);assert.match(await page.locator('#provider-result').textContent(),/配置已更改/);report.checks.push('Model list stays visible after fetch; credential edits clear old choices and discard late responses');
   await page.evaluate(()=>{const settings=JSON.parse(localStorage.getItem('qa-settings'));Object.assign(settings,{assistanceMode:'on-demand',lookupDisplay:'annotation',lookupKey:'F'});localStorage.setItem('qa-settings',JSON.stringify(settings));});

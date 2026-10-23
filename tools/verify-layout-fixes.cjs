@@ -155,7 +155,7 @@ function mockChrome() {
     console.log('Saved layout-service-clean.png');
 
     // 2. Visit #sites (Site Rules)
-    await page.locator('[data-section="sites"]').click();
+    await page.evaluate(s=>{location.hash='#'+s},'sites');
     await page.waitForTimeout(400);
     const readoutVisibleOnSites = await page.locator('.hero-right-card.reading-readout').isVisible();
     console.log('2. Readout card visible on #sites (expected false):', readoutVisibleOnSites);
@@ -164,7 +164,7 @@ function mockChrome() {
     console.log('Saved layout-sites-clean.png');
 
     // 3. Visit #assistance (Reading Preferences)
-    await page.locator('[data-section="assistance"]').click();
+    await page.evaluate(s=>{location.hash='#'+s},'assistance');
     await page.waitForTimeout(400);
     const readoutVisibleOnAssistance = await page.locator('.hero-right-card.reading-readout').isVisible();
     console.log('3. Readout card visible on #assistance (expected true):', readoutVisibleOnAssistance);
@@ -173,7 +173,7 @@ function mockChrome() {
     console.log('Saved layout-assistance-clean.png');
 
     // 4. Test API Key toggle in #service
-    await page.locator('[data-section="service"]').click();
+    await page.evaluate(s=>{location.hash='#'+s},'service');
     await page.waitForTimeout(400);
 
     // Click Custom API to switch to API panel

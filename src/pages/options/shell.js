@@ -2,7 +2,8 @@
  * @file src/pages/options/shell.js
  * 文件职责：设置页静态分区模板——最初从
  *   extension/ui/options.html 机械切片生成（切片脚本已移除）；id/控件契约与原页完全一致。
- * 主要内容：无绑定静态模板（动态内容由 options-controller.js 命令式填充），
+ * 主要内容：无绑定静态模板（动态内容由 options-controller.js 命令式填充）；侧栏为五个分组，
+ *   运行状态（nowStatus）改为主区顶部一行，原底栏的导出按钮并入页头；
  *   分区可见性由 options-app 统一驱动。
  * 模块边界：纯展示模板。
  *
@@ -52,169 +53,34 @@ export const shellTop = html`
         </label>
         <p id="sidebar-search-empty" class="sidebar-search-empty" hidden>${t('opt.searchEmpty')}</p>
 
-        <!-- Navigation Menu -->
+        <!-- 五个分组：阅读 / 网站 / 模型服务 / 词汇与记录 / 更多；组内多个分区由页头的标签切换 -->
         <nav class="sidebar-nav-menu" aria-label="${t('opt.settingsNav')}" data-purpose="nav-menu">
-          <!-- Group 1: 核心阅读 / CORE READING -->
           <div class="nav-group">
-            <div class="nav-group-header">
-              <span>${t('opt.group.reading')}</span>
-            </div>
-            <a href="#assistance" data-section="assistance" class="cyber-nav-item active" data-tooltip="${t('opt.nav.assist')}">
-              <div class="nav-item-left">
-                <span class="nav-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
-                  </svg>
-                </span>
-                <span class="nav-text">${t('opt.nav.assist')}</span>
-              </div>
+            <a href="#assistance" data-group="reading" class="cyber-nav-item" data-tooltip="${t('opt.group5.reading')}">
+              <div class="nav-item-left"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="17" height="17" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h6a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H4z"></path><path d="M20 5h-6a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h6z"></path></svg></span><span class="nav-text">${t('opt.group5.reading')}</span></div>
             </a>
-            <a href="#appearance" data-section="appearance" class="cyber-nav-item" data-tooltip="${t('opt.nav.appearance')}">
-              <div class="nav-item-left">
-                <span class="nav-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" stroke-linecap="round" stroke-linejoin="round">
-                    <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-                    <polyline points="2 17 12 22 22 17"></polyline>
-                    <polyline points="2 12 12 17 22 12"></polyline>
-                  </svg>
-                </span>
-                <span class="nav-text">${t('opt.nav.appearance')}</span>
-              </div>
+            <a href="#sites" data-group="sites" class="cyber-nav-item" data-tooltip="${t('opt.group5.sites')}">
+              <div class="nav-item-left"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="17" height="17" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"></path></svg></span><span class="nav-text">${t('opt.group5.sites')}</span></div>
             </a>
-            <a href="#sites" data-section="sites" class="cyber-nav-item" data-tooltip="${t('opt.nav.sites')}">
-              <div class="nav-item-left">
-                <span class="nav-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="2" y1="12" x2="22" y2="12"></line>
-                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-                  </svg>
-                </span>
-                <span class="nav-text">${t('opt.nav.sites')}</span>
-              </div>
+            <a href="#service" data-group="service" class="cyber-nav-item" data-tooltip="${t('opt.group5.service')}">
+              <div class="nav-item-left"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="17" height="17" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="14" rx="3"></rect><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"></path></svg></span><span class="nav-text">${t('opt.group5.service')}</span></div>
             </a>
-            <a href="#service" data-section="service" class="cyber-nav-item" data-tooltip="${t('opt.nav.model')}">
-              <div class="nav-item-left">
-                <span class="nav-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="4" y="4" width="16" height="16" rx="2"></rect>
-                    <rect x="9" y="9" width="6" height="6"></rect>
-                    <line x1="9" y1="1" x2="9" y2="4"></line>
-                    <line x1="15" y1="1" x2="15" y2="4"></line>
-                    <line x1="9" y1="20" x2="9" y2="23"></line>
-                    <line x1="15" y1="20" x2="15" y2="23"></line>
-                    <line x1="20" y1="9" x2="23" y2="9"></line>
-                    <line x1="20" y1="14" x2="23" y2="14"></line>
-                    <line x1="1" y1="9" x2="4" y2="9"></line>
-                    <line x1="1" y1="14" x2="4" y2="14"></line>
-                  </svg>
-                </span>
-                <span class="nav-text">${t('opt.nav.model')}</span>
-              </div>
+            <a href="#terms" data-group="vocab" class="cyber-nav-item" data-tooltip="${t('opt.group5.vocab')}">
+              <div class="nav-item-left"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="17" height="17" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h7"></path></svg></span><span class="nav-text">${t('opt.group5.vocab')}</span></div>
             </a>
-          </div>
-
-          <!-- Group 2: 知识记忆 / MEMORY MATRIX -->
-          <div class="nav-group">
-            <div class="nav-group-header">
-              <span>${t('opt.group.memory')}</span>
-            </div>
-            <a href="#terms" data-section="terms" class="cyber-nav-item" data-tooltip="${t('opt.nav.terms')}">
-              <div class="nav-item-left">
-                <span class="nav-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
-                    <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
-                    <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
-                    <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
-                  </svg>
-                </span>
-                <span class="nav-text">${t('opt.nav.terms')}</span>
-              </div>
-            </a>
-            <a href="#personalization" data-section="personalization" class="cyber-nav-item" data-tooltip="${t('opt.nav.personalization')}">
-              <div class="nav-item-left">
-                <span class="nav-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
-                  </svg>
-                </span>
-                <span class="nav-text">${t('opt.nav.personalization')}</span>
-              </div>
-            </a>
-            <a href="#history" data-section="history" class="cyber-nav-item" data-tooltip="${t('opt.nav.history')}">
-              <div class="nav-item-left">
-                <span class="nav-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <polyline points="12 6 12 12 16 14"></polyline>
-                  </svg>
-                </span>
-                <span class="nav-text">${t('opt.nav.history')}</span>
-              </div>
-            </a>
-            <a href="#privacy" data-section="privacy" class="cyber-nav-item" data-tooltip="${t('opt.nav.privacy')}">
-              <div class="nav-item-left">
-                <span class="nav-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                  </svg>
-                </span>
-                <span class="nav-text">${t('opt.nav.privacy')}</span>
-              </div>
-            </a>
-          </div>
-
-          <!-- Group 3: 帮助与诊断 -->
-          <div class="nav-group">
-            <div class="nav-group-header">
-              <span>${t('opt.group.help')}</span>
-            </div>
-            <a href="#shortcuts" data-section="shortcuts" class="cyber-nav-item" data-tooltip="${t('opt.nav.shortcuts')}">
-              <div class="nav-item-left">
-                <span class="nav-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="2" y="4" width="20" height="16" rx="2"></rect>
-                    <line x1="6" y1="8" x2="6" y2="8"></line>
-                    <line x1="10" y1="8" x2="10" y2="8"></line>
-                    <line x1="14" y1="8" x2="14" y2="8"></line>
-                    <line x1="18" y1="8" x2="18" y2="8"></line>
-                    <line x1="6" y1="12" x2="6" y2="12"></line>
-                    <line x1="18" y1="12" x2="18" y2="12"></line>
-                    <line x1="10" y1="16" x2="14" y2="16"></line>
-                  </svg>
-                </span>
-                <span class="nav-text">${t('opt.nav.shortcuts')}</span>
-              </div>
-            </a>
-            <a href="#guide" data-section="guide" class="cyber-nav-item" data-tooltip="${t('opt.nav.guide')}">
-              <div class="nav-item-left">
-                <span class="nav-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-                  </svg>
-                </span>
-                <span class="nav-text">${t('opt.nav.guide')}</span>
-              </div>
-            </a>
-            <a href="#diagnostics" data-section="diagnostics" class="cyber-nav-item" data-tooltip="${t('opt.nav.diagnostics')}">
-              <div class="nav-item-left">
-                <span class="nav-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="4 17 10 11 4 5"></polyline>
-                    <line x1="12" y1="19" x2="20" y2="19"></line>
-                  </svg>
-                </span>
-                <span class="nav-text">${t('opt.nav.diagnostics')}</span>
-              </div>
+            <a href="#privacy" data-group="more" class="cyber-nav-item" data-tooltip="${t('opt.group5.more')}">
+              <div class="nav-item-left"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="17" height="17" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="19" cy="12" r="1.5"></circle></svg></span><span class="nav-text">${t('opt.group5.more')}</span></div>
             </a>
           </div>
         </nav>
       </div>
+    </aside>
 
-      <!-- 运行状态：阅读 / 模型 / 最近请求 / 伴读猫，常驻侧栏底部；模型行直达模型服务，伴读猫行打开随心阅宣言 -->
+    <!-- Right Main Panel -->
+`;
+
+export const nowStatus = html`
+      <!-- 运行状态：阅读 / 模型 / 最近请求 / 伴读猫，一行显示在「阅读」页顶部；模型项直达模型服务，伴读猫项打开随心阅宣言 -->
       <section id="now-status" class="now-status" aria-label="${t('opt.now.aria')}">
         <div class="now-status-item" id="now-reading-item" data-tone="progress">
           <span class="now-status-k">${t('opt.now.reading')}</span>
@@ -233,9 +99,6 @@ export const shellTop = html`
           <strong id="stamp-pet-status" class="stamp-pet-status"><span class="stamp-status-dot" aria-hidden="true"></span><span class="stamp-status-text">${t('opt.stampPet')}</span></strong>
         </div>
       </section>
-    </aside>
-
-    <!-- Right Main Panel -->
 `;
 
 export const mainToolbar = html`
@@ -282,8 +145,12 @@ export const mainToolbar = html`
 export const heroBlock = html`
         <header id="common-workspace-header" class="compact-hero-banner" data-purpose="hero-header">
           <div class="hero-left">
-            <h1 id="section-title" class="hero-title" tabindex="-1">${t('opt.meta.assistance.title')}</h1>
-            <p id="hero-desc" class="hero-desc">${t('opt.meta.assistance.desc')}</p>
+            <h1 id="section-title" class="hero-title" tabindex="-1">${t('opt.group5.reading')}</h1>
+            <p id="hero-desc" class="hero-desc">${t('opt.group5.readingDesc')}</p>
+          </div>
+          <!-- 原底栏的「导出规则包」：导出的是网站与领域规则，只在「网站」页显示。 -->
+          <div class="hero-actions">
+            <button type="button" id="footer-export-rules" class="secondary-button hero-export">${t('opt.footerExport')}</button>
           </div>
 
         </header>
@@ -292,21 +159,6 @@ export const heroBlock = html`
         <!-- ========================================================= -->
         <!-- SIGNATURE SECTION: The Reference Ticket / 随心阅 Stamp Card -->
         <!-- ========================================================= -->
-`;
-
-export const telemetryFooter = html`
-      <!-- Global Bottom Telemetry Bar -->
-      <footer class="telemetry-bar" data-purpose="telemetry-footer">
-        <div class="telemetry-left">
-          <span class="telemetry-brand">${t('common.brand')}</span>
-          <span class="telemetry-sep">·</span>
-          <span>${t('opt.footerLocal')}</span>
-          
-        </div>
-        <div class="telemetry-right">
-          <button type="button" id="footer-export-rules" class="telemetry-btn-export">${t('opt.footerExport')}</button>
-        </div>
-      </footer>
 `;
 
 export const shellDialog = html`

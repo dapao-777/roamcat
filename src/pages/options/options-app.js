@@ -1,6 +1,6 @@
 /**
  * @file src/pages/options/options-app.js
- * 文件职责：设置页 Lit 应用壳——11 分区 hash 路由（旧 #advanced 重定向至 #sites）（含 view transitions）、
+ * 文件职责：设置页 Lit 应用壳——五个分组、11 个分区的 hash 路由（组内用标签切换；旧 #advanced 重定向至 #sites）（含 view transitions）、
  *   侧栏折叠（中等宽度自动收为图标栏）、主题切换、宣言弹层、密码可见性切换、选择卡高亮委托。
  * 主要内容：渲染 shell.js + 11 个静态分区模板（light DOM 保留全部 id 契约）；
  *   首帧渲染完成后动态加载 options-controller.js 与 history.js，二者沿用原
@@ -14,7 +14,7 @@
  */
 import {LitElement, html} from 'lit';
 import {t} from '../../i18n-runtime.js';
-import {shellTop, mainToolbar, heroBlock, telemetryFooter, shellDialog} from './shell.js';
+import {shellTop, mainToolbar, heroBlock, nowStatus, shellDialog} from './shell.js';
 import {
   assistanceSection, appearanceSection, sitesSection,
   termsSection, personalizationSection, historySection, privacySection,
@@ -36,28 +36,20 @@ const LABELS = {
   privacy: 'opt.nav.privacy', service: 'opt.nav.model', diagnostics: 'opt.nav.diagnostics',
   shortcuts: 'opt.nav.shortcuts', guide: 'opt.nav.guide',
 };
-const SECTION_META = {
-  assistance: {title: 'opt.meta.assistance.title', category: 'opt.group.reading', stage: 'opt.meta.assistance.stage', desc: 'opt.meta.assistance.desc'},
-  appearance: {title: 'opt.meta.appearance.title', category: 'opt.group.reading', stage: 'opt.meta.appearance.stage', desc: 'opt.meta.appearance.desc'},
-  sites: {title: 'opt.meta.sites.title', category: 'opt.group.reading', stage: 'opt.meta.sites.stage', desc: 'opt.meta.sites.desc'},
-  terms: {title: 'opt.meta.terms.title', category: 'opt.group.memory', stage: 'opt.meta.terms.stage', desc: 'opt.meta.terms.desc'},
-  personalization: {title: 'opt.meta.personalization.title', category: 'opt.group.memory', stage: 'opt.meta.personalization.stage', desc: 'opt.meta.personalization.desc'},
-  history: {title: 'opt.meta.history.title', category: 'opt.group.memory', stage: 'opt.meta.history.stage', desc: 'opt.meta.history.desc'},
-  privacy: {title: 'opt.meta.privacy.title', category: 'opt.group.memory', stage: 'opt.meta.privacy.stage', desc: 'opt.meta.privacy.desc'},
-  service: {title: 'opt.meta.service.title', category: 'opt.group.reading', stage: 'opt.meta.service.stage', desc: 'opt.meta.service.desc'},
-  diagnostics: {title: 'opt.meta.diagnostics.title', category: 'opt.group.help', stage: 'opt.meta.diagnostics.stage', desc: 'opt.meta.diagnostics.desc'},
-  shortcuts: {title: 'opt.meta.shortcuts.title', category: 'opt.group.help', stage: 'opt.meta.shortcuts.stage', desc: 'opt.meta.shortcuts.desc'},
-  guide: {title: 'opt.meta.guide.title', category: 'opt.group.help', stage: 'opt.meta.guide.stage', desc: 'opt.meta.guide.desc'},
-};
-const BREADCRUMBS = {
-  assistance: ['opt.group.reading', 'opt.nav.assist'], appearance: ['opt.group.reading', 'opt.nav.appearance'],
-  sites: ['opt.group.reading', 'opt.nav.sites'], service: ['opt.group.reading', 'opt.nav.model'],
-  terms: ['opt.group.memory', 'opt.meta.terms.crumb'], personalization: ['opt.group.memory', 'opt.meta.personalization.crumb'],
-  history: ['opt.group.memory', 'opt.nav.history'], privacy: ['opt.group.memory', 'opt.nav.privacy'],
-  diagnostics: ['opt.group.help', 'opt.nav.diagnostics'],
-  shortcuts: ['opt.group.help', 'opt.meta.shortcuts.crumb'],
-  guide: ['opt.group.help', 'opt.meta.guide.crumb'],
-};
+// 侧栏只有五个分组；组内有几个分区时，页头下方用标签切换。hash 仍是分区名（#terms、#diagnostics …），
+// 弹窗、伴读猫和文档里的旧链接不用改。
+const GROUPS = [
+  {id: 'reading', label: 'opt.group5.reading', desc: 'opt.group5.readingDesc', sections: ['assistance', 'appearance']},
+  {id: 'sites', label: 'opt.group5.sites', desc: 'opt.group5.sitesDesc', sections: ['sites']},
+  {id: 'service', label: 'opt.group5.service', desc: 'opt.group5.serviceDesc', sections: ['service']},
+  {id: 'vocab', label: 'opt.group5.vocab', desc: 'opt.group5.vocabDesc', sections: ['terms', 'personalization', 'history']},
+  {id: 'more', label: 'opt.group5.more', desc: 'opt.group5.moreDesc', sections: ['privacy', 'shortcuts', 'guide', 'diagnostics']},
+];
+const SECTION_GROUP = Object.fromEntries(GROUPS.flatMap(group => group.sections.map(section => [section, group])));
+const TAB_LABELS = {assistance: 'opt.tab.assist'};
+const groupTabs = html`<nav class="group-tabs" aria-label=${t('opt.settingsNav')}>
+  ${GROUPS.filter(group => group.sections.length > 1).flatMap(group => group.sections.map(section => html`<a href="#${section}" class="group-tab" data-section=${section} data-tab-group=${group.id}>${t(TAB_LABELS[section] || LABELS[section])}</a>`))}
+</nav>`;
 const THEMES = ['auto', 'dark', 'light'];
 const THEME_LABELS = {auto: 'opt.themeAuto', dark: 'opt.themeDark', light: 'opt.themeLight'};
 const THEME_ICONS = {
@@ -166,9 +158,10 @@ class RoamcatOptions extends LitElement {
       ${mainToolbar}
       <div class="main-canvas-content">
         ${heroBlock}
+        ${groupTabs}
+        ${nowStatus}
         ${SECTIONS.map(name => SECTION_TEMPLATES[name])}
       </div>
-      ${telemetryFooter}
     </main>
     ${shellDialog}`;
   }
@@ -227,15 +220,19 @@ class RoamcatOptions extends LitElement {
     if (anchor) setTimeout(() => $(anchor)?.scrollIntoView({block: 'start'}), 150);
     const previous = this.#section;
     if (section === previous && !initial) return;
+    // 先同步记下目标分区：视图过渡的回调是异步的，连续切换时只渲染最后一次的目标。
+    this.#section = section;
     const mutate = () => {
-      this.#section = section;
-      for (const name of SECTIONS) { const el = $(name); if (el) el.hidden = name !== section; }
-      this.#syncChrome(section);
+      const current = this.#section;
+      for (const name of SECTIONS) { const el = $(name); if (el) el.hidden = name !== current; }
+      this.#syncChrome(current);
       this.#resetScroll();
     };
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (!initial && typeof document.startViewTransition === 'function' && !reduced) {
       document.startViewTransition(mutate);
+      // 过渡回调要等下一帧；后台或被遮挡的窗口可能迟迟不出帧，到点仍未切换就直接切（mutate 可重复执行）。
+      setTimeout(() => { if ($(this.#section)?.hidden) mutate(); }, 120);
     } else {
       mutate();
     }
@@ -244,19 +241,25 @@ class RoamcatOptions extends LitElement {
   }
 
   #syncChrome(section) {
-    const meta = SECTION_META[section] || SECTION_META.assistance;
-    setText('section-title', t(meta.title));
-    setText('hero-category-badge', t(meta.category));
-    setText('hero-stage-badge', t(meta.stage));
-    setText('hero-desc', t(meta.desc));
-    const [category, code] = BREADCRUMBS[section] || ['opt.toolbarRoot', 'opt.nav.assist'];
-    setText('toolbar-category-title', t(category));
-    setText('toolbar-breadcrumb-title', t(code));
-    const readout = document.querySelector('.hero-right-card.reading-readout');
-    if (readout) readout.hidden = section !== 'assistance';
-    document.title = `${t('common.brand')} · ${t(LABELS[section])}`;
+    const group = SECTION_GROUP[section] || GROUPS[0];
+    const tabLabel = t(TAB_LABELS[section] || LABELS[section]);
+    // 页头写分组名和一行说明；面包屑是「分组 / 当前标签」，单分区分组只写分组名。
+    setText('section-title', t(group.label));
+    setText('hero-desc', t(group.desc));
+    setText('toolbar-category-title', t(group.label));
+    setText('toolbar-breadcrumb-title', group.sections.length > 1 ? tabLabel : t(group.label));
+    document.querySelector('.toolbar-breadcrumb')?.toggleAttribute('data-single', group.sections.length < 2);
+    document.body.dataset.group = group.id;
+    document.title = `${t('common.brand')} · ${group.sections.length > 1 ? `${t(group.label)} · ${tabLabel}` : t(group.label)}`;
+    document.querySelectorAll('[data-tab-group]').forEach(tab => { tab.hidden = tab.dataset.tabGroup !== group.id; });
     document.querySelectorAll('[data-section]').forEach(link => {
       const active = link.dataset.section === section;
+      link.classList.toggle('active', active);
+      if (active) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    });
+    document.querySelectorAll('[data-group]').forEach(link => {
+      const active = link.dataset.group === group.id;
       link.classList.toggle('active', active);
       if (active) link.setAttribute('aria-current', 'page');
       else link.removeAttribute('aria-current');

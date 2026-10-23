@@ -120,7 +120,7 @@ function mockChrome() {
     // Check navigation to other sections updates document.title
     const sections = ['appearance', 'sites', 'service', 'diagnostics', 'guide'];
     for (const sec of sections) {
-      await page.locator(`[data-section="${sec}"]`).click();
+      await page.evaluate(s=>{location.hash='#'+s},`${sec}`);
       await page.waitForTimeout(200);
       docTitle = await page.title();
       console.log(`Document title (#${sec}):`, JSON.stringify(docTitle));
