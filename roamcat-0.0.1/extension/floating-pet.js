@@ -1970,7 +1970,7 @@
         background-image: none;
         border: 1px solid var(--pet-line);
         border-radius: 12px;
-        box-shadow: var(--pet-shadow-lg), 0 0 0 1px color-mix(in srgb, var(--pet-primary, #f59e0b) 22%, transparent);
+        box-shadow: var(--pet-shadow-lg);
         display: flex;
         flex-direction: column;
         overflow: hidden;
@@ -1998,7 +1998,7 @@
       }
 
       .summary-title {
-        font: 800 var(--fs-4, 16px)/1.3 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font: 600 var(--fs-4, 16px)/1.3 var(--serif, Georgia, serif);
         color: var(--pet-ink);
         min-width: 0;
       }
@@ -2012,11 +2012,11 @@
 
       /* 领域徽章 → HUD 标签 chip（仅摘要页头作用域，不影响气泡菜单里的同名类） */
       .summary-header .menu-domain-tag {
-        font: 700 var(--fs-1, 12px)/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-        padding: 2px 7px;
-        border-radius: 4px;
+        font: 500 var(--fs-1, 12px)/1.4 var(--ui, var(--sans, system-ui, sans-serif));
+        padding: 2px 8px;
+        border-radius: 999px;
         background: var(--pet-tag-bg);
-        border: 1px solid var(--pet-line);
+        border: 0;
         color: var(--pet-primary);
         white-space: nowrap;
       }
@@ -2029,9 +2029,9 @@
       .summary-close-btn {
         width: 24px;
         height: 24px;
-        border-radius: 5px;
-        border: 1px solid var(--pet-line);
-        background: var(--pet-tag-bg);
+        border-radius: 6px;
+        border: 1px solid transparent;
+        background: transparent;
         color: var(--pet-muted);
         cursor: pointer;
         display: inline-flex;
@@ -2048,8 +2048,8 @@
       }
 
       .summary-action-btn:hover {
-        color: var(--pet-primary);
-        border-color: var(--pet-primary);
+        color: var(--pet-ink);
+        background: var(--pet-tag-bg);
       }
 
       .summary-close-btn {
@@ -2076,7 +2076,7 @@
         align-items: center;
         flex-wrap: wrap;
         gap: 8px;
-        font: 400 var(--fs-1, 12px)/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font: 400 var(--fs-1, 12px)/1.4 var(--ui, var(--sans, system-ui, sans-serif));
         color: var(--pet-muted);
       }
 
@@ -2100,12 +2100,11 @@
       .takeaway-card {
         padding: 8px 12px;
         background: var(--pet-tag-bg);
-        border-radius: 6px;
-        border-left: 3px solid var(--pet-primary);
+        border-radius: 8px;
       }
 
       .takeaway-label {
-        font-weight: 700;
+        font-weight: 600;
         color: var(--pet-muted);
         margin-right: 4px;
         font-size: var(--fs-1, 12px);
@@ -2126,10 +2125,8 @@
       }
 
       .section-subtitle {
-        font: 700 var(--fs-1, 12px)/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font: 600 var(--fs-1, 12px)/1.5 var(--ui, var(--sans, system-ui, sans-serif));
         color: var(--pet-muted);
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
       }
 
       .highlight-list {
@@ -2181,12 +2178,12 @@
       }
 
       .keyword-pill {
-        font: 400 var(--fs-1, 12px)/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-        padding: 3px 8px;
-        border-radius: 4px;
+        font: 500 var(--fs-1, 12px)/1.4 var(--ui, var(--sans, system-ui, sans-serif));
+        padding: 3px 10px;
+        border-radius: 999px;
         background: var(--pet-tag-bg);
-        color: var(--pet-primary);
-        border: 1px solid var(--pet-line);
+        color: var(--pet-ink);
+        border: 1px solid transparent;
         cursor: pointer;
         transition: all 0.15s ease;
         user-select: none;
@@ -2226,7 +2223,7 @@
       }
 
       .loading-text {
-        font: 400 var(--fs-1, 12px)/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font: 400 var(--fs-2, 13px)/1.6 var(--ui, var(--sans, system-ui, sans-serif));
         color: var(--pet-muted);
         max-width: 320px;
       }
@@ -2281,10 +2278,10 @@
         padding: 0 11px;
         border-radius: 6px;
         border: 1px solid var(--pet-line);
-        background: var(--pet-tag-bg);
+        background: transparent;
         color: var(--pet-muted-strong, var(--pet-ink));
         font-size: var(--fs-1, 12px);
-        font-weight: 600;
+        font-weight: 500;
         cursor: pointer;
         transition: all 0.15s ease;
       }
@@ -2297,7 +2294,7 @@
 
       .footer-btn:hover {
         color: var(--pet-ink);
-        border-color: var(--pet-muted);
+        background: var(--pet-tag-bg);
       }
 
       .footer-btn.copied {
@@ -2307,7 +2304,7 @@
       }
 
       .summary-source-meta {
-        font: 400 var(--fs-1, 12px)/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font: 400 var(--fs-1, 12px)/1.4 var(--ui, var(--sans, system-ui, sans-serif));
         color: var(--pet-muted);
       }
     `;

@@ -29,31 +29,30 @@ var RoamCatContentUI=(function(e){Object.defineProperty(e,Symbol.toStringTag,{va
     </div>`,e);let i=Z(e),a=i(`.undo`);return a.onclick=r,{panel:i(`.panel`),message:i(`.message`),undo:a}}var we=`:host{color:var(--ink);font:var(--type-control)/var(--leading-control) var(--sans)}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-.card{padding:16px 20px;border:1px solid var(--rim-soft,var(--line));border-radius:12px;background-color:var(--surface);background-image:var(--face-raised,none);box-shadow:var(--elev-2),0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent);max-height:min(70vh,calc(100vh - 24px));overflow:auto}
+.card{padding:16px 18px 14px;border:1px solid var(--rim-soft,var(--line));border-radius:12px;background-color:var(--surface);background-image:none;box-shadow:var(--elev-2);max-height:min(70vh,calc(100vh - 24px));overflow:auto}
 .hud-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
 .card:has(.hud-term.passage) .hud-head{align-items:flex-start}
 .hud-term-group{display:flex;align-items:center;gap:8px;min-width:0}
 .card:has(.hud-term.passage) .hud-term-group{flex-wrap:wrap}
-.hud-term{margin:0;font:800 var(--fs-4, 16px)/1.3 var(--mono);color:var(--ink);text-shadow:var(--engrave,none);overflow-wrap:anywhere;white-space:pre-wrap}
+.hud-term{margin:0;font:600 var(--fs-5, 20px)/1.25 var(--serif, Georgia, serif);color:var(--ink);overflow-wrap:anywhere;white-space:pre-wrap}
 .hud-term.passage{font:400 var(--fs-2, 13px)/1.55 var(--sans)}
 .hud-head-right{display:flex;align-items:center;gap:8px;flex:none}
-.hud-tag{font:500 var(--fs-1, 12px)/1.4 var(--ui, var(--sans));padding:2px 8px;border-radius:999px;background-color:var(--surface-subtle);color:var(--muted-strong);white-space:nowrap}
-.hud-icon-btn,.listen{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;min-width:24px;min-height:24px;padding:0;margin:0;border-radius:5px;border:1px solid var(--rim-soft,var(--line));background-color:var(--surface-subtle);background-image:var(--key-face,var(--face,none));box-shadow:var(--key-skirt,var(--inset-soft,none));color:var(--muted);cursor:pointer;transition:all .15s ease}
-.hud-icon-btn:hover,.listen:hover{color:var(--accent);border-color:var(--rim,var(--accent));box-shadow:var(--key-skirt-hover,var(--key-skirt,none))}
-.hud-icon-btn:active,.listen:active{transform:translateY(2px);box-shadow:var(--key-press,var(--press,none))}
+.hud-tag{font:500 var(--fs-1, 12px)/1.4 var(--ui, var(--sans));padding:2px 8px;border-radius:999px;background-color:transparent;color:var(--muted);white-space:nowrap}
+.hud-icon-btn,.listen{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;min-width:24px;min-height:24px;padding:0;margin:0;border-radius:6px;border:1px solid transparent;background-color:transparent;background-image:none;box-shadow:none;color:var(--muted);cursor:pointer;transition:all .15s ease}
+.hud-icon-btn:hover,.listen:hover{color:var(--ink);background-color:var(--surface-hover)}
 .hud-icon-btn:focus-visible,.listen:focus-visible,.hud-action:focus-visible{outline:var(--focus-ring);outline-offset:var(--focus-offset)}
 .hud-icon-btn svg,.listen svg{display:block}
 .hud-body{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
 .answer{margin:0;font-size:var(--fs-3, 14px);line-height:1.55;font-weight:500;color:var(--ink);white-space:pre-wrap;overflow-wrap:anywhere}
 .answer.error{color:var(--danger)}
 .answer:empty,.explanation:empty,.sentence-line:empty{display:none}
-.sentence-line{margin:0;color:var(--muted-strong);font-size:var(--fs-1, 12px);line-height:1.5;overflow-wrap:anywhere}
-.explanation{margin:0;background-color:var(--surface-subtle);background-image:var(--face-well,none);box-shadow:var(--well-shadow,none);border-radius:6px;padding:8px 12px;font-size:var(--fs-1, 12px);line-height:1.5;color:var(--muted-strong);border-left:3px solid var(--accent)}
-.explanation dt{display:inline;font-weight:700;color:var(--muted)}
+.sentence-line{margin:0;color:var(--muted-strong);font:400 var(--fs-2, 13px)/1.6 var(--serif, Georgia, serif);overflow-wrap:anywhere}
+.explanation{margin:0;background-color:var(--surface-subtle);background-image:none;box-shadow:none;border-radius:8px;padding:8px 12px;font-size:var(--fs-1, 12px);line-height:1.55;color:var(--muted-strong)}
+.explanation dt{display:inline;font-weight:600;color:var(--muted)}
 .explanation dt::after{content:'：'}
 .explanation dd{display:inline;margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
 .explanation dd+dt{display:block}
-.hud-foot{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;border-top:1px solid var(--rim-soft,var(--line));box-shadow:inset 0 1px 0 var(--edge-hi,transparent);padding-top:12px}
+.hud-foot{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;border-top:1px solid var(--rim-soft,var(--line));padding-top:12px}
 .hud-actions{display:flex;align-items:center;gap:2px;flex-wrap:wrap}
 .hud-action{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 8px;margin:0;border-radius:6px;border:1px solid transparent;background:transparent;color:var(--muted-strong);font:500 var(--fs-2, 13px)/1 var(--ui, var(--sans));cursor:pointer;transition:background-color .15s ease,color .15s ease}.hud-action.known-action{padding:0 10px;margin-right:4px;border-color:var(--action);background:var(--action);color:var(--on-action);font-weight:600}.hud-action.known-action:hover{border-color:var(--action-hover);background:var(--action-hover);color:var(--on-action)}
 .hud-action:hover{color:var(--ink);background:var(--surface-hover)}
@@ -64,7 +63,7 @@ var RoamCatContentUI=(function(e){Object.defineProperty(e,Symbol.toStringTag,{va
 
 details.sentence{margin-top:10px}
 details.sentence>summary{display:none}
-.sentence-body{margin:0;padding:10px 14px;background-color:var(--surface-subtle);background-image:var(--face-well,none);box-shadow:var(--well-shadow,none);border-radius:6px;border:1px dashed var(--muted);font-size:var(--fs-2, 13px);line-height:1.5}
+.sentence-body{margin:0;padding:10px 14px;background-color:var(--surface-subtle);background-image:none;box-shadow:none;border-radius:8px;border:0;font-size:var(--fs-2, 13px);line-height:1.5}
 .sentence-body dt{font:400 var(--fs-1, 12px)/1.6 var(--mono);color:var(--muted)}
 .sentence-body dd{margin:0 0 8px;white-space:pre-wrap;overflow-wrap:anywhere}
 .sentence-body dd:last-child{margin-bottom:0}
