@@ -105,3 +105,53 @@ roamcat-popup { display: contents; }
 .popup-footer { padding: 8px 14px; }
 /* 本页卡片的说明文字统一一档灰度，结构说明不再像第二段正文 */
 .popup-card .sentence-structure-key { margin-top: 2px; }
+
+/* =============================================================
+   2026-10 改版：弹窗只留一眼能懂的操作
+   - 白卡 + 细线，卡里不再套底色块；图标去掉底座；
+   - 每个功能只留名字和一行动态状态（已标注几处、翻译进度…），固定的解释文字收起；
+   - 站点与状态在卡片顶部一行，主开关最显眼。
+   ============================================================= */
+.popup-document .popup-body { background: var(--rc-canvas); font-family: var(--font-sans); }
+.popup-body .popup-header { border-bottom: 1px solid var(--rc-line); background: transparent; box-shadow: none; }
+.popup-body .popup-brand-name { font-family: var(--font-sans); font-size: var(--fs-4); font-weight: 600; letter-spacing: 0; text-transform: none; }
+.popup-body .popup-brand-badge { border: 0; padding: 0; background: none; color: var(--rc-ink-tertiary); font-family: var(--font-sans); font-size: var(--fs-2); font-weight: 500; }
+.popup-body .popup-content-body { gap: var(--rc-space-3); }
+.popup-body .popup-card {
+  border: 1px solid var(--rc-line);
+  border-radius: 12px;
+  background: var(--rc-surface);
+  background-image: none;
+  box-shadow: none;
+}
+.popup-body .page-context { padding-bottom: var(--rc-space-3); border-bottom: 1px solid var(--rc-line-soft); }
+.popup-body .site-host-wrap { color: var(--rc-ink-tertiary); font-family: var(--rc-mono); font-size: var(--fs-2); }
+.popup-body .status-chip { border: 0; background: var(--rc-surface-subtle); color: var(--rc-ink-tertiary); font-family: var(--font-sans); font-size: var(--fs-1); letter-spacing: 0; }
+.popup-body .status-chip.active { background: var(--rc-green-soft); color: var(--rc-green); }
+.popup-body .activation-heading h2 { font-size: var(--fs-4); font-weight: 600; }
+/* 动态状态只占一行 */
+.popup-body :is(#page-note, #emergency-status, #sentence-groups-note, #site-auto-note, #service-current-note) {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  margin: 2px 0 0;
+  font-size: var(--fs-2);
+  color: var(--rc-ink-tertiary);
+}
+/* 固定的说明文字（结构解构的用法、按需提示的解释）收起 */
+.popup-body .sentence-structure-key { display: none; }
+.popup-body .feature-row { padding-block: var(--rc-space-3); border-top: 1px solid var(--rc-line-soft); }
+.popup-body .feature-row h2,
+.popup-body .feature-row h3 { font-size: var(--fs-3); font-weight: 500; }
+.popup-body .feature-icon-badge { width: auto; height: auto; padding: 0; border: 0; background: none; box-shadow: none; color: var(--rc-ink-secondary); }
+.popup-body .service-provider-badge img { border-radius: 4px; }
+.popup-body .popup-master-btn { min-width: 112px; }
+.popup-body :is(.popup-emergency-btn, .popup-service-btn) { border-color: var(--rc-line); background: var(--rc-surface); box-shadow: none; }
+.popup-body .popup-footer { border-top: 1px solid var(--rc-line); background: transparent; color: var(--rc-ink-tertiary); font-family: var(--font-sans); }
+.popup-body .popup-footer-ver { font-family: var(--rc-mono); }
+.popup-body .popup-quick-link { border-radius: 10px; }
+/* 状态行单行省略要生效，标题列必须能收缩，否则长状态会顶出卡片、压到按钮下面 */
+.popup-body :is(.feature-card-header, .emergency-heading, .activation-control-row, .site-auto-panel) { display: flex; align-items: center; gap: var(--rc-space-3); min-width: 0; }
+.popup-body :is(.feature-card-title-wrap, .activation-heading, .site-auto-copy) { flex: 1 1 auto; min-width: 0; }
+.popup-body .feature-card-title-wrap > div { min-width: 0; }
+.popup-body :is(.feature-card-header, .emergency-heading, .activation-control-row, .site-auto-panel) > :is(button, rc-switch) { flex: none; }
