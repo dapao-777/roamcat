@@ -83,9 +83,11 @@ function createConnector({host,label,cliName,loginHosts}) {
     current.onDisconnect.addListener(() => {
       const reason = chrome.runtime.lastError?.message || '';
       const missing = /not found|not registered|forbidden/i.test(reason);
+      // 附上浏览器给的原始原因：同样是“找不到”，注册缺失、清单损坏和来源未授权要分开排查。
+      const raw = reason ? `（${reason.slice(0,160)}）` : '';
       const error = new Error(missing
-        ? M(`未找到或未授权本地 ${label} 连接器，请按设置页“模型服务”里的步骤安装。`,`No authorized local ${label} connector found. Install it following the steps under Settings → Model service.`)
-        : M(`本地 ${label} 连接器没能启动或已断开。请确认 Node.js 和 ${cliName} 可用，再重新运行安装命令。`,`The local ${label} connector did not start or disconnected. Make sure Node.js and ${cliName} are available, then rerun the install command.`));
+        ? M(`未找到或未授权本地 ${label} 连接器，请按设置页“模型服务”里的步骤安装。${raw}`,`No authorized local ${label} connector found. Install it following the steps under Settings → Model service. ${raw}`)
+        : M(`本地 ${label} 连接器没能启动或已断开。请确认 Node.js 和 ${cliName} 可用，再重新运行安装命令。${raw}`,`The local ${label} connector did not start or disconnected. Make sure Node.js and ${cliName} are available, then rerun the install command. ${raw}`));
       error.stage = missing ? 'install' : 'start';
       disconnect(current,error);
     });
