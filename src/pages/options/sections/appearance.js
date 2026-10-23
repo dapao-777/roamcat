@@ -43,7 +43,7 @@ export const appearanceSection = html`
             <h3 id="sentence-density-heading">${t('sec.ap.structure')}</h3>
             
             <fieldset class="sentence-density" aria-describedby="sentence-density-help sentence-density-result">
-<legend class="sr-only">${t('sec.ap.density')}</legend>
+<legend>${t('sec.ap.density')}</legend>
 <div class="sentence-density-options">
               <label>
 <input type="radio" name="sentence-density" value="coarse">

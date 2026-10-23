@@ -581,3 +581,169 @@ body[data-group="reading"] .now-status { margin-bottom: var(--rc-space-4); }
 .options-document .options-body #service :is(.service-name, .service-desc) { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 @media (max-width: 900px) { .options-document .options-body #service .directory-items { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .options-document .options-body #service .directory-items { grid-template-columns: minmax(0, 1fr); } }
+
+/* =============================================================
+   2026-10 改版 · 二：按钮三级、中性状态行、搜索框、品牌区
+   ============================================================= */
+/* 按钮只分三级：主按钮深色实心、次按钮描边、第三级纯文字；同一个圆角与高度 */
+.options-document .options-body .main-panel :is(.primary-action, .secondary-button, .danger-button, .icon-text-button, .service-add-button, .catalog-check-btn, .catalog-set-default-btn, #history-more, [data-open-section-tab]) {
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 8px;
+  background-image: none;
+  box-shadow: none;
+  text-shadow: none;
+  font-size: var(--fs-2);
+  font-weight: 500;
+  transform: none;
+}
+.options-document .options-body .main-panel .primary-action { border: 1px solid var(--rc-action); background-color: var(--rc-action); color: var(--rc-on-action); }
+.options-document .options-body .main-panel .primary-action:where(:enabled):hover { border-color: var(--rc-action-hover); background-color: var(--rc-action-hover); }
+.options-document .options-body .main-panel :is(.secondary-button, .service-add-button, .catalog-check-btn, .catalog-set-default-btn, #history-more, [data-open-section-tab]) {
+  border: 1px solid var(--rc-line-mid);
+  background-color: var(--rc-surface);
+  color: var(--rc-ink);
+}
+.options-document .options-body .main-panel :is(.secondary-button, .service-add-button, .catalog-check-btn, .catalog-set-default-btn, #history-more, [data-open-section-tab]):where(:enabled):hover { border-color: var(--rc-ink-tertiary); background-color: var(--rc-surface-hover); color: var(--rc-ink); }
+.options-document .options-body .main-panel .icon-text-button { border: 1px solid transparent; background-color: transparent; color: var(--rc-ink-secondary); }
+.options-document .options-body .main-panel .icon-text-button:where(:enabled):hover { background-color: var(--rc-surface-hover); color: var(--rc-ink); }
+.options-document .options-body .main-panel .danger-button { border: 1px solid var(--rc-line-mid); background-color: var(--rc-surface); color: var(--rc-danger); }
+.options-document .options-body .main-panel .danger-button:where(:enabled):hover { border-color: var(--rc-danger); background-color: var(--rc-danger-soft); }
+.options-document .options-body .main-panel :is(.primary-action, .secondary-button, .danger-button):disabled { border-color: var(--rc-line); background-color: var(--rc-surface-subtle); color: var(--rc-ink-tertiary); }
+
+/* 状态行：文字一律中性色，只有出问题的那一项前面亮一个红点 */
+.options-document .options-body .now-status-item strong,
+.options-document .options-body .now-status .now-status-pet strong.stamp-pet-status,
+.options-document .options-body .now-status .now-status-pet strong.stamp-pet-status.is-on { color: var(--rc-ink); font-size: var(--fs-2); font-weight: 500; }
+.options-document .options-body .now-status-item[data-tone="attention"] strong::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--rc-danger);
+  vertical-align: 2px;
+}
+.options-document .options-body .now-status .stamp-status-dot { width: 6px; height: 6px; background: var(--rc-ink-tertiary); box-shadow: none; }
+.options-document .options-body .now-status .stamp-pet-status.is-on .stamp-status-dot { background: var(--rc-green); }
+
+/* 查词按键：下拉框里已经写着按键，旁边的键帽是重复信息 */
+.options-document .options-body .opt-row-control #keycap-badge { display: none; }
+
+/* 侧栏搜索：一个输入框，里面的 input 不再自带边框 */
+.options-document .options-body .sidebar-search { height: 36px; padding: 0 6px 0 10px; border: 1px solid var(--rc-line); border-radius: 8px; }
+.options-document .options-body .sidebar-search:focus-within { border-color: var(--rc-line-mid); }
+.options-document .options-body .sidebar-search input {
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  border: 0 !important;
+  border-radius: 0;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none;
+}
+.options-document .options-body .sidebar-search-kbd { border-color: var(--rc-line); background: var(--rc-surface-subtle); }
+
+/* =============================================================
+   2026-10 改版 · 三：页头留白减半、控件两档宽度、显示页行结构、识别方式单选列表
+   ============================================================= */
+.options-document .options-body .settings-toolbar { height: 56px; min-height: 56px; }
+.options-document .options-body .main-canvas-content { padding-top: var(--rc-space-2); }
+.options-document .options-body .compact-hero-banner { padding-top: 0; margin-bottom: var(--rc-space-5); }
+
+/* 行内下拉框只用两档宽度：长选项 220px、短选项 112px，左边缘也能对齐 */
+.options-document .options-body .opt-row-control > .swiss-select-wrap { width: 220px; min-width: 0; }
+.options-document .options-body .opt-row-control > .swiss-select-wrap.opt-select-narrow { width: 112px; }
+.options-document .options-body .opt-row-control > .swiss-select-wrap .swiss-select { width: 100%; }
+
+/* 显示与解构：粒度与线型改成「左边名字、右边分段按钮」的行；说明只留一句 */
+.options-document .options-body #appearance .sentence-structure-editor > fieldset {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--rc-space-6);
+  min-width: 0;
+  margin: 0;
+  padding: var(--rc-space-3) 0;
+  border: 0;
+  border-top: 1px solid var(--rc-line-soft);
+}
+.options-document .options-body #appearance .sentence-structure-editor > fieldset > legend {
+  float: left;
+  margin: 0;
+  padding: 0;
+  color: var(--rc-ink);
+  font-size: var(--fs-3);
+  font-weight: 500;
+}
+.options-document .options-body #appearance #sentence-density-help { display: none; }
+.options-document .options-body #appearance .sentence-structure-editor > .field-help { margin: var(--rc-space-2) 0 0; color: var(--rc-ink-tertiary); font-size: var(--fs-2); }
+.options-document .options-body #appearance .field-help a { color: var(--rc-ink); text-decoration: underline; text-decoration-color: var(--rc-line-mid); text-underline-offset: 3px; }
+.options-document .options-body #appearance .field-help a:hover { text-decoration-color: currentColor; }
+.options-document .options-body #appearance .reading-style-layout { margin-top: var(--rc-space-4); }
+.options-document .options-body #appearance .style-preview { gap: var(--rc-space-3); }
+.options-document .options-body #appearance .style-preview h3 { color: var(--rc-ink-tertiary); font-size: var(--fs-2); font-weight: 600; }
+.options-document .options-body #appearance #sentence-structure-preview-heading,
+.options-document .options-body #appearance #sentence-structure-preview > .field-help { display: none; }
+.options-document .options-body #appearance .sentence-preview-page { border-color: var(--rc-line); border-radius: 10px; background: var(--rc-surface-subtle); }
+.options-document .options-body #appearance .structure-legend-row { padding: 0; border: 0; background: none; }
+.options-document .options-body #appearance .structure-legend-item { padding: 0; border: 0; background: none; color: var(--rc-ink-secondary); font-weight: 400; }
+.options-document .options-body #appearance #reading-preview-note { margin: 0; color: var(--rc-ink-tertiary); font-size: var(--fs-1); }
+
+/* 内容识别方式：6 张大卡片 → 一列单选行，选中行只换浅底色 */
+.options-document .options-body .main-panel .choice-cards.three,
+.options-document .options-body .main-panel .choice-cards.two { display: flex; flex-direction: column; gap: 0; }
+.options-document .options-body .main-panel .choice-cards label {
+  align-items: center;
+  gap: var(--rc-space-3);
+  margin: 0;
+  padding: 10px 12px;
+  border: 0 !important;
+  border-radius: 8px;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.options-document .options-body .main-panel .choice-cards label + label { border-top: 0; box-shadow: none; }
+.options-document .options-body .main-panel .choice-cards label:hover { background: var(--rc-surface-hover) !important; }
+.options-document .options-body .main-panel .choice-cards label:has(input:checked) { border: 0 !important; background: var(--rc-surface-subtle) !important; box-shadow: none !important; }
+.options-document .options-body .main-panel .choice-cards input { margin: 0; accent-color: var(--rc-ink); }
+.options-document .options-body .main-panel .choice-cards label > span { display: flex; flex: 1; align-items: baseline; justify-content: space-between; gap: var(--rc-space-4); }
+.options-document .options-body .main-panel .choice-cards b { font-size: var(--fs-3); font-weight: 500; color: var(--rc-ink); }
+.options-document .options-body .main-panel .choice-cards small { margin: 0; color: var(--rc-ink-tertiary); font-size: var(--fs-2); text-align: right; }
+.options-document .options-body #appearance .sentence-structure-editor > fieldset.sentence-density { margin-top: var(--rc-space-3); border-top: 0; }
+.options-document .options-body .now-status .now-status-pet { align-items: center; }
+.options-document .options-body .now-status .now-status-pet strong.stamp-pet-status { line-height: var(--rc-leading-support); }
+
+/* =============================================================
+   2026-10 改版 · 四：空状态、品牌区
+   ============================================================= */
+/* 空状态统一成：一只小猫轮廓 + 一句标题 + 一句提示，居中，不再用虚线框 */
+.options-document .options-body .main-panel :is(#automation-site-empty, #term-empty, .compact-empty):not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-top: var(--rc-space-3);
+  padding: var(--rc-space-5) var(--rc-space-4);
+  border: 0;
+  border-radius: 10px;
+  background: var(--rc-surface-subtle);
+  text-align: center;
+}
+.options-document .options-body .main-panel :is(#automation-site-empty, #term-empty, .compact-empty)::before {
+  content: "";
+  width: 28px;
+  height: 28px;
+  margin-bottom: 6px;
+  background: var(--rc-ink-tertiary);
+  opacity: 0.55;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 9V4l4 3h6l4-3v5a7 7 0 0 1-14 0z'/%3E%3Cpath d='M9.5 12h.01M14.5 12h.01M11 15c.6.4 1.4.4 2 0'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 9V4l4 3h6l4-3v5a7 7 0 0 1-14 0z'/%3E%3Cpath d='M9.5 12h.01M14.5 12h.01M11 15c.6.4 1.4.4 2 0'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.options-document .options-body .main-panel :is(#automation-site-empty, #term-empty, .compact-empty) h3 { margin: 0; color: var(--rc-ink-secondary); font-size: var(--fs-3); font-weight: 500; }
+.options-document .options-body .main-panel :is(#automation-site-empty, #term-empty, .compact-empty) p { max-width: 460px; margin: 0; color: var(--rc-ink-tertiary); font-size: var(--fs-2); line-height: 1.6; }
+
+/* 品牌区：中文名/英文副名与 RoamCat 同一无衬线、同一灰，不再混衬线与字距 */
+.options-document .options-body .brand-title .brand-title-cn { font-family: var(--font-sans); font-size: 1em; font-weight: 400; letter-spacing: 0; color: var(--rc-ink-tertiary); }

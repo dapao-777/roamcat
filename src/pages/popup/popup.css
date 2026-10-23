@@ -155,3 +155,29 @@ roamcat-popup { display: contents; }
 .popup-body :is(.feature-card-title-wrap, .activation-heading, .site-auto-copy) { flex: 1 1 auto; min-width: 0; }
 .popup-body .feature-card-title-wrap > div { min-width: 0; }
 .popup-body :is(.feature-card-header, .emergency-heading, .activation-control-row, .site-auto-panel) > :is(button, rc-switch) { flex: none; }
+
+/* 2026-10 改版 · 二：站点名用界面字体；告警条收成白卡细线；底栏贴底不被截掉；关键说明放开两行 */
+.popup-body .site-host-wrap,
+.popup-body #site-hostname { color: var(--rc-ink-secondary); font-family: var(--font-sans); font-size: var(--fs-2); font-weight: 500; }
+.popup-body .popup-alert-card:not([hidden]) { padding: 10px 12px; border: 1px solid var(--rc-line); border-radius: 12px; background: var(--rc-surface); box-shadow: none; }
+.popup-body .popup-alert-icon { color: var(--rc-danger); background: none; border: 0; box-shadow: none; }
+.popup-body .popup-alert-info b { color: var(--rc-ink); font-size: var(--fs-3); font-weight: 600; }
+.popup-body .popup-alert-info p {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--rc-ink-tertiary);
+  font-size: var(--fs-1);
+}
+.popup-body .popup-alert-link { color: var(--rc-ink); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.popup-body .popup-alert-link:where(:enabled):hover { color: var(--rc-danger); }
+.popup-body #page-note {
+  display: -webkit-box;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.popup-body .popup-footer { position: sticky; bottom: 0; z-index: 2; background: var(--rc-canvas); }
+.popup-body :is(.popup-emergency-btn, .popup-service-btn) { border-radius: 8px; border-color: var(--rc-line-mid); color: var(--rc-ink); }
+.popup-body .popup-master-btn { border-radius: 8px; }

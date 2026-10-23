@@ -62,8 +62,9 @@ legend { padding: 0; margin-bottom: var(--space-3); font-size: var(--type-contro
 /* 机械开关：轨道是面板上铣出的凹槽（内陷阴影），旋钮是象牙瓷珠 */
 .switch input + span { position: relative; display: block; width: 36px; height: 20px; border-radius: var(--radius-pill); background-color: var(--surface-subtle); background-image: var(--face-well, none); border: 1px solid var(--rim-soft, transparent); box-shadow: var(--track, none); }
 .switch input + span::after { content: ""; position: absolute; width: 15px; height: 15px; left: 1.5px; top: 1.5px; background: var(--knob, var(--surface)); border: 1px solid var(--rim-soft, transparent); border-radius: 50%; box-shadow: var(--elev-1); transition: transform 0.16s cubic-bezier(0.2, 0.9, 0.3, 1); }
-.switch input:checked + span { background-color: var(--accent); background-image: var(--brass, none); box-shadow: none; }
-.switch input:checked + span::after { transform: translateX(16px); }
+.switch input:checked + span { background-color: var(--ink); background-image: var(--brass, none); border-color: var(--ink); box-shadow: none; }
+/* 开着时轨道用正文色、旋钮用卡面色：深色主题下不再一屏琥珀，旋钮也不会和轨道同色 */
+.switch input:checked + span::after { transform: translateX(16px); background: var(--surface); }
 .switch input:focus-visible + span { outline: var(--focus-ring); outline-offset: var(--focus-offset); }
 .switch input:disabled { cursor: default; }
 .switch input:disabled + span { background-image: none; background-color: var(--action-disabled); border-color: var(--line); box-shadow: none; }
@@ -767,7 +768,7 @@ legend { padding: 0; margin-bottom: var(--space-3); font-size: var(--type-contro
 
 .popup-card .switch input:checked + span::after {
   transform: translateX(15px);
-  background: var(--knob, var(--color-frame-bg, #faf9f4));
+  background: var(--surface, var(--color-frame-bg, #faf9f4));
 }
 
 /* Suggestion Card */

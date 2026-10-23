@@ -43,6 +43,7 @@ export const termsSection = html`
 </div>
 <div id="term-empty" class="empty-state compact-empty" hidden="">
 <h3>${t('sec.terms.empty')}</h3>
+<p>${t('sec.terms.emptyHint')}</p>
 </div>
 </div>
 </div>

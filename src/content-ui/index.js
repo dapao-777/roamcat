@@ -156,7 +156,7 @@ const WORD_CARD_CSS = `:host{color:var(--ink);font:var(--type-control)/var(--lea
 .hud-term{margin:0;font:600 var(--fs-5, 20px)/1.25 var(--serif, Georgia, serif);color:var(--ink);overflow-wrap:anywhere;white-space:pre-wrap}
 .hud-term.passage{font:400 var(--fs-2, 13px)/1.55 var(--sans)}
 .hud-head-right{display:flex;align-items:center;gap:8px;flex:none}
-.hud-tag{font:500 var(--fs-1, 12px)/1.4 var(--ui, var(--sans));padding:2px 8px;border-radius:999px;background-color:transparent;color:var(--muted);white-space:nowrap}
+.hud-tag{display:none}
 .hud-icon-btn,.listen{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;min-width:24px;min-height:24px;padding:0;margin:0;border-radius:6px;border:1px solid transparent;background-color:transparent;background-image:none;box-shadow:none;color:var(--muted);cursor:pointer;transition:all .15s ease}
 .hud-icon-btn:hover,.listen:hover{color:var(--ink);background-color:var(--surface-hover)}
 .hud-icon-btn:focus-visible,.listen:focus-visible,.hud-action:focus-visible{outline:var(--focus-ring);outline-offset:var(--focus-offset)}
@@ -172,8 +172,8 @@ const WORD_CARD_CSS = `:host{color:var(--ink);font:var(--type-control)/var(--lea
 .explanation dd{display:inline;margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
 .explanation dd+dt{display:block}
 .hud-foot{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;border-top:1px solid var(--rim-soft,var(--line));padding-top:12px}
-.hud-actions{display:flex;align-items:center;gap:2px;flex-wrap:wrap}
-.hud-action{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 8px;margin:0;border-radius:6px;border:1px solid transparent;background:transparent;color:var(--muted-strong);font:500 var(--fs-2, 13px)/1 var(--ui, var(--sans));cursor:pointer;transition:background-color .15s ease,color .15s ease}.hud-action.known-action{padding:0 10px;margin-right:4px;border-color:var(--action);background:var(--action);color:var(--on-action);font-weight:600}.hud-action.known-action:hover{border-color:var(--action-hover);background:var(--action-hover);color:var(--on-action)}
+.hud-actions{display:flex;flex:1;align-items:center;gap:2px;flex-wrap:wrap}.hud-action:not(.known-action){height:28px;padding:0 6px;color:var(--muted);font-size:var(--fs-1, 12px)}
+.hud-action{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 8px;margin:0;border-radius:6px;border:1px solid transparent;background:transparent;color:var(--muted-strong);font:500 var(--fs-2, 13px)/1 var(--ui, var(--sans));cursor:pointer;transition:background-color .15s ease,color .15s ease}.hud-action.known-action{padding:0 10px;margin-right:auto;border-color:var(--action);background:var(--action);color:var(--on-action);font-weight:600}.hud-action.known-action:hover{border-color:var(--action-hover);background:var(--action-hover);color:var(--on-action)}
 .hud-action:hover{color:var(--ink);background:var(--surface-hover)}
 .hud-action:active{box-shadow:var(--press,none)}
 .hud-action:disabled{background-color:var(--accent-soft);background-image:none;border-color:var(--accent-line);box-shadow:none;color:var(--accent);cursor:default;transform:none}
