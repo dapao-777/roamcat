@@ -860,8 +860,9 @@ legend { padding: 0; margin-bottom: var(--space-3); font-size: var(--type-contro
 }
 
 :root {
-  --font-sans: 'Noto Serif SC', 'Source Han Serif SC', 'STSong', 'SimSun', 'Songti SC', Georgia, 'Times New Roman', serif;
-  --font-serif: 'Noto Serif SC', 'Source Han Serif SC', 'STSong', 'SimSun', 'Songti SC', Georgia, serif;
+  /* 字体取 tokens.css：界面无衬线，阅读内容宋体。 */
+  --font-sans: var(--rc-ui);
+  --font-serif: var(--rc-serif);
   --font-display: 'Silkscreen', 'JetBrains Mono', 'Courier New', monospace;
   --font-mono: 'JetBrains Mono', ui-monospace, 'Courier New', monospace;
 

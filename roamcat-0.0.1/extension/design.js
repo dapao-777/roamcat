@@ -3,7 +3,8 @@
 (() => {
 
   const common = `
-    --rc-sans: "Noto Serif SC", "Source Han Serif SC", "STSong", "SimSun", "Songti SC", Georgia, "Times New Roman", serif;
+    --rc-sans: "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+    --rc-serif: "Noto Serif SC", "Source Han Serif SC", "STSong", "SimSun", "Songti SC", Georgia, "Times New Roman", serif;
     --rc-ui: "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
     --rc-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
     --rc-display: "Silkscreen", "JetBrains Mono", "Courier New", monospace;
@@ -64,7 +65,8 @@
     --ui: var(--rc-ui);
     --mono: var(--rc-mono);
     --font-sans: var(--rc-ui);
-    --font-serif: var(--rc-sans);
+    --font-serif: var(--rc-serif);
+    --serif: var(--rc-serif);
     --font-mono: var(--rc-mono);
     --font-display: var(--rc-display);
     --fs-1: var(--rc-fs-1);
@@ -255,26 +257,26 @@
     --rc-cat-floor-2: #e6d9cf;
     --rc-cat-bloom: 0.5;
     --rc-cat-chroma: 0.3;
-    --rc-canvas: #efeee6;
-    --rc-paper: #faf9f4;
-    --rc-surface: #faf9f4;
-    --rc-surface-subtle: #f1f0e8;
-    --rc-surface-hover: #e7e5d8;
-    --rc-surface-raised: #f7f6f0;
+    --rc-canvas: #f7f6f2;
+    --rc-paper: #f7f6f2;
+    --rc-surface: #ffffff;
+    --rc-surface-subtle: #f1efe9;
+    --rc-surface-hover: #eceae3;
+    --rc-surface-raised: #ffffff;
     --rc-toolbar-bg: rgba(247, 246, 240, 0.88);
     --rc-card-bg: #faf9f4;
     --rc-ink: #161511;
-    --rc-ink-secondary: #4c4a41;
-    --rc-ink-tertiary: #625f52;
+    --rc-ink-secondary: #4a4842;
+    --rc-ink-tertiary: #67645c;
     --rc-ink-dim: #64614f;
     --rc-ink-faint: #666352;
     --rc-ink-strong: #000000;
     --rc-ink-soft: rgba(22, 21, 17, 0.06);
     --rc-ink-line: rgba(22, 21, 17, 0.28);
     --rc-glow: rgba(22, 21, 17, 0.14);
-    --rc-line-soft: #e4e2d4;
-    --rc-line: #dbd8c6;
-    --rc-line-mid: #c2bea8;
+    --rc-line-soft: #efede7;
+    --rc-line: #e7e4dc;
+    --rc-line-mid: #d6d2c7;
     --rc-line-dark: #9b9889;
     --rc-card-border: #dbd8c6;
     --rc-accent: #161511;
