@@ -39,7 +39,7 @@ function options(args) {
       if (flag === '--codex') result.codex = resolve(value);
       if (flag === '--grok') result.grok = resolve(value);
       if (flag === '--agy') result.agy = resolve(value);
-      if (flag === '--browser') result.browsers = value.split(',');
+      if (flag === '--browser') { result.browsers = value.split(','); result.browsersExplicit = true; }
       if (flag === '--backend') {
         if (!['chatgpt','grok','antigravity'].includes(value)) throw new Error('--backend 只能是 chatgpt、grok 或 antigravity。');
         result.backend = value;
@@ -180,6 +180,8 @@ function locations(backend) {
       edge:`HKCU\\SOFTWARE\\Microsoft\\Edge\\NativeMessagingHosts\\${host}`,
       chromium:`HKCU\\SOFTWARE\\Chromium\\NativeMessagingHosts\\${host}`,
       'chrome-testing':`HKCU\\SOFTWARE\\Google\\Chrome for Testing\\NativeMessagingHosts\\${host}`,
+      // ego lite（Citro Labs）只认自己产品路径下的注册，不读 Chromium/Chrome 的键；启动时读取，注册后要彻底重启浏览器。
+      ego:`HKCU\\SOFTWARE\\Citro Labs\\ego lite\\NativeMessagingHosts\\${host}`,
     }};
   }
   throw new Error('这个连接器安装程序支持 macOS、Linux 和 Windows。当前系统无法注册此连接器；未修改任何配置。');
@@ -248,13 +250,19 @@ const BACKENDS = ['chatgpt','grok','antigravity'];
 const BACKEND_LABEL = {chatgpt:'ChatGPT 订阅（Codex）', grok:'Grok 订阅（Grok CLI）', antigravity:'Google 订阅（agy）'};
 const FINDERS = {chatgpt: opts => findCodex(opts.codex), grok: opts => findGrok(opts.grok), antigravity: opts => findAgy(opts.agy)};
 
+function egoLiteInstalled() {
+  return spawnSync('reg', ['query', 'HKCU\\SOFTWARE\\Citro Labs\\ego lite'], {encoding: 'utf8', timeout: 8000, windowsHide: true}).status === 0;
+}
+
 function browserTargets(backend, opts) {
   const {root,browsers,windows,registry} = locations(backend);
   const host = HOSTS[backend];
   const launcher = join(root, windows ? 'launch.exe' : 'launch');
   const manifestPath = join(root, `${host}.json`);
   // 只注册用户显式指定的浏览器，不再静默追加 beta/testing，避免意外覆盖。
-  const targets = [...new Set(opts.browsers)].map(name => {
+  // 例外：Windows 上用默认浏览器列表时，本机装了 ego lite 就顺带注册它——它不读 Chrome/Chromium 的键，漏掉就永远“找不到连接器”。
+  const names = windows && !opts.browsersExplicit && egoLiteInstalled() ? [...opts.browsers, 'ego'] : opts.browsers;
+  const targets = [...new Set(names)].map(name => {
     if (windows) {
       if (!registry[name]) throw new Error(`不支持的浏览器：${name}。`);
       return {name, key: registry[name]};
@@ -389,7 +397,7 @@ async function installBackend(backend, cliPath, opts, ids) {
 async function main() {
   const opts = options(process.argv.slice(2));
   if (opts.help) {
-    console.log('RoamCat · 订阅连接器\n\n安装：node connector/install.mjs --extension-id ID\n  默认一次注册本机已安装的全部订阅通道：ChatGPT（codex）、Grok（grok）、Google（agy）；找不到的通道跳过，装好对应 CLI 后重跑即可补上。\n  只装一个通道：--backend chatgpt|grok|antigravity；指定 CLI 路径：--codex PATH / --grok PATH / --agy PATH\n浏览器：--browser chrome,edge（默认）；另支持 chromium、chrome-beta、chrome-testing（逗号分隔，仅注册显式指定的浏览器）\n扩展 ID：单个 32 位 a–p 字母，或逗号分隔的多个 ID（多开/多配置共用一个连接器）\n卸载：node connector/install.mjs --uninstall [--backend chatgpt|grok|antigravity] [--browser chrome,edge]（不带 --backend 时卸载全部通道）\n\n需要 Node.js 20+；三个通道均支持 macOS / Linux / Windows（Windows 上 npm 全局安装的 codex.cmd 经 shell 启动）。\nGoogle 通道使用 Google AI Pro / Ultra 订阅权益，首次使用前需在终端运行 agy 登录。\n仅注册当前用户，不需要管理员权限。\n卸载只移除指定浏览器的连接器注册；保留本机登录数据。要退出账户，请先在插件中退出登录。');
+    console.log('RoamCat · 订阅连接器\n\n安装：node connector/install.mjs --extension-id ID\n  默认一次注册本机已安装的全部订阅通道：ChatGPT（codex）、Grok（grok）、Google（agy）；找不到的通道跳过，装好对应 CLI 后重跑即可补上。\n  只装一个通道：--backend chatgpt|grok|antigravity；指定 CLI 路径：--codex PATH / --grok PATH / --agy PATH\n浏览器：--browser chrome,edge（默认）；另支持 chromium、chrome-beta、chrome-testing、ego（ego lite，仅 Windows）（逗号分隔，仅注册显式指定的浏览器）\n扩展 ID：单个 32 位 a–p 字母，或逗号分隔的多个 ID（多开/多配置共用一个连接器）\n卸载：node connector/install.mjs --uninstall [--backend chatgpt|grok|antigravity] [--browser chrome,edge]（不带 --backend 时卸载全部通道）\n\n需要 Node.js 20+；三个通道均支持 macOS / Linux / Windows（Windows 上 npm 全局安装的 codex.cmd 经 shell 启动）。\nGoogle 通道使用 Google AI Pro / Ultra 订阅权益，首次使用前需在终端运行 agy 登录。\n仅注册当前用户，不需要管理员权限。\n卸载只移除指定浏览器的连接器注册；保留本机登录数据。要退出账户，请先在插件中退出登录。');
     return;
   }
   if (Number(process.versions.node.split('.')[0]) < 20) throw new Error('需要 Node.js 20 或更新版本。');
