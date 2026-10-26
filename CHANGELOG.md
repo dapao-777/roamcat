@@ -4,8 +4,15 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-26
+
+各模型服务商可调「思考等级」。
+
 ### 新增
 - **各服务商可调「思考等级」**：设置页「模型服务」里，智谱 GLM、DeepSeek、Kimi、腾讯 TokenHub、商汤日日新（Token Plan）、火山方舟（豆包）、MiniMax、阿里云百炼、SiliconFlow、小米 MiMo、百度千帆都有了「思考等级」，只列各家官方支持的档位（只有开关的就只有「关闭 / 开启」），默认仍为关闭。请求按所选档位带上官方参数（`thinking.type`、`reasoning_effort`、`enable_thinking` + `thinking_budget` 等）；开启思考后请求超时放宽到 60 秒。选了档位时，GLM-5.3、Kimi K3、MiniMax-M3.1-Flash 等无法关闭思考的模型也能直接使用。
+
+### 修复
+- Kimi K3 / K2.7-Code 与 MiniMax-M3.1-Flash 在思考等级为「关闭」时直接提示「无法关闭思考」，不再把服务商会拒绝的 `thinking: disabled` 请求发出去；火山方舟上的 `glm-5-3-*` 同样识别为无法关闭思考。
 
 ## [0.2.0] - 2026-10-26
 
@@ -119,7 +126,8 @@
 - `host_permissions` 仍为宽泛的 `http(s)://*/*`，计划改为 `optional_host_permissions` 按需申请。
 - 未上架商店；扩展仅支持开发者模式加载（直接加载 `roamcat-0.0.1/extension` 时 ID 与目录路径绑定；`npm run build` 产物 ID 固定）。
 
-[Unreleased]: https://github.com/dapao-777/roamcat/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/dapao-777/roamcat/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/dapao-777/roamcat/releases/tag/v0.3.0
 [0.2.0]: https://github.com/dapao-777/roamcat/releases/tag/v0.2.0
 [0.1.0]: https://github.com/dapao-777/roamcat/releases/tag/v0.1.0
 [0.0.1]: https://github.com/dapao-777/roamcat
