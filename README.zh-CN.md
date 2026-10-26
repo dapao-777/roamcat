@@ -16,7 +16,7 @@
 <p align="center">
   <a href="LICENSE"><img alt="License: MPL-2.0" src="https://img.shields.io/badge/license-MPL--2.0-blue"></a>
   <a href="https://github.com/dapao-777/roamcat/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/dapao-777/roamcat/actions/workflows/ci.yml/badge.svg"></a>
-  <img alt="版本 0.3.0" src="https://img.shields.io/badge/version-0.3.0-blue">
+  <img alt="版本 0.3.1" src="https://img.shields.io/badge/version-0.3.1-blue">
   <img alt="Chrome / Edge 125+" src="https://img.shields.io/badge/Chrome%20%2F%20Edge-125%2B-green">
   <img alt="Manifest V3" src="https://img.shields.io/badge/manifest-V3-blueviolet">
 </p>
@@ -45,7 +45,7 @@
 </p>
 
 > [!NOTE]
-> **0.3.0：各模型服务商可调思考等级**。从 [Releases](https://github.com/dapao-777/roamcat/releases/latest) 下载安装包或从源码构建，再以开发者模式加载（见[快速开始](#-快速开始)），尚未上架扩展商店。本项目是对开源项目 [RelyLess](https://github.com/rockythink/relyless) 的重构、优化与修复，详见[致谢](#-致谢)。
+> **0.3.1：各模型服务商可调思考等级，连接器错误提示随界面语言**。从 [Releases](https://github.com/dapao-777/roamcat/releases/latest) 下载安装包或从源码构建，再以开发者模式加载（见[快速开始](#-快速开始)），尚未上架扩展商店。本项目是对开源项目 [RelyLess](https://github.com/rockythink/relyless) 的重构、优化与修复，详见[致谢](#-致谢)。
 
 ## ✨ 亮点
 
@@ -118,7 +118,7 @@
 
 需要 **Chrome 或 Edge 125+**。
 
-**方式 A：Release 安装包。** 从 [Releases](https://github.com/dapao-777/roamcat/releases/latest) 下载 `roamcat-0.3.0-extension.zip` 并解压。打开 `chrome://extensions`（或 `edge://extensions`），开启**开发者模式**，点**加载已解压的扩展**，选择解压出的 **`roamcat-0.2.0/extension`** 文件夹。要用订阅连接器，在解压目录里运行 `node roamcat-0.2.0/connector/install.mjs`（需要 Node.js 20.11+）；它会按这个文件夹算出扩展 ID，移动文件夹后要重新运行。
+**方式 A：Release 安装包。** 从 [Releases](https://github.com/dapao-777/roamcat/releases/latest) 下载 `roamcat-0.3.1-extension.zip` 并解压。打开 `chrome://extensions`（或 `edge://extensions`），开启**开发者模式**，点**加载已解压的扩展**，选择解压出的 **`roamcat-0.2.0/extension`** 文件夹。要用订阅连接器，在解压目录里运行 `node roamcat-0.2.0/connector/install.mjs`（需要 Node.js 20.11+）；它会按这个文件夹算出扩展 ID，移动文件夹后要重新运行。
 
 **方式 B：从源码构建**（需要 Node.js 20.11+）：
 

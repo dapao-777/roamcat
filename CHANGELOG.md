@@ -4,6 +4,11 @@
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-10-26
+
+### 修复
+- 英文界面下，订阅连接器（ChatGPT / Grok / Google）返回的已分类错误提示（如「登录已失效」「额度已达上限」）改为英文显示；翻译在扩展端完成，已安装的旧版连接器无需重装。少数未分类的连接器提示仍为中文。
+
 ## [0.3.0] - 2026-10-26
 
 各模型服务商可调「思考等级」。
@@ -126,7 +131,8 @@
 - `host_permissions` 仍为宽泛的 `http(s)://*/*`，计划改为 `optional_host_permissions` 按需申请。
 - 未上架商店；扩展仅支持开发者模式加载（直接加载 `roamcat-0.0.1/extension` 时 ID 与目录路径绑定；`npm run build` 产物 ID 固定）。
 
-[Unreleased]: https://github.com/dapao-777/roamcat/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/dapao-777/roamcat/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/dapao-777/roamcat/releases/tag/v0.3.1
 [0.3.0]: https://github.com/dapao-777/roamcat/releases/tag/v0.3.0
 [0.2.0]: https://github.com/dapao-777/roamcat/releases/tag/v0.2.0
 [0.1.0]: https://github.com/dapao-777/roamcat/releases/tag/v0.1.0

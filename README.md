@@ -16,7 +16,7 @@
 <p align="center">
   <a href="LICENSE"><img alt="License: MPL-2.0" src="https://img.shields.io/badge/license-MPL--2.0-blue"></a>
   <a href="https://github.com/dapao-777/roamcat/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/dapao-777/roamcat/actions/workflows/ci.yml/badge.svg"></a>
-  <img alt="Version 0.3.0" src="https://img.shields.io/badge/version-0.3.0-blue">
+  <img alt="Version 0.3.1" src="https://img.shields.io/badge/version-0.3.1-blue">
   <img alt="Chrome / Edge 125+" src="https://img.shields.io/badge/Chrome%20%2F%20Edge-125%2B-green">
   <img alt="Manifest V3" src="https://img.shields.io/badge/manifest-V3-blueviolet">
 </p>
@@ -45,7 +45,7 @@
 </p>
 
 > [!NOTE]
-> **0.3.0 — per-provider thinking levels.** Download the package from [Releases](https://github.com/dapao-777/roamcat/releases/latest) or build from source, then load it in developer mode (see [Quick start](#-quick-start)); it is not on any extension store yet. RoamCat rebuilds, optimizes and repairs the open-source [RelyLess](https://github.com/rockythink/relyless) — see [Acknowledgements](#-acknowledgements).
+> **0.3.1 — per-provider thinking levels; connector errors follow the UI language.** Download the package from [Releases](https://github.com/dapao-777/roamcat/releases/latest) or build from source, then load it in developer mode (see [Quick start](#-quick-start)); it is not on any extension store yet. RoamCat rebuilds, optimizes and repairs the open-source [RelyLess](https://github.com/rockythink/relyless) — see [Acknowledgements](#-acknowledgements).
 
 ## ✨ Highlights
 
@@ -118,7 +118,7 @@ Failed passages retry on a graded backoff (2.5s → 6s → 14s, classified by er
 
 Requires **Chrome or Edge 125+**.
 
-**Option A — Release package.** Download `roamcat-0.3.0-extension.zip` from [Releases](https://github.com/dapao-777/roamcat/releases/latest) and unzip it. Open `chrome://extensions` (or `edge://extensions`), turn on **Developer mode**, choose **Load unpacked** and pick the unzipped **`roamcat-0.2.0/extension`** folder. For the subscription connector, run `node roamcat-0.2.0/connector/install.mjs` from the unzipped folder (Node.js 20.11+); it works out the extension ID from that folder, so rerun it if you move the folder.
+**Option A — Release package.** Download `roamcat-0.3.1-extension.zip` from [Releases](https://github.com/dapao-777/roamcat/releases/latest) and unzip it. Open `chrome://extensions` (or `edge://extensions`), turn on **Developer mode**, choose **Load unpacked** and pick the unzipped **`roamcat-0.2.0/extension`** folder. For the subscription connector, run `node roamcat-0.2.0/connector/install.mjs` from the unzipped folder (Node.js 20.11+); it works out the extension ID from that folder, so rerun it if you move the folder.
 
 **Option B — build from source** (Node.js 20.11+):
 
