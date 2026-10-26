@@ -120,6 +120,7 @@
 | `message-router.js` | 类型化消息路由器：注册表构造、重复类型即失败、`parse`+`handle` 两段派发 | 泛型实现，不认识任何具体消息；未知类型抛「未知请求。」 |
 | `message-protocol.js` | 消息协议唯一事实源：`MESSAGE_TYPES`（76 种）、`CONTENT_ALLOWED_TYPES`、纯载荷解析器与自 `background.js` 下沉的 `validatePatch`（设置补丁校验）、`settingsPatchEffects`（STATE_PATCH 副作用计划）、`parseAssistRequest`/`parsePassageRequestRef`（请求身份）、`onDemandSuggestionDecision`（按需建议判定）、`text`/`domain`/`customDetectionService` | 只依赖 `shared.js`、`domain-routing.js`、`api-providers.mjs`、`gloss.mjs` 等领域/协议模块；新增类型必须同步注册表与第 5 节 |
 | `api-providers.mjs` / `api-transport.mjs` | 33 家服务商目录、8 种协议适配、结构化输出能力探测、模型列表、各协议 usage 抽取（`onUsage` 回调） | HTTPS only（本机回环除外）；同源重定向禁止；密钥不进内容脚本 |
+| `thinking-levels.mjs` | 按「服务商 + 模型」声明思考档位（官方档位名、默认档、请求参数），供设置页与请求层共用 | 只收录官方文档写明的模型；未收录模型返回 null，请求沿用关闭思考参数 |
 | `usage-stats.mjs` | 模型用量统计：调用事件规范化、按日/按服务×模型聚合（保留约 62 天、≤60 组合）、`summarizeUsage` UI 汇总 | 纯函数领域模块；只存计数与模型/服务标识，不存正文、密钥或网址；写串行化在 `background.js` |
 | `gloss.mjs` | 提示词、JSON Schema、响应校验/纠正（扩展与连接器共享） | `SUPPORT_POLICY_VERSION` 变更即使全部缓存失效 |
 | `sentence-groups.mjs` / `assistance-stream.mjs` / `personalization.mjs` | 解构协议与修复、流式进度解析、个性化策略机 | 共享文件被连接器安装副本引用，改动需双边同步 |
