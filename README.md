@@ -16,7 +16,7 @@
 <p align="center">
   <a href="LICENSE"><img alt="License: MPL-2.0" src="https://img.shields.io/badge/license-MPL--2.0-blue"></a>
   <a href="https://github.com/dapao-777/roamcat/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/dapao-777/roamcat/actions/workflows/ci.yml/badge.svg"></a>
-  <img alt="Version 0.1.0" src="https://img.shields.io/badge/version-0.1.0-blue">
+  <img alt="Version 0.2.0" src="https://img.shields.io/badge/version-0.2.0-blue">
   <img alt="Chrome / Edge 125+" src="https://img.shields.io/badge/Chrome%20%2F%20Edge-125%2B-green">
   <img alt="Manifest V3" src="https://img.shields.io/badge/manifest-V3-blueviolet">
 </p>
@@ -45,7 +45,7 @@
 </p>
 
 > [!NOTE]
-> **0.1.0 — first stable release.** Download the package from [Releases](https://github.com/dapao-777/roamcat/releases/latest) or build from source, then load it in developer mode (see [Quick start](#-quick-start)); it is not on any extension store yet. RoamCat rebuilds, optimizes and repairs the open-source [RelyLess](https://github.com/rockythink/relyless) — see [Acknowledgements](#-acknowledgements).
+> **0.2.0 — local connector service and a redesigned UI.** Download the package from [Releases](https://github.com/dapao-777/roamcat/releases/latest) or build from source, then load it in developer mode (see [Quick start](#-quick-start)); it is not on any extension store yet. RoamCat rebuilds, optimizes and repairs the open-source [RelyLess](https://github.com/rockythink/relyless) — see [Acknowledgements](#-acknowledgements).
 
 ## ✨ Highlights
 

@@ -16,7 +16,7 @@
 <p align="center">
   <a href="LICENSE"><img alt="License: MPL-2.0" src="https://img.shields.io/badge/license-MPL--2.0-blue"></a>
   <a href="https://github.com/dapao-777/roamcat/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/dapao-777/roamcat/actions/workflows/ci.yml/badge.svg"></a>
-  <img alt="版本 0.1.0" src="https://img.shields.io/badge/version-0.1.0-blue">
+  <img alt="版本 0.2.0" src="https://img.shields.io/badge/version-0.2.0-blue">
   <img alt="Chrome / Edge 125+" src="https://img.shields.io/badge/Chrome%20%2F%20Edge-125%2B-green">
   <img alt="Manifest V3" src="https://img.shields.io/badge/manifest-V3-blueviolet">
 </p>
@@ -45,7 +45,7 @@
 </p>
 
 > [!NOTE]
-> **0.1.0 首个正式版**：从 [Releases](https://github.com/dapao-777/roamcat/releases/latest) 下载安装包或从源码构建，再以开发者模式加载（见[快速开始](#-快速开始)），尚未上架扩展商店。本项目是对开源项目 [RelyLess](https://github.com/rockythink/relyless) 的重构、优化与修复，详见[致谢](#-致谢)。
+> **0.2.0：本机常驻连接服务与界面改版**。从 [Releases](https://github.com/dapao-777/roamcat/releases/latest) 下载安装包或从源码构建，再以开发者模式加载（见[快速开始](#-快速开始)），尚未上架扩展商店。本项目是对开源项目 [RelyLess](https://github.com/rockythink/relyless) 的重构、优化与修复，详见[致谢](#-致谢)。
 
 ## ✨ 亮点
 
