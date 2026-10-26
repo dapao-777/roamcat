@@ -75,7 +75,8 @@ const zhipuFields = [
     {value:'open-intl',label:M('Z.ai 国际站按量 · api.z.ai/api/paas/v4','Z.ai pay-as-you-go · api.z.ai/api/paas/v4')},
     {value:'coding-intl',label:M('Z.ai Coding Plan · api.z.ai/api/coding/paas/v4','Z.ai Coding Plan · api.z.ai/api/coding/paas/v4')},
   ]},
-  thinkingField(['none','low','high']),
+  // reasoning_effort 只在 GLM-5.2 起生效，且 GLM-5.2 把 low 映射为 high，实际能区分高低的是 GLM-5.3 系列。
+  thinkingField(['none','low','high'],{labels:{low:M('低（GLM-5.3 系列生效）','Low (GLM-5.3 series)')}}),
 ];
 const xiaomiFields = [
   {key:'channel',label:M('接口通道','API channel'),type:'select',defaultValue:'payg',options:[
