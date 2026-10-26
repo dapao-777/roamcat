@@ -1796,6 +1796,21 @@
       'design.role.complement': '补语',
       'design.role.adverbial': '状语',
       'design.role.attributive': '定语',
+      // 订阅连接器错误按类别回译（连接器消息尾部“（category; …）”）；{product}=Codex/Grok/Antigravity，{account}=ChatGPT/Grok/Google
+      'conn.err.request_failed': '{product} 请求失败，请根据错误代码检查服务或连接器。',
+      'conn.err.invalid_output_schema': '结构化输出格式被 {product} 拒绝，请更新扩展与本机连接器。',
+      'conn.err.context_limit': '请求超过模型的上下文限制，请选择更短内容。',
+      'conn.err.usage_limit': '{account} 使用额度已达上限，请稍后重试或检查订阅额度。',
+      'conn.err.usage_limit.antigravity': 'Google 订阅额度已达上限（周配额或 5 小时配额），请稍后重试或检查订阅额度。',
+      'conn.err.authentication': '{account} 登录已失效，请重新连接。',
+      'conn.err.authentication.antigravity': 'Google 登录已失效，请在终端运行 agy 重新登录。',
+      'conn.err.reasoning_not_disabled': '当前模型不支持关闭思考，已停止请求；不会降低到其他思考档位。',
+      'conn.err.unsupported_model': '当前模型不支持这类请求，请在服务设置中选择可用的辅助模型。',
+      'conn.err.unsupported_model.antigravity': '所选模型当前不可用，请刷新模型列表后重新选择。',
+      'conn.err.unsupported_rpc': '当前 {product} CLI 不支持连接器调用的接口，请更新 {product} CLI。',
+      'conn.err.invalid_request': '{product} 拒绝了请求参数，请更新扩展与本机连接器。',
+      'conn.err.upstream_unavailable': '{product} 上游服务暂时不可用，请稍后重试。',
+      'conn.err.timeout': '{product} 请求超时，请刷新连接后重试。',
     },
 
     en: {
@@ -3569,6 +3584,20 @@
       'design.role.complement': 'Complement',
       'design.role.adverbial': 'Adverbial',
       'design.role.attributive': 'Attributive',
+      'conn.err.request_failed': '{product} request failed — check the service or connector using the error code.',
+      'conn.err.invalid_output_schema': '{product} rejected the structured output format — update the extension and the local connector.',
+      'conn.err.context_limit': 'The request exceeds the model\'s context limit — choose shorter content.',
+      'conn.err.usage_limit': '{account} usage limit reached — try again later or check your subscription quota.',
+      'conn.err.usage_limit.antigravity': 'Google subscription quota reached (weekly or 5-hour limit) — try again later or check your subscription quota.',
+      'conn.err.authentication': '{account} sign-in has expired — please reconnect.',
+      'conn.err.authentication.antigravity': 'Google sign-in has expired — run agy in a terminal to sign in again.',
+      'conn.err.reasoning_not_disabled': 'This model can\'t turn thinking off, so the request was stopped; it won\'t fall back to another thinking level.',
+      'conn.err.unsupported_model': 'This model doesn\'t support this kind of request — choose an available helper model in service settings.',
+      'conn.err.unsupported_model.antigravity': 'The selected model is unavailable — refresh the model list and choose again.',
+      'conn.err.unsupported_rpc': 'This {product} CLI doesn\'t support the interface the connector calls — update the {product} CLI.',
+      'conn.err.invalid_request': '{product} rejected the request parameters — update the extension and the local connector.',
+      'conn.err.upstream_unavailable': '{product} upstream service is temporarily unavailable — try again later.',
+      'conn.err.timeout': '{product} request timed out — refresh the connection and try again.',
     }
   };
 

@@ -22,6 +22,20 @@ import {normalizeTranslationProgress} from './assistance-stream.mjs';
 
 const M=(zh,en)=>globalThis.RoamCatI18n?.lang?.()==='en'?en:zh;
 
+// 连接器的已分类错误形如“中文提示（category; 细节…）”。按类别查 i18n 双语典回译，
+// 已装的旧版连接器同样适用；连接器侧消息保持中文，其 AUTH_FAILURE 判定不受影响。
+const CONNECTOR_NAMES={chatgpt:{product:'Codex',account:'ChatGPT'},grok:{product:'Grok',account:'Grok'},antigravity:{product:'Antigravity',account:'Google'}};
+export function localizeConnectorError(text,kind){
+  const match=typeof text==='string'?/（([a-z_]+)((?:; [^（）]*)?)）$/.exec(text):null;
+  const t=globalThis.RoamCatI18n?.t;
+  if(!match||typeof t!=='function')return text;
+  const names=CONNECTOR_NAMES[kind]||CONNECTOR_NAMES.chatgpt;
+  const key=[`conn.err.${match[1]}.${kind}`,`conn.err.${match[1]}`].find(k=>t(k)!==k);
+  if(!key)return text;
+  const details=match[1]+match[2];
+  return t(key,names)+M('（'+details+'）',' ('+details+')');
+}
+
 export const SUBSCRIPTION_KINDS = Object.freeze(['chatgpt','grok','antigravity']);
 export function isSubscriptionKind(kind) { return kind === 'chatgpt' || kind === 'grok' || kind === 'antigravity'; }
 export function nativeKind(settings) { return settings?.providerKind === 'grok' ? 'grok' : settings?.providerKind === 'antigravity' ? 'antigravity' : 'chatgpt'; }
@@ -113,7 +127,8 @@ function createConnector({kind,host,label,cliName,loginHosts}) {
     pending:new Map(),
     listeners:new Set(),
   };
-  function snapshot() { return {...state.status}; }
+  // 错误串在取快照时才按当前界面语言回译，切换语言后无需等连接器重报。
+  function snapshot() { return {...state.status,error:localizeConnectorError(state.status.error,kind)}; }
   function update(value) {
     const next = {
       connected:value?.connected === true,
@@ -172,7 +187,7 @@ function createConnector({kind,host,label,cliName,loginHosts}) {
       if (message.ok === true) request.resolve(message.data);
       else {
         const error = typeof message.error === 'string' ? message.error.slice(0,600) : M('本地连接器返回了无效响应。','The local connector returned an invalid response.');
-        const reported=new Error(/不支持的连接器请求|unsupported request/i.test(error)?M('本地连接器版本过旧，请重新运行安装命令后刷新连接。','The local connector is outdated; rerun the install command, then refresh the connection.'):error);
+        const reported=new Error(/不支持的连接器请求|unsupported request/i.test(error)?M('本地连接器版本过旧，请重新运行安装命令后刷新连接。','The local connector is outdated; rerun the install command, then refresh the connection.'):localizeConnectorError(error,kind));
         const detail=diagnosticError({code:message.code,detail:message.detail,message:error});reported.code=detail.code;reported.detail=detail;request.reject(reported);
       }
     });
