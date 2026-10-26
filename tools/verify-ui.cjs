@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 // 设置页行为门禁：本地 HTTP 服务 dist/extension 并注入模拟 chrome.*，只断言控制器行为
-// （粒度保存与失败回滚、查词按键、阅读记录、宣言弹层、模型列表、恢复默认阅读偏好）；
+// （粒度保存与失败回滚、查词按键、阅读记录、宣言弹层、模型列表、恢复默认阅读偏好、服务商思考等级）；
 // 截图与多宽度溢出由 verify-ui-all.cjs（npm run verify:ui）负责。
 
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
@@ -75,6 +75,15 @@ function mockChrome(){
   await page.evaluate(()=>{const settings=JSON.parse(localStorage.getItem('qa-settings'));Object.assign(settings,{assistanceMode:'on-demand',lookupDisplay:'annotation',lookupKey:'F'});localStorage.setItem('qa-settings',JSON.stringify(settings));});
   await page.goto(base+'/ui/options.html#privacy');await page.reload();await page.waitForTimeout(250);await page.evaluate(()=>{qa.events.length=0;qa.failPatch=true;});page.once('dialog',d=>d.accept());await page.locator('#reset-config').click();await page.waitForTimeout(100);assert.equal(await page.locator('#lookup-key').inputValue(),'F');assert.equal(await page.locator('#reset-config').isDisabled(),false);assert.equal(await page.evaluate(()=>qa.events.filter(e=>e.type==='STATE_PATCH').length),1);assert.equal(await page.evaluate(()=>qa.events.some(e=>e.type==='SENTENCE_GROUPS_DENSITY_SET')),false);
   await page.evaluate(()=>{qa.events.length=0;qa.failPatch=false;});page.once('dialog',d=>d.accept());await page.locator('#reset-config').click();await page.waitForTimeout(100);assert.equal(await page.locator('#lookup-key').inputValue(),'D');assert.equal(await page.evaluate(()=>qa.events.filter(e=>e.type==='STATE_PATCH').length),1);report.checks.push('Reset saves preferences together; failed save preserves controls and does not change density');
+  await page.evaluate(()=>{const settings=JSON.parse(localStorage.getItem('qa-settings'));Object.assign(settings,{providerKind:'api',activeApiServiceId:'sn',apiServices:[{id:'sn',name:'SenseNova',providerId:'sensenova',baseUrl:'https://token.sensenova.cn/v1',model:'sensenova-6.8-flash-lite',apiKey:'fake-local-test-key',options:{channel:'tokenplan',reasoningEffort:'medium'}},{id:'zp',name:'GLM',providerId:'zhipu',baseUrl:'https://open.bigmodel.cn/api/paas/v4',model:'glm-5.3',apiKey:'fake-local-test-key',options:{channel:'open',reasoningEffort:'high'}}]});localStorage.setItem('qa-settings',JSON.stringify(settings));});
+  await page.goto(base+'/ui/options.html#service');await page.reload();await page.waitForTimeout(300);await page.locator('#api-editor').evaluate(e=>e.open=true);
+  const effort=page.locator('#provider-fields [data-provider-option="reasoningEffort"]');
+  assert.equal(await effort.inputValue(),'medium');assert.deepEqual(await effort.locator('option').evaluateAll(list=>list.map(o=>o.value)),['none','low','medium','high']);assert.equal(await effort.isVisible(),true);
+  await page.locator('#provider-fields [data-provider-option="channel"]').selectOption('sensecore');assert.equal(await effort.isVisible(),false);
+  await page.locator('#provider-fields [data-provider-option="channel"]').selectOption('tokenplan');assert.equal(await effort.isVisible(),true);
+  page.once('dialog',d=>d.accept());await page.locator('#api-service-select').selectOption('zp');await page.waitForTimeout(150);
+  assert.equal(await effort.inputValue(),'high');assert.deepEqual(await effort.locator('option').evaluateAll(list=>list.map(o=>o.value)),['none','low','high']);
+  report.checks.push('Thinking level lists only provider-supported levels, restores saved value, and hides on channels without support');
   assert.deepEqual(report.errors,[],'页面脚本错误');
   fs.mkdirSync(out,{recursive:true});fs.writeFileSync(out+'/verification.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
  }finally{await browser.close();server.close();}

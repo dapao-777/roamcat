@@ -200,6 +200,7 @@ dialog.stamp-manifesto-dialog:not([open]) {
 .opt-row + .opt-row { border-top: 1px solid var(--color-border-card); }
 .opt-row[hidden] { display: none !important; }
 .opt-row[hidden] + .opt-row { border-top: 0; }
+#provider-fields .field[hidden] { display: none; }
 .opt-row-stack { flex-direction: column; align-items: stretch; gap: 14px; }
 .opt-row-text { flex: 1 1 auto; min-width: 0; }
 .opt-row-label {
