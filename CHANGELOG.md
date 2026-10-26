@@ -4,6 +4,9 @@
 
 ## [Unreleased]
 
+### 新增
+- **各服务商可调「思考等级」**：设置页「模型服务」里，智谱 GLM、DeepSeek、Kimi、腾讯 TokenHub、商汤日日新（Token Plan）、火山方舟（豆包）、MiniMax、阿里云百炼、SiliconFlow、小米 MiMo、百度千帆都有了「思考等级」，只列各家官方支持的档位（只有开关的就只有「关闭 / 开启」），默认仍为关闭。请求按所选档位带上官方参数（`thinking.type`、`reasoning_effort`、`enable_thinking` + `thinking_budget` 等）；开启思考后请求超时放宽到 60 秒。选了档位时，GLM-5.3、Kimi K3、MiniMax-M3.1-Flash 等无法关闭思考的模型也能直接使用。
+
 ## [0.2.0] - 2026-10-26
 
 本机常驻连接服务与一轮界面改版。
