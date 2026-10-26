@@ -180,7 +180,7 @@ function locations(backend) {
       edge:`HKCU\\SOFTWARE\\Microsoft\\Edge\\NativeMessagingHosts\\${host}`,
       chromium:`HKCU\\SOFTWARE\\Chromium\\NativeMessagingHosts\\${host}`,
       'chrome-testing':`HKCU\\SOFTWARE\\Google\\Chrome for Testing\\NativeMessagingHosts\\${host}`,
-      // ego lite（Citro Labs）只认自己产品路径下的注册，不读 Chromium/Chrome 的键；启动时读取，注册后要彻底重启浏览器。
+      // ego lite（Citro Labs）：实测会读 Google\Chrome 的键（同键下其它连接器能被拉起），这里再写一份到它自己的产品路径作保险。
       ego:`HKCU\\SOFTWARE\\Citro Labs\\ego lite\\NativeMessagingHosts\\${host}`,
     }};
   }
@@ -260,7 +260,7 @@ function browserTargets(backend, opts) {
   const launcher = join(root, windows ? 'launch.exe' : 'launch');
   const manifestPath = join(root, `${host}.json`);
   // 只注册用户显式指定的浏览器，不再静默追加 beta/testing，避免意外覆盖。
-  // 例外：Windows 上用默认浏览器列表时，本机装了 ego lite 就顺带注册它——它不读 Chrome/Chromium 的键，漏掉就永远“找不到连接器”。
+  // 例外：Windows 上用默认浏览器列表时，本机装了 ego lite 就顺带在它的产品路径下也注册一份。
   const names = windows && !opts.browsersExplicit && egoLiteInstalled() ? [...opts.browsers, 'ego'] : opts.browsers;
   const targets = [...new Set(names)].map(name => {
     if (windows) {
