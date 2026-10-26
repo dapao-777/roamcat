@@ -15,7 +15,7 @@
  *   R6 extension 不得反向 import connector；
  *   R7 全部参检源文件必须以文件级长注释开头（含 @file；connector/host.mjs 允许首行 shebang，次行起为文件头）；
  *   R8 扩展页面无重复元素 ID；R9 扩展页面无内联脚本/事件属性（CSP）；R10 manifest 引用资源全部存在；
- *   R11 classic content script 通过 node --check 语法门禁（ESM 模块由 R4/R5 动态 import 覆盖）；
+ *   R11 extension 下全部脚本通过 node --check 语法门禁（ESM 经 stdin 按 module 解析）；
  *   R12 extension/ 与 src/ 的样式不得写死 32px 以下的 px 字号（须用 tokens.css 的 --fs-1…6）。
  * 模块边界：只读文件系统并在本进程动态 import 被测模块，不启动浏览器、不写文件、不依赖 npm 包；
  *   规则清单与 SPEC.md 第 12 节一一对应；新增或修改规则必须同步修订 SPEC。
@@ -339,17 +339,17 @@ async function verifyModuleGraph({root}) {
     if (!fs.existsSync(candidate)) fail('R10', `manifest 引用的资源不存在: ${resource}`);
   }
 
-  // R11：classic content script 必须通过 node --check。ESM 模块已由 R4/R5 的动态 import 覆盖，
-  // 但 manifest 以经典脚本加载的 content script 没有 import 路径，语法错误只能靠本门禁发现。
-  // （node --check 对无 package.json type:module 的 ESM 不可靠，故只检查经典脚本。）
+  // R11：extension 下脚本必须通过 node --check。manifest 以经典脚本加载的 content script 没有 import 路径；
+  // background.js 等 import 不安全的 ESM 也不会被 R4/R5 的动态 import 解析，语法错误只能靠本门禁发现。
+  // 无 package.json type:module 时按文件 --check 会把 ESM 当 CommonJS，故 ESM 经 stdin 以 --input-type=module 检查。
   const {execFileSync} = require('node:child_process');
   for (const node of nodes.values()) {
-    if (node.esm) continue;
     if (!node.file.absolute.startsWith(`${path.join(root, 'extension')}${path.sep}`)) continue;
     try {
-      execFileSync(process.execPath, ['--check', node.file.absolute], {stdio: 'pipe'});
+      if (node.esm) execFileSync(process.execPath, ['--input-type=module', '--check'], {input: node.source, stdio: 'pipe'});
+      else execFileSync(process.execPath, ['--check', node.file.absolute], {stdio: 'pipe'});
     } catch (error) {
-      fail('R11', `classic 脚本语法错误: ${node.file.relative}: ${String(error.stderr || error.message).split('\n').find(line => /Error/.test(line)) || '未知错误'}`);
+      fail('R11', `${node.esm ? 'ESM' : 'classic'} 脚本语法错误: ${node.file.relative}: ${String(error.stderr || error.message).split('\n').find(line => /Error/.test(line)) || '未知错误'}`);
     }
   }
 

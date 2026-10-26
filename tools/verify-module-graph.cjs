@@ -25,7 +25,7 @@ verifyModuleGraph({root}).then(result => {
   console.log(`连接器共享闭包：${stats.connectorClosure.join(', ') || '(空)'}`);
   console.log(`import 不安全（仅浏览器层，预期包含 background.js 与 ui/）：${stats.importUnsafe.join(', ') || '(无)'}`);
   if (!failures.length) {
-    console.log('PASS 模块图与加载契约（R1 加载契约 · R2 解析 · R3 无环 · R4 连接器闭包 · R5 分层方向 · R6 无反向依赖 · R7 文件头注释 · R8 无重复 ID · R9 无内联脚本 · R10 资源完整 · R11 经典脚本语法 · R12 字号档位）');
+    console.log('PASS 模块图与加载契约（R1 加载契约 · R2 解析 · R3 无环 · R4 连接器闭包 · R5 分层方向 · R6 无反向依赖 · R7 文件头注释 · R8 无重复 ID · R9 无内联脚本 · R10 资源完整 · R11 脚本语法 · R12 字号档位）');
     return;
   }
   for (const failure of failures) console.error(`FAIL ${failure.rule}: ${failure.message}`);
