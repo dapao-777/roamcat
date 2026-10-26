@@ -2,7 +2,8 @@
  * @file extension/api-providers.mjs
  * 文件职责：33家自备API服务商目录与8种协议适配——默认模型、并发、密钥可选性与服务归一化。
  * 主要内容：API_PROVIDERS/getApiProvider/normalizeApiService/apiServiceOrigins；HTTPS-only、本机回环除外；
- *   apiKeys 多密钥轮换池归一化与 apiKeyPoolPick/apiKeyPoolCool 纯函数（运行状态由调用方持有）。
+ *   apiKeys 多密钥轮换池归一化与 apiKeyPoolPick/apiKeyPoolCool 纯函数（运行状态由调用方持有）；
+ *   各服务商「思考等级」字段只列官方文档支持的档位（thinkingField）。
  * 模块边界：领域层，可Node安全import；密钥不进内容脚本；被api-transport/background/options引用。
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -24,6 +25,22 @@ const reasoningEffortOptions = [
   {value:'medium',label:M('中','Medium')},
   {value:'high',label:M('高','High')},
 ];
+// 各服务商「思考等级」只列官方文档实际支持的档位；none=关闭思考（RoamCat 默认），on=只开思考、深度用模型默认值。
+// 档位到请求参数的映射见 api-transport.mjs 的 chatThinking()；channels 限定只在这些接口通道显示。
+const thinkingLevelLabels = {
+  none:M('关闭','Off'),
+  on:M('开启','On'),
+  low:M('低','Low'),
+  medium:M('中','Medium'),
+  high:M('高','High'),
+};
+const thinkingField = (levels,{labels={},...extra}={}) => ({key:'reasoningEffort',label:M('思考等级','Thinking level'),type:'select',defaultValue:'none',options:levels.map(value=>({value,label:labels[value]||thinkingLevelLabels[value]})),...extra});
+// 百炼与硅基流动只有 enable_thinking + thinking_budget（思考 token 上限），档位即预算。
+const budgetThinkingField = () => thinkingField(['none','low','medium','high'],{labels:{
+  low:M('低（思考预算 1024 tokens）','Low (1024-token thinking budget)'),
+  medium:M('中（思考预算 4096 tokens）','Medium (4096-token thinking budget)'),
+  high:M('高（不限预算，模型默认上限）','High (no budget; model default limit)'),
+}});
 const stepfunFields = [
   {key:'channel',label:M('接口通道','API channel'),type:'select',defaultValue:'openapi',options:[
     {value:'openapi',label:M('开放平台按量 · api.stepfun.com/v1','Open platform pay-as-you-go · api.stepfun.com/v1')},
@@ -48,6 +65,8 @@ const sensenovaFields = [
     {value:'tokenplan',label:M('Token Plan 订阅 · token.sensenova.cn/v1','Token Plan subscription · token.sensenova.cn/v1')},
     {value:'sensecore',label:M('大装置按量 · api.sensenova.cn/compatible-mode/v2','SenseCore pay-as-you-go · api.sensenova.cn/compatible-mode/v2')},
   ]},
+  // 大装置按量通道的 SenseChat 不认 reasoning_effort，设置页在该通道隐藏此项。
+  thinkingField(['none','low','medium','high'],{channels:['tokenplan']}),
 ];
 const zhipuFields = [
   {key:'channel',label:M('接口通道','API channel'),type:'select',defaultValue:'open',options:[
@@ -56,25 +75,34 @@ const zhipuFields = [
     {value:'open-intl',label:M('Z.ai 国际站按量 · api.z.ai/api/paas/v4','Z.ai pay-as-you-go · api.z.ai/api/paas/v4')},
     {value:'coding-intl',label:M('Z.ai Coding Plan · api.z.ai/api/coding/paas/v4','Z.ai Coding Plan · api.z.ai/api/coding/paas/v4')},
   ]},
+  thinkingField(['none','low','high']),
 ];
 const xiaomiFields = [
   {key:'channel',label:M('接口通道','API channel'),type:'select',defaultValue:'payg',options:[
     {value:'payg',label:M('开放平台按量 · api.xiaomimimo.com/v1','Pay-as-you-go · api.xiaomimimo.com/v1')},
     {value:'tokenplan',label:M('Token Plan 订阅 · token-plan-cn.xiaomimimo.com/v1','Token Plan subscription · token-plan-cn.xiaomimimo.com/v1')},
   ]},
+  thinkingField(['none','on']),
 ];
 const tencentFields = [
   {key:'channel',label:M('接入地域','Region'),type:'select',defaultValue:'guangzhou',options:[
     {value:'guangzhou',label:M('广州（中国大陆）· tokenhub.tencentmaas.com/v1','Guangzhou (mainland China) · tokenhub.tencentmaas.com/v1')},
     {value:'singapore',label:M('新加坡（全球）· tokenhub-intl.tencentmaas.com/v1','Singapore (global) · tokenhub-intl.tencentmaas.com/v1')},
   ]},
+  thinkingField(['none','low','high']),
 ];
 const moonshotFields = [
   {key:'channel',label:M('接口通道','API channel'),type:'select',defaultValue:'cn',options:[
     {value:'cn',label:M('国内站 · api.moonshot.cn/v1','China · api.moonshot.cn/v1')},
     {value:'intl',label:M('国际站 · api.moonshot.ai/v1','Global · api.moonshot.ai/v1')},
   ]},
+  thinkingField(['none','low','high']),
 ];
+const deepseekFields = [thinkingField(['none','low','high'])];
+const budgetThinkingFields = [budgetThinkingField()];
+const volcengineFields = [thinkingField(['none','low','medium','high'])];
+const minimaxFields = [thinkingField(['none','low','medium','high'])];
+const qianfanFields = [thinkingField(['none','on'])];
 const compatibleFields = [
   {key:'reasoningEffort',label:M('思考等级','Thinking level'),type:'select',defaultValue:'none',options:reasoningEffortOptions},
 ];
@@ -84,7 +112,7 @@ const compatibleFields = [
 // forced reasoning. Empty apiKeyUrl values avoid referral links and guessed console URLs.
 export const API_PROVIDERS = [
   {id:'openai',name:'OpenAI',protocol:'responses',baseUrl:'https://api.openai.com/v1',defaultModel:'gpt-5.6-luna',apiKeyUrl:'',keyOptional:false,fields:[]},
-  {id:'deepseek',name:'DeepSeek',protocol:'chat',baseUrl:'https://api.deepseek.com',defaultModel:'deepseek-v4-flash',apiKeyUrl:'',keyOptional:false,fields:[]},
+  {id:'deepseek',name:'DeepSeek',protocol:'chat',baseUrl:'https://api.deepseek.com',defaultModel:'deepseek-v4-flash',apiKeyUrl:'',keyOptional:false,fields:deepseekFields},
   {id:'google',name:'Gemini',protocol:'google',baseUrl:'https://generativelanguage.googleapis.com/v1beta',defaultModel:'gemini-2.5-flash-lite',apiKeyUrl:'',keyOptional:false,fields:[]},
   {id:'anthropic',name:'Anthropic',protocol:'anthropic',baseUrl:'https://api.anthropic.com/v1',defaultModel:'claude-haiku-4-5',apiKeyUrl:'',keyOptional:false,fields:[]},
   {id:'xai',name:'Grok',protocol:'responses',baseUrl:'https://api.x.ai/v1',defaultModel:'grok-4.20-0309-non-reasoning',apiKeyUrl:'',keyOptional:false,fields:[]},
@@ -94,8 +122,8 @@ export const API_PROVIDERS = [
   {id:'requesty',name:M('Requesty · Jev 判定','Requesty · Jev detection'),protocol:'jev',baseUrl:'https://router.requesty.ai/v1',defaultModel:'typesafe/jev-1.13.0',apiKeyUrl:'https://app.requesty.ai',keyOptional:false,fields:[]},
   {id:'opencode',name:'OpenCode',protocol:'chat',baseUrl:'https://opencode.ai/zen/v1',defaultModel:'deepseek-v4-flash',apiKeyUrl:'https://opencode.ai/auth',keyOptional:false,fields:opencodeFields},
   {id:'commandcode',name:'Command Code',protocol:'chat',baseUrl:'https://api.commandcode.ai/provider/v1',defaultModel:'deepseek/deepseek-v4-flash',apiKeyUrl:'https://commandcode.ai/studio/',keyOptional:false,fields:[]},
-  {id:'minimax',name:'MiniMax',protocol:'chat',baseUrl:'https://api.minimax.io/v1',defaultModel:'MiniMax-M3',apiKeyUrl:'',keyOptional:false,fields:[]},
-  {id:'siliconflow',name:'SiliconFlow',protocol:'chat',baseUrl:'https://api.siliconflow.cn/v1',defaultModel:'Qwen/Qwen3-Next-80B-A3B-Instruct',apiKeyUrl:'',keyOptional:false,fields:[]},
+  {id:'minimax',name:'MiniMax',protocol:'chat',baseUrl:'https://api.minimax.io/v1',defaultModel:'MiniMax-M3',apiKeyUrl:'',keyOptional:false,fields:minimaxFields},
+  {id:'siliconflow',name:'SiliconFlow',protocol:'chat',baseUrl:'https://api.siliconflow.cn/v1',defaultModel:'Qwen/Qwen3-Next-80B-A3B-Instruct',apiKeyUrl:'',keyOptional:false,fields:budgetThinkingFields},
   {id:'azure',name:'Azure OpenAI',protocol:'responses',baseUrl:'',defaultModel:'gpt-5.6-luna',apiKeyUrl:'',keyOptional:false,fields:azureFields},
   {id:'bedrock',name:'Amazon Bedrock',protocol:'bedrock',baseUrl:'',defaultModel:'us.amazon.nova-micro-v1:0',apiKeyUrl:'',keyOptional:false,fields:bedrockFields},
   {id:'groq',name:'Groq',protocol:'chat',baseUrl:'https://api.groq.com/openai/v1',defaultModel:'llama-3.3-70b-versatile',apiKeyUrl:'',keyOptional:false,fields:[]},
@@ -106,15 +134,15 @@ export const API_PROVIDERS = [
   {id:'fireworks',name:'Fireworks AI',protocol:'chat',baseUrl:'https://api.fireworks.ai/inference/v1',defaultModel:'accounts/fireworks/models/llama-v3p3-70b-instruct',apiKeyUrl:'',keyOptional:false,fields:[]},
   {id:'cerebras',name:'Cerebras',protocol:'chat',baseUrl:'https://api.cerebras.ai/v1',defaultModel:'qwen-3.8-27b',apiKeyUrl:'',keyOptional:false,fields:[]},
   {id:'ollama',name:'Ollama',protocol:'ollama',baseUrl:'http://localhost:11434/api',defaultModel:'gemma3:4b',apiKeyUrl:'',keyOptional:true,fields:[]},
-  {id:'volcengine',name:M('火山引擎（豆包）','Volcengine (Doubao)'),protocol:'chat',baseUrl:'https://ark.cn-beijing.volces.com/api/v3',defaultModel:'doubao-seed-1-6-flash-250828',apiKeyUrl:'',keyOptional:false,fields:[]},
-  {id:'alibaba',name:M('阿里云百炼','Alibaba Cloud Model Studio'),protocol:'chat',baseUrl:'https://dashscope.aliyuncs.com/compatible-mode/v1',defaultModel:'qwen3.8-flash',apiKeyUrl:'',keyOptional:false,fields:[]},
+  {id:'volcengine',name:M('火山引擎（豆包）','Volcengine (Doubao)'),protocol:'chat',baseUrl:'https://ark.cn-beijing.volces.com/api/v3',defaultModel:'doubao-seed-1-6-flash-250828',apiKeyUrl:'',keyOptional:false,fields:volcengineFields},
+  {id:'alibaba',name:M('阿里云百炼','Alibaba Cloud Model Studio'),protocol:'chat',baseUrl:'https://dashscope.aliyuncs.com/compatible-mode/v1',defaultModel:'qwen3.8-flash',apiKeyUrl:'',keyOptional:false,fields:budgetThinkingFields},
   {id:'moonshotai',name:M('月之暗面 Kimi','Moonshot AI (Kimi)'),protocol:'chat',baseUrl:'https://api.moonshot.cn/v1',defaultModel:'kimi-k2.6',apiKeyUrl:'',keyOptional:false,fields:moonshotFields},
   {id:'stepfun',name:M('阶跃星辰','StepFun'),protocol:'chat',baseUrl:'https://api.stepfun.com/v1',defaultModel:'step-3.7-flash',apiKeyUrl:'',keyOptional:false,fields:stepfunFields},
   {id:'sensenova',name:M('商汤日日新','SenseNova'),protocol:'chat',baseUrl:'https://token.sensenova.cn/v1',defaultModel:'sensenova-6.8-flash-lite',apiKeyUrl:'',keyOptional:false,fields:sensenovaFields},
   {id:'zhipu',name:M('智谱 GLM','Zhipu GLM'),protocol:'chat',baseUrl:'https://open.bigmodel.cn/api/paas/v4',defaultModel:'glm-4.7-flash',apiKeyUrl:'',keyOptional:false,fields:zhipuFields},
   {id:'xiaomi',name:M('小米 MiMo','Xiaomi MiMo'),protocol:'chat',baseUrl:'https://api.xiaomimimo.com/v1',defaultModel:'mimo-v2.6-flash',apiKeyUrl:'',keyOptional:false,fields:xiaomiFields},
   {id:'tencent',name:M('腾讯混元 TokenHub','Tencent Hunyuan TokenHub'),protocol:'chat',baseUrl:'https://tokenhub.tencentmaas.com/v1',defaultModel:'hy3',apiKeyUrl:'',keyOptional:false,fields:tencentFields},
-  {id:'qianfan',name:M('百度千帆','Baidu Qianfan'),protocol:'chat',baseUrl:'https://qianfan.baidubce.com/v2',defaultModel:'ernie-4.5-turbo-128k',apiKeyUrl:'',keyOptional:false,fields:[]},
+  {id:'qianfan',name:M('百度千帆','Baidu Qianfan'),protocol:'chat',baseUrl:'https://qianfan.baidubce.com/v2',defaultModel:'ernie-4.5-turbo-128k',apiKeyUrl:'',keyOptional:false,fields:qianfanFields},
   {id:'huggingface',name:'Hugging Face',protocol:'chat',baseUrl:'https://router.huggingface.co/v1',defaultModel:'Qwen/Qwen2.5-7B-Instruct-1M',apiKeyUrl:'',keyOptional:false,fields:[]},
 ];
 

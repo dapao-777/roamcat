@@ -518,7 +518,7 @@ async function apiRequest(provider,payload,instructions,schema,{onContent,trace,
     }
   } catch(error) {
     let reported=error;
-    if(controller.signal.aborted||error.name==='AbortError')reported=new Error(M(`请求超过 ${Math.round(timeoutMs/1000)} 秒，请稍后重试。`,`Request exceeded ${Math.round(timeoutMs/1000)}s; please retry.`)+(service.providerId==='stepfun'?M('阶跃星辰推理较慢时，可把该服务的思考等级设为“低”。','When StepFun reasoning is slow, set its thinking level to "low".'):''));else if(error instanceof TypeError)reported=new Error(M(M('无法连接服务，请检查网络、API 地址与服务跨域支持。','Cannot reach the service; check network, API URL, and CORS support.'),'Cannot reach the service; check network, API URL, and CORS support.'));
+    if(controller.signal.aborted||error.name==='AbortError')reported=new Error(M(`请求超过 ${Math.round(timeoutMs/1000)} 秒，请稍后重试。`,`Request exceeded ${Math.round(timeoutMs/1000)}s; please retry.`)+(service.providerId==='stepfun'?M('阶跃星辰推理较慢时，可把该服务的思考等级设为“低”。','When StepFun reasoning is slow, set its thinking level to "low".'):service.options?.reasoningEffort&&service.options.reasoningEffort!=='none'?M('开启思考会明显变慢，可把该服务的思考等级调低或关闭。','Thinking makes requests much slower; lower the thinking level of this service or turn it off.'):''));else if(error instanceof TypeError)reported=new Error(M(M('无法连接服务，请检查网络、API 地址与服务跨域支持。','Cannot reach the service; check network, API URL, and CORS support.'),'Cannot reach the service; check network, API URL, and CORS support.'));
     providerError=reported.message||M('服务连接失败。','Service connection failed.');throw reported;
   } finally {clearTimeout(timeout);releaseApiServiceSlot(service);}
 }
