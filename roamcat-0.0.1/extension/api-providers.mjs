@@ -28,7 +28,7 @@ const reasoningEffortOptions = [
   {value:'high',label:M('高','High')},
 ];
 // 「思考等级」按模型声明（thinking-levels.mjs）：设置项接受全部档位取值，归一化时再落到所选模型支持的档位。
-const modelThinkingField = (extra={}) => ({key:'reasoningEffort',label:M('思考等级','Thinking level'),type:'select',perModel:true,defaultValue:'none',options:THINKING_LEVEL_VALUES.map(value=>({value,label:value})),...extra});
+const modelThinkingField = () => ({key:'reasoningEffort',label:M('思考等级','Thinking level'),type:'select',perModel:true,defaultValue:'none',options:THINKING_LEVEL_VALUES.map(value=>({value,label:value}))});
 const stepfunFields = [
   {key:'channel',label:M('接口通道','API channel'),type:'select',defaultValue:'openapi',options:[
     {value:'openapi',label:M('开放平台按量 · api.stepfun.com/v1','Open platform pay-as-you-go · api.stepfun.com/v1')},
@@ -53,8 +53,7 @@ const sensenovaFields = [
     {value:'tokenplan',label:M('Token Plan 订阅 · token.sensenova.cn/v1','Token Plan subscription · token.sensenova.cn/v1')},
     {value:'sensecore',label:M('大装置按量 · api.sensenova.cn/compatible-mode/v2','SenseCore pay-as-you-go · api.sensenova.cn/compatible-mode/v2')},
   ]},
-  // 大装置按量通道的 SenseChat 不认 reasoning_effort，设置页在该通道隐藏此项。
-  modelThinkingField({channels:['tokenplan']}),
+  modelThinkingField(),
 ];
 const zhipuFields = [
   {key:'channel',label:M('接口通道','API channel'),type:'select',defaultValue:'open',options:[

@@ -77,13 +77,17 @@ function mockChrome(){
   await page.evaluate(()=>{qa.events.length=0;qa.failPatch=false;});page.once('dialog',d=>d.accept());await page.locator('#reset-config').click();await page.waitForTimeout(100);assert.equal(await page.locator('#lookup-key').inputValue(),'D');assert.equal(await page.evaluate(()=>qa.events.filter(e=>e.type==='STATE_PATCH').length),1);report.checks.push('Reset saves preferences together; failed save preserves controls and does not change density');
   await page.evaluate(()=>{const settings=JSON.parse(localStorage.getItem('qa-settings'));Object.assign(settings,{providerKind:'api',activeApiServiceId:'sn',apiServices:[{id:'sn',name:'SenseNova',providerId:'sensenova',baseUrl:'https://token.sensenova.cn/v1',model:'sensenova-6.8-flash-lite',apiKey:'fake-local-test-key',options:{channel:'tokenplan',reasoningEffort:'medium'}},{id:'zp',name:'GLM',providerId:'zhipu',baseUrl:'https://open.bigmodel.cn/api/paas/v4',model:'glm-5.3',apiKey:'fake-local-test-key',options:{channel:'open',reasoningEffort:'high'}}]});localStorage.setItem('qa-settings',JSON.stringify(settings));});
   await page.goto(base+'/ui/options.html#service');await page.reload();await page.waitForTimeout(300);await page.locator('#api-editor').evaluate(e=>e.open=true);
-  const effort=page.locator('#provider-fields [data-provider-option="reasoningEffort"]');
-  assert.equal(await effort.inputValue(),'medium');assert.deepEqual(await effort.locator('option').evaluateAll(list=>list.map(o=>o.value)),['none','low','medium','high']);assert.equal(await effort.isVisible(),true);
+  const effort=page.locator('#provider-fields [data-provider-option="reasoningEffort"]'),levelValues=()=>effort.locator('option').evaluateAll(list=>list.map(o=>o.value)),model=page.locator('#provider-model');
+  assert.equal(await effort.inputValue(),'medium');assert.deepEqual(await levelValues(),['none','low','medium','high','max']);assert.equal(await effort.isVisible(),true);
   await page.locator('#provider-fields [data-provider-option="channel"]').selectOption('sensecore');assert.equal(await effort.isVisible(),false);
-  await page.locator('#provider-fields [data-provider-option="channel"]').selectOption('tokenplan');assert.equal(await effort.isVisible(),true);
+  await page.locator('#provider-fields [data-provider-option="channel"]').selectOption('tokenplan');assert.equal(await effort.isVisible(),true);assert.equal(await effort.inputValue(),'medium');
+  await model.fill('sensenova-u1.5-lite');assert.equal(await effort.isVisible(),false);
+  await model.fill('deepseek-v4-flash');assert.deepEqual(await levelValues(),['none','low','high','max']);assert.equal(await effort.inputValue(),'none');
   page.once('dialog',d=>d.accept());await page.locator('#api-service-select').selectOption('zp');await page.waitForTimeout(150);
-  assert.equal(await effort.inputValue(),'high');assert.deepEqual(await effort.locator('option').evaluateAll(list=>list.map(o=>o.value)),['none','low','high']);
-  report.checks.push('Thinking level lists only provider-supported levels, restores saved value, and hides on channels without support');
+  assert.equal(await effort.inputValue(),'high');assert.deepEqual(await levelValues(),['low','high','max']);
+  await model.fill('glm-4.7-flash');assert.deepEqual(await levelValues(),['none','on']);assert.equal(await effort.inputValue(),'none');
+  await model.fill('glm-5.3');assert.equal(await effort.inputValue(),'max');
+  report.checks.push('Thinking level lists only the official levels of the selected model, follows model and channel changes, and falls back to the model default');
   assert.deepEqual(report.errors,[],'页面脚本错误');
   fs.mkdirSync(out,{recursive:true});fs.writeFileSync(out+'/verification.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
  }finally{await browser.close();server.close();}
