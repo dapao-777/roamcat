@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-26
+
+思考等级按模型显示官方档位。
+
 ### 改进
 - **思考等级按模型显示**：「思考等级」不再按服务商固定成几档，而是按所选模型列出官方实际支持的档位，并用官方名称（如 `low` / `high` / `max`、`adaptive`、`auto`；只有开关的模型显示「关闭 / 开启」，百炼等按思考预算显示 1024 / 4096 tokens / 不限，不可关闭的模型标明「始终开启」），中文界面附中文说明。换模型或接口通道时档位列表随之更新，已选档位不再适用就回到该模型的默认档；没有思考参数的模型（如商汤 U1.5）不显示此项。GLM-5.3、Kimi K3、MiniMax-M3.1-Flash 等不可关闭思考的模型默认使用官方默认档。
 
@@ -134,7 +138,8 @@
 - `host_permissions` 仍为宽泛的 `http(s)://*/*`，计划改为 `optional_host_permissions` 按需申请。
 - 未上架商店；扩展仅支持开发者模式加载（直接加载 `roamcat-0.0.1/extension` 时 ID 与目录路径绑定；`npm run build` 产物 ID 固定）。
 
-[Unreleased]: https://github.com/dapao-777/roamcat/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/dapao-777/roamcat/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/dapao-777/roamcat/releases/tag/v0.4.0
 [0.3.1]: https://github.com/dapao-777/roamcat/releases/tag/v0.3.1
 [0.3.0]: https://github.com/dapao-777/roamcat/releases/tag/v0.3.0
 [0.2.0]: https://github.com/dapao-777/roamcat/releases/tag/v0.2.0
