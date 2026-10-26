@@ -17,6 +17,7 @@ import {spawnSync} from 'node:child_process';
 import {homedir} from 'node:os';
 import {delimiter,dirname,join,resolve} from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
+import {SERVICE_PORT, copyConnectorSources, installService, uninstallService} from './service-install.mjs';
 
 const HOSTS = {
   chatgpt: 'com.roamcat.translate',
@@ -27,11 +28,12 @@ const source = dirname(fileURLToPath(import.meta.url));
 const quote = value => `'${value.replaceAll("'", "'\\''")}'`;
 
 function options(args) {
-  const result = {browsers:['chrome','edge'],uninstall:false,backend:null};
+  const result = {browsers:['chrome','edge'],uninstall:false,backend:null,service:true};
   for (let i=0;i<args.length;i++) {
     const flag = args[i];
     if (flag === '--help') result.help = true;
     else if (flag === '--uninstall') result.uninstall = true;
+    else if (flag === '--no-service') result.service = false;
     else if (['--extension-id','--codex','--grok','--agy','--browser','--backend'].includes(flag)) {
       const value = args[++i];
       if (!value || value.startsWith('--')) throw new Error(`${flag} 缺少参数。`);
@@ -332,23 +334,14 @@ async function installBackend(backend, cliPath, opts, ids) {
       if (existing.name !== host || existing.path !== launcher) throw new Error(`此位置已有其他连接器，未覆盖：${target}`);
     }
   }
-  await mkdir(installed,{recursive:true,mode:0o700});
+  const sources = (await readdir(source)).filter(name => name.endsWith('.mjs'));
+  if (!sources.includes('host.mjs')) throw new Error('连接器源文件不完整，缺少 host.mjs。');
+  if (backend === 'grok' && !sources.includes('grok.mjs')) throw new Error('连接器源文件不完整，缺少 grok.mjs。');
+  if (backend === 'antigravity' && !sources.includes('antigravity.mjs')) throw new Error('连接器源文件不完整，缺少 antigravity.mjs。');
   await mkdir(dataDir,{recursive:true,mode:0o700});
   await chmod(root,0o700).catch(()=>{});
   await chmod(dataDir,0o700).catch(()=>{});
-  const files = (await readdir(source,{withFileTypes:true})).filter(entry => entry.isFile() && entry.name.endsWith('.mjs') && entry.name !== 'install.mjs');
-  if (!files.some(entry => entry.name === 'host.mjs')) throw new Error('连接器源文件不完整，缺少 host.mjs。');
-  if (backend === 'grok' && !files.some(entry => entry.name === 'grok.mjs')) throw new Error('连接器源文件不完整，缺少 grok.mjs。');
-  if (backend === 'antigravity' && !files.some(entry => entry.name === 'antigravity.mjs')) throw new Error('连接器源文件不完整，缺少 antigravity.mjs。');
-  for (const file of files) await copyFile(join(source,file.name),join(installed,file.name));
-  await mkdir(join(root,'extension'),{recursive:true,mode:0o700});
-  await Promise.all([
-    copyFile(join(source,'../extension/gloss.mjs'),join(root,'extension/gloss.mjs')),
-    copyFile(join(source,'../extension/assistance-stream.mjs'),join(root,'extension/assistance-stream.mjs')),
-    copyFile(join(source,'../extension/diagnostics.mjs'),join(root,'extension/diagnostics.mjs')),
-    copyFile(join(source,'../extension/personalization.mjs'),join(root,'extension/personalization.mjs')),
-    copyFile(join(source,'../extension/sentence-groups.mjs'),join(root,'extension/sentence-groups.mjs')),
-  ]);
+  await copyConnectorSources(source, root);
   if (backend === 'chatgpt') {
     const codexHome = join(dataDir, 'codex');
     await mkdir(codexHome, { recursive: true, mode: 0o700 });
@@ -397,7 +390,7 @@ async function installBackend(backend, cliPath, opts, ids) {
 async function main() {
   const opts = options(process.argv.slice(2));
   if (opts.help) {
-    console.log('RoamCat · 订阅连接器\n\n安装：node connector/install.mjs --extension-id ID\n  默认一次注册本机已安装的全部订阅通道：ChatGPT（codex）、Grok（grok）、Google（agy）；找不到的通道跳过，装好对应 CLI 后重跑即可补上。\n  只装一个通道：--backend chatgpt|grok|antigravity；指定 CLI 路径：--codex PATH / --grok PATH / --agy PATH\n浏览器：--browser chrome,edge（默认）；另支持 chromium、chrome-beta、chrome-testing、ego（ego lite，仅 Windows）（逗号分隔，仅注册显式指定的浏览器）\n扩展 ID：单个 32 位 a–p 字母，或逗号分隔的多个 ID（多开/多配置共用一个连接器）\n卸载：node connector/install.mjs --uninstall [--backend chatgpt|grok|antigravity] [--browser chrome,edge]（不带 --backend 时卸载全部通道）\n\n需要 Node.js 20+；三个通道均支持 macOS / Linux / Windows（Windows 上 npm 全局安装的 codex.cmd 经 shell 启动）。\nGoogle 通道使用 Google AI Pro / Ultra 订阅权益，首次使用前需在终端运行 agy 登录。\n仅注册当前用户，不需要管理员权限。\n卸载只移除指定浏览器的连接器注册；保留本机登录数据。要退出账户，请先在插件中退出登录。');
+    console.log('RoamCat · 订阅连接器\n\n安装：node connector/install.mjs --extension-id ID\n  默认一次注册本机已安装的全部订阅通道：ChatGPT（codex）、Grok（grok）、Google（agy）；找不到的通道跳过，装好对应 CLI 后重跑即可补上。\n  只装一个通道：--backend chatgpt|grok|antigravity；指定 CLI 路径：--codex PATH / --grok PATH / --agy PATH\n浏览器：--browser chrome,edge（默认）；另支持 chromium、chrome-beta、chrome-testing、ego（ego lite，仅 Windows）（逗号分隔，仅注册显式指定的浏览器）\n扩展 ID：单个 32 位 a–p 字母，或逗号分隔的多个 ID（多开/多配置共用一个连接器）\n本机常驻服务：默认一并安装并设为登录自启（127.0.0.1:47821，只接受上面这些扩展 ID 的连接）；扩展优先连它，没运行时自动改用浏览器连接器。不想装：--no-service\n卸载：node connector/install.mjs --uninstall [--backend chatgpt|grok|antigravity] [--browser chrome,edge]（不带 --backend 时卸载全部通道并移除常驻服务）\n\n需要 Node.js 20+；三个通道均支持 macOS / Linux / Windows（Windows 上 npm 全局安装的 codex.cmd 经 shell 启动）。\nGoogle 通道使用 Google AI Pro / Ultra 订阅权益，首次使用前需在终端运行 agy 登录。\n仅注册当前用户，不需要管理员权限。\n卸载只移除指定浏览器的连接器注册；保留本机登录数据。要退出账户，请先在插件中退出登录。');
     return;
   }
   if (Number(process.versions.node.split('.')[0]) < 20) throw new Error('需要 Node.js 20 或更新版本。');
@@ -405,6 +398,11 @@ async function main() {
   const backends = explicit ? [opts.backend] : BACKENDS;
   if (opts.uninstall) {
     for (const backend of backends) await uninstallBackend(backend, opts);
+    // 不带 --backend 的整体卸载才移除常驻服务；只卸一个通道时服务照常为其余通道工作。
+    if (!explicit) {
+      const removed = await uninstallService({port: SERVICE_PORT}).catch(error => ({error}));
+      console.log(removed.error ? `常驻服务未能完全移除：${removed.error.message}` : `已移除本机常驻服务${removed.stopped ? '（已停止运行中的服务）' : ''}。`);
+    }
     console.log('已卸载所选浏览器的连接器注册。本机登录数据保留；其他浏览器不受影响。');
     return;
   }
@@ -437,6 +435,18 @@ async function main() {
     throw new Error(failed.length
       ? `订阅通道注册失败：${failed.map(item => `${BACKEND_LABEL[item.backend]}（${item.reason}）`).join('；')}。`
       : '没有可注册的订阅通道。请先安装 Codex、Grok CLI 或 agy 中的至少一个，再重新运行此命令。');
+  }
+  // 本机常驻服务：扩展优先经 WebSocket 连它，不再依赖浏览器的连接器注册；失败不影响上面的注册。
+  if (opts.service) {
+    const backendRoots = Object.fromEntries(BACKENDS.map(backend => [backend, locations(backend).root]));
+    try {
+      const service = await installService({source, nodePath: process.execPath, origins: ids.map(id => `chrome-extension://${id}/`), backendRoots, port: SERVICE_PORT});
+      console.log(service.running
+        ? `✓ 本机常驻服务：127.0.0.1:${service.port}（${service.backends.map(backend => BACKEND_LABEL[backend]).join('、')}）\n  ${service.autostart}\n  浏览器重启、换浏览器都不用再装连接器；服务没运行时扩展自动改用浏览器连接器。\n`
+        : `· 本机常驻服务已安装但还没响应（${service.root}）；扩展会先用浏览器连接器，服务起来后自动切换。\n  ${service.autostart}\n`);
+    } catch (error) {
+      console.log(`· 本机常驻服务未安装：${error.message}；扩展继续使用浏览器连接器。\n`);
+    }
   }
   const agyHint = installed.some(item => item.backend === 'antigravity')
     ? '\nGoogle 通道首次使用前，请先在终端运行 agy，用 Google 账号（Google AI Pro / Ultra 订阅）完成登录。' : '';

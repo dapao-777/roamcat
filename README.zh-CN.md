@@ -118,7 +118,7 @@
 
 需要 **Chrome 或 Edge 125+**。
 
-**方式 A：Release 安装包。** 从 [Releases](https://github.com/dapao-777/roamcat/releases/latest) 下载 `roamcat-0.1.0-extension.zip` 并解压。打开 `chrome://extensions`（或 `edge://extensions`），开启**开发者模式**，点**加载已解压的扩展**，选择解压出的 **`roamcat-0.1.0/extension`** 文件夹。要用订阅连接器，在解压目录里运行 `node roamcat-0.1.0/connector/install.mjs`（需要 Node.js 20.11+）；它会按这个文件夹算出扩展 ID，移动文件夹后要重新运行。
+**方式 A：Release 安装包。** 从 [Releases](https://github.com/dapao-777/roamcat/releases/latest) 下载 `roamcat-0.2.0-extension.zip` 并解压。打开 `chrome://extensions`（或 `edge://extensions`），开启**开发者模式**，点**加载已解压的扩展**，选择解压出的 **`roamcat-0.2.0/extension`** 文件夹。要用订阅连接器，在解压目录里运行 `node roamcat-0.2.0/connector/install.mjs`（需要 Node.js 20.11+）；它会按这个文件夹算出扩展 ID，移动文件夹后要重新运行。
 
 **方式 B：从源码构建**（需要 Node.js 20.11+）：
 
@@ -139,7 +139,9 @@ npm run build      # → dist/extension
 node roamcat-0.0.1/connector/install.mjs --extension-id afpeggkplomdjjiemgajjgcajieincng
 ```
 
-一条命令会注册本机已经装好 CLI 的全部通道（Codex、Grok、`agy`），没装的会跳过。只注册一个通道时再加 `--backend grok`（或 `chatgpt` / `antigravity`）。免构建的预发布安装包会在发布后附在 [Releases](https://github.com/dapao-777/roamcat/releases) 中。
+一条命令会注册本机已经装好 CLI 的全部通道（Codex、Grok、`agy`），没装的会跳过。只注册一个通道时再加 `--backend grok`（或 `chatgpt` / `antigravity`）。
+
+同一条命令还会装上**本机常驻连接服务**（只监听 `127.0.0.1:47821`，只接受这个扩展 ID 的连接）并设为登录自启：扩展优先连它，浏览器重启、换浏览器都不用重新装连接器，CLI 也一直保持登录；服务没运行时自动改用浏览器连接器。不想装就加 `--no-service`。
 
 ## 🔒 本地优先的边界
 

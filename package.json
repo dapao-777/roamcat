@@ -10,6 +10,7 @@
     "verify:build": "node tools/verify-build.cjs",
     "verify": "node tools/verify-module-graph.cjs",
     "verify:sites": "node tools/verify-dev-sites.cjs",
+    "verify:service": "node tools/verify-connector-service.mjs",
     "verify:ui": "node tools/verify-ui-all.cjs",
     "verify:pet": "node tools/verify-pet-buttons.cjs",
     "verify:options": "node tools/verify-ui.cjs",

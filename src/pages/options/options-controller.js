@@ -135,6 +135,8 @@ function optionsRenderSubscription(){
   else if(authenticated){optionsEls.subscriptionState.textContent=label+T('ctl.subIn');optionsEls.subscriptionDetail.textContent=subscription.error||T('ctl.subInDetail');}
   else if(pending){optionsEls.subscriptionState.textContent=T('ctl.subPending',{label});optionsEls.subscriptionDetail.textContent=subscription.error||T('ctl.subPendingDetail');}
   else{optionsEls.subscriptionState.textContent=T('ctl.subReady');optionsEls.subscriptionDetail.textContent=subscription.error||T('ctl.subReadyDetail');}
+  // 连上后说明连接方式：本机常驻服务优先，浏览器连接器是回退。
+  if(connected&&(subscription.transport==='service'||subscription.transport==='native'))optionsEls.subscriptionDetail.textContent+=T(subscription.transport==='service'?'ctl.viaService':'ctl.viaNative');
   optionsRenderModels(optionsEls.subscriptionModel,optionsState?.settings?.subscriptionModel||'',optionsEls.subscriptionModelNote);
   optionsEls.loginSubscription.textContent=T('ctl.loginWith',{label});
   optionsEls.loginSubscription.hidden=!connected||authenticated||pending;

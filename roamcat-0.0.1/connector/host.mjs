@@ -96,7 +96,7 @@ export function validateExtensionOrigin(configured, actual) {
   }
 }
 
-function validateRequest(message) {
+export function validateRequest(message) {
   const validId = (Number.isSafeInteger(message.id) && message.id >= 0)
     || (typeof message.id === "string" && message.id.length > 0 && message.id.length <= 128);
   if (!validId || typeof message.type !== "string") throw new Error("请求格式无效");
@@ -125,16 +125,61 @@ export async function resolveCodexPath(recorded) {
   return best ? best.path : path;
 }
 
-async function loadConfiguration(configPath, actualOrigin) {
+// 一次请求的分发：NativeMessaging 宿主与本机常驻服务共用。emit 用于推送进度事件（带请求 id）。
+export async function dispatchRequest({ client, diagnostics, request, emit }) {
+  switch (request.type) {
+    case "sentenceGroups": return client.sentenceGroups(request.payload, { traceId: request.traceId });
+    case "status": return client.refreshStatus();
+    case "login": return client.login();
+    case "cancel": return client.cancelLogin();
+    case "logout": return client.logout();
+    case "models": return { models: await client.listModels({ refresh: request.payload.refresh === true }) };
+    case "classify": return client.classify(request.payload, { traceId: request.traceId });
+    case "supportBatch": return client.supportBatch(request.payload, { traceId: request.traceId });
+    case "assist": return client.assist(request.payload, {
+      traceId: request.traceId,
+      onProgress: progress => emit({ event: "assistProgress", id: request.id, data: progress }),
+    });
+    case "emergencyTranslate": return client.emergencyTranslate(request.payload, {
+      traceId: request.traceId,
+      onProgress: progress => emit({ event: "translationProgress", id: request.id, data: progress }),
+    });
+    case "historyModel": return client.historyModel(request.payload, { traceId: request.traceId });
+    case "summarize": return client.summarize(request.payload, { traceId: request.traceId });
+    case "diagnostics": {
+      if (request.payload.action === "append") {
+        await diagnostics.appendMany(request.payload.events, { broadcast: false });
+      } else if (request.payload.action === "clear") {
+        await diagnostics.clear();
+      } else if (request.payload.action === "configure") {
+        await diagnostics.configure(request.payload.enabled);
+      } else throw new Error("诊断同步请求无效");
+      return { enabled: diagnostics.enabled, storageError: diagnostics.storageError };
+    }
+    default: throw new Error("不支持的连接器请求，请更新本地连接器。");
+  }
+}
+
+// 请求失败时回给扩展的统一形状。
+export function failureResponse(id, error) {
+  const { code, ...detail } = diagnosticError(error);
+  return { id, ok: false, error: typeof error?.message === "string" ? error.message : "连接器请求失败", code, detail };
+}
+
+// 只校验并读取后端配置，不比对扩展来源（常驻服务在握手时按自己的白名单校验来源）。
+export async function loadBackendConfiguration(configPath) {
   let config;
   try { config = JSON.parse(await readFile(resolve(configPath), "utf8")); }
   catch { throw new Error("无法读取连接器配置"); }
+  return normalizeConfiguration(config);
+}
+
+async function normalizeConfiguration(config) {
   const backend = config?.backend === "grok" ? "grok" : config?.backend === "antigravity" ? "antigravity" : "chatgpt";
-  const cliPath = backend === "grok" ? config.grokPath : backend === "antigravity" ? config.agyPath : config.codexPath;
+  const cliPath = backend === "grok" ? config?.grokPath : backend === "antigravity" ? config?.agyPath : config?.codexPath;
   if (!config || typeof config !== "object" || Array.isArray(config)
     || typeof cliPath !== "string" || !cliPath
-    || typeof config.dataDir !== "string" || !config.dataDir
-    || !validateExtensionOrigin(config.extensionOrigin, actualOrigin)) {
+    || typeof config.dataDir !== "string" || !config.dataDir) {
     throw new Error("连接器配置或扩展来源无效");
   }
   return backend === "grok"
@@ -142,6 +187,22 @@ async function loadConfiguration(configPath, actualOrigin) {
     : backend === "antigravity"
     ? { backend, agyPath: resolve(cliPath), dataDir: resolve(config.dataDir) }
     : { backend, codexPath: await resolveCodexPath(cliPath), dataDir: resolve(config.dataDir) };
+}
+
+export function createBackendClient(configuration, options = {}) {
+  return configuration.backend === "grok" ? new GrokClient({ ...configuration, ...options })
+    : configuration.backend === "antigravity" ? new AntigravityClient({ ...configuration, ...options })
+    : new CodexClient({ ...configuration, ...options });
+}
+
+async function loadConfiguration(configPath, actualOrigin) {
+  let config;
+  try { config = JSON.parse(await readFile(resolve(configPath), "utf8")); }
+  catch { throw new Error("无法读取连接器配置"); }
+  if (!config || typeof config !== "object" || !validateExtensionOrigin(config.extensionOrigin, actualOrigin)) {
+    throw new Error("连接器配置或扩展来源无效");
+  }
+  return normalizeConfiguration(config);
 }
 
 function parseHostArgv(argv) {
@@ -156,7 +217,7 @@ export async function runHost({ argv = process.argv.slice(2), input = process.st
   const { configPath, origin } = parseHostArgv(argv);
   const configuration = await loadConfiguration(configPath, origin);
   const diagnostics = await DiagnosticStore.create(configuration.dataDir);
-  const createClient = clientFactory || (options => configuration.backend === "grok" ? new GrokClient(options) : configuration.backend === "antigravity" ? new AntigravityClient(options) : new CodexClient(options));
+  const createClient = clientFactory || (options => createBackendClient(configuration, options));
   const client = createClient({ ...configuration, diagnostic: record => diagnostics.append(record) });
   let closing = false;
 
@@ -189,40 +250,10 @@ export async function runHost({ argv = process.argv.slice(2), input = process.st
       return;
     }
     try {
-      let data;
-      switch (request.type) { case "sentenceGroups": data = await client.sentenceGroups(request.payload, { traceId: request.traceId }); break; case "status": data = await client.refreshStatus(); break;
-      case "login": data = await client.login(); break;
-      case "cancel": data = await client.cancelLogin(); break;
-      case "logout": data = await client.logout(); break;
-      case "models": data = { models: await client.listModels({ refresh: request.payload.refresh === true }) }; break;
-      case "classify": data = await client.classify(request.payload, { traceId: request.traceId }); break;
-      case "supportBatch": data = await client.supportBatch(request.payload, { traceId: request.traceId }); break;
-      case "assist": data = await client.assist(request.payload, {
-        traceId: request.traceId,
-        onProgress: progress => write({ event: "assistProgress", id: request.id, data: progress }),
-      }); break;
-      case "emergencyTranslate": data = await client.emergencyTranslate(request.payload, {
-        traceId: request.traceId,
-        onProgress: progress => write({ event: "translationProgress", id: request.id, data: progress }),
-      }); break;
-      case "historyModel": data = await client.historyModel(request.payload, { traceId: request.traceId }); break;
-      case "summarize": data = await client.summarize(request.payload, { traceId: request.traceId }); break;
-      case "diagnostics": {
-        if (request.payload.action === "append") {
-          await diagnostics.appendMany(request.payload.events, { broadcast: false });
-        } else if (request.payload.action === "clear") {
-          await diagnostics.clear();
-        } else if (request.payload.action === "configure") {
-          await diagnostics.configure(request.payload.enabled);
-        } else throw new Error("诊断同步请求无效");
-        data = { enabled: diagnostics.enabled, storageError: diagnostics.storageError };
-        break;
-      }
-      default: throw new Error("不支持的连接器请求，请更新本地连接器。"); }
+      const data = await dispatchRequest({ client, diagnostics, request, emit: write });
       write({ id: request.id, ok: true, data });
     } catch (error) {
-      const { code, ...detail } = diagnosticError(error);
-      write({ id: request.id, ok: false, error: typeof error?.message === "string" ? error.message : "连接器请求失败", code, detail });
+      write(failureResponse(request.id, error));
     }
   };
 

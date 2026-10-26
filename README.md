@@ -118,7 +118,7 @@ Failed passages retry on a graded backoff (2.5s → 6s → 14s, classified by er
 
 Requires **Chrome or Edge 125+**.
 
-**Option A — Release package.** Download `roamcat-0.1.0-extension.zip` from [Releases](https://github.com/dapao-777/roamcat/releases/latest) and unzip it. Open `chrome://extensions` (or `edge://extensions`), turn on **Developer mode**, choose **Load unpacked** and pick the unzipped **`roamcat-0.1.0/extension`** folder. For the subscription connector, run `node roamcat-0.1.0/connector/install.mjs` from the unzipped folder (Node.js 20.11+); it works out the extension ID from that folder, so rerun it if you move the folder.
+**Option A — Release package.** Download `roamcat-0.2.0-extension.zip` from [Releases](https://github.com/dapao-777/roamcat/releases/latest) and unzip it. Open `chrome://extensions` (or `edge://extensions`), turn on **Developer mode**, choose **Load unpacked** and pick the unzipped **`roamcat-0.2.0/extension`** folder. For the subscription connector, run `node roamcat-0.2.0/connector/install.mjs` from the unzipped folder (Node.js 20.11+); it works out the extension ID from that folder, so rerun it if you move the folder.
 
 **Option B — build from source** (Node.js 20.11+):
 
@@ -139,12 +139,14 @@ The dev build pins its extension ID (`afpeggkplomdjjiemgajjgcajieincng`, from `b
 node roamcat-0.0.1/connector/install.mjs --extension-id afpeggkplomdjjiemgajjgcajieincng
 ```
 
-One command registers every channel whose CLI is already installed (Codex, Grok, `agy`); missing CLIs are skipped. Pass `--backend grok` (or `chatgpt` / `antigravity`) to register only one. A ready-to-load prerelease zip will be attached to [Releases](https://github.com/dapao-777/roamcat/releases) once it is published.
+One command registers every channel whose CLI is already installed (Codex, Grok, `agy`); missing CLIs are skipped. Pass `--backend grok` (or `chatgpt` / `antigravity`) to register only one.
+
+The same command also installs a **local connector service** (listens only on `127.0.0.1:47821` and accepts only this extension ID) that starts at login. The extension connects to it first, so restarting or switching browsers never needs a reinstall and the CLIs stay signed in; if the service is not running, the extension falls back to the browser connector. Add `--no-service` to skip it.
 
 ## 🔒 Privacy by design
 
 - Reading history is off by default and opt-in per site; nothing is collected on incognito pages; API keys live only in `chrome.storage.local`.
-- Keys never reach content scripts, diagnostic logs or the connector; content scripts may send only **33 whitelisted message types** out of 74.
+- Keys never reach content scripts, diagnostic logs or the connector; content scripts may send only **35 whitelisted message types** out of 76.
 - All model output passes structured validation (`gloss.mjs`) before reaching the UI; custom API endpoints must be HTTPS (loopback excepted).
 - Page text leaves your device only when you invoke a model feature, and goes straight to the provider you configured. Full details in the [privacy policy](roamcat-0.0.1/PRIVACY.md).
 

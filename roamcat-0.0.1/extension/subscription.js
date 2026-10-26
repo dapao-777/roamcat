@@ -35,12 +35,74 @@ export async function syncNativeDiagnostics(payload,kind){
   return results.some(Boolean);
 }
 
+// 本机常驻连接服务（connector/service.mjs）：优先经 WebSocket 连它，不依赖浏览器的 NativeMessaging 注册；
+// 没装、没运行或拒绝本扩展时立刻改用 connectNative，并在 SERVICE_RETRY_MS 内直接走浏览器连接器，不反复试探。
+export const SERVICE_URL = 'ws://127.0.0.1:47821/v1/connect?backend=';
+const SERVICE_OPEN_TIMEOUT_MS = 1500;
+const SERVICE_RETRY_MS = 60000;
+let serviceDownUntil = 0;
+
+// 返回与 chrome.runtime.Port 同形的对象（postMessage / disconnect / onMessage / onDisconnect），
+// 多两个只读信息：transport（'service' | 'native'）与 disconnectReason（断开原因原文）。
+export function openTransport(kind, host) {
+  const messageListeners = [], disconnectListeners = [], queue = [];
+  let active = null, done = false;
+  const port = {
+    transport: null,
+    disconnectReason: '',
+    postMessage(message) { if (done) throw new Error('disconnected'); if (active) active.post(message); else queue.push(message); },
+    disconnect() { if (done) return; done = true; active?.close(); },
+    onMessage: {addListener: listener => messageListeners.push(listener)},
+    onDisconnect: {addListener: listener => disconnectListeners.push(listener)},
+  };
+  const emit = message => { for (const listener of messageListeners) listener(message); };
+  const fail = reason => { if (done) return; done = true; port.disconnectReason = reason; for (const listener of disconnectListeners) listener(); };
+  const useNative = () => {
+    let native;
+    try { native = chrome.runtime.connectNative(host); }
+    catch (error) { queueMicrotask(() => fail(String(error?.message || error))); return; }
+    port.transport = 'native';
+    native.onMessage.addListener(emit);
+    native.onDisconnect.addListener(() => fail(chrome.runtime.lastError?.message || ''));
+    active = {post: message => native.postMessage(message), close: () => native.disconnect()};
+    for (const message of queue.splice(0)) native.postMessage(message);
+  };
+  if (typeof WebSocket !== 'function' || Date.now() < serviceDownUntil) { useNative(); return port; }
+  let socket;
+  try { socket = new WebSocket(SERVICE_URL + encodeURIComponent(kind)); }
+  catch { serviceDownUntil = Date.now() + SERVICE_RETRY_MS; useNative(); return port; }
+  let opened = false;
+  const giveUp = () => { serviceDownUntil = Date.now() + SERVICE_RETRY_MS; if (!done) useNative(); };
+  const timer = setTimeout(() => {
+    if (opened) return;
+    socket.onclose = socket.onerror = socket.onopen = socket.onmessage = null;
+    try { socket.close(); } catch { /* 还没连上 */ }
+    giveUp();
+  }, SERVICE_OPEN_TIMEOUT_MS);
+  socket.onopen = () => {
+    opened = true;
+    clearTimeout(timer);
+    if (done) { socket.close(); return; }
+    port.transport = 'service';
+    active = {post: message => socket.send(JSON.stringify(message)), close: () => socket.close()};
+    for (const message of queue.splice(0)) socket.send(JSON.stringify(message));
+  };
+  socket.onmessage = event => { let message; try { message = JSON.parse(event.data); } catch { return; } emit(message); };
+  socket.onerror = () => {};
+  socket.onclose = event => {
+    clearTimeout(timer);
+    if (!opened) { giveUp(); return; }
+    fail(`local service closed (${event.code})`);
+  };
+  return port;
+}
+
 // stage 给设置页的分步清单用：install=找不到连接器注册，start=连接器起不来（Node/CLI 不可用），
 // login=已连上待登录，ready=已登录，unknown=尚未检测或被主动断开。
 const STAGES = new Set(['install','start','login','ready','unknown']);
 const DISCONNECTED = {connected:false,authenticated:false,email:null,plan:null,loginPending:false,userCode:null,authFailed:null,error:null,stage:'unknown'};
 
-function createConnector({host,label,cliName,loginHosts}) {
+function createConnector({kind,host,label,cliName,loginHosts}) {
   const state = {
     status:{...DISCONNECTED},
     port:null,
@@ -62,6 +124,8 @@ function createConnector({host,label,cliName,loginHosts}) {
       userCode:typeof value?.userCode === 'string' ? value.userCode.replace(/[^A-Za-z0-9-]/g,'').slice(0,32) : null,
       authFailed:typeof value?.authFailed === 'boolean' ? value.authFailed : null,
       error:typeof value?.error === 'string' ? value.error.slice(0,600) : null,
+      // 当前连接走的是本机常驻服务还是浏览器连接器，设置页与诊断用来说明连接方式。
+      transport:value?.connected === true ? state.port?.transport ?? null : null,
     };
     next.stage = next.connected ? (next.authenticated ? 'ready' : 'login') : STAGES.has(value?.stage) ? value.stage : 'unknown';
     if (JSON.stringify(next) === JSON.stringify(state.status)) return;
@@ -78,10 +142,10 @@ function createConnector({host,label,cliName,loginHosts}) {
   function connection() {
     if (state.port) return state.port;
     state.attempted = true;
-    const current = chrome.runtime.connectNative(host);
+    const current = openTransport(kind, host);
     state.port = current;
     current.onDisconnect.addListener(() => {
-      const reason = chrome.runtime.lastError?.message || '';
+      const reason = current.disconnectReason || chrome.runtime.lastError?.message || '';
       const missing = /not found|not registered|forbidden/i.test(reason);
       // 附上浏览器给的原始原因：同样是“找不到”，注册缺失、清单损坏和来源未授权要分开排查。
       const raw = reason ? `（${reason.slice(0,160)}）` : '';
@@ -189,18 +253,21 @@ function createConnector({host,label,cliName,loginHosts}) {
 
 const connectors = {
   chatgpt: createConnector({
+    kind:'chatgpt',
     host:'com.roamcat.translate',
     label:'ChatGPT',
     cliName:'Codex',
     loginHosts:new Set(['auth.openai.com']),
   }),
   grok: createConnector({
+    kind:'grok',
     host:'com.roamcat.grok',
     label:'Grok',
     cliName:'Grok CLI',
     loginHosts:new Set(['auth.x.ai','accounts.x.ai']),
   }),
   antigravity: createConnector({
+    kind:'antigravity',
     host:'com.roamcat.antigravity',
     label:'Google',
     cliName:'Antigravity CLI',
