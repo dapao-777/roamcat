@@ -3,7 +3,7 @@
  * 文件职责：自备API传输层——结构化输出能力探测、模型列表拉取与分服务商并发调度。
  * 主要内容：listProviderModels/performProviderRequest；json_schema探测失败降级json_object，探测缓存1小时；
  *   Jev判定在typesafe.ai域名走/systemone原生协议，其余地址走Requesty chat/completions转发；
- *   chatThinking 按设置页思考等级给各服务商带官方思考参数（关闭/开关/effort/预算）。
+ *   chatThinking 按所选模型声明的思考档位带官方参数（thinking-levels.mjs），未收录模型沿用关闭思考参数。
  * 模块边界：领域层；只依赖api-providers与gloss校验；不存密钥。
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -12,6 +12,7 @@
 
  */
 import {apiProviderBaseUrl,getApiProvider} from './api-providers.mjs';
+import {thinkingProfile,resolveThinkingLevel} from './thinking-levels.mjs';
 import {parseModelObject} from './gloss.mjs';
 
 const M=(zh,en)=>globalThis.RoamCatI18n?.lang?.()==='en'?en:zh;
@@ -216,16 +217,15 @@ function reasoningEffortOption(service,fallback=''){
   const value=service?.options?.reasoningEffort;
   return ['none','low','medium','high'].includes(value)?value:fallback;
 }
-// 设置页「思考等级」：只认该服务商 fields 里列出的档位，缺省或未知一律按 none（关闭思考）。
-function thinkingLevel(service){
-  const field=getApiProvider(service?.providerId)?.fields.find(item=>item.key==='reasoningEffort');
-  const value=service?.options?.reasoningEffort;
-  return field&&field.options.some(option=>option.value===value)?value:'none';
+// 设置页「思考等级」按模型声明（thinking-levels.mjs）：返回该模型的档位描述与实际生效档位；未收录的模型为 null。
+function modelThinking(service){
+  const profile=thinkingProfile(service?.providerId,service?.model,service?.options);
+  return profile?{profile,level:resolveThinkingLevel(profile,service?.options?.reasoningEffort)}:null;
 }
-function thinkingEnabled(service){return service?.providerId!=='stepfun'&&thinkingLevel(service)!=='none';}
+function thinkingEnabled(service){const found=service?.providerId==='stepfun'?null:modelThinking(service);return Boolean(found?.level&&found.level!=='none');}
 function ensureNoForcedReasoning(service){const model=(service.model||'').toLowerCase();
-  // 用户主动选了思考等级时不再拦截「无法关闭思考」的模型，请求按所选档位开启思考。
-  if(thinkingEnabled(service))return;if(/(?:^|[\/_-])(?:deepseek-r1|deepseek-reasoner)(?:$|[\/_:.-])/i.test(model))throw transportError(M('该模型始终使用推理，无法关闭思考；请选择支持无思考模式的模型。','This model always reasons and cannot disable thinking; choose a model that supports no-thinking mode.'),'THINKING_REQUIRED');
+  // 已按模型声明思考档位的模型由档位决定参数（无法关闭思考的模型只列开启档），不再按名称拦截。
+  if(modelThinking(service))return;if(/(?:^|[\/_-])(?:deepseek-r1|deepseek-reasoner)(?:$|[\/_:.-])/i.test(model))throw transportError(M('该模型始终使用推理，无法关闭思考；请选择支持无思考模式的模型。','This model always reasons and cannot disable thinking; choose a model that supports no-thinking mode.'),'THINKING_REQUIRED');
   if(/gemini-2\.5-pro(?:$|[-_:])/i.test(model)||/gemini-(?:3|[4-9]|[1-9]\d)(?:\.|-|$)/i.test(model))throw transportError(M('该 Gemini 模型不支持完全关闭思考；请选择支持无思考模式的模型。','This Gemini model cannot fully disable thinking; choose a model that supports no-thinking mode.'),'THINKING_REQUIRED');
   if(/(^|\/)(?:o1|o3|o4)(?:$|[-_:])/i.test(model))throw transportError(M('该 OpenAI 推理模型无法可靠关闭思考；请选择非推理模型。','This OpenAI reasoning model cannot reliably disable thinking; choose a non-reasoning model.'),'THINKING_REQUIRED');
   if(/(?:^|[\/_-])minimax-m(?:2|3\.1-flash)(?:$|[.\/_:-])/i.test(model))throw transportError(M('该 MiniMax 模型始终使用推理，无法关闭思考；请选择 MiniMax-M3，或在「思考等级」选择档位。','This MiniMax model always reasons and cannot disable thinking; choose MiniMax-M3, or pick a thinking level.'),'THINKING_REQUIRED');
@@ -235,36 +235,18 @@ function ensureNoForcedReasoning(service){const model=(service.model||'').toLowe
   if((service.providerId==='tencent'||service.providerId==='moonshotai')&&/(?:^|\/)kimi-k(?:3|2\.7-code)(?:$|[-_:.])/i.test(model))throw transportError(M('该 Kimi 模型无法关闭思考；请在「思考等级」选择档位，或换用 kimi-k2.6 等支持无思考模式的模型。','This Kimi model cannot disable thinking; pick a thinking level, or choose a model such as kimi-k2.6 that supports no-thinking mode.'),'THINKING_REQUIRED');
   if(/(?:^|[\/_-])(?:gpt-oss|qwq|ernie-x1(?:\.\d+)?)(?:$|[\/_:.-])|sonar-(?:reasoning|deep-research)|glm-5[.-]3|(?:^|[\/_-])thinking(?:$|[\/_:.-])/i.test(model)&&!(service.providerId==='qianfan'&&/^ernie-5\.0-thinking-preview$/i.test(model))||service.providerId==='qianfan'&&/-think$/i.test(model))throw transportError(M('该模型无法关闭思考；请选择支持无思考模式的模型。','This model cannot disable thinking; choose a model that supports no-thinking mode.'),'THINKING_REQUIRED');
 }
-// 各家思考参数均按官方文档；level 为设置页所选档位，none=关闭思考，on=只开思考、深度用模型默认值。
-const GLM_EFFORT_MODEL=/(?:^|\/)glm-(?:5\.(?:[2-9]|\d{2,})|(?:[6-9]|\d{2,})(?:\.\d+)?)(?:$|[-_.])/i;
-const ARK_EFFORT_MODEL=/^(?:doubao-seed-(?:evolving|character|2-)|glm-5-[2-9]|deepseek-v4|kimi-k3)/i;
-const TOKENHUB_THINKING_MODEL=/^(?:hy3|hy4|deepseek-v4|glm-5\.2|glm-5v|kimi-k2\.[56]|qwen3\.5)(?:$|[-_.])/i;
-const TOKENHUB_EFFORT_MODEL=/^(?:hy3|deepseek-v4|glm-5\.[23]|kimi-k3)(?:$|[-_.])/i;
-const QIANFAN_THINKING_MODEL=/^(?:deepseek-v4|deepseek-v3\.2|kimi-k2\.5|glm-5)(?:$|[-_.])/i;
-const QIANFAN_ENABLE_THINKING_MODEL=/^(?:qwen3-(?:32b|14b|8b)|ernie-4\.5-turbo-vl|ernie-4\.5-vl-28b-a3b)(?:$|[-_.])/i;
-const THINKING_BUDGET={low:1024,medium:4096};
 function chatThinking(service){const id=service.providerId,model=service.model||'',base=service.baseUrl||'';
-  const level=thinkingLevel(service),on=level!=='none',effort=on&&level!=='on'?level:'';
-  const toggle=type=>({thinking:{type}});
-  // 智谱：thinking.type 开关；reasoning_effort 仅 GLM-5.2 起支持（GLM-5.3 只认 low/high/max，GLM-5.2 把 low 映射为 high）。
-  if(id==='zhipu')return on?{...toggle('enabled'),...(effort&&GLM_EFFORT_MODEL.test(model)?{reasoning_effort:effort}:{})}:toggle('disabled');
-  // DeepSeek：thinking.type 开关 + reasoning_effort（low/high/max）。
-  if(id==='deepseek')return on?{...toggle('enabled'),...(effort?{reasoning_effort:effort}:{})}:toggle('disabled');
-  // 小米 MiMo 只有 thinking.type 开关。
-  if(id==='xiaomi')return toggle(on?'enabled':'disabled');
-  // Kimi：K2.x 用 thinking.type 开关；K3 系列始终思考、只认 reasoning_effort，不能带 thinking；K2.7-Code 只能开启。
-  if(id==='moonshotai'){if(/(?:^|\/)kimi-k3/i.test(model))return effort?{reasoning_effort:effort}:{};if(/(?:^|\/)kimi-k2\.7-code/i.test(model))return {};return toggle(on?'enabled':'disabled');}
-  // 火山方舟：thinking.type 开关；Seed 2.x 等模型另认 reasoning_effort（关闭思考时不得带非 minimal 的 effort）。
-  if(id==='volcengine')return on?{...toggle('enabled'),...(effort&&ARK_EFFORT_MODEL.test(model)?{reasoning_effort:effort}:{})}:toggle('disabled');
-  // MiniMax：M3 默认 adaptive、可 disabled；M3.1-Flash 不能关，只认 reasoning_effort。
-  if(id==='minimax'){if(/minimax-m3\.1-flash/i.test(model))return effort?{reasoning_effort:effort}:{};return on?{}:toggle('disabled');}
-  // 百炼 / 硅基流动：enable_thinking 开关 + thinking_budget 思考 token 上限（百炼上的 kimi-k3 不支持预算）。
-  if(id==='alibaba'||id==='siliconflow'){const budget=THINKING_BUDGET[level];return on?{enable_thinking:true,...(budget&&!/kimi-k3/i.test(model)?{thinking_budget:budget}:{})}:{enable_thinking:false};}
+  // 已收录的模型按所选档位带官方参数（档位与参数表见 thinking-levels.mjs）。
+  const found=modelThinking(service);
+  if(found)return found.level?found.profile.request(found.level):{};
+  // 未收录的模型沿用原有「关闭思考」参数。
+  if(['deepseek','moonshotai','volcengine','minimax','zhipu','xiaomi'].includes(id))return {thinking:{type:'disabled'}};
   // SenseNova Token Plan 默认 reasoning_effort=high，需显式 none；大装置按量通道的 SenseChat 不认该参数。
-  if(id==='sensenova')return service.options?.channel==='sensecore'?{}:{reasoning_effort:effort||'none'};
   // TokenHub 与千帆都按模型白名单接受 thinking 参数，名单外的模型（翻译、角色扮演、ERNIE 4.5 等）不带该字段。
-  if(id==='tencent')return {...(TOKENHUB_THINKING_MODEL.test(model)?toggle(on?'enabled':'disabled'):{}),...(effort&&TOKENHUB_EFFORT_MODEL.test(model)?{reasoning_effort:effort}:{})};
-  if(id==='qianfan'){if(QIANFAN_THINKING_MODEL.test(model))return toggle(on?'enabled':'disabled');if(/^ernie-5\.0-thinking-preview$/i.test(model))return {enable_thinking:on};return on&&QIANFAN_ENABLE_THINKING_MODEL.test(model)?{enable_thinking:true}:{};}
+  if(id==='tencent')return /^(?:hy3|hy4|deepseek-v4|glm-5\.2|glm-5v|kimi-k2\.[56]|qwen3\.5)(?:$|[-_.])/i.test(model)?{thinking:{type:'disabled'}}:{};
+  if(id==='qianfan')return /^(?:deepseek-v4|deepseek-v3\.2|kimi-k2\.5|glm-5)(?:$|[-_.])/i.test(model)?{thinking:{type:'disabled'}}:/^ernie-5\.0-thinking-preview$/i.test(model)?{enable_thinking:false}:{};
+  if(id==='sensenova')return service.options?.channel==='sensecore'?{}:{reasoning_effort:'none'};
+  if(id==='alibaba'||id==='siliconflow')return {enable_thinking:false};
   if(id==='stepfun'||stepfunHost(base)){
     const effort=reasoningEffortOption(service,'low');
     return {reasoning_effort:effort==='none'?'low':effort};
