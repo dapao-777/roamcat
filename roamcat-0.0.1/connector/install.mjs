@@ -10,7 +10,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
  */
-import {access,chmod,copyFile,mkdir,readFile,readdir,realpath,rm,writeFile} from 'node:fs/promises';
+import {access,chmod,copyFile,mkdir,readFile,readdir,realpath,rename,rm,writeFile} from 'node:fs/promises';
 import {constants} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
@@ -227,6 +227,11 @@ async function compileWindowsLauncher(launcher, nodePath, hostPath, configPath) 
     '',
   ].join('\r\n');
   await writeFile(sourcePath, csharp);
+  // 浏览器正连着连接器时 launch.exe 在运行，不能覆盖但可以改名：先把旧的挪开，再编译新的；上次挪开的旧文件顺手清掉。
+  for (const name of await readdir(dirname(launcher)).catch(() => [])) {
+    if (/^launch\.exe\.\d+\.old$/.test(name)) await rm(join(dirname(launcher), name), {force:true}).catch(()=>{});
+  }
+  await rename(launcher, `${launcher}.${Date.now()}.old`).catch(error => { if (error.code !== 'ENOENT') throw new Error(`无法替换正在使用的启动器：${error.message}`); });
   const compiled = spawnSync(csc, ['/nologo', '/t:exe', `/out:${launcher}`, sourcePath], {encoding:'utf8', timeout:30000, windowsHide:true});
   await rm(sourcePath, {force:true}).catch(()=>{});
   if (compiled.status !== 0) throw new Error(`无法编译 Windows 启动器：${(compiled.stderr || compiled.stdout || '').trim() || 'csc 失败'}`);
