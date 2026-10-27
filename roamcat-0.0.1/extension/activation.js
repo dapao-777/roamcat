@@ -18,6 +18,8 @@ export const PET_SCRIPT_ID = 'ss-floating-pet';
 export const CAPTION_SCRIPT_ID = 'ss-youtube-captions';
 export const ALL_HOSTS = ['http://*/*','https://*/*'];
 export const VIDEO_HOSTS = ['https://www.youtube.com/*','https://m.youtube.com/*'];
+// Twitch 直播聊天翻译（live-chat.js）只在这个主机上运行，manifest 静态注入与补注入共用。
+export const LIVE_CHAT_HOST = 'www.twitch.tv';
 // 播放器双语字幕：默认关闭，用户点「双语」后才发送当前字幕文本。
 export const VIDEO_SUPPORT_ENABLED = true;
 
@@ -77,7 +79,7 @@ export function validateAutomation(value, base) {
 
 export function validateVideo(value, base) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(M('无效的视频设置。','Invalid video settings.'));
-  const allowed = new Set(['fontSize','theme','bilingual','display','translationFirst','translationColor','blur','offset','karaoke']);
+  const allowed = new Set(['fontSize','theme','bilingual','display','translationFirst','translationColor','blur','offset','karaoke','liveChat']);
   for (const key of Object.keys(value)) if (!allowed.has(key)) throw new Error(M('未知的视频设置。','Unknown video setting.'));
   const result = {...base};
   if (value.fontSize !== undefined) {
@@ -106,6 +108,11 @@ export function validateVideo(value, base) {
   if (value.translationColor !== undefined) {
     if (!['white','yellow','cyan'].includes(value.translationColor)) throw new Error(M('无效的译文颜色。','Invalid translation color.'));
     result.translationColor = value.translationColor;
+  }
+  // Twitch 直播聊天实时翻译开关（聊天输入区的「译」按钮与设置页共用）。
+  if (value.liveChat !== undefined) {
+    if (typeof value.liveChat !== 'boolean') throw new Error(M('无效的直播聊天翻译设置。','Invalid live-chat translation setting.'));
+    result.liveChat = value.liveChat;
   }
   if (value.offset !== undefined) {
     if (!Number.isInteger(value.offset) || value.offset < -1 || value.offset > 80) throw new Error(M('无效的字幕位置。','Invalid caption position.'));

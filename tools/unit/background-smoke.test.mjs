@@ -6,7 +6,7 @@
  * 主要内容：mock chrome.runtime/storage/tabs；import 真实 background.js（node:test 每文件独立进程，
  *   模块缓存只在本文件内共享，因此 import 与全部派发断言放在同一测试的子树中）；经 onMessage 监听器
  *   发送 STATE_GET / OPEN_OPTIONS / DOMAIN_TEST / FLOATING_PET_POSITION_SET / API_MODELS_LIST /
- *   未知类型，断言成功、拒绝与错误文案；导入期不得出现注册表完整性告警。
+ *   LIVE_CHAT_TRANSLATE（主机/开关检查与 API 限额）/ ENSURE_PAGE_UI（Twitch 补注入）/ 未知类型，断言成功、拒绝与错误文案；导入期不得出现注册表完整性告警。
  * 模块边界：仅 mock 浏览器边界，不 mock 任何被测扩展模块；不访问 IndexedDB（history-store 懒加载，
  *   本测试不触发历史操作）。
  *
@@ -17,6 +17,7 @@
  */
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 
 function createChromeMock() {
   const areas = {local: new Map(), session: new Map()};
@@ -37,6 +38,9 @@ function createChromeMock() {
     getContexts: async () => [],
   };
   const createdTabs = [];
+  // 按标签页指定网址（缺省 example.com）；probe 为补注入前探测脚本的返回值，files 记录每次补注入的文件清单。
+  const tabUrls = new Map();
+  const injections = {probe: null, files: []};
   const read = (map, keys) => {
     if (keys === null || keys === undefined) return Object.fromEntries(map);
     const list = Array.isArray(keys) ? keys : [keys];
@@ -58,7 +62,7 @@ function createChromeMock() {
     storage: {local: storageArea(areas.local), session: storageArea(areas.session)},
     tabs: {
       query: async () => [],
-      get: async tabId => ({id: tabId, url: 'https://example.com/', active: true}),
+      get: async tabId => ({id: tabId, url: tabUrls.get(tabId) || 'https://example.com/', active: true}),
       sendMessage: async () => undefined,
       create: async props => { createdTabs.push(props); return {id: 99, windowId: props?.windowId ?? 1}; },
       remove: async () => {},
@@ -68,7 +72,10 @@ function createChromeMock() {
       onActivated: {addListener() {}},
     },
     scripting: {
-      executeScript: async () => [],
+      executeScript: async details => {
+        if (details?.files) injections.files.push(details.files);
+        return details?.func && injections.probe ? [{result: injections.probe}] : [];
+      },
       getRegisteredContentScripts: async () => [],
       registerContentScripts: async list => { registeredScripts.push(...list); return []; },
       unregisterContentScripts: async () => {},
@@ -88,7 +95,7 @@ function createChromeMock() {
       update: async () => {},
     },
   };
-  return {chrome, listeners, openedOptions, registeredScripts, createdTabs};
+  return {chrome, listeners, openedOptions, registeredScripts, createdTabs, tabUrls, injections};
 }
 
 const trustedPopup = chrome => ({id: chrome.runtime.id, url: chrome.runtime.getURL('ui/popup.html'), tab: {id: 1, url: 'https://example.com/'}});
@@ -98,7 +105,7 @@ test('迁移后的 background.js 在 mock 浏览器中构造注册表并按信�
   const warnings = [];
   const originalError = console.error;
   console.error = (...args) => warnings.push(args.join(' '));
-  const {chrome, listeners, registeredScripts, createdTabs} = createChromeMock();
+  const {chrome, listeners, registeredScripts, createdTabs, tabUrls, injections} = createChromeMock();
   globalThis.chrome = chrome;
   try {
     await import('../../roamcat-0.0.1/extension/background.js');
@@ -175,7 +182,62 @@ test('迁移后的 background.js 在 mock 浏览器中构造注册表并按信�
     assert.match(createdTabs[0].url, /\/ui\/options\.html#service$/u);
   });
 
-  await t.test('伴读猫动态注册显式声明渲染层依赖顺序', async () => {
+  await t.test('LIVE_CHAT_TRANSLATE 只限 Twitch、开关打开，API 通道按标签页每分钟限 12 次', async () => {
+    const twitch = 'https://www.twitch.tv/somechannel';
+    tabUrls.set(7, twitch);
+    const chatPage = {id: chrome.runtime.id, url: twitch, tab: {id: 7, url: twitch}, frameId: 0};
+    const items = [{id: 'lc-1', text: 'that play was insane', context: {title: 'Twitch live chat · somechannel', heading: '', before: '', after: ''}}];
+    const translate = sender => send({type: 'LIVE_CHAT_TRANSLATE', requestId: 'chat-1', items}, sender);
+
+    const elsewhere = await translate(contentPage(chrome));
+    assert.equal(elsewhere.ok, false);
+    assert.match(elsewhere.error, /直播聊天翻译仅适用于 Twitch。/u);
+    const off = await translate(chatPage);
+    assert.equal(off.ok, false);
+    assert.match(off.error, /直播聊天翻译已关闭。/u);
+
+    const enabled = await send({type: 'VIDEO_SETTINGS_PATCH', patch: {liveChat: true}}, chatPage);
+    assert.equal(enabled.ok, true, enabled.error);
+    assert.equal(enabled.data.video.liveChat, true);
+    const {settings} = await chrome.storage.local.get('settings');
+    await chrome.storage.local.set({settings: {...settings, providerKind: 'api'}});
+
+    // 没配好 API 服务时每次都会失败，但请求照样占额度；第 13 次不再发请求，直接退回等待时长。
+    for (let i = 0; i < 12; i++) {
+      const attempt = await translate(chatPage);
+      assert.equal(attempt.data?.throttled, undefined, `第 ${i + 1} 次不应被限速`);
+    }
+    const throttled = await translate(chatPage);
+    assert.equal(throttled.ok, true, throttled.error);
+    assert.equal(throttled.data.throttled, true);
+    assert.deepEqual(throttled.data.items, []);
+    assert.ok(throttled.data.retryAfterMs > 0 && throttled.data.retryAfterMs <= 60_000);
+    // 限额按标签页计：别的 Twitch 标签页不受影响。
+    tabUrls.set(8, twitch);
+    const other = await translate({...chatPage, tab: {id: 8, url: twitch}});
+    assert.equal(other.data?.throttled, undefined);
+  });
+
+  await t.test('补注入给已打开的 Twitch 页带上 live-chat.js，排在文案运行时之后', async () => {
+    const ensure = async probe => {
+      injections.probe = probe;
+      injections.files.length = 0;
+      const response = await send({type: 'ENSURE_PAGE_UI'}, {...contentPage(chrome), tab: {id: 9, url: 'https://www.twitch.tv/x'}});
+      assert.equal(response.ok, true, response.error);
+      return injections.files.flat();
+    };
+    try {
+      const fresh = await ensure({contentAlive: false, petAlive: false, videoAlive: false, liveChatAlive: false, host: 'www.twitch.tv'});
+      assert.ok(fresh.includes('live-chat.js'));
+      assert.ok(fresh.indexOf('i18n-content.js') < fresh.indexOf('live-chat.js'));
+      assert.deepEqual(await ensure({contentAlive: true, petAlive: true, videoAlive: false, liveChatAlive: true, host: 'www.twitch.tv'}), []);
+      assert.ok(!(await ensure({contentAlive: false, petAlive: true, videoAlive: false, liveChatAlive: false, host: 'example.com'})).includes('live-chat.js'));
+    } finally {
+      injections.probe = null;
+    }
+  });
+
+  await t.test('伴读猫动态注册只注入 floating-pet.js，依赖由静态 content_scripts 提供', async () => {
     // 导入期 init 会触发 reconcileAutomation → reconcileAutoScript；轮询等待注册落地。
     let pet;
     for (let i = 0; i < 50 && !pet; i++) {
@@ -183,13 +245,15 @@ test('迁移后的 background.js 在 mock 浏览器中构造注册表并按信�
       if (!pet) await new Promise(resolve => setTimeout(resolve, 20));
     }
     assert.ok(pet, 'floatingPet 默认开启且全网放行时必须注册 ss-floating-pet');
-    // floating-pet 挂载即调 RoamCatContentUI.petWidget 并读 RoamCatDesign token；
-    // 同 run_at 下注册顺序不受保证，必须在同一注册项内把依赖排在 floating-pet 之前。
-    const js = pet.js;
-    assert.equal(js.at(-1), 'floating-pet.js', 'floating-pet.js 必须最后加载');
-    for (const dep of ['design.js', 'pet-quotes.js', 'content-ui.js']) {
-      assert.ok(js.includes(dep), `注册项缺少依赖 ${dep}`);
-      assert.ok(js.indexOf(dep) < js.indexOf('floating-pet.js'), `${dep} 必须先于 floating-pet.js`);
+    // 重复注册 design/pet-quotes/content-ui 会让每个网页把它们解析执行两遍。
+    assert.deepEqual(pet.js, ['floating-pet.js']);
+    const manifest = JSON.parse(readFileSync(new URL('../../roamcat-0.0.1/extension/manifest.json', import.meta.url), 'utf8'));
+    const statics = manifest.content_scripts.flatMap(item => item.js);
+    for (const dep of ['design.js', 'i18n-content.js', 'pet-quotes.js', 'content-ui.js']) {
+      assert.ok(statics.includes(dep), `静态 content_scripts 缺少伴读猫依赖 ${dep}`);
+    }
+    for (const pattern of pet.matches) {
+      assert.ok(manifest.content_scripts.some(item => item.matches.includes(pattern)), `${pattern} 不在静态注入范围内`);
     }
   });
 });

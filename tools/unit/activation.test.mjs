@@ -90,6 +90,9 @@ test('validateVideo 校验枚举并合并当前值', () => {
   assert.throws(() => validateVideo({theme: 'solar'}, base), /无效的字幕主题。/u);
   assert.deepEqual(validateVideo({bilingual: true}, base), {...base, bilingual: true});
   assert.throws(() => validateVideo({bilingual: 'yes'}, base), /无效的双语字幕设置。/u);
+  assert.deepEqual(validateVideo({liveChat: true}, base), {...base, liveChat: true});
+  assert.deepEqual(validateVideo({liveChat: false}, {...base, liveChat: true}), {...base, liveChat: false});
+  assert.throws(() => validateVideo({liveChat: 1}, base), /无效的直播聊天翻译设置。/u);
   // 未提供的键保持当前值，而不是回落到默认值。
   assert.deepEqual(validateVideo({theme: 'dark'}, {fontSize: 28, theme: 'light'}), {fontSize: 28, theme: 'dark'});
 });

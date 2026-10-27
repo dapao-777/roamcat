@@ -103,6 +103,7 @@
 - **长难句检测**给含从句的 ≥22 词句子画上琥珀色细下划线——纯本地判定，不调模型。
 - **公式保护**让 MathML / KaTeX / MathJax 容器与行内 `$…$` / `\(…\)` / `\[…\]` 不进入翻译单元。
 - **弹窗快捷切换**：工具栏弹窗行内展示当前模型服务，展开即可在订阅通道与已存 API 之间切换。
+- **Twitch 直播聊天翻译**（默认关闭）：在聊天输入区点「译」，新消息下方补一行简体中文；表情、单个词的梗和中文消息不翻。使用 API 时每个标签页每分钟至多发 12 次请求，避免热门频道把额度烧光。
 
 </details>
 
@@ -146,7 +147,7 @@ node roamcat-0.0.1/connector/install.mjs --extension-id afpeggkplomdjjiemgajjgca
 ## 🔒 本地优先的边界
 
 - 阅读记录默认关闭且按站授权，无痕页面不采集；API Key 只存在 `chrome.storage.local`。
-- 密钥不进内容脚本、诊断日志或连接器；内容脚本只能使用 76 种消息中的 **35 种白名单类型**。
+- 密钥不进内容脚本、诊断日志或连接器；内容脚本只能使用 77 种消息中的 **36 种白名单类型**。
 - 模型输出全部经结构化校验（`gloss.mjs`）才进入界面；自定义 API 地址强制 HTTPS（仅本机回环允许 HTTP）。
 - 页面文本只在你主动调用模型功能时离开本机，直达你配置的服务商。完整说明见[隐私政策](roamcat-0.0.1/PRIVACY.md)。
 
@@ -237,14 +238,14 @@ node roamcat-0.0.1/connector/install.mjs --extension-id afpeggkplomdjjiemgajjgca
 ```
 ┌────────────────────────────── 浏览器 ──────────────────────────────────┐
 │ 内容脚本（静态九件套，document_idle）                                    │
-│   design.js → i18n.js → reading-style.js → content-ui.js →             │
+│   design.js → i18n-content.js → reading-style.js → content-ui.js →     │
 │   pet-quotes.js → complexity.js → formula.js → site-profiles.js →      │
 │   content.js                                                           │
 │ 动态注册（chrome.scripting，按需注入）                                   │
 │   · floating-pet.js 伴读猫 · auto-start.js 自动开启                      │
 ├────────────────────────────────────────────────────────────────────────┤
 │ Service Worker：background.js（ES module，无状态）                       │
-│   76 种消息路由 · 设置校验与迁移 · 缓存 / 并发 / 看门狗 · 订阅端口          │
+│   77 种消息路由 · 设置校验与迁移 · 缓存 / 并发 / 看门狗 · 订阅端口          │
 ├────────────────────────────────────────────────────────────────────────┤
 │ 扩展页面：popup / options / welcome / reader                            │
 │   src/ 下的 Lit 应用，经 Vite 构建到 dist/extension/ui/                   │
@@ -257,9 +258,9 @@ node roamcat-0.0.1/connector/install.mjs --extension-id afpeggkplomdjjiemgajjgca
 
 </details>
 
-- **信任边界**——扩展页（可信）→ 内容脚本（35 种白名单消息）→ 模型输出（校验后才进界面）→ 网页 DOM（只以数据身份进入提示词）。
-- **消息协议唯一事实源**——`extension/message-protocol.js` 登记全部 76 种消息与载荷解析器，契约测试保证路由表同步。
-- **唯一的双语运行时**——`extension/i18n.js` 收录 1,657 个中英对齐键，扩展页、内容脚本与 Service Worker 共用。
+- **信任边界**——扩展页（可信）→ 内容脚本（36 种白名单消息）→ 模型输出（校验后才进界面）→ 网页 DOM（只以数据身份进入提示词）。
+- **消息协议唯一事实源**——`extension/message-protocol.js` 登记全部 77 种消息与载荷解析器，契约测试保证路由表同步。
+- **唯一的双语运行时**——`extension/i18n.js` 收录 1,784 个中英对齐键，扩展页与 Service Worker 共用；内容脚本加载由它生成的 `i18n-content.js`，运行时相同，词典只留网页侧用到的命名空间。
 - **无状态 Service Worker**——跨调用状态落在 `chrome.storage` 与 IndexedDB；写操作串行化，长操作带看门狗。
 
 完整工程规范见 [`SPEC.md`](roamcat-0.0.1/SPEC.md)。
@@ -278,7 +279,7 @@ node roamcat-0.0.1/connector/install.mjs --extension-id afpeggkplomdjjiemgajjgca
 | `npm run verify:options` | 设置页行为门禁：保存、失败回滚、重置、模型列表等 |
 | `npm run verify:audit` | 30 项端到端审计：Edge 加载真实后台 + 本地假模型 |
 | `npm run build:release` · `node tools/package-release.mjs` | 发布构建（不带开发 key）→ `dist/release/roamcat-<版本>-extension.zip` 与 `SHA256SUMS` |
-| `npm run gen:tokens` · `node tools/check-dict.cjs` | 由 tokens.css 重新生成 `extension/design.js` · 中英字典对齐校验 |
+| `npm run gen:tokens` · `npm run gen:i18n` · `node tools/check-dict.cjs` | 由 tokens.css 重新生成 `extension/design.js` · 重新生成内容脚本词典 `extension/i18n-content.js` · 中英字典对齐校验 |
 
 浏览器门禁需要 Playwright（`npm ci` 会安装 `playwright-core`）和本机 Edge。贡献前请读 [CONTRIBUTING.md](CONTRIBUTING.md)；安全漏洞请按 [SECURITY.md](SECURITY.md) 私下报告。
 

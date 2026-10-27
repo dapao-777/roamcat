@@ -40,8 +40,8 @@
 ```
 ┌────────────────────────── 浏览器 ──────────────────────────┐
 │ content scripts（manifest 静态九件套，document_idle）         │
-│   design.js → i18n.js → reading-style.js → content-ui.js → pet-quotes.js → complexity.js → formula.js → site-profiles.js → content.js │
-│   · i18n.js：中英双语运行时（RoamCatI18n），全表面共享字典      │
+│   design.js → i18n-content.js → reading-style.js → content-ui.js → pet-quotes.js → complexity.js → formula.js → site-profiles.js → content.js │
+│   · i18n-content.js：i18n.js 的网页侧瘦身版（同一运行时，只含网页用到的命名空间） │
 │   · content-ui.js：lit-html 页内 UI 渲染层（构建产物入库）      │
 │   · pet-quotes.js：伴读猫哲学语录库（RoamCatPetQuotes）        │
 │   · content.js：阅读区识别/标注/查词卡片/解构/整页翻译          │
@@ -50,7 +50,7 @@
 │   · auto-start.js：按站规则自动开启                           │
 ├────────────────────────────────────────────────────────────┤
 │ Service Worker（background.js，ES module）                   │
-│   · 76 种消息路由、设置校验、缓存、并发、诊断、订阅端口管理    │
+│   · 77 种消息路由、设置校验、缓存、并发、诊断、订阅端口管理    │
 │   · roamcat_ui_lang 变更经 storage.onChanged → SS_REFRESH 广播 │
 ├────────────────────────────────────────────────────────────┤
 │ 扩展页面：popup.html / options.html / welcome.html / reader.html │
@@ -72,7 +72,7 @@
 | 来源 | 可信度 | 约束 |
 |---|---|---|
 | 扩展页面（popup/options/welcome/reader） | 高（trusted） | 可访问全部消息；`API_MODELS_LIST` 仅 options 页，`READER_TRANSLATE` 仅扩展页 |
-| 内容脚本（网页上下文） | 低 | 仅 `contentAllowed` 白名单 35 种消息；密钥/历史数据不直接暴露 |
+| 内容脚本（网页上下文） | 低 | 仅 `contentAllowed` 白名单 36 种消息；密钥/历史数据不直接暴露 |
 | 模型返回内容 | 不可信数据 | 全部经 `gloss.mjs` 的结构化校验后才进入 UI |
 | 网页 DOM 文本 | 不可信数据 | 提示词统一声明 `SOURCE_DATA_INSTRUCTIONS`（数据非指令） |
 
@@ -83,7 +83,7 @@
 ### 3.1 字段规范
 - `manifest_version: 3`；`background.service_worker = background.js`，`type: module`。
 - `minimum_chrome_version: "125"`；`content_security_policy.extension_pages = "script-src 'self' 'wasm-unsafe-eval'; object-src 'none'; base-uri 'none'"`（wasm 供本地 ONNX 推理）。
-- 内容脚本固定九件套 `design.js, i18n.js, reading-style.js, content-ui.js, pet-quotes.js, complexity.js, formula.js, site-profiles.js, content.js`（`content-ui.js` 为 `src/content-ui` 经 `vite.content-ui.config.mjs` 构建的 IIFE 产物，入库、不手改；`i18n.js` 必须在所有调用 `t()` 的脚本之前加载），`run_at: document_idle`，`all_frames: false`；`floating-pet.js`（连同其语录库 `pet-quotes.js`）与 `auto-start.js` 改为 `chrome.scripting` 按需动态注册（同为 classic 形态，受模块图 R1 同约束）。
+- 内容脚本固定九件套 `design.js, i18n-content.js, reading-style.js, content-ui.js, pet-quotes.js, complexity.js, formula.js, site-profiles.js, content.js`（`content-ui.js` 为 `src/content-ui` 经 `vite.content-ui.config.mjs` 构建的 IIFE 产物，入库、不手改；`i18n-content.js` 由 `npm run gen:i18n` 从 `i18n.js` 生成、入库，必须在所有调用 `t()` 的脚本之前加载），`run_at: document_idle`，`all_frames: false`；`floating-pet.js` 与 `auto-start.js` 改为 `chrome.scripting` 按需动态注册（同为 classic 形态，受模块图 R1 同约束）；伴读猫注册项只含 `floating-pet.js`，渲染层/语录库/文案由静态九件套提供，静态脚本晚到时它短暂等待依赖就绪再挂载。`injectPageUI` 给已打开的标签页补注入时同样先注入 `i18n-content.js`。
 - `web_accessible_resources` 仅 `icons/roamcat.svg` 与亮色版 `icons/roamcat-light.svg`（`use_dynamic_url: true`）——页面内品牌图标按网页明暗取用，最小暴露面。
 
 ### 3.2 权限与用途（上架时可直接引用的理由）
@@ -108,7 +108,7 @@
 ### 4.1 Service Worker
 | 文件 | 职责 | 关键约束 |
 |---|---|---|
-| `background.js` | 消息路由（76 种，与 `MESSAGE_TYPES` 一一对应）、设置校验与迁移、四大模型链路编排、缓存/并发/看门狗、订阅端口状态、诊断编排 | 无跨调用内存态假设；所有写操作串行化（`writes` 链）；长操作必须带 `guard()` |
+| `background.js` | 消息路由（77 种，与 `MESSAGE_TYPES` 一一对应）、设置校验与迁移、四大模型链路编排、缓存/并发/看门狗、订阅端口状态、诊断编排 | 无跨调用内存态假设；所有写操作串行化（`writes` 链）；长操作必须带 `guard()` |
 | `subscription.js` | 三个连接器的端口、请求-响应映射、超时（assist/翻译/总结 120s，其余 45s）、进度事件转发 | 端口单例；断开时拒绝全部在途请求 |
 | `diagnostic-service.js` / `diagnostics.mjs` | traceId 贯穿、元数据脱敏、渲染回执、连接器镜像 | 只记录结构化元数据，不记录正文/密钥 |
 | `history-service.js` / `history-store.js` | 阅读记录（IndexedDB）、摘要/个性化引擎装配 | 记录默认关闭，需显式授权 origin |
@@ -118,9 +118,10 @@
 | `activation.js` / `auto-start.js` | 自动开启策略、动态注册 content script、SPA 导航检测；`pageOrigin`/`sitePattern`/`validateAutomation`/`validateVideo`/`registrationMatches` 为纯函数（已纳入领域层 lint 与单测） | `registrationMatches()` 是权限/注册的唯一事实源 |
 | `shared.js` | `DEFAULT_SETTINGS`、`normalizeSettings`、`wordId`、`request()` | 旧配置键不得通过 spread 复活 |
 | `message-router.js` | 类型化消息路由器：注册表构造、重复类型即失败、`parse`+`handle` 两段派发 | 泛型实现，不认识任何具体消息；未知类型抛「未知请求。」 |
-| `message-protocol.js` | 消息协议唯一事实源：`MESSAGE_TYPES`（76 种）、`CONTENT_ALLOWED_TYPES`、纯载荷解析器与自 `background.js` 下沉的 `validatePatch`（设置补丁校验）、`settingsPatchEffects`（STATE_PATCH 副作用计划）、`parseAssistRequest`/`parsePassageRequestRef`（请求身份）、`onDemandSuggestionDecision`（按需建议判定）、`text`/`domain`/`customDetectionService` | 只依赖 `shared.js`、`domain-routing.js`、`api-providers.mjs`、`gloss.mjs` 等领域/协议模块；新增类型必须同步注册表与第 5 节 |
+| `message-protocol.js` | 消息协议唯一事实源：`MESSAGE_TYPES`（77 种）、`CONTENT_ALLOWED_TYPES`、纯载荷解析器与自 `background.js` 下沉的 `validatePatch`（设置补丁校验）、`settingsPatchEffects`（STATE_PATCH 副作用计划）、`parseAssistRequest`/`parsePassageRequestRef`（请求身份）、`onDemandSuggestionDecision`（按需建议判定）、`text`/`domain`/`customDetectionService` | 只依赖 `shared.js`、`domain-routing.js`、`api-providers.mjs`、`gloss.mjs` 等领域/协议模块；新增类型必须同步注册表与第 5 节 |
 | `api-providers.mjs` / `api-transport.mjs` | 33 家服务商目录、8 种协议适配、结构化输出能力探测、模型列表、各协议 usage 抽取（`onUsage` 回调） | HTTPS only（本机回环除外）；同源重定向禁止；密钥不进内容脚本 |
 | `thinking-levels.mjs` | 按「服务商 + 模型」声明思考档位（官方档位名、默认档、请求参数），供设置页与请求层共用 | 只收录官方文档写明的模型；未收录模型返回 null，请求沿用关闭思考参数 |
+| `rate-window.mjs` | 按键计数的滑动时间窗限额 `createRateWindow({limit,windowMs})`（`take`/`forget`） | 纯函数领域模块；计数只在内存，SW 重启归零——只作防失控上限，不承担正确性 |
 | `usage-stats.mjs` | 模型用量统计：调用事件规范化、按日/按服务×模型聚合（保留约 62 天、≤60 组合）、`summarizeUsage` UI 汇总 | 纯函数领域模块；只存计数与模型/服务标识，不存正文、密钥或网址；写串行化在 `background.js` |
 | `gloss.mjs` | 提示词、JSON Schema、响应校验/纠正（扩展与连接器共享） | `SUPPORT_POLICY_VERSION` 变更即使全部缓存失效 |
 | `sentence-groups.mjs` / `assistance-stream.mjs` / `personalization.mjs` | 解构协议与修复、流式进度解析、个性化策略机 | 共享文件被连接器安装副本引用，改动需双边同步 |
@@ -130,8 +131,9 @@
 |---|---|---|
 | `content.js` | 阅读根识别、文本映射、自动标注、查词（按键+卡片+顶部词注）、选段翻译、阅读解构高亮、整页翻译引擎、历史采集、重载侦察（失效 toast） | 只拆文本节点不重建强调/链接；所有跨文档操作带 generation 校验；DOM 批量更新走 rAF；重载侦察用可见性门控的低频探测，不用常驻 port（不阻止 SW 空闲回收） |
 | `floating-pet.js` | 伴读猫（SVG/Shadow DOM/拖拽贴边/菜单/摘要/状态气泡/左侧快捷按钮行）、全局快捷键 | window 级监听只注册一次（`bindGlobalEvents`）；快捷键在输入框/可编辑区不触发（`petShortcutBlocked`）；左侧快捷按钮行（阅读开关/摘要/设置/贴边）贴左屏时翻向右侧，贴边时随旋旋翻隐藏 |
+| `live-chat.js` | Twitch 直播聊天实时翻译：聊天输入区「译」开关（存 `video.liveChat`）、新消息过滤（表情/单词梗/刷屏/中文不翻）、最新优先每批 ≤8 条经 `LIVE_CHAT_TRANSLATE` 发送、`SS_LIVE_CHAT_PROGRESS` 流式显示 | manifest 第二个 `content_scripts` 项，只匹配 `https://www.twitch.tv/*` 主框架，依赖第一项的 `i18n-content.js`；`injectPageUI` 对已打开的 Twitch 页补注入；不读历史聊天、不写阅读记录；后台返回 `throttled` 时把批次按先后插回队列并暂停到 `retryAfterMs` |
 | `design.js` | 设计 token（明暗双主题）唯一下发 | 仅当脚本带 `data-roamcat-page` 时才向页面根注入 |
-| `i18n.js` | 中英双语运行时 `RoamCatI18n`：`t()`/`lang()`/`pref()`/`setPref()`/`apply()`/`onChange()`，字典 1,657 键双语对齐 | storage 受限上下文自动回退 `STATE_GET` 拉取偏好，监听 `SS_REFRESH` 同步变更 |
+| `i18n.js` / `i18n-content.js` | 中英双语运行时 `RoamCatI18n`：`t()`/`lang()`/`pref()`/`setPref()`/`apply()`/`onChange()`，字典 1,784 键双语对齐；内容脚本加载生成的瘦身版（约 360 键，`i18n-content.test.mjs` 断言无漂移且网页侧引用的键齐全） | storage 受限上下文自动回退 `STATE_GET` 拉取偏好，监听 `SS_REFRESH` 同步变更 |
 | `reading-style.js` | 三层（原文/词注/译文）样式规范化与 CSS 生成 | 选择器必须静态；`!important` 全覆盖以对抗站点样式 |
 
 ### 4.3 扩展页面
@@ -148,7 +150,7 @@
 ### 4.4 界面多语言（i18n）
 - `extension/i18n.js` 是唯一语言运行时：暴露 `globalThis.RoamCatI18n`（`t(key, vars)` 查 `DICTS.zh/en`，缺键返回键名本身；`lang()/pref()/setPref()/apply()/onChange()`）。偏好键 `roamcat_ui_lang` ∈ `auto|zh|en`，存 `localStorage` + `chrome.storage.local`；`auto` 回落 `chrome.i18n.getUILanguage()`。`apply()` 写入 `data-ui-lang` 与 `<html lang>`。
 - 消费方式：Lit 页面经 `src/i18n-runtime.js` 的 `t()`；classic 脚本各自定义轻量 `T()` 包装；Service Worker / 后台模块用就地 `M(zh, en)` 助手按 `lang()` 取值。**新增可见文案必须先在中英字典加同名键**（`node tools/check-dict.cjs` 校验对齐）。
-- 受限上下文同步：内容脚本隔离世界可能拒绝 `chrome.storage`（"Access to storage is not allowed"）——此时 `i18n.js` 回退 `STATE_GET` 消息读取 `publicState().uiLang`；后台 `storage.onChanged` 监听偏好变更并经 `broadcast()` 的 `SS_REFRESH` 快照推送到所有标签页，实现「设置页改语言 → 全部已开页面即时跟随」，未新增协议类型。
+- 受限上下文同步：内容脚本隔离世界可能拒绝 `chrome.storage`（"Access to storage is not allowed"）——此时 `i18n-content.js`（与 `i18n.js` 同一运行时）回退 `STATE_GET` 消息读取 `publicState().uiLang`；后台 `storage.onChanged` 监听偏好变更并经 `broadcast()` 的 `SS_REFRESH` 快照推送到所有标签页，实现「设置页改语言 → 全部已开页面即时跟随」，未新增协议类型。
 - 后台生成的持久化文本（如连接器错误）以**生成时**语言存储，切换语言后需触发对应状态刷新才会用新语言重建。
 - 门禁：`verify:ui` 含英文档断言（options/popup/content script 三端）；`verify:pet` 断言伴读猫文案键解析成功。
 
@@ -172,10 +174,10 @@
 - 统一信封：请求 `{type, ...payload}` → 响应 `{ok:true,data,traceId}` / `{ok:false,error,code,traceId}`。
 - `sender.id !== chrome.runtime.id` 一律拒绝；`trusted = sender.url` 以扩展页开头。
 - 全部消息类型登记在 `message-protocol.js` 的 `MESSAGE_TYPES`（唯一事实源），由 `background.js` 的 `messageHandlers` 注册表逐一分派；`createMessageRouter` 构造期拒绝重复类型，未注册类型抛「未知请求。」；`tools/unit/message-router.test.mjs` 的源码契约测试强制注册表与清单一致。
-- 内容脚本仅可用白名单（`contentAllowed`，35 种，以 `CONTENT_ALLOWED_TYPES` 为准）：状态读取、分析、支持批次、解构、求助、翻译、历史信号、诊断回执、伴读猫位置等。
+- 内容脚本仅可用白名单（`contentAllowed`，36 种，以 `CONTENT_ALLOWED_TYPES` 为准）：状态读取、分析、支持批次、解构、求助、翻译、历史信号、诊断回执、伴读猫位置等。
 - 数据变更类消息进入 `activeDataRequests` 集合，供清理时排空（`clearReadingData`）。
 
-### 5.2 消息分组（76 种，与 `MESSAGE_TYPES` 顺序一致）
+### 5.2 消息分组（77 种，与 `MESSAGE_TYPES` 顺序一致）
 | 分组 | 类型 |
 |---|---|
 | 状态与设置（8） | `STATE_GET` `STATE_PATCH` `AUTOMATION_GET` `AUTOMATION_PATCH` `PAGE_ACTIVITY_SET` `VIDEO_SETTINGS_PATCH` `FLOATING_PET_POSITION_SET` `OPEN_OPTIONS` |
@@ -183,12 +185,12 @@
 | 领域识别（4） | `RESOLVE_DOMAIN` `PAGE_DOMAIN_GET` `PAGE_DOMAIN_SET` `DOMAIN_TEST` |
 | 阅读辅助（12） | `ANALYZE` `SUPPORT_BATCH` `ASSIST` `ASSIST_PREVIEW` `ASSIST_COMMIT` `PREPARED_SUPPORT` `PREPARED_ASSIST` `ENCOUNTER` `INTERACT` `READING_ACTIVITY` `WORD_PREFERENCE_SET` `ON_DEMAND_SUGGESTION` |
 | 阅读解构（5） | `SENTENCE_GROUPS_GET` `SENTENCE_GROUPS_SET` `SENTENCE_GROUPS_DENSITY_SET` `SENTENCE_GROUPS_LINE_STYLE_SET` `SENTENCE_GROUPS_BATCH` |
-| 翻译（8） | `EMERGENCY_BEGIN` `EMERGENCY_TRANSLATE` `EMERGENCY_CANCEL_REQUEST` `EMERGENCY_END` `PASSAGE_TRANSLATE` `VIDEO_CUE_TRANSLATE` `PAGE_SUMMARY` `READER_TRANSLATE` |
+| 翻译（9） | `EMERGENCY_BEGIN` `EMERGENCY_TRANSLATE` `EMERGENCY_CANCEL_REQUEST` `EMERGENCY_END` `PASSAGE_TRANSLATE` `VIDEO_CUE_TRANSLATE` `LIVE_CHAT_TRANSLATE` `PAGE_SUMMARY` `READER_TRANSLATE` |
 | 历史与个性化（17） | `HISTORY_GET` `HISTORY_CONFIG` `HISTORY_BEGIN` `HISTORY_TICK` `HISTORY_COMMIT` `HISTORY_ANNOTATION` `HISTORY_DELETE` `HISTORY_SUMMARY_EDIT` `HISTORY_CLEAR` `HISTORY_EXPORT` `HISTORY_RULE_SET` `PERSONALIZATION_GET` `PERSONALIZATION_ANALYZE` `PERSONALIZATION_APPLY` `PERSONALIZATION_DISMISS` `PERSONALIZATION_ROLLBACK` `PERSONALIZATION_RESET` |
 | 数据与诊断（15） | `READING_DATA_EXPORT` `MEMORY_CLEAR` `DIAGNOSTICS_GET` `DIAGNOSTICS_EXPORT` `DIAGNOSTICS_SET` `DIAGNOSTICS_CLEAR` `DIAGNOSTICS_RENDER` `USAGE_STATS_GET` `USAGE_STATS_CLEAR` `POPUP_INTENT_TAKE` `PAGE_UI_INJECT` `ENSURE_PAGE_UI` `AUTO_BOOTSTRAP_CHECK` `YOUTUBE_CAPTIONS_BRIDGE` `YOUTUBE_CAPTION_FETCH` |
 
 ### 5.3 页面 → 后台 的旁路消息（`tabs.sendMessage`）
-`SS_STATUS` `SS_SET_ENABLED` `SS_REFRESH` `SS_AUTO_START` `SS_CONTEXT_HELP` `SS_SET_SENTENCE_GROUPS` `SS_SET_SENTENCE_DENSITY` `SS_SET_SENTENCE_LINE_STYLE` `SS_EMERGENCY_START/STOP/RETRY/END` `SS_HELP_LANGUAGE` `SS_READING_STYLE` `SS_VIDEO_SETTINGS` `SS_TRANSLATION_PROGRESS` `SS_ASSIST_PROGRESS` `SS_WORD_PREFERENCE`。
+`SS_STATUS` `SS_SET_ENABLED` `SS_REFRESH` `SS_AUTO_START` `SS_CONTEXT_HELP` `SS_SET_SENTENCE_GROUPS` `SS_SET_SENTENCE_DENSITY` `SS_SET_SENTENCE_LINE_STYLE` `SS_EMERGENCY_START/STOP/RETRY/END` `SS_HELP_LANGUAGE` `SS_READING_STYLE` `SS_VIDEO_SETTINGS` `SS_TRANSLATION_PROGRESS` `SS_LIVE_CHAT_PROGRESS` `SS_ASSIST_PROGRESS` `SS_WORD_PREFERENCE`。
 
 ---
 
@@ -223,6 +225,12 @@
 - 字幕来源：YouTube 播放器轨道（人工优先于自动，优先片源语言）与 HTML `textTracks`。播放器暂时没有轨道时，主世界再问一次 YouTube 播放器接口。字幕正文只从 `www.youtube.com/api/timedtext` 拉取。
 - 翻译：把相邻字幕收成短句，从播放点起每批最多 4 句、向前约 12 句，走 `VIDEO_CUE_TRANSLATE`（复用选段翻译，不写阅读记录）。点击原文行仍走原来的单句求助。
 - 没有文字轨道时不采集、不上传音频。画面上若已有平台字幕，只翻译当前这一行。
+
+### 6.4.2 Twitch 直播聊天翻译
+- 开关：`video.liveChat` 默认 false；设置页「Twitch 直播聊天实时翻译」与聊天输入区「译」按钮共用，经 `VIDEO_SETTINGS_PATCH` 保存并由 `SS_VIDEO_SETTINGS` 同步到各标签页。
+- 采集：只观察聊天列表新增的消息，打开时只补最后 6 条；表情图片、单个拉丁词的梗、同一词刷屏、已是中文的消息跳过；积压超过 24 条丢最旧的。
+- 翻译：`LIVE_CHAT_TRANSLATE` 复用整页翻译协议（每批 ≤8 条，上下文只带频道名），只在开关打开、标签页处于前台且未暂停时执行，不写阅读记录。
+- 限额：API 通道按标签页每分钟至多 12 次请求（`rate-window.mjs`），超额时不发请求，返回 `{items:[],throttled:true,retryAfterMs}`，页面保留排队消息等窗口腾出；订阅通道每次往返约 10 秒、至多 3 批并发，不限。
 
 ### 6.5 领域识别
 `手动固定 > 个人站点规则 > 全局固定 > 本地 MiniLM > 远程（订阅/API/Jev）`，结果 4 小时缓存（≤128 条）；本地不自信时回退个性化 `domainBias` 或 `general`。Jev 增强识别采用专用决策判定协议（`protocol: 'jev'`），支持自定义接口地址（Base URL）、模型 ID 及自定义 API Key，发送结构化问答后提取单选结果与置信度。Base URL 指向 `*.typesafe.ai` 时走官方 `/systemone` 原生协议（body 为 `{model, state, questions}`，模型自动去 `typesafe/` 前缀）；其余地址走 Requesty `chat/completions` 转发（`response_format: {type:'questions'}`）。
@@ -352,7 +360,7 @@
 
 | 规则 | 内容 |
 |---|---|
-| R1 | manifest content script 九件套顺序固定（`i18n.js` 先于所有 `t()` 调用方）、文件存在、且不得包含 ESM 语法；动态注册的 classic 脚本（`pet-quotes.js`、`floating-pet.js`、`auto-start.js`）同约束 |
+| R1 | manifest content script 九件套顺序固定（`i18n-content.js` 先于所有 `t()` 调用方）、文件存在、且不得包含 ESM 语法；动态注册的 classic 脚本（`pet-quotes.js`、`floating-pet.js`、`auto-start.js`）同约束 |
 | R2 | 全部相对 import 必须解析到真实文件 |
 | R3 | extension 与 connector 全图无循环依赖 |
 | R4 | connector 的 import 闭包内的 extension 文件必须属于 §4.1 共享协议清单，且能在 Node 中安全 import（顶层不触碰浏览器 API） |

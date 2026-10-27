@@ -103,6 +103,7 @@ Failed passages retry on a graded backoff (2.5s → 6s → 14s, classified by er
 - **Long-sentence detection** flags ≥22-word sentences carrying subordinate clauses with a subtle amber underline — purely local, no model call.
 - **Formula protection** keeps MathML / KaTeX / MathJax containers and inline `$…$` / `\(…\)` / `\[…\]` out of translation units.
 - **Popup quick-switch** shows the active model service inline and swaps between subscription channels and saved APIs.
+- **Twitch live-chat translation** (off by default): hit "Tr" by the chat input and new messages get a Simplified Chinese line underneath; emotes, one-word memes and Chinese messages are skipped. With an API service each tab sends at most 12 requests a minute, so busy channels can't drain your quota.
 
 </details>
 
@@ -146,7 +147,7 @@ The same command also installs a **local connector service** (listens only on `1
 ## 🔒 Privacy by design
 
 - Reading history is off by default and opt-in per site; nothing is collected on incognito pages; API keys live only in `chrome.storage.local`.
-- Keys never reach content scripts, diagnostic logs or the connector; content scripts may send only **35 whitelisted message types** out of 76.
+- Keys never reach content scripts, diagnostic logs or the connector; content scripts may send only **36 whitelisted message types** out of 77.
 - All model output passes structured validation (`gloss.mjs`) before reaching the UI; custom API endpoints must be HTTPS (loopback excepted).
 - Page text leaves your device only when you invoke a model feature, and goes straight to the provider you configured. Full details in the [privacy policy](roamcat-0.0.1/PRIVACY.md).
 
@@ -237,7 +238,7 @@ Every visual decision lives in one set of `--rc-*` tokens in `src/styles/tokens.
 ```
 ┌─────────────────────────────── browser ────────────────────────────────┐
 │ Content scripts (nine static entries, document_idle)                   │
-│   design.js → i18n.js → reading-style.js → content-ui.js →             │
+│   design.js → i18n-content.js → reading-style.js → content-ui.js →     │
 │   pet-quotes.js → complexity.js → formula.js → site-profiles.js →      │
 │   content.js                                                           │
 │ Dynamically registered (chrome.scripting, on demand)                   │
@@ -260,7 +261,7 @@ Every visual decision lives in one set of `--rc-*` tokens in `src/styles/tokens.
 
 - **Trust boundary** — extension pages (trusted) → content scripts (33 whitelisted messages) → model output (validated before UI) → page DOM (enters prompts as data only).
 - **One source of truth for the protocol** — `extension/message-protocol.js` registers all 74 message types with payload parsers; contract tests keep the router in sync.
-- **One bilingual runtime** — `extension/i18n.js` holds 1,657 aligned zh/en keys shared by pages, content scripts and the service worker.
+- **One bilingual runtime** — `extension/i18n.js` holds 1,784 aligned zh/en keys shared by pages and the service worker; content scripts load the generated `i18n-content.js`, the same runtime trimmed to the namespaces web pages actually use.
 - **Stateless service worker** — cross-call state lives in `chrome.storage` and IndexedDB; writes are serialized and long operations carry watchdogs.
 
 The full engineering spec is in [`SPEC.md`](roamcat-0.0.1/SPEC.md) (Chinese).
@@ -279,7 +280,7 @@ The full engineering spec is in [`SPEC.md`](roamcat-0.0.1/SPEC.md) (Chinese).
 | `npm run verify:options` | Settings-page behaviour checks (saving, rollback on failure, reset, model list) |
 | `npm run verify:audit` | 30-check end-to-end audit: real background + local mock model in Edge |
 | `npm run build:release` · `node tools/package-release.mjs` | Release build (no dev key) → `dist/release/roamcat-<version>-extension.zip` + `SHA256SUMS` |
-| `npm run gen:tokens` · `node tools/check-dict.cjs` | Regenerate `extension/design.js` from tokens · zh/en dictionary parity |
+| `npm run gen:tokens` · `npm run gen:i18n` · `node tools/check-dict.cjs` | Regenerate `extension/design.js` from tokens · regenerate the content-script dictionary `extension/i18n-content.js` · zh/en dictionary parity |
 
 Browser checks need Playwright (`npm ci` installs `playwright-core`) and a local Edge. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before contributing and report security issues privately per [SECURITY.md](SECURITY.md).
 

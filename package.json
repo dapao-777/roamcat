@@ -17,6 +17,7 @@
     "verify:audit": "node tools/audit-extension.cjs",
     "test": "node tools/run-unit-tests.mjs",
     "gen:tokens": "node build/gen-design-tokens.mjs",
+    "gen:i18n": "node build/gen-i18n-content.mjs",
     "promo": "node tools/promo/render.mjs"
   },
   "keywords": [

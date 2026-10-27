@@ -25,9 +25,10 @@ import {ROUTE_VERSION,normalizeDomainRules,resolveRuleDomain} from './domain-rou
 import {classifyLocal} from './local-classifier.js';
 import {assistanceProgress,translationProgress} from './assistance-stream.mjs';
 import {SOURCE_DATA_INSTRUCTIONS,SUPPORT_POLICY_VERSION,SUPPORT_INSTRUCTIONS,SUPPORT_SCHEMA,ASSISTANCE_INSTRUCTIONS,assistanceSchema,normalizeSupportItems,prepareSupportItems,inspectSupportResponse,requestSupportWithCorrection,SUPPORT_CORRECTION_INSTRUCTIONS,normalizeSupportResult,normalizeAssistanceCommand,normalizeAssistanceRequest,normalizeAssistanceResult,normalizePreparationContext,EMERGENCY_SCHEMA,EMERGENCY_INSTRUCTIONS,normalizeEmergencyItems,normalizeEmergencyResult,PAGE_TRANSLATION_INSTRUCTIONS,normalizePageTranslationItems,inspectPageTranslationResult,normalizePageTranslationResult,PAGE_SUMMARY_INSTRUCTIONS,PAGE_SUMMARY_SCHEMA,normalizePageSummaryResult} from './gloss.mjs';
-import {AUTO_SCRIPT_ID,PET_SCRIPT_ID,CAPTION_SCRIPT_ID,ALL_HOSTS,VIDEO_HOSTS,VIDEO_SUPPORT_ENABLED,pageOrigin,sitePattern,validateAutomation,validateVideo,resolveAutomation,registrationMatches,requiredPermissionOrigins,youtubeTimedtextUrl} from './activation.js';
+import {AUTO_SCRIPT_ID,PET_SCRIPT_ID,CAPTION_SCRIPT_ID,ALL_HOSTS,VIDEO_HOSTS,LIVE_CHAT_HOST,VIDEO_SUPPORT_ENABLED,pageOrigin,sitePattern,validateAutomation,validateVideo,resolveAutomation,registrationMatches,requiredPermissionOrigins,youtubeTimedtextUrl} from './activation.js';
 import {createDiagnostics} from './diagnostic-service.js';
 import {USAGE_STATS_KEY,recordUsageEvent,summarizeUsage} from './usage-stats.mjs';
+import {createRateWindow} from './rate-window.mjs';
 import {diagnosticError} from './diagnostics.mjs';
 import {createReadingHistory} from './history-service.js';
 import {createSpeechHandler} from './speech.js';
@@ -216,7 +217,7 @@ function publicState(state,trusted) {
     assistanceMode:source.assistanceMode,rememberSupport:source.rememberSupport,
     helpLanguage:source.helpLanguage,lookupKey:source.lookupKey,lookupDisplay:source.lookupDisplay,
     readingStyle:globalThis.RoamCatReadingStyle.normalize(source.readingStyle),domain:source.domain,
-    video:{fontSize:source.video.fontSize,theme:source.video.theme,bilingual:source.video.bilingual===true},
+    video:{fontSize:source.video.fontSize,theme:source.video.theme,bilingual:source.video.bilingual===true,liveChat:source.video.liveChat===true},
     floatingPet:{enabled:source.floatingPet?.enabled!==false,position:{right:Number.isFinite(source.floatingPet?.position?.right)?source.floatingPet.position.right:24,bottom:Number.isFinite(source.floatingPet?.position?.bottom)?source.floatingPet.position.bottom:84},themeMode:['auto','dark','light'].includes(source.floatingPet?.themeMode)?source.floatingPet.themeMode:'auto',scale:[0.8,1,1.2,1.4,1.6].includes(source.floatingPet?.scale)?source.floatingPet.scale:1,quotes:{enabled:source.floatingPet?.quotes?.enabled!==false,intervalMin:[15,30,60].includes(source.floatingPet?.quotes?.intervalMin)?source.floatingPet.quotes.intervalMin:15}},
     readingHistory:readingHistory.publicConfig(),
   };
@@ -882,6 +883,41 @@ async function videoCueTranslate(message, sender) {
   };
   return translateItems(items, state.settings, diagnostics.trace(message), {scope: withContext ? 'page' : 'passage', origin: new URL(source.url).origin, guard});
 }
+// API 通道一次往返只要一两秒，热门频道的聊天会不停地发请求、烧额度：按标签页每分钟至多 12 次（约 96 条消息）。
+// 订阅通道每次往返约 10 秒、页面至多 3 批并发，本来就到不了这个量，不限。
+const LIVE_CHAT_API_PER_MINUTE = 12;
+const liveChatRate = createRateWindow({limit: LIVE_CHAT_API_PER_MINUTE, windowMs: 60_000});
+// Twitch 直播聊天：走整页翻译协议（每批至多 8 条，上下文只带频道名），订阅通道每次往返有约 10 秒固定开销，
+// 批越大吞吐越高；流式进度经 SS_LIVE_CHAT_PROGRESS 推回页面，译完一条显示一条。不写阅读记录，只在开关打开的活动标签页里翻。
+async function liveChatTranslate(message, sender) {
+  const source = await readingSource(sender);
+  if (new URL(source.url).hostname !== LIVE_CHAT_HOST) throw new Error(M('直播聊天翻译仅适用于 Twitch。','Live-chat translation only works on Twitch.'));
+  if (!source.active || await tabPaused(source.tabId)) throw new Error(M('请在当前页面打开直播聊天翻译。','Turn on live-chat translation on the current page.'));
+  const items = normalizePageTranslationItems(message.items);
+  const requestId = typeof message.requestId === 'string' ? message.requestId.slice(0, 80) : '';
+  const state = await load();
+  if (state.settings.video.liveChat !== true) throw new Error(M('直播聊天翻译已关闭。','Live-chat translation is off.'));
+  if (state.settings.providerKind === 'api') {
+    // 超额不算失败：不发请求，告诉页面多久后再来，排队的消息由页面原样留着。
+    const slot = liveChatRate.take(source.tabId);
+    if (!slot.ok) return {items: [], throttled: true, retryAfterMs: slot.retryAfterMs};
+  }
+  const generation = providerGeneration;
+  const guard = async () => {
+    const [latest, page] = await Promise.all([load(), readingSource(sender)]);
+    if (generation !== providerGeneration || state.supportDataGeneration !== latest.supportDataGeneration || latest.settings.video.liveChat !== true || !page.active || await tabPaused(source.tabId)) throw staleWork();
+  };
+  let open = true, sent = '';
+  const onProgress = progress => {
+    if (!open || !requestId || !progress?.items?.length) return;
+    const key = JSON.stringify(progress.items);
+    if (key === sent) return;
+    sent = key;
+    void chrome.tabs.sendMessage(source.tabId, {type: 'SS_LIVE_CHAT_PROGRESS', requestId, items: progress.items}, {frameId: 0, ...(sender.documentId ? {documentId: sender.documentId} : {})}).catch(() => {});
+  };
+  try { return await translateItems(items, state.settings, diagnostics.trace(message), {scope: 'page', onProgress, origin: new URL(source.url).origin, sourceHash: source.sourceHash, guard}); }
+  finally { open = false; }
+}
 async function youtubeCaptionFetch(message, sender) {
   if (!VIDEO_SUPPORT_ENABLED) throw new Error(M('视频字幕功能暂未开放。','Video subtitles are not available yet.'));
   if (!Number.isInteger(sender.tab?.id) || sender.frameId !== 0) throw new Error(M('字幕只能由当前网页主框架读取。','Captions can only be read by the page main frame.'));
@@ -1234,10 +1270,9 @@ async function reconcileAutoScript(settings) {
   const videoMatches = VIDEO_SUPPORT_ENABLED && settings.automation.videoSites ? VIDEO_HOSTS.filter(pattern => allowed.has(pattern)) : [];
   // 字幕桥必须早于播放器脚本包住 fetch，否则播放器会握住原来的 fetch，签名地址的正文就截不到。
   if (videoMatches.length) wanted.push({id:CAPTION_SCRIPT_ID,matches:videoMatches,js:['youtube-captions-bridge.js'],world:'MAIN',runAt:'document_start',allFrames:false,persistAcrossSessions:true});
-  // floating-pet 挂载即调 RoamCatContentUI.petWidget（design.js 为可选 token 源）：
-  // 同 run_at 下动态注册与静态 content_scripts 的顺序不受保证，必须在同一注册项内
-  // 显式声明依赖顺序，否则伴读猫可能先于渲染层执行而 TypeError。
-  if (petMatches.length) wanted.push({id:PET_SCRIPT_ID,matches:petMatches,js:['design.js','pet-quotes.js','content-ui.js','floating-pet.js'],runAt:'document_idle',allFrames:false,persistAcrossSessions:true});
+  // 渲染层/语录库/design token 已由 manifest 静态 content_scripts 注入到同一批网页；
+  // 这里只注册 floating-pet.js，静态脚本晚到时由它自行等待依赖就绪，避免重复解析执行。
+  if (petMatches.length) wanted.push({id:PET_SCRIPT_ID,matches:petMatches,js:['floating-pet.js'],runAt:'document_idle',allFrames:false,persistAcrossSessions:true});
   if (wanted.length) await chrome.scripting.registerContentScripts(wanted);
 }
 
@@ -1249,19 +1284,24 @@ async function injectPageUI(tabId, includeVideo = false, petWanted) {
     func:() => ({
       contentAlive: Boolean(globalThis.__ROAMCAT_CONTENT__?.isAlive?.()),
       petAlive: Boolean(globalThis.RoamCatPet?.isMounted?.()),
-      videoAlive: Boolean(globalThis.RoamCatVideoSubtitles)
+      videoAlive: Boolean(globalThis.RoamCatVideoSubtitles),
+      liveChatAlive: Boolean(globalThis.RoamCatLiveChat),
+      host: location.hostname
     })
   }).catch(() => null);
 
   const status = probe?.[0]?.result;
   const filesToInject = [];
   // 伴读猫和阅读脚本必须分开判断：猫已挂上不能当成内容脚本已就绪；伴读猫未启用时不注入。
-  if (!status?.contentAlive) filesToInject.push('design.js','reading-style.js','content-ui.js');
+  // 文案运行时须先于渲染层：补注入的标签页没有 manifest 静态脚本，缺它界面只剩键名。
+  if (!status?.contentAlive) filesToInject.push('design.js','i18n-content.js','reading-style.js','content-ui.js');
   if (petWanted && !status?.petAlive) filesToInject.push('pet-quotes.js','floating-pet.js');
   if (!status?.contentAlive) filesToInject.push('site-profiles.js','content.js');
   if (includeVideo && VIDEO_SUPPORT_ENABLED && !status?.videoAlive) {
     filesToInject.push(...VIDEO_UI_FILES);
   }
+  // 直播聊天翻译只由 manifest 静态注入；安装/更新前就开着的 Twitch 页要补上，排在文案运行时之后。
+  if (status?.host === LIVE_CHAT_HOST && !status.liveChatAlive) filesToInject.push('live-chat.js');
   if (filesToInject.length) {
     await chrome.scripting.executeScript({target:{tabId,frameIds:[0]},files:filesToInject}).catch(() => {});
   }
@@ -1398,6 +1438,7 @@ const messageHandlers=[
   {type:'EMERGENCY_BEGIN',handle:(message,{sender,trusted})=>{if(!trusted&&!sender?.tab?.id)throw new Error(M('仅扩展界面或伴读猫可启动双语翻译。','Only extension UI or the companion pet can start bilingual translation.'));return emergencyBegin(message,sender,trusted);}},
   {type:'PASSAGE_TRANSLATE',handle:(message,{sender,trusted})=>passageTranslate(message,sender)},
   {type:'VIDEO_CUE_TRANSLATE',handle:(message,{sender})=>videoCueTranslate(message,sender)},
+  {type:'LIVE_CHAT_TRANSLATE',handle:(message,{sender})=>liveChatTranslate(message,sender)},
   {type:'READER_TRANSLATE',handle:(message,{sender,trusted})=>readerTranslate(message,sender,trusted)},
   {type:'EMERGENCY_TRANSLATE',handle:(message,{sender,trusted})=>emergencyTranslate(message,sender)},
   {type:'EMERGENCY_CANCEL_REQUEST',handle:(message,{sender,trusted})=>emergencyCancelRequest(message,sender)},
@@ -1532,6 +1573,7 @@ chrome.tabs.onRemoved.addListener(tabId => {
   void forgetEmergency(tabId);injectedEmergencyPages.delete(tabId);sentenceModeGeneration.delete(tabId);void chrome.storage.session.remove([sentenceModeKey(tabId),readingIntentKey(tabId)]);
   tabActivationGeneration.delete(tabId);
   tabSeenArticle.delete(tabId);
+  liveChatRate.forget(tabId);
   void forgetTabAutomation(tabId);
 });
 void reconcileAutomation().catch(error => console.error('初始化自动开启策略失败',error));

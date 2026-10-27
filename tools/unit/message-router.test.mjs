@@ -72,8 +72,8 @@ test('createMessageRouter 暴露类型清单与 has 查询', () => {
 });
 
 test('MESSAGE_TYPES 是唯一且冻结的有序协议清单', () => {
-  assert.equal(MESSAGE_TYPES.length, 76);
-  assert.equal(new Set(MESSAGE_TYPES).size, 76);
+  assert.equal(MESSAGE_TYPES.length, 77);
+  assert.equal(new Set(MESSAGE_TYPES).size, 77);
   assert.ok(Object.isFrozen(MESSAGE_TYPES));
   for (const type of MESSAGE_TYPES) assert.match(type, /^[A-Z][A-Z0-9_]+$/u);
   // 关键消息必须存在：回归 switch 迁移时丢失任一类型都会被发现。

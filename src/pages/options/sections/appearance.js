@@ -227,6 +227,11 @@ export const appearanceSection = html`
 <input id="video-bilingual" type="checkbox">
 </label>
 <p class="field-help">${t('sec.ap.videoBilingualDesc')}</p>
+<label class="field">
+<span>${t('sec.ap.liveChat')}</span>
+<input id="video-live-chat" type="checkbox">
+</label>
+<p class="field-help">${t('sec.ap.liveChatDesc')}</p>
 <div class="form-grid">
 <label class="field">
 <span>${t('sec.ap.fontSize')}</span>

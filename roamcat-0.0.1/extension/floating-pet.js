@@ -4068,13 +4068,32 @@
   }
 
   // Mount global instance
-  const widget = new RoamCatPetWidget();
-  widget.detectPageTheme = detectPageTheme;
-  widget.shadowQuery = (selector) => shadowRoot?.querySelector(selector);
-  widget.getShadowRoot = () => shadowRoot;
-  globalThis.RoamCatPet = widget;
-  if (hostEl) {
-    hostEl.pet = widget;
-    hostEl.__pet = widget;
+  const mountWidget = () => {
+    const widget = new RoamCatPetWidget();
+    widget.detectPageTheme = detectPageTheme;
+    widget.shadowQuery = (selector) => shadowRoot?.querySelector(selector);
+    widget.getShadowRoot = () => shadowRoot;
+    globalThis.RoamCatPet = widget;
+    if (hostEl) {
+      hostEl.pet = widget;
+      hostEl.__pet = widget;
+    }
+  };
+
+  // 渲染层 content-ui.js / i18n.js 由 manifest 静态 content_scripts 提供；动态注册的
+  // 伴读猫与静态脚本同 run_at 下先后顺序不受保证，故依赖未就绪时短暂等待，而不是在
+  // 注册项里重复注入一份（那样每个网页都要把渲染层解析执行两遍）。
+  const depsReady = () => Boolean(globalThis.RoamCatContentUI?.petWidget && globalThis.RoamCatI18n);
+  if (depsReady()) {
+    mountWidget();
+  } else {
+    let tries = 0;
+    const waitDeps = () => {
+      if (bootId !== globalThis.__ROAMCAT_PET_GENERATION__) return;
+      if (depsReady()) mountWidget();
+      else if (++tries < 100) setTimeout(waitDeps, 20);
+      else globalThis.__ROAMCAT_PET_BOOTING__ = false;
+    };
+    setTimeout(waitDeps, 0);
   }
 })();

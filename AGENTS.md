@@ -8,6 +8,7 @@
 | `npm run build:release` | 生产构建（minify、无 key） |
 | `node tools/package-release.mjs` | 发布打包：在 `build:release` 之后运行，按白名单生成 `dist/release/roamcat-<版本>-extension.zip` 与 `SHA256SUMS`（只打包、不上传） |
 | `npm run build:watch` | watch 模式持续构建 |
+| `npm run gen:i18n` | 由 `extension/i18n.js` 生成内容脚本专用的瘦身词典 `extension/i18n-content.js`（改了网页侧文案或网页侧脚本新用了别的命名空间后必须重跑；`i18n-content.test.mjs` 拦截漂移） |
 | `npm run verify` | 模块图静态门禁（R1–R12；R1–R11 只扫 `roamcat-0.0.1/extension` 与 `connector`，R12 字号档位另扫 `src/`） |
 | `npm run verify:sites` | 站点档案端到端：fixture 按真实 URL 路由进 Edge 断言 inspect()（加 `--live` 复核真站） |
 | `npm run verify:service` | 本机常驻连接服务端到端：127.0.0.1:47821 起带假后端的 `connector/service.mjs`，Edge 加载 `dist/extension` 断言优先经 WebSocket 连上、服务停掉后回退浏览器连接器 → `preview/connector-service.json`（先跑 `npm run build`；端口被真实服务占用时先停掉它） |
@@ -21,10 +22,11 @@
 
 ## 结构约定
 
-- `roamcat-0.0.1/extension/`：扩展源码层（未迁移部分：manifest、background、content scripts、领域模块、icons/fonts/_locales/local-inference）。**不要直接改 ui/ 下将由构建替代的文件**；`content-ui.js` 同为生成物，改 `src/content-ui/index.js` 后重跑构建。
+- `roamcat-0.0.1/extension/`：扩展源码层（manifest、background、content scripts、领域模块、`ui/` 共享模块、icons/fonts/_locales/local-inference）。生成物不手改：`content-ui.js`（改 `src/content-ui/index.js` 后重跑构建）、`design.js`（`gen:tokens`）、`i18n-content.js`（`gen:i18n`）。
+- `roamcat-0.0.1/connector/`：本机订阅连接器（`service.mjs` 常驻服务、`install.mjs` 安装器、各 CLI 客户端）。
 - `src/`：Vite 项目（Lit 页面应用与共享组件），`src/content-ui/` 为页内 UI lit-html 渲染层（`vite.content-ui.config.mjs` → `extension/content-ui.js` IIFE，manifest 于 content.js 前加载，暴露 `globalThis.RoamCatContentUI`），`@ext` 别名指向扩展源目录。
 - `build/`：构建期脚本与 `extension-key.json`（dev 构建的 manifest key 与扩展 ID，公钥可提交，无私钥）。
-- `dist/extension/`：构建产物 = 源层拷贝 − `REPLACED_BY_BUILD`（`build/extension-plugin.mjs` 中维护）+ Vite 页面产物 + 变换后的 manifest。
+- `dist/extension/`：构建产物 = 源层拷贝 − `REPLACED_BY_BUILD`（`build/extension-plugin.mjs` 中维护，页面迁移完成后当前为空）+ Vite 页面产物 + 变换后的 manifest。
 - `docs/`：GitHub Pages 落地页源（`main` + `/docs` → `dapao-777.github.io/roamcat`）——`index.html`/`zh.html` 双语静态页 + `llms.txt`/`sitemap.xml`/`robots.txt`/`.nojekyll`；OG 图 `docs/assets/og-cover.png` 由 `node tools/capture-social.mjs` 生成（同步产出 `.github/assets/social-preview.png`，需在仓库 Settings → Social preview 手动上传）。
 - `preview/`：验证报告与截图（不入库）。
 
@@ -35,13 +37,13 @@
 - 字号只用 `--fs-1…6`（12/13/14/16/20/28，`npm run verify` 的 R12 拦截写死的 px 字号；内容脚本/Shadow DOM 内联写 `var(--fs-k, Npx)` 兜底）。层级只用 `--elev-0/1/2`：页面卡片 0 档（只靠 1px 边框），浮在网页或页面之上的词卡/菜单/挂件 2 档；旧拟物 token（`--face`/`--cast`/`--key-skirt`/`--lacquer` 等）保留名字但已压平，不要再给它们写回渐变或凸起阴影。
 - dev 构建的扩展 ID 固定为 `build/extension-key.json` 中的 `id`（当前 `afpeggkplomdjjiemgajjgcajieincng`）；改加载目录不影响 ID。连接器订阅服务若绑定旧路径 ID，需重装连接器。
 - CSP `script-src 'self'`：产物 HTML 禁止内联脚本与 `on*=` 属性。
-- 订阅连接：扩展优先连本机常驻服务（`connector/service.mjs`，`ws://127.0.0.1:47821`，握手校验 Host 与扩展 Origin），连不上才用 NativeMessaging；`connector/install.mjs` 默认一并装服务与登录自启（`--no-service` 跳过）。在 Claude 的 Bash/PowerShell 沙箱里装的连接器只存在于沙箱视图，要装到用户真实环境须在终端面板里运行。
+- 订阅连接：扩展优先连本机常驻服务（`roamcat-0.0.1/connector/service.mjs`，`ws://127.0.0.1:47821`，握手校验 Host 与扩展 Origin），连不上才用 NativeMessaging；`roamcat-0.0.1/connector/install.mjs` 默认一并装服务与登录自启（`--no-service` 跳过）。在 Claude 的 Bash/PowerShell 沙箱里装的连接器只存在于沙箱视图，要装到用户真实环境须在终端面板里运行。
 - Vite 8 用 `rolldownOptions`（`rollupOptions` 已弃用）；HTML 中 `@ext/` 别名只对 `<script type="module">` 与 `<link rel="stylesheet">` 生效，`img/link[icon]` 需用相对路径。
 
 ## 界面多语言（i18n）
 
-- `extension/i18n.js` 是唯一语言运行时：`RoamCatI18n.t(key, vars)` 查 `DICTS.zh/en`（缺键返回 key），`lang()/pref()/setPref()/apply()/onChange()`；偏好键 `roamcat_ui_lang` ∈ `auto|zh|en`，`auto` 回落 `chrome.i18n.getUILanguage()`。
-- 改文案先在 i18n.js 双语典加同名键（zh/en 必须对齐，`node tools/check-dict.cjs` 校验），Lit 页用 `src/i18n-runtime.js` 的 `t()`，classic 脚本各自定义 `const T = (k,v)=>RoamCatI18n?.t?.(k,v) ?? k`。
+- `extension/i18n.js` 是唯一语言运行时（扩展页与 service worker 加载完整版；网页内容脚本加载 `gen:i18n` 生成的 `i18n-content.js`，运行时代码相同，词典只留网页侧用到的命名空间 `c./vid./pet./fp./ui./domain./design.`）：`RoamCatI18n.t(key, vars)` 查 `DICTS.zh/en`（缺键返回 key），`lang()/pref()/setPref()/apply()/onChange()`；偏好键 `roamcat_ui_lang` ∈ `auto|zh|en`，`auto` 回落 `chrome.i18n.getUILanguage()`。
+- 改文案先在 i18n.js 双语典加同名键（zh/en 必须对齐，`node tools/check-dict.cjs` 校验；涉及网页侧文案再跑 `npm run gen:i18n`），Lit 页用 `src/i18n-runtime.js` 的 `t()`，classic 脚本各自定义 `const T = (k,v)=>RoamCatI18n?.t?.(k,v) ?? k`。
 - content script 上下文可能禁止 `chrome.storage`（"Access to storage is not allowed"）：i18n.js 此时自动回退 `STATE_GET`（`publicState.uiLang` 携带偏好），语言变更由 background 的 `storage.onChanged → broadcast()` 经 `SS_REFRESH` 快照推送；新增文案面时同步依赖该链路，勿假设 storage 可用。
 - 后台/service-worker 文案用模块顶部 `const M=(zh,en)=>RoamCatI18n.lang()==='en'?en:zh` 就地双语（错误消息会缓存为文本，跨语言切换后按生成时语言显示）。
 - `verify:ui` 含英文档段（options/popup/content script 三端断言）；`verify:pet` 断言伴读猫气泡文案——新增 `t()` 键后两者必须重跑。
