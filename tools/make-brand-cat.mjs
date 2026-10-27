@@ -1,6 +1,6 @@
 /**
  * @file tools/make-brand-cat.mjs
- * 文件职责：品牌猫（黑色麻薯猫 + 彩虹边缘光）的唯一生成器——与伴读猫 floating-pet.js 的坐姿
+ * 文件职责：品牌猫（黑色麻薯猫 + 彩虹边缘光）的唯一生成器——与伴读猫 floating-pet-svg.js 的坐姿
  *   同一套几何，一次产出产品 logo、单色标、各尺寸 PNG 图标与页面插图，避免各处手改漂移。
  * 主要内容：
  *   - extension/icons/roamcat.svg 与 roamcat-icon-src.svg：砚底圆角砖上的应用图标（完整边缘光）；
@@ -11,7 +11,7 @@
  *     （每次调用生成独立 id，同页多处使用、或位于隐藏分区里也不会互相引用失效）；
  *   - docs/assets/roamcat.svg：落地页 favicon 与标志。
  * 用法：node tools/make-brand-cat.mjs（需 playwright-core 与本机 Edge）。
- * 模块边界：构建期工具，只写上述产物；伴读猫的 SVG 仍内联在 floating-pet.js，改几何须两边同步。
+ * 模块边界：构建期工具，只写上述产物；伴读猫的 SVG 仍内联在 floating-pet-svg.js，改几何须两边同步。
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -34,7 +34,7 @@ const EYES = [[80, 140], [122, 135]];
 const MOUTH = 'M102 133 v3.4 M96.5 139 Q99.5 143.5 102.5 139.4 Q105.5 143.5 108.5 139';
 const WHISKERS = [[52, 150, 16, 146], [52, 155, 18, 158], [54, 160, 24, 170], [150, 122, 186, 110], [150, 127, 188, 122], [150, 132, 184, 133]];
 /* ---------- 调色板：深色（近黑麻薯 + 彩虹边缘光）与亮色（奶白麻薯 + 粉蓝金柔光 + 暖棕细描边） ---------- */
-// 与 floating-pet.js 的 --pet-cat-* 取值一致；页面插图走 tokens.css 的 --rc-cat-*（同一组键名）。
+// 与 floating-pet-styles.js 的 --pet-cat-* 取值一致；页面插图走 tokens.css 的 --rc-cat-*（同一组键名）。
 const DARK = {
   body: '#0b0a0e', face: '#fbfaff', whisker: '#fbfaff', whiskerUnder: 'rgba(0, 0, 0, 0.38)', line: 'transparent',
   rim0: '#ffffff', rim1: '#ffe0ee', rim2: '#bfe6ff', rim3: '#d8f3ff', rim4: '#ffd9a0',

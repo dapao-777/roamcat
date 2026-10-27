@@ -22,7 +22,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'
 export const EXTENSION_DIR = path.join(repoRoot, 'roamcat-0.0.1', 'extension');
 
 /** 不在 manifest 静态清单里、由 background 经 chrome.scripting 注入网页的脚本。 */
-const DYNAMIC_CONTENT_FILES = Object.freeze(['floating-pet.js', 'video-subtitles.js', 'auto-start.js']);
+const DYNAMIC_CONTENT_FILES = Object.freeze(['floating-pet-helpers.js', 'floating-pet-styles.js', 'floating-pet-svg.js', 'floating-pet-quote-bubble.js', 'floating-pet-summary.js', 'floating-pet.js', 'video-subtitles.js', 'auto-start.js']);
 
 /** 在网页里运行、经 RoamCatI18n 取文案的脚本：manifest 全部静态 content_scripts + 动态注入脚本。 */
 export function contentSideFiles() {

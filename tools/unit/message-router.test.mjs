@@ -131,11 +131,13 @@ test('parsePopupIntentTake 校验标签页与网址', () => {
 });
 
 test('源码契约：background.js 注册表与协议清单逐一对应且无 switch 残留', () => {
-  const registryStart = backgroundSource.indexOf('const messageHandlers=[');
+  const registryStart = backgroundSource.indexOf('const messageHandlers = [');
   const registryEnd = backgroundSource.indexOf('const messageRouter=');
   assert.ok(registryStart >= 0 && registryEnd > registryStart, '注册表未找到');
   const registry = backgroundSource.slice(registryStart, registryEnd);
-  const registered = [...registry.matchAll(/\{type:'([A-Z_]+)'/gu)].map(match => match[1]);
+  // 条目是数组第一层（两格缩进）的对象，单行 `{ type: …` 或多行 `{` 换行 `type: …`；更深缩进的是 handler 内部对象。
+  const ENTRY = /^ {2}\{\s*type: '/mu;
+  const registered = [...registry.matchAll(/^ {2}\{\s*type: '([A-Z_]+)'/gmu)].map(match => match[1]);
   assert.equal(registered.length, MESSAGE_TYPES.length, '注册表条目数量与协议清单不符');
   assert.deepEqual([...registered].sort(), [...MESSAGE_TYPES].sort(), '注册表与协议清单存在差集');
   assert.equal(new Set(registered).size, registered.length, '注册表存在重复类型');
@@ -143,8 +145,8 @@ test('源码契约：background.js 注册表与协议清单逐一对应且无 sw
   assert.ok(!backgroundSource.includes('switch(message.type)'), 'background.js 仍残留 switch 分派');
   assert.ok(!backgroundSource.includes('contentAllowed'), 'background.js 仍残留旧白名单常量');
   // 每个条目都必须是 {type,handle} 形态（parse 可选）。
-  for (const entry of registry.split(/\r?\n\s*\{type:'/u).slice(1)) {
-    assert.match(entry, /^[A-Z_]+',(parse:parse[A-Za-z]+,)?handle:/u, '条目缺少 handle: ' + entry.slice(0, 40));
+  for (const entry of registry.split(ENTRY).slice(1)) {
+    assert.match(entry, /^[A-Z_]+',\s*(parse: parse[A-Za-z]+,\s*)?handle:/u, '条目缺少 handle: ' + entry.slice(0, 40));
   }
   // 信任判定仍由背景统一执行：内容脚本白名单必须来自协议模块。
   assert.match(backgroundSource, /CONTENT_ALLOWED_TYPES\.includes\(message\.type\)/u);

@@ -46,7 +46,7 @@
 │   · pet-quotes.js：伴读猫哲学语录库（RoamCatPetQuotes）        │
 │   · content.js：阅读区识别/标注/查词卡片/解构/整页翻译          │
 │ 动态注册（chrome.scripting，按需注入）                         │
-│   · pet-quotes.js + floating-pet.js：伴读猫挂件（Shadow DOM）+ 文章摘要 │
+│   · floating-pet*.js：伴读猫挂件（Shadow DOM）+ 文章摘要       │
 │   · auto-start.js：按站规则自动开启                           │
 ├────────────────────────────────────────────────────────────┤
 │ Service Worker（background.js，ES module）                   │
@@ -130,7 +130,7 @@
 | 文件 | 职责 | 关键约束 |
 |---|---|---|
 | `content.js` | 阅读根识别、文本映射、自动标注、查词（按键+卡片+顶部词注）、选段翻译、阅读解构高亮、整页翻译引擎、历史采集、重载侦察（失效 toast） | 只拆文本节点不重建强调/链接；所有跨文档操作带 generation 校验；DOM 批量更新走 rAF；重载侦察用可见性门控的低频探测，不用常驻 port（不阻止 SW 空闲回收） |
-| `floating-pet.js` | 伴读猫（SVG/Shadow DOM/拖拽贴边/菜单/摘要/状态气泡/左侧快捷按钮行）、全局快捷键 | window 级监听只注册一次（`bindGlobalEvents`）；快捷键在输入框/可编辑区不触发（`petShortcutBlocked`）；左侧快捷按钮行（阅读开关/摘要/设置/贴边）贴左屏时翻向右侧，贴边时随旋旋翻隐藏 |
+| `floating-pet.js` + `floating-pet-{helpers,styles,svg,quote-bubble,summary}.js` | 伴读猫（SVG/Shadow DOM/拖拽贴边/菜单/摘要/状态气泡/左侧快捷按钮行）、全局快捷键 | window 级监听只注册一次（`bindGlobalEvents`）；快捷键在输入框/可编辑区不触发（`petShortcutBlocked`）；左侧快捷按钮行（阅读开关/摘要/设置/贴边）贴左屏时翻向右侧，贴边时随旋旋翻隐藏 |
 | `live-chat.js` | Twitch 直播聊天实时翻译：聊天输入区「译」开关（存 `video.liveChat`）、新消息过滤（表情/单词梗/刷屏/中文不翻）、最新优先每批 ≤8 条经 `LIVE_CHAT_TRANSLATE` 发送、`SS_LIVE_CHAT_PROGRESS` 流式显示 | manifest 第二个 `content_scripts` 项，只匹配 `https://www.twitch.tv/*` 主框架，依赖第一项的 `i18n-content.js`；`injectPageUI` 对已打开的 Twitch 页补注入；不读历史聊天、不写阅读记录；后台返回 `throttled` 时把批次按先后插回队列并暂停到 `retryAfterMs` |
 | `design.js` | 设计 token（明暗双主题）唯一下发 | 仅当脚本带 `data-roamcat-page` 时才向页面根注入 |
 | `i18n.js` / `i18n-content.js` | 中英双语运行时 `RoamCatI18n`：`t()`/`lang()`/`pref()`/`setPref()`/`apply()`/`onChange()`，字典 1,784 键双语对齐；内容脚本加载生成的瘦身版（约 360 键，`i18n-content.test.mjs` 断言无漂移且网页侧引用的键齐全） | storage 受限上下文自动回退 `STATE_GET` 拉取偏好，监听 `SS_REFRESH` 同步变更 |
@@ -360,7 +360,7 @@
 
 | 规则 | 内容 |
 |---|---|
-| R1 | manifest content script 九件套顺序固定（`i18n-content.js` 先于所有 `t()` 调用方）、文件存在、且不得包含 ESM 语法；动态注册的 classic 脚本（`pet-quotes.js`、`floating-pet.js`、`auto-start.js`）同约束 |
+| R1 | manifest content script 九件套顺序固定（`i18n-content.js` 先于所有 `t()` 调用方）、文件存在、且不得包含 ESM 语法；动态注册的 classic 脚本（`pet-quotes.js`、`floating-pet*.js`、`auto-start.js`）同约束 |
 | R2 | 全部相对 import 必须解析到真实文件 |
 | R3 | extension 与 connector 全图无循环依赖 |
 | R4 | connector 的 import 闭包内的 extension 文件必须属于 §4.1 共享协议清单，且能在 Node 中安全 import（顶层不触碰浏览器 API） |

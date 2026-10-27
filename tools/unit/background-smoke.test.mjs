@@ -237,7 +237,7 @@ test('迁移后的 background.js 在 mock 浏览器中构造注册表并按信�
     }
   });
 
-  await t.test('伴读猫动态注册只注入 floating-pet.js，依赖由静态 content_scripts 提供', async () => {
+  await t.test('伴读猫动态注册只注入 floating-pet*.js，依赖由静态 content_scripts 提供', async () => {
     // 导入期 init 会触发 reconcileAutomation → reconcileAutoScript；轮询等待注册落地。
     let pet;
     for (let i = 0; i < 50 && !pet; i++) {
@@ -246,7 +246,7 @@ test('迁移后的 background.js 在 mock 浏览器中构造注册表并按信�
     }
     assert.ok(pet, 'floatingPet 默认开启且全网放行时必须注册 ss-floating-pet');
     // 重复注册 design/pet-quotes/content-ui 会让每个网页把它们解析执行两遍。
-    assert.deepEqual(pet.js, ['floating-pet.js']);
+    assert.deepEqual(pet.js, ['floating-pet-helpers.js', 'floating-pet-styles.js', 'floating-pet-svg.js', 'floating-pet-quote-bubble.js', 'floating-pet-summary.js', 'floating-pet.js']);
     const manifest = JSON.parse(readFileSync(new URL('../../roamcat-0.0.1/extension/manifest.json', import.meta.url), 'utf8'));
     const statics = manifest.content_scripts.flatMap(item => item.js);
     for (const dep of ['design.js', 'i18n-content.js', 'pet-quotes.js', 'content-ui.js']) {

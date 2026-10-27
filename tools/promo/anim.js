@@ -73,7 +73,7 @@ function setZh(list, idx, p) {
 
 /* 同一份猫 SVG 在片中插入四次：每份换一组渐变/滤镜 id，免得引用串到别的副本上。 */
 const uniqCat = tag => window.PROMO_ASSETS.pet.replaceAll('rc-cat-', `rc-cat-${tag}-`);
-/* 麻薯猫的组装零件（与 floating-pet.js renderCatSvg 的子元素顺序一致）：
+/* 麻薯猫的组装零件（与 floating-pet-svg.js renderCatSvg 的子元素顺序一致）：
  *   0 地平线 · 1 尾巴 · 2/3 耳朵 · 4 辉光 · 5 身体 · 6 底部暖光 · 7/8 色散 · 9 边缘光 · 10 眼睛 · 11 嘴 · 12/13 胡须
  * pieces 依次滑入；base[0] 辉光渐亮、base[1] 五官落位、base[2] 胡须/地平线/尾巴最后出现。 */
 function catParts(svg) {
