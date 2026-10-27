@@ -121,8 +121,6 @@ function createConnector({kind,host,label,cliName,loginHosts}) {
     status:{...DISCONNECTED},
     port:null,
     sequence:0,
-    attempted:false,
-    initialStatus:null,
     refreshInFlight:null,
     pending:new Map(),
     listeners:new Set(),
@@ -156,7 +154,6 @@ function createConnector({kind,host,label,cliName,loginHosts}) {
   }
   function connection() {
     if (state.port) return state.port;
-    state.attempted = true;
     const current = openTransport(kind, host);
     state.port = current;
     current.onDisconnect.addListener(() => {
@@ -213,7 +210,6 @@ function createConnector({kind,host,label,cliName,loginHosts}) {
   }
   function refresh() {
     if (state.refreshInFlight) return state.refreshInFlight;
-    state.attempted = true;
     state.refreshInFlight = (async () => {
       const previous = state.port;
       if (previous) {
@@ -237,11 +233,6 @@ function createConnector({kind,host,label,cliName,loginHosts}) {
     })().finally(() => { state.refreshInFlight = null; });
     return state.refreshInFlight;
   }
-  async function ensure() {
-    if (!state.attempted) state.initialStatus = refresh();
-    if (state.initialStatus) { await state.initialStatus; state.initialStatus = null; }
-    return snapshot();
-  }
   async function login() {
     const result = await send('login');
     let url;
@@ -263,7 +254,7 @@ function createConnector({kind,host,label,cliName,loginHosts}) {
     update(await send('logout'));
     return snapshot();
   }
-  return {state, snapshot, update, send, refresh, probe, ensure, login, cancel, logout};
+  return {state, snapshot, update, send, refresh, probe, login, cancel, logout};
 }
 
 const connectors = {
@@ -298,7 +289,6 @@ export function subscriptionStatus(kind) { return connector(kind).snapshot(); }
 export function onSubscriptionStatus(listener,kind) { connector(kind).state.listeners.add(listener); }
 export function refreshSubscription(kind) { return connector(kind).refresh(); }
 export function probeSubscription(kind) { return connector(kind).probe(); }
-export async function ensureSubscription(kind) { return connector(kind).ensure(); }
 export async function loginSubscription(kind) { return connector(kind).login(); }
 export async function cancelSubscription(kind) { return connector(kind).cancel(); }
 export async function logoutSubscription(kind) { return connector(kind).logout(); }

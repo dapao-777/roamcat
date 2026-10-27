@@ -155,9 +155,6 @@ const RULES = {
   ],
 };
 
-/** 该服务商是否按模型声明思考档位。 */
-export function hasModelThinkingLevels(providerId) { return Object.hasOwn(RULES,providerId); }
-
 /**
  * 返回模型的思考档位描述：{levels:[{value,label}], defaultValue, request(level)}；未收录返回 null，
  * 已知不支持思考参数的模型返回 levels 为空的描述（请求不带任何思考字段）。
