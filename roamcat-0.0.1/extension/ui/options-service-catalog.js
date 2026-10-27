@@ -71,7 +71,17 @@ export const CATALOG_TEMPLATES = [
 ];
 
 export function iconUrlFor(iconName) {
-  return `../icons/providers/${iconName || 'custom-api'}.svg`;
+  // providerId 可能来自用户保存的配置：只接受图标文件名字符，其余回落通用图标。
+  const name = /^[a-z0-9-]+$/.test(iconName || '') ? iconName : 'custom-api';
+  return `../icons/providers/${name}.svg`;
+}
+
+/** 建一个带类名与纯文本内容的元素；文本一律走 textContent，不经 HTML 解析。 */
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = String(text);
+  return node;
 }
 
 class ServiceCatalogController {
@@ -174,7 +184,7 @@ class ServiceCatalogController {
       sectionEl.className = 'directory-section';
 
       const h4 = document.createElement('h4');
-      h4.innerHTML = `<span>${cat.label}</span><small>${groupItems.length}</small>`;
+      h4.append(el('span', '', cat.label), el('small', '', groupItems.length));
       sectionEl.appendChild(h4);
 
       const itemsWrap = document.createElement('div');
@@ -213,25 +223,23 @@ class ServiceCatalogController {
           isConfigured = Boolean(match?.apiKey);
         }
 
-        let badgeHtml = '';
+        // 名称/描述含用户自填的服务名、模型与地址，只能按纯文本渲染。
+        const iconBox = el('div', 'service-icon-box');
+        const img = el('img');
+        img.src = iconUrlFor(item.icon);
+        img.alt = '';
+        img.width = 20;
+        img.height = 20;
+        iconBox.append(img);
+        const copy = el('div', 'service-copy');
+        copy.append(el('strong', 'service-name', item.name), el('small', 'service-desc', item.desc));
+        const statusCol = el('div', 'service-status-col');
         if (isDefault) {
-          badgeHtml = `<span class="service-badge is-default">${M('默认','Default')}</span>`;
+          statusCol.append(el('span', 'service-badge is-default', M('默认','Default')));
         } else if (isConfigured) {
-          badgeHtml = `<span class="service-badge is-configured">${M('已配置','Configured')}</span>`;
+          statusCol.append(el('span', 'service-badge is-configured', M('已配置','Configured')));
         }
-
-        itemBtn.innerHTML = `
-          <div class="service-icon-box">
-            <img src="${iconUrlFor(item.icon)}" alt="" width="20" height="20">
-          </div>
-          <div class="service-copy">
-            <strong class="service-name">${item.name}</strong>
-            <small class="service-desc">${item.desc}</small>
-          </div>
-          <div class="service-status-col">
-            ${badgeHtml}
-          </div>
-        `;
+        itemBtn.append(iconBox, copy, statusCol);
 
         itemBtn.addEventListener('click', () => {
           this.selectService(item.id);
