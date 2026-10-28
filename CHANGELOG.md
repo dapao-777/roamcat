@@ -4,6 +4,9 @@
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-28
+Twitch 直播聊天实时翻译；本机常驻连接服务改为配对令牌认证。
+
 ### 新增
 - **Twitch 直播聊天实时翻译**（默认关闭）：在 Twitch 聊天输入区点「译」，或在设置页「显示与解构」里打开，新消息下方会补一行简体中文译文；表情、单个词的梗、刷屏和中文消息不翻，刚打开时只补最后几条，不翻历史聊天，也不写阅读记录。
 - 用 API 服务翻译直播聊天时，每个标签页每分钟至多发 12 次请求（约 96 条消息），超出时暂停片刻再接着翻，「译」按钮的提示里会说明；订阅通道本身较慢，不受此限。
@@ -13,7 +16,7 @@
 
 ### 修复
 - 网页内容脚本无法直接访问存储时，现在能从后台状态响应中正确读取界面语言偏好，首次加载即可使用已保存的语言。
-- 中英文安装说明中的扩展目录和连接器命令与 0.4.0 安装包保持一致，随包说明改用实际发布版本的目录格式。
+- 中英文安装说明中的扩展目录和连接器命令与实际安装包保持一致，随包说明改用实际发布版本的目录格式。
 - 扩展安装或更新前就开着的 Twitch 页面，现在也会补上直播聊天翻译，无需刷新。
 - 扩展安装或更新后给已打开的网页补注入阅读脚本时漏了文案运行时，词卡、任务条等页内界面会显示原始键名；现在补注入会先带上文案。
 - 设置页「模型服务」列表里自建服务的名称、模型名和地址改为按纯文本显示，含 `<` 等字符时不再弄乱列表。
@@ -163,7 +166,8 @@
 - `host_permissions` 仍为宽泛的 `http(s)://*/*`，计划改为 `optional_host_permissions` 按需申请。
 - 未上架商店；扩展仅支持开发者模式加载（直接加载 `roamcat-0.0.1/extension` 时 ID 与目录路径绑定；`npm run build` 产物 ID 固定）。
 
-[Unreleased]: https://github.com/dapao-777/roamcat/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/dapao-777/roamcat/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/dapao-777/roamcat/releases/tag/v0.5.0
 [0.4.0]: https://github.com/dapao-777/roamcat/releases/tag/v0.4.0
 [0.3.1]: https://github.com/dapao-777/roamcat/releases/tag/v0.3.1
 [0.3.0]: https://github.com/dapao-777/roamcat/releases/tag/v0.3.0
