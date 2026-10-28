@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const http = require('http');
 
-const { chromium } = require('playwright-core');
+const {chromium} = require('./lib/browser.cjs');
 const extension = path.resolve(process.env.EXTENSION_DIR || path.join(__dirname, '../dist/extension'));
 const out = path.resolve(process.env.PROBE_OUT_DIR || path.join(__dirname, '../preview/cat-face'));
 fs.mkdirSync(out, { recursive: true });
@@ -32,7 +32,6 @@ const shot = async (page, name, clip) => {
   for (const theme of ['light', 'dark']) {
     const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'roamcat-face-'));
     const context = await chromium.launchPersistentContext(profile, {
-      channel: 'msedge',
       headless: true,
       ignoreDefaultArgs: ['--disable-extensions'],
       args: ['--disable-extensions-except=' + extension, '--load-extension=' + extension],

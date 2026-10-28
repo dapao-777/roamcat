@@ -6,7 +6,7 @@
  *   - .github/assets/options-light.png / options-dark.png：README 主图，中文明暗两版（1440×1000）；
  *   - .github/assets/options-en.png：英文浅色设置页（1440×1000）；popup-light.png：中文浅色弹窗（原尺寸）。
  *   - 欢迎页横幅/全页、阅读器、查词卡、摘要卡：取自 verify:ui 的 preview/ui-audit 截图，按 README 取景裁切或拷贝。
- * 主要内容：经 tools/lib/edge-extension.cjs 在临时配置里加载 dist/extension；写入一个仅供展示的
+ * 主要内容：经 tools/lib/extension-browser.cjs 在临时配置里加载 dist/extension；写入一个仅供展示的
  *   阶跃星辰服务（占位密钥，本脚本不发起任何模型请求），切主题/语言后截图。
  * 用法：npm run build && npm run verify:ui && node tools/capture-readme-shots.cjs
  * 模块边界：只写 .github/assets 下的上述 PNG；临时扩展副本与浏览器配置在结束时删除。
@@ -16,7 +16,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 const path = require('node:path');
-const {launchExtension} = require('./lib/edge-extension.cjs');
+const {launchExtension} = require('./lib/extension-browser.cjs');
 
 const root = path.resolve(__dirname, '..');
 const assets = path.join(root, '.github', 'assets');

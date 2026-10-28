@@ -3,9 +3,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
-function loadPlaywright(){try{return require('playwright-core');}catch(first){const override=process.env.PLAYWRIGHT_CORE_PATH;if(override){try{return require(override);}catch{}}throw new Error(`找不到 playwright-core（${first?.message || first}）。请在项目根运行 npm i -D playwright-core，或设置 PLAYWRIGHT_CORE_PATH 指向可用副本。`);}}
-const {chromium}=loadPlaywright();
-const root=process.env.ROAMCAT_EXTENSION_DIR?path.resolve(process.env.ROAMCAT_EXTENSION_DIR):path.resolve(__dirname,'../roamcat-0.0.1/extension'),out=path.resolve(__dirname,'../preview');
+const {chromium}=require('./lib/browser.cjs');
+const root=process.env.ROAMCAT_EXTENSION_DIR?path.resolve(process.env.ROAMCAT_EXTENSION_DIR):path.resolve(__dirname,'../dist/extension'),out=path.resolve(__dirname,'../preview');
 const server=http.createServer((req,res)=>{const file=path.resolve(root,'.'+decodeURIComponent(req.url.split('?')[0]));if(!file.startsWith(root+path.sep)){res.writeHead(403).end();return;}fs.readFile(file,(e,data)=>{if(e){res.writeHead(404).end();return;}res.setHeader('Content-Type',({'.html':'text/html','.js':'text/javascript','.mjs':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.png':'image/png','.woff2':'font/woff2'})[path.extname(file)]||'application/octet-stream');res.end(data);});});
 function mockPopupChrome(){
   const tab={id:7,url:'https://example.com/article',windowId:1};
@@ -59,7 +58,7 @@ function mockPopupChrome(){
 (async()=>{
   await new Promise(r=>server.listen(0,'127.0.0.1',r));
   const base=`http://127.0.0.1:${server.address().port}`;
-  const browser=await chromium.launch({channel:'msedge',headless:true});
+  const browser=await chromium.launch({headless:true});
   const report={checks:[],errors:[]};
   try{
     const context=await browser.newContext({viewport:{width:380,height:660},deviceScaleFactor:2});

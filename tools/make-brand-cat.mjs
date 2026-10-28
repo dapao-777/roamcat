@@ -6,11 +6,11 @@
  *   - extension/icons/roamcat.svg 与 roamcat-icon-src.svg：砚底圆角砖上的应用图标（完整边缘光）；
  *   - extension/icons/roamcat-light.svg：奶白圆角砖上的亮色版，扩展页与页内挂件在亮色主题下使用；
  *   - extension/icons/roamcat-cat-ink.svg：fill=currentColor 的单色标，眼睛与 ω 嘴以 mask 镂空；
- *   - extension/icons/icon-{16,32,48,128,256,512}.png：经本机 Edge 栅格化，16/32 用加粗简化版；
+ *   - extension/icons/icon-{16,32,48,128,256,512}.png：经本机 ego lite 栅格化，16/32 用加粗简化版；
  *   - src/components/hero-art.js：欢迎页主图、阅读器空态与设置页印章共用的插图模板
  *     （每次调用生成独立 id，同页多处使用、或位于隐藏分区里也不会互相引用失效）；
  *   - docs/assets/roamcat.svg：落地页 favicon 与标志。
- * 用法：node tools/make-brand-cat.mjs（需 playwright-core 与本机 Edge）。
+ * 用法：node tools/make-brand-cat.mjs（需 playwright-core 与本机 ego lite，或用 ROAMCAT_BROWSER 指定浏览器）。
  * 模块边界：构建期工具，只写上述产物；伴读猫的 SVG 仍内联在 floating-pet-svg.js，改几何须两边同步。
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -151,8 +151,8 @@ let heroSerial = 0;
 }
 
 async function rasterize(entries) {
-  const {chromium} = require('playwright-core');
-  const browser = await chromium.launch({channel: 'msedge', headless: true});
+  const {chromium} = require('./lib/browser.cjs');
+  const browser = await chromium.launch({headless: true});
   try {
     const page = await browser.newPage({deviceScaleFactor: 1});
     for (const {size, svgText, file} of entries) {

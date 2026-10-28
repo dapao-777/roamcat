@@ -7,22 +7,9 @@ const path = require('node:path');
 const os = require('node:os');
 const assert = require('node:assert/strict');
 
-function loadPlaywright() {
-  try {
-    return require('playwright-core');
-  } catch (err) {
-    const override = process.env.PLAYWRIGHT_CORE_PATH;
-    if (override) {
-      try {
-        return require(override);
-      } catch {}
-    }
-    throw new Error(`找不到 playwright-core：${err.message}`);
-  }
-}
 
-const { chromium } = loadPlaywright();
-const source = path.resolve(process.env.EXTENSION_DIR || path.join(__dirname, '../roamcat-0.0.1/extension'));
+const {chromium} = require('./lib/browser.cjs');
+const source = path.resolve(process.env.EXTENSION_DIR || path.join(__dirname, '../dist/extension'));
 const tempExt = fs.mkdtempSync(path.join(os.tmpdir(), 'jev-test-ext-'));
 fs.cpSync(source, tempExt, { recursive: true });
 
@@ -35,7 +22,6 @@ fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
 (async () => {
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'jev-test-profile-'));
   const context = await chromium.launchPersistentContext(profile, {
-    channel: 'msedge',
     headless: true,
     ignoreDefaultArgs: ['--disable-extensions'],
     args: [

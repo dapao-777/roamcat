@@ -2,12 +2,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-// 站点档案端到端验收：把手工 fixture 按真实 URL 路由进 Edge，断言 inspect()
+// 站点档案端到端验收：把手工 fixture 按真实 URL 路由进浏览器（默认 ego lite），断言 inspect()
 // 的阅读块/翻译单元分区符合站点档案预期；含选择器合法性、example.com 负对照、
 // github-issue 双语渲染冒烟，以及 --live 真站复核（墙/登录页记 SKIP）。
 // 运行：node tools/verify-dev-sites.cjs [--live]
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http'), assert = require('node:assert/strict');
-const {launchExtension, inspectTab, checkSelectors, readProfiles, sleep} = require('./lib/edge-extension.cjs');
+const {launchExtension, inspectTab, checkSelectors, readProfiles, sleep} = require('./lib/extension-browser.cjs');
 const LIVE = process.argv.includes('--live');
 const extensionDir = path.resolve(process.env.EXTENSION_DIR || path.join(__dirname, '../dist/extension'));
 if (!fs.existsSync(path.join(extensionDir, 'manifest.json'))) {

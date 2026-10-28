@@ -3,15 +3,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http'), os = require('node:os'), assert = require('node:assert/strict');
-function loadPlaywright() {
-  try { return require('playwright-core'); } catch (first) {
-    const override = process.env.PLAYWRIGHT_CORE_PATH;
-    if (override) { try { return require(override); } catch {} }
-    throw new Error(`找不到 playwright-core（${first?.message || first}）。`);
-  }
-}
-const { chromium } = loadPlaywright();
-const source = path.resolve(process.env.EXTENSION_DIR || path.join(__dirname, '../roamcat-0.0.1/extension'));
+const {chromium} = require('./lib/browser.cjs');
+const source = path.resolve(process.env.EXTENSION_DIR || path.join(__dirname, '../dist/extension'));
 const extension = fs.mkdtempSync(path.join(os.tmpdir(), 'roamcat-dockfix-'));
 fs.cpSync(source, extension, { recursive: true });
 const manifestPath = path.join(extension, 'manifest.json');
@@ -47,7 +40,7 @@ const server = http.createServer((req, res) => {
   fs.mkdirSync(outDir, { recursive: true });
 
   const context = await chromium.launchPersistentContext('', {
-    channel: 'msedge', headless: true,
+    headless: true,
     args: ['--disable-extensions-except=' + extension, '--load-extension=' + extension],
     viewport: { width: 1280, height: 800 }
   });

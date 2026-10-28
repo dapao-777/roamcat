@@ -2,14 +2,14 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-// 全界面 UI 门禁：在 Edge 中加载 dist/extension，遍历所有扩展页（popup /
+// 全界面 UI 门禁：在浏览器（默认 ego lite）中加载 dist/extension，遍历所有扩展页（popup /
 // options 全分区 / welcome / reader）与页内挂件（词卡 HUD / 任务状态条 /
 // 解构详情卡 / 已认识 toast / 选区操作条 / 伴读猫全状态），双主题截图并断言，
 // 报告写入 preview/ui-audit/。
 const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
-const {launchExtension, sleep} = require('./lib/edge-extension.cjs');
+const {launchExtension, sleep} = require('./lib/extension-browser.cjs');
 
 const root = path.resolve(__dirname, '..');
 const extensionDir = path.resolve(process.env.ROAMCAT_EXTENSION_DIR || path.join(root, 'dist/extension'));

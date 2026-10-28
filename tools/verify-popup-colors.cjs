@@ -4,12 +4,11 @@
 
 // Isolated visual states: no extension operations or user tabs are accessed.
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
-function loadPlaywright(){try{return require('playwright-core');}catch(first){const override=process.env.PLAYWRIGHT_CORE_PATH;if(override){try{return require(override);}catch{}}throw new Error(`找不到 playwright-core（${first?.message || first}）。请在项目根运行 npm i -D playwright-core，或设置 PLAYWRIGHT_CORE_PATH 指向可用副本。`);}}
-const {chromium}=loadPlaywright();
+const {chromium}=require('./lib/browser.cjs');
 const ui=process.env.ROAMCAT_EXTENSION_DIR?path.resolve(process.env.ROAMCAT_EXTENSION_DIR,'ui'):path.resolve(__dirname,'../roamcat-0.0.1/extension/ui'),out=path.resolve(__dirname,'../preview');
 const luminance=rgb=>rgb.match(/[\d.]+/g).slice(0,3).map(Number).map(c=>{c/=255;return c<=.04045?c/12.92:((c+.055)/1.055)**2.4;}).reduce((v,c,i)=>v+c*[.2126,.7152,.0722][i],0);
 (async()=>{
- const browser=await chromium.launch({channel:'msedge',headless:true});
+ const browser=await chromium.launch({headless:true});
  try{
   const page=await browser.newPage({viewport:{width:360,height:180},deviceScaleFactor:2});
   const css=['ui.css','refinement.css'].map(n=>fs.readFileSync(path.join(ui,n),'utf8')).join('\n');

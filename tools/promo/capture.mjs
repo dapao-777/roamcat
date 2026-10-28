@@ -1,15 +1,15 @@
 /**
  * @file tools/promo/capture.mjs
- * 宣传片逐帧捕获：Playwright 驱动本机 Edge 无头加载 intro.html，
+ * 宣传片逐帧捕获：Playwright 驱动本机 ego lite（tools/lib/browser.cjs）无头加载 intro.html，
  * 以 window.__seek(t) 确定性推进，多页并行截图到 preview/promo/frames/。
  * 用法：node tools/promo/capture.mjs [--fps 30] [--workers 4] [--from 0 --to 52]
  *        [--only t1,t2,...]（抽帧审查）
  */
-import { chromium } from 'playwright-core';
+import { createRequire } from 'node:module';
+const { chromium } = createRequire(import.meta.url)('../lib/browser.cjs');
 import { mkdirSync, existsSync } from 'node:fs';
 import path from 'node:path';
 
-const EDGE = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
 const FPS = num('--fps', 30);
 const WORKERS = num('--workers', 4);
 const FROM = num('--from', 0);
@@ -37,7 +37,7 @@ async function worker(browser, frames, tag) {
 const main = async () => {
   mkdirSync(OUT, { recursive: true });
   const browser = await chromium.launch({
-    executablePath: EDGE, headless: true,
+    headless: true,
     args: ['--allow-file-access-from-files', '--hide-scrollbars', '--disable-lcd-text', '--force-color-profile=srgb'],
   });
   const all = ONLY ? ONLY.map(t => Math.round(t * FPS)) : (() => { const a = []; for (let i = Math.round(FROM * FPS); i <= Math.round(TO * FPS); i++) a.push(i); return a; })();

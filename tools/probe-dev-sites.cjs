@@ -7,7 +7,7 @@
 // 结果写入 preview/sites/probe-<slug>.{json,png}（不入库）。
 // 运行：PLAYWRIGHT_CORE_PATH=<playwright-core 路径> node tools/probe-dev-sites.cjs
 const fs = require('node:fs'), path = require('node:path');
-const { launchExtension } = require('./lib/edge-extension.cjs');
+const { launchExtension } = require('./lib/extension-browser.cjs');
 const source = path.resolve(process.env.EXTENSION_DIR || path.join(__dirname, '../roamcat-0.0.1/extension'));
 const outDir = path.resolve(__dirname, '../preview/sites');
 fs.mkdirSync(outDir, { recursive: true });

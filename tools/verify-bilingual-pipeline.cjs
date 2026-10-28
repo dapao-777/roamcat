@@ -10,9 +10,9 @@
 // 4) 瞬时失败静默自动重发，成功后不露出重试按钮；重试间隔 ≥ 退避表首档。
 // 5) 自动重试耗尽前绝不渲染失败 UI；耗尽后单元稳定 failed 且其它段落照常译出。
 // 6) 批级 429 失败触发整泵冷却：同批指纹相邻请求间隔 ≥ 首档退避，全部批次最终译出。
-// 运行：node tools/verify-bilingual-pipeline.cjs（需先 npm run build 生成 dist/extension；Edge + playwright-core，可用 PLAYWRIGHT_CORE_PATH 覆盖）
+// 运行：node tools/verify-bilingual-pipeline.cjs（需先 npm run build 生成 dist/extension；ego lite + playwright-core，可用 PLAYWRIGHT_CORE_PATH 覆盖）
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http'), os = require('node:os'), assert = require('node:assert/strict');
-const { launchExtension } = require('./lib/edge-extension.cjs');
+const { launchExtension } = require('./lib/extension-browser.cjs');
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 // 源码层（roamcat-0.0.1/extension）不含构建期页面 ui/*.html，无法作为 unpacked 扩展加载；
 // 默认指向 dist/extension，缺产物时给出明确指引而不是在浏览器里超时。

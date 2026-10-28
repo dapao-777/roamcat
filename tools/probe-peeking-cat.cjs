@@ -4,7 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { chromium } = require('playwright-core');
+const {chromium} = require('./lib/browser.cjs');
 
 function renderPeekingCatSvg() {
   return `
@@ -387,7 +387,6 @@ fs.writeFileSync(htmlFile, htmlContent, 'utf8');
 
 (async () => {
   const browser = await chromium.launch({
-    channel: 'msedge',
     headless: true
   });
   const page = await browser.newPage({ viewport: { width: 980, height: 600 } });

@@ -4,8 +4,7 @@
 
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),os=require('node:os'),assert=require('node:assert/strict');
 const {verifyModuleGraph}=require('./lib/module-graph.cjs');
-function loadPlaywright(){try{return require('playwright-core');}catch(first){const override=process.env.PLAYWRIGHT_CORE_PATH;if(override){try{return require(override);}catch{}}throw new Error(`找不到 playwright-core（${first?.message || first}）。请在项目根运行 npm i -D playwright-core，或设置 PLAYWRIGHT_CORE_PATH 指向可用副本。`);}}
-const {chromium}=loadPlaywright();
+const {chromium}=require('./lib/browser.cjs');
 const source=path.resolve(process.env.EXTENSION_DIR||path.join(__dirname,'../dist/extension')),extension=fs.mkdtempSync(path.join(os.tmpdir(),'roamcat-fixture-extension-')),out=path.resolve(__dirname,'../preview/audit');fs.mkdirSync(out,{recursive:true});
 fs.cpSync(source,extension,{recursive:true});const manifestPath=path.join(extension,'manifest.json'),manifest=JSON.parse(fs.readFileSync(manifestPath));manifest.host_permissions=['http://127.0.0.1/*'];fs.writeFileSync(manifestPath,JSON.stringify(manifest));
 const report={checks:[],failures:[],pageErrors:[],ui:[],apiCalls:[]};
@@ -14,14 +13,14 @@ function fixtureResult(b){const schema=b.response_format?.json_schema?.schema;if
 const server=http.createServer((req,res)=>{if(req.method==='OPTIONS'){res.writeHead(204,{'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'*'}).end();return;}if(req.url.startsWith('/v1/')){let body='';req.on('data',c=>body+=c);req.on('end',()=>{const b=JSON.parse(body||'{}');report.apiCalls.push({url:req.url,stream:!!b.stream,summary:!!b.response_format?.json_schema?.schema?.properties?.takeaway});res.writeHead(200,{'Content-Type':'application/json','Access-Control-Allow-Origin':'*'});if(req.url.endsWith('/models'))return res.end(JSON.stringify({data:[{id:'audit-model'}]}));const result=fixtureResult(b);const finish=()=>res.end(JSON.stringify({choices:[{message:{content:JSON.stringify(result)},finish_reason:'stop'}]}));if(b.response_format?.json_schema?.schema?.properties?.takeaway)setTimeout(finish,500);else finish();});return;}res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'}).end(article);});
 async function check(name,fn){if(process.env.AUDIT_CONTENT_ONLY&&/Every settings|Custom terminology|Domain rules|Invalid settings|History opt-in|Diagnostics export|All settings|Reset restores/.test(name))return;try{const detail=await fn();report.checks.push({name,...(detail?{detail}:{})});console.log('PASS '+name);}catch(e){report.failures.push({name,error:e.message});console.log('FAIL '+name+': '+e.message);}}
 (async()=>{
- // 浏览器回归前先过静态模块图门禁：加载契约、依赖方向或连接器闭包被破坏时不启动 Edge。
+ // 浏览器回归前先过静态模块图门禁：加载契约、依赖方向或连接器闭包被破坏时不启动浏览器。
  const graph=await verifyModuleGraph({root:path.resolve(__dirname,'../roamcat-0.0.1')});
  for(const failure of graph.failures)console.error('GRAPH '+failure.rule+': '+failure.message);
  if(graph.failures.length){console.error('模块图检查未通过，已中止浏览器审计。可单独运行：node tools/verify-module-graph.cjs');process.exit(1);}
  console.log('PASS 模块图与加载契约（'+graph.stats.files+' 个文件，'+graph.stats.edges+' 条 import 边）');
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin=`http://127.0.0.1:${server.address().port}`;
  const profile=fs.mkdtempSync(path.join(os.tmpdir(),'roamcat-audit-'));
- const context=await chromium.launchPersistentContext(profile,{channel:'msedge',headless:true,ignoreDefaultArgs:['--disable-extensions'],args:['--disable-extensions-except='+extension,'--load-extension='+extension],viewport:{width:1440,height:1000}});
+ const context=await chromium.launchPersistentContext(profile,{headless:true,ignoreDefaultArgs:['--disable-extensions'],args:['--disable-extensions-except='+extension,'--load-extension='+extension],viewport:{width:1440,height:1000}});
  let worker;
  try{
   worker=context.serviceWorkers()[0]||await context.waitForEvent('serviceworker');const id=new URL(worker.url()).host,base=`chrome-extension://${id}`;

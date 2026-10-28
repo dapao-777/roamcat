@@ -8,15 +8,8 @@
 // 3) 旋旋翻按钮仍可切换双语翻译。
 // 运行：PLAYWRIGHT_CORE_PATH=<playwright-core 路径> node tools/verify-bilingual-shortcut.cjs
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http'), os = require('node:os'), assert = require('node:assert/strict');
-function loadPlaywright() {
-  try { return require('playwright-core'); } catch (first) {
-    const override = process.env.PLAYWRIGHT_CORE_PATH;
-    if (override) { try { return require(override); } catch {} }
-    throw new Error(`找不到 playwright-core（${first?.message || first}）。请设置 PLAYWRIGHT_CORE_PATH。`);
-  }
-}
-const { chromium } = loadPlaywright();
-const source = path.resolve(process.env.EXTENSION_DIR || path.join(__dirname, '../roamcat-0.0.1/extension'));
+const {chromium} = require('./lib/browser.cjs');
+const source = path.resolve(process.env.EXTENSION_DIR || path.join(__dirname, '../dist/extension'));
 const extension = fs.mkdtempSync(path.join(os.tmpdir(), 'roamcat-shortcut-'));
 fs.cpSync(source, extension, { recursive: true });
 const manifestPath = path.join(extension, 'manifest.json');
@@ -68,7 +61,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   const origin = `http://127.0.0.1:${server.address().port}`;
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'roamcat-shortcut-profile-'));
   const context = await chromium.launchPersistentContext(profile, {
-    channel: 'msedge', headless: true, ignoreDefaultArgs: ['--disable-extensions'],
+    headless: true, ignoreDefaultArgs: ['--disable-extensions'],
     args: ['--disable-extensions-except=' + extension, '--load-extension=' + extension],
     viewport: { width: 1440, height: 1000 },
   });

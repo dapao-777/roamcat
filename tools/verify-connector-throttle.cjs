@@ -4,18 +4,13 @@
 
 // 回归：验证「自动连接本机连接器」的节流与失败退避（无需真实连接器/注册表）。
 // 观察信号：未安装连接器时，一次失败的自动连接会把 subscription.error 写成「未找到或未授权本地…」。
-//   · 修复后：首次尝试失败即在会话内标记 failed，后续 load() 不再尝试
-//             （chrome.storage.session 在 Service Worker 空闲重启后仍然保留，重启后同样被阻止）
-//             → SW 重启后 subscription.error 恢复为 null（新模块未发起过连接）
+//   · 现行为：每次尝试在 chrome.storage.session 的 autoConnect:<kind> 记下 {at, failures}，失败按 1/2/4… 分钟
+//             指数退避（上限 10 分钟），退避期内后续 load() 不再尝试（SW 空闲重启后标记仍在）
 //   · 修复前：没有节流标记，且 load() 会同步等待连接（连接器无响应时最长 45 秒）
-// 运行：PLAYWRIGHT_CORE_PATH=<playwright-core 路径> node tools/verify-connector-throttle.cjs
+// 运行：npm run build && node tools/verify-connector-throttle.cjs（默认加载 dist/extension，可用 EXTENSION_DIR 覆盖）
 const fs = require('node:fs'), path = require('node:path'), os = require('node:os'), assert = require('node:assert/strict');
-function loadPlaywright() {
-  const override = process.env.PLAYWRIGHT_CORE_PATH;
-  try { return require(override || 'playwright-core'); } catch { throw new Error('需要 PLAYWRIGHT_CORE_PATH'); }
-}
-const { chromium } = loadPlaywright();
-const source = path.resolve(process.env.EXTENSION_DIR || path.join(__dirname, '../roamcat-0.0.1/extension'));
+const {chromium} = require('./lib/browser.cjs');
+const source = path.resolve(process.env.EXTENSION_DIR || path.join(__dirname, '../dist/extension'));
 const extension = fs.mkdtempSync(path.join(os.tmpdir(), 'roamcat-throttle-ext-'));
 fs.cpSync(source, extension, { recursive: true });
 const manifestPath = path.join(extension, 'manifest.json');
@@ -33,7 +28,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 (async () => {
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'roamcat-throttle-profile-'));
   const context = await chromium.launchPersistentContext(profile, {
-    channel: 'msedge', headless: true, ignoreDefaultArgs: ['--disable-extensions'],
+    headless: true, ignoreDefaultArgs: ['--disable-extensions'],
     args: ['--disable-extensions-except=' + extension, '--load-extension=' + extension],
     viewport: { width: 1280, height: 800 },
   });
@@ -55,7 +50,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       for (let i = 0; i < 8; i++) { const r = await request('STATE_GET'); assert.ok(r?.ok, r?.error); }
       await sleep(2500);
       const value = await marker();
-      assert.ok(value && value.failed === true, '首次尝试失败后应标记 failed：' + JSON.stringify(value));
+      assert.ok(value && Number.isFinite(value.at) && value.failures >= 1, '首次尝试失败后应记下失败次数：' + JSON.stringify(value));
       const state = await request('STATE_GET');
       assert.ok(state.data.subscription.error, '首次失败应记录错误信息');
       return JSON.stringify(value);
@@ -75,7 +70,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await check('extension stays healthy without a connector installed', async () => {
       const models = await request('MODELS_LIST', { refresh: false, kind: 'chatgpt' });
       assert.ok(models?.ok === false, '未安装连接器时 MODELS_LIST 应返回可读错误');
-      assert.ok(/连接器/.test(models.error), '错误信息应可读：' + models.error);
+      assert.ok(/连接/.test(models.error), '错误信息应可读：' + models.error);
       const state = await request('STATE_GET');
       assert.ok(state?.ok);
       return 'STATE_GET / MODELS_LIST 行为正常';

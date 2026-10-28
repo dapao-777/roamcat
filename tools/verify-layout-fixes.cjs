@@ -7,22 +7,9 @@ const path = require('node:path');
 const http = require('node:http');
 const assert = require('node:assert/strict');
 
-function loadPlaywright() {
-  try {
-    return require('playwright-core');
-  } catch (err) {
-    const override = process.env.PLAYWRIGHT_CORE_PATH;
-    if (override) {
-      try {
-        return require(override);
-      } catch {}
-    }
-    throw new Error(`找不到 playwright-core：${err.message}`);
-  }
-}
 
-const { chromium } = loadPlaywright();
-const root = path.resolve(process.env.EXTENSION_DIR || path.join(__dirname, '../roamcat-0.0.1/extension'));
+const {chromium} = require('./lib/browser.cjs');
+const root = path.resolve(process.env.EXTENSION_DIR || path.join(__dirname, '../dist/extension'));
 const previewDir = path.resolve(__dirname, '../preview/audit');
 if (!fs.existsSync(previewDir)) fs.mkdirSync(previewDir, { recursive: true });
 
@@ -136,7 +123,7 @@ function mockChrome() {
 (async () => {
   await new Promise(r => server.listen(0, '127.0.0.1', r));
   const base = `http://127.0.0.1:${server.address().port}`;
-  const browser = await chromium.launch({ channel: 'msedge', headless: true });
+  const browser = await chromium.launch({ headless: true });
 
   try {
     const context = await browser.newContext({ viewport: { width: 1440, height: 960 } });
@@ -147,9 +134,9 @@ function mockChrome() {
     await page.goto(base + '/ui/options.html#service');
     await page.waitForTimeout(600);
 
-    const readoutVisibleOnService = await page.locator('.hero-right-card.reading-readout').isVisible();
-    console.log('1. Readout card visible on #service (expected false):', readoutVisibleOnService);
-    assert.equal(readoutVisibleOnService, false, 'Readout card must be hidden on #service');
+    const readoutVisibleOnService = await page.locator('.now-status').isVisible();
+    console.log('1. Status strip visible on #service (expected false):', readoutVisibleOnService);
+    assert.equal(readoutVisibleOnService, false, 'Status strip must be hidden on #service');
 
     await page.screenshot({ path: path.join(previewDir, 'layout-service-clean.png') });
     console.log('Saved layout-service-clean.png');
@@ -157,18 +144,18 @@ function mockChrome() {
     // 2. Visit #sites (Site Rules)
     await page.evaluate(s=>{location.hash='#'+s},'sites');
     await page.waitForTimeout(400);
-    const readoutVisibleOnSites = await page.locator('.hero-right-card.reading-readout').isVisible();
-    console.log('2. Readout card visible on #sites (expected false):', readoutVisibleOnSites);
-    assert.equal(readoutVisibleOnSites, false, 'Readout card must be hidden on #sites');
+    const readoutVisibleOnSites = await page.locator('.now-status').isVisible();
+    console.log('2. Status strip visible on #sites (expected false):', readoutVisibleOnSites);
+    assert.equal(readoutVisibleOnSites, false, 'Status strip must be hidden on #sites');
     await page.screenshot({ path: path.join(previewDir, 'layout-sites-clean.png') });
     console.log('Saved layout-sites-clean.png');
 
     // 3. Visit #assistance (Reading Preferences)
     await page.evaluate(s=>{location.hash='#'+s},'assistance');
     await page.waitForTimeout(400);
-    const readoutVisibleOnAssistance = await page.locator('.hero-right-card.reading-readout').isVisible();
-    console.log('3. Readout card visible on #assistance (expected true):', readoutVisibleOnAssistance);
-    assert.equal(readoutVisibleOnAssistance, true, 'Readout card must be visible on #assistance');
+    const readoutVisibleOnAssistance = await page.locator('.now-status').isVisible();
+    console.log('3. Status strip visible on #assistance (expected true):', readoutVisibleOnAssistance);
+    assert.equal(readoutVisibleOnAssistance, true, 'Status strip must be visible on #assistance');
     await page.screenshot({ path: path.join(previewDir, 'layout-assistance-clean.png') });
     console.log('Saved layout-assistance-clean.png');
 
@@ -186,21 +173,26 @@ function mockChrome() {
 
     const keyInput = page.locator('#provider-key');
     await keyInput.fill('sk-test-secret-key-12345');
-    const typeBefore = await keyInput.getAttribute('type');
-    console.log('4. API key input type before toggle:', typeBefore);
-    assert.equal(typeBefore, 'password');
+    // 密钥框是多行 textarea（可填多把 Key），没有 type=password，靠 key-pool-revealed 类切换遮罩。
+    const revealed = () => keyInput.evaluate(el => el.classList.contains('key-pool-revealed'));
+    const maskedBefore = !(await revealed());
+    console.log('4. API key masked before toggle (expected true):', maskedBefore);
+    assert.equal(maskedBefore, true);
 
     const toggleBtn = page.locator('.toggle-password-btn[data-toggle-target="provider-key"]');
     await toggleBtn.click();
     await page.waitForTimeout(200);
 
-    const typeAfter = await keyInput.getAttribute('type');
-    console.log('4. API key input type after toggle (expected text):', typeAfter);
-    assert.equal(typeAfter, 'text');
+    const revealedAfter = await revealed();
+    console.log('4. API key revealed after toggle (expected true):', revealedAfter);
+    assert.equal(revealedAfter, true);
     await page.screenshot({ path: path.join(previewDir, 'layout-api-key-visible.png') });
     console.log('Saved layout-api-key-visible.png');
 
     // 5. Test Stamp Card Modal & Goto Pet button
+    // 印章卡在状态条里，只在「阅读」组显示；从同组的 #appearance 打开，才能验证「去设置伴读猫」跳回 #assistance。
+    await page.evaluate(s=>{location.hash='#'+s},'appearance');
+    await page.waitForTimeout(400);
     const stampCard = page.locator('#sidebar-stamp-card');
     await stampCard.click();
     await page.waitForTimeout(300);

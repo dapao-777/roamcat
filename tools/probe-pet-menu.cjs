@@ -8,16 +8,8 @@ const path = require('path');
 const os = require('os');
 const http = require('http');
 
-function loadPlaywright() {
-  try { return require('playwright-core'); }
-  catch (first) {
-    const override = process.env.PLAYWRIGHT_CORE_PATH;
-    if (override) { try { return require(override); } catch {} }
-    throw new Error('Playwright not found: ' + first?.message);
-  }
-}
 
-const { chromium } = loadPlaywright();
+const {chromium} = require('./lib/browser.cjs');
 const extension = path.resolve(process.env.EXTENSION_DIR || path.join(__dirname, '../dist/extension'));
 const out = path.resolve(process.env.PROBE_OUT_DIR || path.join(__dirname, '../preview/pet-probe'));
 fs.mkdirSync(out, { recursive: true });
@@ -37,7 +29,6 @@ const LONG_SPEECH = '这是一段足够长的伴读猫提示文本，用来验�
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'roamcat-probe-profile-'));
 
   const context = await chromium.launchPersistentContext(profile, {
-    channel: 'msedge',
     headless: true,
     ignoreDefaultArgs: ['--disable-extensions'],
     args: ['--disable-extensions-except=' + extension, '--load-extension=' + extension],

@@ -8,19 +8,9 @@ const os = require('os');
 const assert = require('assert');
 const http = require('http');
 
-function loadPlaywright() {
-  try { return require('playwright-core'); }
-  catch (first) {
-    const override = process.env.PLAYWRIGHT_CORE_PATH;
-    if (override) {
-      try { return require(override); } catch {}
-    }
-    throw new Error('Playwright not found');
-  }
-}
 
-const { chromium } = loadPlaywright();
-const source = path.resolve(process.env.EXTENSION_DIR || path.join(__dirname, '../roamcat-0.0.1/extension'));
+const {chromium} = require('./lib/browser.cjs');
+const source = path.resolve(process.env.EXTENSION_DIR || path.join(__dirname, '../dist/extension'));
 const extension = fs.mkdtempSync(path.join(os.tmpdir(), 'roamcat-pet-ext-'));
 const out = path.resolve(__dirname, '../preview/pet');
 fs.mkdirSync(out, { recursive: true });
@@ -61,7 +51,6 @@ const server = http.createServer((req, res) => {
 
   console.log('Launching browser with extension:', extension);
   const context = await chromium.launchPersistentContext(profile, {
-    channel: 'msedge',
     headless: true,
     ignoreDefaultArgs: ['--disable-extensions'],
     args: ['--disable-extensions-except=' + extension, '--load-extension=' + extension],

@@ -10,15 +10,17 @@
 | `npm run build:watch` | watch 模式持续构建 |
 | `npm run gen:i18n` | 由 `extension/i18n.js` 生成内容脚本专用的瘦身词典 `extension/i18n-content.js`（改了网页侧文案或网页侧脚本新用了别的命名空间后必须重跑；`i18n-content.test.mjs` 拦截漂移） |
 | `npm run verify` | 模块图静态门禁（R1–R12；R1–R11 只扫 `roamcat-0.0.1/extension` 与 `connector`，R12 字号档位另扫 `src/`） |
-| `npm run verify:sites` | 站点档案端到端：fixture 按真实 URL 路由进 Edge 断言 inspect()（加 `--live` 复核真站） |
-| `npm run verify:service` | 本机常驻连接服务端到端：127.0.0.1:47821 起带假后端的 `connector/service.mjs`，Edge 加载 `dist/extension` 断言优先经 WebSocket 连上、服务停掉后回退浏览器连接器 → `preview/connector-service.json`（先跑 `npm run build`；端口被真实服务占用时先停掉它） |
+| `npm run verify:sites` | 站点档案端到端：fixture 按真实 URL 路由进浏览器断言 inspect()（加 `--live` 复核真站） |
+| `npm run verify:service` | 本机常驻连接服务端到端：先断言扩展内置服务地址端口 = 47821，再在 127.0.0.1 空闲端口起带假后端的 `connector/service.mjs`（测试副本只改这一处地址，不占用真实服务的 47821），浏览器加载 `dist/extension` 断言优先经 WebSocket 连上、服务停掉后回退浏览器连接器 → `preview/connector-service.json`（先跑 `npm run build`） |
 | `npm test` | 单元测试：`tools/run-unit-tests.mjs` 列出 `tools/unit/*.test.mjs` 再交给 `node --test`（Node 20 不展开通配符，故不直接传 glob） |
-| `npm run verify:build` | 构建产物门禁：字节比对 + Edge 实际加载 `dist/extension` 冒烟 |
-| `npm run verify:ui` | 全界面 UI 门禁：Edge 加载 `dist/extension`，遍历 popup/options 全分区/welcome/reader 与页内挂件（词卡 HUD/任务条/解构卡/toast/选区条/伴读猫全状态），双主题截图 + 断言 → `preview/ui-audit/`（先跑 `npm run build`） |
+| `npm run verify:build` | 构建产物门禁：字节比对 + 浏览器实际加载 `dist/extension` 冒烟 |
+| `npm run verify:ui` | 全界面 UI 门禁：浏览器加载 `dist/extension`，遍历 popup/options 全分区/welcome/reader 与页内挂件（词卡 HUD/任务条/解构卡/toast/选区条/伴读猫全状态），双主题截图 + 断言 → `preview/ui-audit/`（先跑 `npm run build`） |
 | `npm run verify:pet` | 伴读猫按钮门禁：真实点击/键盘操作全部悬浮按钮（2×2 快捷按钮/旋旋翻/缩放/贴边探头/气泡/摘要窗），断言状态与可及性 → `preview/pet-buttons/` |
 | `npm run verify:options` | 设置页行为门禁：本地 HTTP 服务 `dist/extension` + 模拟 `chrome.*`，断言句子粒度保存/失败回滚、查词按键、阅读记录、宣言弹层、模型列表与「恢复默认阅读偏好」→ `preview/verification.json`（先跑 `npm run build`） |
-| `npm run verify:audit` | 真后台端到端审计：Edge 加载 `dist/extension`（host 权限收窄为 127.0.0.1）+ 本地假模型接口，覆盖设置持久化、规则增删、词卡、解构、整页翻译、摘要、伴读猫等 30 项 → `preview/audit/`（先跑 `npm run build`） |
+| `npm run verify:audit` | 真后台端到端审计：浏览器加载 `dist/extension`（host 权限收窄为 127.0.0.1）+ 本地假模型接口，覆盖设置持久化、规则增删、词卡、解构、整页翻译、摘要、伴读猫等 30 项 → `preview/audit/`（先跑 `npm run build`） |
 | `npm run promo` | 宣传片流水线（`tools/promo/`）：提取品牌 SVG → 合成 chiptune WAV → Playwright 逐帧 `__seek(t)` 截图（1920×1080@30，可多 worker）→ ffmpeg 合成 `preview/promo/roamcat-intro.mp4`（需 `ffmpeg-static`，`--no-save` 安装；`--skip-frames` 复用已有帧） |
+
+浏览器门禁与截图脚本统一经 `tools/lib/browser.cjs` 启动浏览器，默认用本机 **ego lite**（自动找 `Program Files/Citro Labs/ego lite/Application/ego.exe`，以临时配置 + 本地调试端口自启再经 CDP 连接）。`ROAMCAT_BROWSER=msedge`/`chrome` 改用 Playwright 渠道，设为 exe 路径则用该 Chromium 系浏览器；`ROAMCAT_BROWSER_HEADLESS=0` 开窗观察。新脚本从该模块取 `chromium`，不要再写死 `channel`/`executablePath`。
 
 ## 结构约定
 

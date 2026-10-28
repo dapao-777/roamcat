@@ -3,7 +3,7 @@
  * 文件职责：构建产物门禁——dist/extension 的静态完整性与真实浏览器加载验证。
  * 主要内容：npm run build → 源树逐文件字节比对（manifest.json 与 REPLACED_BY_BUILD
  *   除外）→ 产物 manifest 检查（key、__MSG_*__ 引用）→ 产物 HTML 的 CSP 与资源可解析性
- *   → Edge 实际加载并断言扩展 ID 等于 build/extension-key.json 预计算值 → popup 渲染冒烟。
+ *   → 浏览器（默认 ego lite）实际加载并断言扩展 ID 等于 build/extension-key.json 预计算值 → popup 渲染冒烟。
  * 模块边界：只读源树与 build/extension-key.json，写 preview/ 报告；不修改源文件。
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -13,7 +13,6 @@
  */
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),assert=require('node:assert/strict'),{execFileSync}=require('node:child_process');
-function loadPlaywright(){try{return require('playwright-core');}catch(first){const override=process.env.PLAYWRIGHT_CORE_PATH;if(override){try{return require(override);}catch{}}throw new Error(`找不到 playwright-core（${first?.message || first}）。请在项目根运行 npm i -D playwright-core，或设置 PLAYWRIGHT_CORE_PATH 指向可用副本。`);}}
 const repoRoot=path.resolve(__dirname,'..'),source=path.join(repoRoot,'roamcat-0.0.1','extension'),dist=path.join(repoRoot,'dist','extension'),out=path.join(repoRoot,'preview');fs.mkdirSync(out,{recursive:true});
 const report={checks:[],failures:[],pageErrors:[],byteDrift:[]};
 async function check(name,fn){try{const detail=await fn();report.checks.push({name,...(detail?{detail}:{})});console.log('PASS '+name);}catch(e){report.failures.push({name,error:e.message});console.log('FAIL '+name+': '+e.message);}}
@@ -65,9 +64,9 @@ function* walkFiles(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:tr
    return {refs};
  });
 
- const {chromium}=loadPlaywright();
+ const {chromium}=require('./lib/browser.cjs');
  const profile=fs.mkdtempSync(path.join(os.tmpdir(),'roamcat-build-'));
- const context=await chromium.launchPersistentContext(profile,{channel:'msedge',headless:true,ignoreDefaultArgs:['--disable-extensions'],args:['--disable-extensions-except='+dist,'--load-extension='+dist]});
+ const context=await chromium.launchPersistentContext(profile,{headless:true,ignoreDefaultArgs:['--disable-extensions'],args:['--disable-extensions-except='+dist,'--load-extension='+dist]});
  try{
    const worker=context.serviceWorkers()[0]||await context.waitForEvent('serviceworker');
    const id=new URL(worker.url()).host;

@@ -7,22 +7,9 @@ const path = require('node:path');
 const http = require('node:http');
 const assert = require('node:assert/strict');
 
-function loadPlaywright() {
-  try {
-    return require('playwright-core');
-  } catch (err) {
-    const override = process.env.PLAYWRIGHT_CORE_PATH;
-    if (override) {
-      try {
-        return require(override);
-      } catch {}
-    }
-    throw new Error(`找不到 playwright-core：${err.message}`);
-  }
-}
 
-const { chromium } = loadPlaywright();
-const root = path.resolve(process.env.EXTENSION_DIR || path.join(__dirname, '../roamcat-0.0.1/extension'));
+const {chromium} = require('./lib/browser.cjs');
+const root = path.resolve(process.env.EXTENSION_DIR || path.join(__dirname, '../dist/extension'));
 const out = path.resolve(__dirname, '../preview');
 if (!fs.existsSync(out)) fs.mkdirSync(out, { recursive: true });
 
@@ -131,7 +118,7 @@ function mockChrome() {
 (async () => {
   await new Promise(r => server.listen(0, '127.0.0.1', r));
   const base = `http://127.0.0.1:${server.address().port}`;
-  const browser = await chromium.launch({ channel: 'msedge', headless: true });
+  const browser = await chromium.launch({ headless: true });
 
   try {
     const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1 });
