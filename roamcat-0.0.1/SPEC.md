@@ -83,7 +83,7 @@
 ### 3.1 字段规范
 - `manifest_version: 3`；`background.service_worker = background.js`，`type: module`。
 - `minimum_chrome_version: "125"`；`content_security_policy.extension_pages = "script-src 'self' 'wasm-unsafe-eval'; object-src 'none'; base-uri 'none'"`（wasm 供本地 ONNX 推理）。
-- 内容脚本固定九件套 `design.js, i18n-content.js, reading-style.js, content-ui.js, pet-quotes.js, complexity.js, formula.js, site-profiles.js, content.js`（`content-ui.js` 为 `src/content-ui` 经 `vite.content-ui.config.mjs` 构建的 IIFE 产物，入库、不手改；`i18n-content.js` 由 `npm run gen:i18n` 从 `i18n.js` 生成、入库，必须在所有调用 `t()` 的脚本之前加载），`run_at: document_idle`，`all_frames: false`；`floating-pet.js` 与 `auto-start.js` 改为 `chrome.scripting` 按需动态注册（同为 classic 形态，受模块图 R1 同约束）；伴读猫注册项只含 `floating-pet.js`，渲染层/语录库/文案由静态九件套提供，静态脚本晚到时它短暂等待依赖就绪再挂载。`injectPageUI` 给已打开的标签页补注入时同样先注入 `i18n-content.js`。
+- 内容脚本固定九件套 `design.js, i18n-content.js, reading-style.js, content-ui.js, pet-quotes.js, complexity.js, formula.js, site-profiles.js, content.js`（`content-ui.js` 为 `src/content-ui` 经 `vite.content-ui.config.mjs` 构建的 IIFE 产物，入库、不手改；`i18n-content.js` 由 `npm run gen:i18n` 从 `i18n.js` 生成、入库，必须在所有调用 `t()` 的脚本之前加载），`run_at: document_idle`，`all_frames: false`；`floating-pet.js` 与 `auto-start.js` 改为 `chrome.scripting` 按需动态注册（同为 classic 形态，受模块图 R1 同约束）；伴读猫注册项只含 `floating-pet*.js`，渲染层/语录库/文案由静态九件套提供，静态脚本晚到时它短暂等待依赖就绪再挂载。`injectPageUI` 给已打开的标签页补注入时按九件套同集同序注入（先 `i18n-content.js`，`complexity.js`/`formula.js` 不可省——缺了不报错，只会让长难句高亮变空、公式被送去翻译；`background-smoke.test.mjs` 断言对齐）。
 - `web_accessible_resources` 仅 `icons/roamcat.svg` 与亮色版 `icons/roamcat-light.svg`（`use_dynamic_url: true`）——页面内品牌图标按网页明暗取用，最小暴露面。
 
 ### 3.2 权限与用途（上架时可直接引用的理由）
@@ -279,6 +279,7 @@
 - 平台：macOS / Linux / Windows（Windows 用 `.NET csc.exe` 现场编译 C# 启动器 + 注册表；其余平台写 `launch` shell 脚本 + `NativeMessagingHosts` JSON）。
 - 浏览器：`chrome`/`edge` 默认；显式支持 `chromium`/`chrome-beta`/`chrome-testing`；只注册用户显式指定的目标。
 - 扩展 ID：`--extension-id` 支持单个或逗号分隔多个；缺省时按 manifest.key 或路径哈希推导。
+- CLI 启动：Windows 的 `codex.cmd`/`.bat` 经 `cmd.exe /d /s /c` 执行且路径自带引号（`codexSpawnCommand`），路径含空格也能拉起；不用 `shell: true`。
 - CLI 查找：PATH + 平台特例（Windows `codex.cmd`/`.bat`、`~/.grok/bin`、`~/.local/bin`、`~/.gemini/bin` 等）；`--codex/--grok/--agy` 可指定。
 - 默认一次注册本机找得到的全部通道（`chatgpt` / `grok` / `antigravity`），找不到的跳过；`--backend` 只装一个。找不到任何 CLI，或指定通道注册失败时，进程以非 0 退出。
 - 登录态：仅缺失时才从 `~/.codex/auth.json` 复制；重装不覆盖。
@@ -350,7 +351,7 @@
 | 连接器单测 | `tools/verify-summary-timeout.mjs`（chrome mock + 定时器拦截） | 原生消息超时与计时器释放 |
 | 单元测试 | `npm test` → `tools/run-unit-tests.mjs` 显式列出 `tools/unit/*.test.mjs` 交给 `node --test`（Node 20.11+；阅读器用例依赖 `fflate`，CI 先 `npm ci`；224 例） | `gloss.mjs` 四类协议的准备/校验/纠正重试与失败码；`reading.js` 渐退状态机、迁移与读者证据；`lexicon.js` 词提名（排除规则/优先级/出现位置）；`activation.js` 自动化策略；`message-router/protocol` 注册表契约、载荷解析、设置补丁与副作用计划；`connector/host.mjs` 帧协议与来源校验；`background.js` mock 浏览器冒烟（注册表构造、信任边界、真实派发） |
 | 静态检查 | `node tools/verify-module-graph.cjs`（12 条规则：加载契约、import 解析、无环、连接器闭包纯净、分层方向、无反向依赖、文件头注释、无重复 ID、无内联脚本、manifest 资源存在、extension 脚本 `node --check` 语法（classic 按文件、ESM 经 stdin 按 module 解析）、字号档位）；`node tools/verify-deadcode.cjs`（未使用导出/导入，报告型） | 模块依赖方向、页面契约、语法与死代码 |
-| 真实扩展回归 | `tools/audit-extension.cjs`（playwright-core + 系统 Edge 无头，本地 fixture 文章 + 模拟模型服务） | 截至 2026-09-22：完整回归 29 项 + 摘要补充回归 22 项（去重 30 场景）：设置持久化、12 分区明暗/窄窗、术语/规则、API 模型列表、内容脚本开关、真实按键查词卡片、语言切换、已认识词撤销、历史导出清理、句子结构、整页翻译显示与清除、本地模型零请求分类、个性化空态、摘要防重与切换文章/模型过期、伴读猫拖拽持久化、欢迎页 |
+| 真实扩展回归 | `tools/audit-extension.cjs`（playwright-core + 本机 ego lite 无头（`tools/lib/browser.cjs`，可用 `ROAMCAT_BROWSER` 切换），本地 fixture 文章 + 模拟模型服务） | 截至 2026-09-22：完整回归 29 项 + 摘要补充回归 22 项（去重 30 场景）：设置持久化、12 分区明暗/窄窗、术语/规则、API 模型列表、内容脚本开关、真实按键查词卡片、语言切换、已认识词撤销、历史导出清理、句子结构、整页翻译显示与清除、本地模型零请求分类、个性化空态、摘要防重与切换文章/模型过期、伴读猫拖拽持久化、欢迎页 |
 | 专项回归 | `tools/verify-bilingual-shortcut.cjs` 等（另有 `verify-catalog/jev/connector-throttle/pet-actions/popup-colors/popup-emergency/summary-timeout`） | 快捷键（页面触发/输入框忽略/旋旋翻开关/工具栏入口）、服务目录、Jev 判定、连接器节流、伴读猫操作、弹窗配色与应急翻译、摘要超时 |
 | 全界面门禁 | `npm run verify:ui`（`tools/verify-ui-all.cjs`，79 项断言；每轮先清理旧截图） | options 全 12 分区明暗/窄窗、welcome/reader/popup、页内挂件（词卡/任务条/解构卡/toast/选区条/伴读猫）、中英文档断言、横向溢出、控制台错误 |
 | 伴读猫门禁 | `npm run verify:pet`（`tools/verify-pet-buttons.cjs`，68 项断言） | 快捷坞/旋旋翻/缩放/贴边/气泡/摘要窗全部按钮的真实点击与键盘操作、文案键解析 |
@@ -386,7 +387,7 @@ MV3 下改代码必须重载扩展：service worker 变更需重载扩展本身�
 ---
 
 ## 13. 构建与发布规范
-- 扩展本体以构建产物为准：`npm run build` → `dist/extension/`（源层拷贝 − `REPLACED_BY_BUILD` + Vite 页面产物 + 变换后的 manifest；dev 模式注入 `build/extension-key.json` 的固定 key，`npm run build:release` 为无 key 的 minify 产物）。产物门禁 `npm run verify:build`：字节比对 + Edge 实际加载冒烟。
+- 扩展本体以构建产物为准：`npm run build` → `dist/extension/`（源层拷贝 − `REPLACED_BY_BUILD` + Vite 页面产物 + 变换后的 manifest；dev 模式注入 `build/extension-key.json` 的固定 key，`npm run build:release` 为无 key 的 minify 产物）。产物门禁 `npm run verify:build`：字节比对 + 浏览器（默认 ego lite）实际加载冒烟。
 - Release 包只含 `extension/`（构建产物重命名）、`connector/`、`README.md`、`LICENSE`、`NOTICE.txt`（白名单制；本文 SPEC.md 不随包发布）。
 - 发布前要求：干净且已提交的 HEAD；生成 `dist/roamcat-0.0.1.zip` + `SHA256SUMS`。
 - 升级约束：保持解压目录不变（未打包扩展 ID 与路径相关；使用 dev 构建时 ID 由 `build/extension-key.json` 固定）；连接器随扩展一起更新并重跑安装程序。

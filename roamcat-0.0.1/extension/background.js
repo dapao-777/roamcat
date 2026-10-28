@@ -2799,7 +2799,8 @@ async function injectPageUI(tabId, includeVideo = false, petWanted) {
   // 文案运行时须先于渲染层：补注入的标签页没有 manifest 静态脚本，缺它界面只剩键名。
   if (!status?.contentAlive) filesToInject.push('design.js','i18n-content.js','reading-style.js','content-ui.js');
   if (petWanted && !status?.petAlive) filesToInject.push('pet-quotes.js',...PET_FILES);
-  if (!status?.contentAlive) filesToInject.push('site-profiles.js','content.js');
+  // 与 manifest 九件套同序：长难句与公式保护模块缺了不会报错，只会让高亮变空、公式被送去翻译。
+  if (!status?.contentAlive) filesToInject.push('complexity.js','formula.js','site-profiles.js','content.js');
   if (includeVideo && VIDEO_SUPPORT_ENABLED && !status?.videoAlive) {
     filesToInject.push(...VIDEO_UI_FILES);
   }

@@ -159,6 +159,8 @@
     try {
       const context = chatContext();
       const result = await request('LIVE_CHAT_TRANSLATE', {requestId, items: batch.map(({id, text}) => ({id, text, context}))});
+      // 请求途中关过开关：这批的标记和占位已清掉，结果作废；否则行会被标成「已翻」却不显示，重新打开也不再翻。
+      if (!state.flights.has(requestId)) return;
       // API 通道每分钟有请求上限：超额时后台不发请求、直接退回，等到窗口腾出再接着翻。
       if (result?.throttled) {
         requeue(batch);
@@ -172,6 +174,7 @@
       setError('');
       setNote('');
     } catch (error) {
+      if (!state.flights.has(requestId)) return;
       // 失败的这批不再重试（聊天早已滚走），只暂停一会儿再接新消息，并把原因写到开关提示里。
       for (const item of batch) if (item.line.getAttribute(MARK) !== 'done') { item.line.setAttribute(MARK, 'skip'); unpaint(item.line); }
       state.pausedUntil = Date.now() + RETRY_AFTER_MS;

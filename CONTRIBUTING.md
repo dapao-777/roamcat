@@ -7,6 +7,7 @@
 - Node.js **20.11+**（Node 24 已验证）。
 - Chrome 或 Edge（`npm run build` 后在 `chrome://extensions` 开发者模式加载 `dist/extension/`）。
 - 仅运行单元测试和静态检查不需要浏览器。
+- 浏览器门禁（`verify:build`/`verify:ui`/`verify:pet`/`verify:audit` 等）默认用本机 [ego lite](https://lite.ego.app/)；没装 ego lite 时设 `ROAMCAT_BROWSER=msedge`（或 `chrome`、浏览器 exe 路径）改用其他 Chromium 系浏览器。
 
 ```sh
 git clone https://github.com/dapao-777/roamcat.git
@@ -14,7 +15,7 @@ cd roamcat
 npm ci
 npm run build         # Vite 构建 → dist/extension（dev 注入固定 key）
 npm run verify        # 模块图静态门禁（R1–R12）
-npm test              # 单元测试（tools/run-unit-tests.mjs → node --test，224 例）
+npm test              # 单元测试（tools/run-unit-tests.mjs → node --test，257 例）
 npm run verify:build  # 构建产物门禁（改构建链后必跑）
 ```
 

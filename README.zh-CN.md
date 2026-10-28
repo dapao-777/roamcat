@@ -270,18 +270,18 @@ node roamcat-0.0.1/connector/install.mjs --extension-id afpeggkplomdjjiemgajjgca
 | 命令 | 用途 |
 |---|---|
 | `npm run build` · `npm run build:watch` | Vite 开发构建 → `dist/extension`（扩展 ID 固定） |
-| `npm test` | 224 例单元测试（经 `tools/run-unit-tests.mjs` 调用 `node --test`） |
+| `npm test` | 257 例单元测试（经 `tools/run-unit-tests.mjs` 调用 `node --test`） |
 | `npm run verify` | 模块图门禁 R1–R11：加载契约、无环、分层方向、文件头、manifest 资源 |
-| `npm run verify:build` | 构建产物门禁：字节比对 + Edge 实际加载冒烟 |
+| `npm run verify:build` | 构建产物门禁：字节比对 + 浏览器实际加载冒烟 |
 | `npm run verify:ui` | 79 项全界面门禁：页面与挂件遍历、明暗主题、中英文断言，截图 → `preview/ui-audit/` |
 | `npm run verify:pet` | 68 项伴读猫门禁：真实点击全部悬浮按钮 |
 | `npm run verify:sites` | 站点档案端到端检查：fixture 按真实 URL 路由（`--live` 复核真站） |
 | `npm run verify:options` | 设置页行为门禁：保存、失败回滚、重置、模型列表等 |
-| `npm run verify:audit` | 30 项端到端审计：Edge 加载真实后台 + 本地假模型 |
+| `npm run verify:audit` | 30 项端到端审计：浏览器加载真实后台 + 本地假模型 |
 | `npm run build:release` · `node tools/package-release.mjs` | 发布构建（不带开发 key）→ `dist/release/roamcat-<版本>-extension.zip` 与 `SHA256SUMS` |
 | `npm run gen:tokens` · `npm run gen:i18n` · `node tools/check-dict.cjs` | 由 tokens.css 重新生成 `extension/design.js` · 重新生成内容脚本词典 `extension/i18n-content.js` · 中英字典对齐校验 |
 
-浏览器门禁需要 Playwright（`npm ci` 会安装 `playwright-core`）和本机 Edge。贡献前请读 [CONTRIBUTING.md](CONTRIBUTING.md)；安全漏洞请按 [SECURITY.md](SECURITY.md) 私下报告。
+浏览器门禁需要 Playwright（`npm ci` 会安装 `playwright-core`）和本机 Chromium 系浏览器：默认用 [ego lite](https://lite.ego.app/)，设 `ROAMCAT_BROWSER=msedge`（或 `chrome`、浏览器 exe 路径）可改用其他浏览器。贡献前请读 [CONTRIBUTING.md](CONTRIBUTING.md)；安全漏洞请按 [SECURITY.md](SECURITY.md) 私下报告。
 
 <details>
 <summary><strong>仓库布局</strong></summary>

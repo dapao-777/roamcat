@@ -6,7 +6,7 @@
  * 主要内容：mock chrome.runtime/storage/tabs；import 真实 background.js（node:test 每文件独立进程，
  *   模块缓存只在本文件内共享，因此 import 与全部派发断言放在同一测试的子树中）；经 onMessage 监听器
  *   发送 STATE_GET / OPEN_OPTIONS / DOMAIN_TEST / FLOATING_PET_POSITION_SET / API_MODELS_LIST /
- *   LIVE_CHAT_TRANSLATE（主机/开关检查与 API 限额）/ ENSURE_PAGE_UI（Twitch 补注入）/ 未知类型，断言成功、拒绝与错误文案；导入期不得出现注册表完整性告警。
+ *   LIVE_CHAT_TRANSLATE（主机/开关检查与 API 限额）/ ENSURE_PAGE_UI（Twitch 补注入、阅读脚本与九件套同序）/ 未知类型，断言成功、拒绝与错误文案；导入期不得出现注册表完整性告警。
  * 模块边界：仅 mock 浏览器边界，不 mock 任何被测扩展模块；不访问 IndexedDB（history-store 懒加载，
  *   本测试不触发历史操作）。
  *
@@ -232,6 +232,21 @@ test('迁移后的 background.js 在 mock 浏览器中构造注册表并按信�
       assert.ok(fresh.indexOf('i18n-content.js') < fresh.indexOf('live-chat.js'));
       assert.deepEqual(await ensure({contentAlive: true, petAlive: true, videoAlive: false, liveChatAlive: true, host: 'www.twitch.tv'}), []);
       assert.ok(!(await ensure({contentAlive: false, petAlive: true, videoAlive: false, liveChatAlive: false, host: 'example.com'})).includes('live-chat.js'));
+    } finally {
+      injections.probe = null;
+    }
+  });
+
+  await t.test('补注入阅读脚本与 manifest 九件套同集同序', async () => {
+    const manifest = JSON.parse(readFileSync(new URL('../../roamcat-0.0.1/extension/manifest.json', import.meta.url), 'utf8'));
+    const statics = manifest.content_scripts[0].js;
+    injections.probe = {contentAlive: false, petAlive: false, videoAlive: false, liveChatAlive: false, host: 'example.com'};
+    injections.files.length = 0;
+    try {
+      const response = await send({type: 'ENSURE_PAGE_UI'}, {...contentPage(chrome), tab: {id: 10, url: 'https://example.com/a'}});
+      assert.equal(response.ok, true, response.error);
+      // 漏掉 complexity.js / formula.js 不会报错，只会让长难句高亮变空、公式被送去翻译。
+      assert.deepEqual(injections.files.flat().filter(file => statics.includes(file)), statics);
     } finally {
       injections.probe = null;
     }

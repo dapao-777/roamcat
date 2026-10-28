@@ -88,6 +88,15 @@ export function buildCodexConfig() {
   ].join("\n");
 }
 
+// Windows npm 全局的 codex 落盘为 codex.cmd，不能直接 spawn（EINVAL），要经 cmd.exe 执行。不用 shell: true：
+// 那样 Node 不给命令加引号，路径含空格（如 C:\Users\Li Lei\…）时 cmd 会把它拆开，而且传参会触发 DEP0190 弃用告警。
+export function codexSpawnCommand(codexPath, platform = process.platform, comspec = process.env.ComSpec) {
+  const args = ["app-server", "--stdio", "--strict-config"];
+  if (platform !== "win32" || !/\.(cmd|bat)$/i.test(codexPath)) return { command: codexPath, args, options: {} };
+  const shell = comspec || join(process.env.SystemRoot || "C:\\Windows", "System32", "cmd.exe");
+  return { command: shell, args: ["/d", "/s", "/c", `""${codexPath}" ${args.join(" ")}"`], options: { windowsVerbatimArguments: true } };
+}
+
 export function buildCodexEnv({ codexPath, codexHome, tmpDir }) {
   const isWin = process.platform === "win32";
   const pathEntries = [...new Set([
@@ -288,14 +297,13 @@ export class CodexClient extends EventEmitter {
       }
     } catch {}
 
-    // Windows npm 全局的 codex 落盘为 codex.cmd，必须经 shell 才能 spawn（否则 EINVAL）。
-    const codexNeedsShell = process.platform === "win32" && /\.(cmd|bat)$/i.test(this.codexPath);
-    const child = this.spawnImpl(this.codexPath, ["app-server", "--stdio", "--strict-config"], {
+    const { command, args, options } = codexSpawnCommand(this.codexPath);
+    const child = this.spawnImpl(command, args, {
       cwd: this.workDir,
       env: buildCodexEnv({ codexPath: this.codexPath, codexHome: this.codexHome, tmpDir: this.tmpDir }),
       stdio: ["pipe", "pipe", "pipe"],
       windowsHide: true,
-      ...(codexNeedsShell ? { shell: true } : {}),
+      ...options,
     });
     this.child = child;
     child.stdout.setEncoding("utf8");
