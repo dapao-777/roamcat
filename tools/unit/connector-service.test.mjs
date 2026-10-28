@@ -2,7 +2,8 @@
  * @file tools/unit/connector-service.test.mjs
  * 文件职责：为 connector/service.mjs（本机常驻连接服务）提供 node:test 单元测试。
  * 主要内容：用假后端客户端起服务（端口 0），手写最小 WebSocket 客户端（带掩码帧）验证：
- *   Host / Origin / 未知后端的握手拒绝；status 请求的响应与状态广播；两条连接共享同一个后端客户端；
+ *   Host / Origin / 未知后端的握手拒绝；配对令牌正确 / 错误 / 缺失三种握手结果，及没配令牌的旧安装照常放行；
+ *   status 请求的响应与状态广播；两条连接共享同一个后端客户端；
  *   进度事件只回给发起的连接；ping 回 pong；超限帧被关闭；/v1/health 概况。
  * 模块边界：只在 127.0.0.1 上监听临时端口，不启动任何真实 CLI，不改动注册表或浏览器配置。
  *
@@ -20,8 +21,11 @@ import {mkdtempSync, rmSync, writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {startService, acceptKey, encodeFrame, FrameDecoder, validHost} from '../../roamcat-0.0.1/connector/service.mjs';
+import {PAIRING_PROTOCOL, PAIRING_TOKEN_PREFIX, createPairingToken} from '../../roamcat-0.0.1/connector/pairing.mjs';
 
 const ORIGIN = `chrome-extension://${'a'.repeat(32)}/`;
+const TOKEN = createPairingToken();
+const PAIRED = [PAIRING_PROTOCOL, PAIRING_TOKEN_PREFIX + TOKEN];
 
 class FakeClient extends EventEmitter {
   static instances = 0;
@@ -32,17 +36,18 @@ class FakeClient extends EventEmitter {
   async close() { this.closed = true; }
 }
 
-async function withService(run) {
+// 默认按新安装起服务（要求配对令牌）；pairingToken: null 模拟 service.json 没有 tokenFile 的旧安装。
+async function withService(run, {pairingToken = TOKEN, log} = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'roamcat-service-test-'));
   const configPath = join(dir, 'config.json');
   writeFileSync(configPath, JSON.stringify({backend: 'antigravity', agyPath: join(dir, 'agy.exe'), dataDir: join(dir, 'data')}));
   FakeClient.instances = 0;
-  const service = await startService({port: 0, allowedOrigins: [ORIGIN], backends: {antigravity: configPath}, clientFactory: () => new FakeClient(), idleMs: 60000});
+  const service = await startService({port: 0, allowedOrigins: [ORIGIN], backends: {antigravity: configPath}, pairingToken, log, clientFactory: () => new FakeClient(), idleMs: 60000});
   try { await run(service); } finally { await service.close(); rmSync(dir, {recursive: true, force: true}); }
 }
 
 // 最小 WebSocket 客户端：握手 + 发送带掩码的文本/控制帧，收集服务端发来的帧。
-function wsClient(port, {origin = ORIGIN, host = `127.0.0.1:${port}`, backend = 'antigravity'} = {}) {
+function wsClient(port, {origin = ORIGIN, host = `127.0.0.1:${port}`, backend = 'antigravity', protocols = PAIRED} = {}) {
   return new Promise((resolve, reject) => {
     const key = randomBytes(16).toString('base64');
     const socket = connect(port, '127.0.0.1');
@@ -86,13 +91,15 @@ function wsClient(port, {origin = ORIGIN, host = `127.0.0.1:${port}`, backend = 
       const status = handshake.split('\r\n')[0];
       if (!status.includes('101')) { socket.destroy(); reject(Object.assign(new Error(status), {status})); return; }
       assert.match(handshake, new RegExp(`Sec-WebSocket-Accept: ${acceptKey(key).replace(/[+/=]/g, '\\$&')}`));
+      client.handshake = handshake.slice(0, end);
       upgraded = true;
       raw = Buffer.from(handshake.slice(end + 4), 'latin1');
       parse();
       resolve(client);
     });
     socket.on('error', reject);
-    socket.write(`GET /v1/connect?backend=${backend} HTTP/1.1\r\nHost: ${host}\r\nOrigin: ${origin}\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: ${key}\r\nSec-WebSocket-Version: 13\r\n\r\n`);
+    const offered = protocols.length ? `Sec-WebSocket-Protocol: ${protocols.join(', ')}\r\n` : '';
+    socket.write(`GET /v1/connect?backend=${backend} HTTP/1.1\r\nHost: ${host}\r\nOrigin: ${origin}\r\n${offered}Upgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: ${key}\r\nSec-WebSocket-Version: 13\r\n\r\n`);
   });
 }
 
@@ -107,6 +114,49 @@ test('握手只接受本机 Host、白名单内的扩展来源与已安装的后
   });
   assert.equal(validHost('LOCALHOST:5', 5), true);
   assert.equal(validHost('127.0.0.1:6', 5), false);
+});
+
+test('配对令牌正确：握手成功，只回协议名、不回显令牌', async () => {
+  await withService(async ({port}) => {
+    const ok = await wsClient(port);
+    assert.ok(ok.handshake.split('\r\n').includes(`Sec-WebSocket-Protocol: ${PAIRING_PROTOCOL}`));
+    assert.equal(ok.handshake.includes(TOKEN), false);
+    assert.equal((await ok.next()).event, 'status');
+    ok.end();
+  });
+});
+
+test('配对令牌错误：返回 401，不建立连接', async () => {
+  await withService(async ({port}) => {
+    await assert.rejects(wsClient(port, {protocols: [PAIRING_PROTOCOL, PAIRING_TOKEN_PREFIX + createPairingToken()]}), /401/);
+    await assert.rejects(wsClient(port, {protocols: [PAIRING_PROTOCOL, PAIRING_TOKEN_PREFIX + TOKEN.slice(1)]}), /401/, '长度不同也按不符处理');
+    await assert.rejects(wsClient(port, {protocols: [PAIRING_TOKEN_PREFIX + TOKEN]}), /401/, '缺协议名 roamcat.v1');
+    assert.equal(FakeClient.instances, 0, '没配对的连接不拉起后端');
+  });
+});
+
+test('配对令牌缺失：返回 401，且先于后端查找（不泄露装了哪些通道）', async () => {
+  await withService(async ({port}) => {
+    await assert.rejects(wsClient(port, {protocols: []}), /401/);
+    await assert.rejects(wsClient(port, {protocols: [PAIRING_PROTOCOL]}), /401/);
+    await assert.rejects(wsClient(port, {protocols: [], backend: 'grok'}), /401/);
+    await assert.rejects(wsClient(port, {backend: 'grok'}), /404/, '配对后才区分未安装的后端');
+  });
+});
+
+test('旧安装没配令牌：只校验 Host / Origin 照常放行，并记一条诊断', async () => {
+  const logs = [];
+  await withService(async ({port}) => {
+    const legacy = await wsClient(port, {protocols: []});
+    assert.equal(/Sec-WebSocket-Protocol/i.test(legacy.handshake), false);
+    legacy.end();
+    // 新扩展拿到了令牌也能连旧配置的服务：提了子协议就选回 roamcat.v1，浏览器才不会判握手失败。
+    const paired = await wsClient(port);
+    assert.ok(paired.handshake.split('\r\n').includes(`Sec-WebSocket-Protocol: ${PAIRING_PROTOCOL}`));
+    paired.end();
+    await assert.rejects(wsClient(port, {protocols: [], origin: 'https://evil.example'}), /403/);
+  }, {pairingToken: null, log: message => logs.push(message)});
+  assert.equal(logs.filter(message => message.includes('未配置配对令牌')).length, 1);
 });
 
 test('status 请求得到响应，两条连接共享同一个后端客户端并都收到状态广播', async () => {

@@ -142,7 +142,9 @@ node roamcat-0.0.1/connector/install.mjs --extension-id afpeggkplomdjjiemgajjgca
 
 One command registers every channel whose CLI is already installed (Codex, Grok, `agy`); missing CLIs are skipped. Pass `--backend grok` (or `chatgpt` / `antigravity`) to register only one.
 
-The same command also installs a **local connector service** (listens only on `127.0.0.1:47821` and accepts only this extension ID) that starts at login. The extension connects to it first, so restarting or switching browsers never needs a reinstall and the CLIs stay signed in; if the service is not running, the extension falls back to the browser connector. Add `--no-service` to skip it.
+The same command also installs a **local connector service** (listens only on `127.0.0.1:47821` and accepts only this extension ID) that starts at login. The extension connects to it first, so restarting the browser never needs a reinstall and the CLIs stay signed in; if the service is not running, the extension falls back to the browser connector. Add `--no-service` to skip it.
+
+The service handshake requires a **pairing token**. Every install generates a fresh one in a directory only your OS user can read; the extension fetches it through the browser connector, so other accounts on the machine cannot get in by forging the extension's origin. This means the browser still needs the connector registration (Chrome and Edge are registered by default). **After upgrading from an earlier version, rerun the install command once to turn the token on**; until then the service keeps working as before. Right after reinstalling, the extension uses the browser connector for about a minute, then switches back to the service on its own.
 
 ## 🔒 Privacy by design
 

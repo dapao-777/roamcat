@@ -2,7 +2,8 @@
 /**
  * @file connector/host.mjs
  * 文件职责：NativeMessaging宿主——stdio帧编解码、来源校验与13种请求分发。
- * 主要内容：4字节长度前缀+UTF8 JSON上限1MB；extensionOrigin白名单。
+ * 主要内容：4字节长度前缀+UTF8 JSON上限1MB；extensionOrigin白名单；另有只在宿主处理的 pairingToken
+ *   （把常驻服务的配对令牌交给扩展，不拉起 CLI）；CLI 在第一条业务请求到达时才启动。
  * 模块边界：Node侧入口；shebang须保持首行，本头紧随其后。
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -18,6 +19,7 @@ import { CodexClient } from "./codex.mjs";
 import { GrokClient } from "./grok.mjs";
 import { AntigravityClient } from "./antigravity.mjs";
 import { DiagnosticStore } from "./diagnostics.mjs";
+import { readPairingToken } from "./pairing.mjs";
 import { diagnosticError, validTraceId } from "../extension/diagnostics.mjs";
 
 export const MAX_NATIVE_MESSAGE_BYTES = 1024 * 1024;
@@ -182,11 +184,13 @@ async function normalizeConfiguration(config) {
     || typeof config.dataDir !== "string" || !config.dataDir) {
     throw new Error("连接器配置或扩展来源无效");
   }
+  // 常驻服务配对令牌文件的位置（安装器写入）；旧配置没有这一项，pairingToken 请求会报“请重新运行安装命令”。
+  const pairing = typeof config.serviceTokenFile === "string" && config.serviceTokenFile ? { serviceTokenFile: resolve(config.serviceTokenFile) } : {};
   return backend === "grok"
-    ? { backend, grokPath: resolve(cliPath), dataDir: resolve(config.dataDir) }
+    ? { backend, grokPath: resolve(cliPath), dataDir: resolve(config.dataDir), ...pairing }
     : backend === "antigravity"
-    ? { backend, agyPath: resolve(cliPath), dataDir: resolve(config.dataDir) }
-    : { backend, codexPath: await resolveCodexPath(cliPath), dataDir: resolve(config.dataDir) };
+    ? { backend, agyPath: resolve(cliPath), dataDir: resolve(config.dataDir), ...pairing }
+    : { backend, codexPath: await resolveCodexPath(cliPath), dataDir: resolve(config.dataDir), ...pairing };
 }
 
 export function createBackendClient(configuration, options = {}) {
@@ -237,6 +241,10 @@ export async function runHost({ argv = process.argv.slice(2), input = process.st
   diagnostics.on("diagnostic", (record) => write({ event: "diagnostic", data: record }));
   if(diagnostics.storageError)write({event:'diagnostic',data:{at:Date.now(),operation:'CONNECTION',stage:'connection',status:'error',code:'STORAGE_ERROR'}});
 
+  // CLI 等第一条业务请求才启动：扩展只来要配对令牌时不必拉起 Codex / Grok / agy。
+  let started = null;
+  const start = () => { started ??= client.start().catch(() => close(1)); };
+
   const dispatch = async (raw) => {
     let request;
     try { request = validateRequest(raw); }
@@ -249,6 +257,15 @@ export async function runHost({ argv = process.argv.slice(2), input = process.st
       await close(1);
       return;
     }
+    // 配对令牌只经浏览器连接器下发（浏览器只为 allowed_origins 里的扩展拉起宿主，宿主又校验了来源）；
+    // 不进 dispatchRequest，常驻服务不会把令牌交给 WebSocket 对端。
+    if (request.type === "pairingToken") {
+      try { write({ id: request.id, ok: true, data: { token: await readPairingToken(configuration.serviceTokenFile) } }); }
+      catch (error) { write(failureResponse(request.id, error)); }
+      return;
+    }
+    if (closing) return;
+    start();
     try {
       const data = await dispatchRequest({ client, diagnostics, request, emit: write });
       write({ id: request.id, ok: true, data });
@@ -270,11 +287,8 @@ export async function runHost({ argv = process.argv.slice(2), input = process.st
   process.once("SIGTERM", onSignal);
   process.once("SIGHUP", onSignal);
 
-  // Configuration and diagnostic setup are asynchronous; do not launch the CLI if Chrome closed stdin meanwhile.
-  if (input.readableEnded || input.destroyed) { await close(0); return; }
-
-  try { await client.start(); }
-  catch { await close(1); }
+  // Configuration and diagnostic setup are asynchronous; if Chrome closed stdin meanwhile, the end event was missed.
+  if (input.readableEnded || input.destroyed) await close(0);
 }
 
 const isMain = process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href;

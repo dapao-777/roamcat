@@ -11,7 +11,7 @@
 | `npm run gen:i18n` | 由 `extension/i18n.js` 生成内容脚本专用的瘦身词典 `extension/i18n-content.js`（改了网页侧文案或网页侧脚本新用了别的命名空间后必须重跑；`i18n-content.test.mjs` 拦截漂移） |
 | `npm run verify` | 模块图静态门禁（R1–R12；R1–R11 只扫 `roamcat-0.0.1/extension` 与 `connector`，R12 字号档位另扫 `src/`） |
 | `npm run verify:sites` | 站点档案端到端：fixture 按真实 URL 路由进浏览器断言 inspect()（加 `--live` 复核真站） |
-| `npm run verify:service` | 本机常驻连接服务端到端：先断言扩展内置服务地址端口 = 47821，再在 127.0.0.1 空闲端口起带假后端的 `connector/service.mjs`（测试副本只改这一处地址，不占用真实服务的 47821），浏览器加载 `dist/extension` 断言优先经 WebSocket 连上、服务停掉后回退浏览器连接器 → `preview/connector-service.json`（先跑 `npm run build`） |
+| `npm run verify:service` | 本机常驻连接服务端到端：先断言扩展内置服务地址端口 = 47821，再在 127.0.0.1 空闲端口起带假后端的 `connector/service.mjs`（要求配对令牌；测试副本只改这一处地址并缩短重试窗口，不占用真实服务的 47821），浏览器加载 `dist/extension`，预置 `chrome.storage.session` 令牌缓存，断言缺令牌 / 错令牌回退浏览器连接器、正确令牌经 WebSocket 连上、服务停掉后回退 → `preview/connector-service.json`（先跑 `npm run build`） |
 | `npm test` | 单元测试：`tools/run-unit-tests.mjs` 列出 `tools/unit/*.test.mjs` 再交给 `node --test`（Node 20 不展开通配符，故不直接传 glob） |
 | `npm run verify:build` | 构建产物门禁：字节比对 + 浏览器实际加载 `dist/extension` 冒烟 |
 | `npm run verify:ui` | 全界面 UI 门禁：浏览器加载 `dist/extension`，遍历 popup/options 全分区/welcome/reader 与页内挂件（词卡 HUD/任务条/解构卡/toast/选区条/伴读猫全状态），双主题截图 + 断言 → `preview/ui-audit/`（先跑 `npm run build`） |
@@ -39,7 +39,7 @@
 - 字号只用 `--fs-1…6`（12/13/14/16/20/28，`npm run verify` 的 R12 拦截写死的 px 字号；内容脚本/Shadow DOM 内联写 `var(--fs-k, Npx)` 兜底）。层级只用 `--elev-0/1/2`：页面卡片 0 档（只靠 1px 边框），浮在网页或页面之上的词卡/菜单/挂件 2 档；旧拟物 token（`--face`/`--cast`/`--key-skirt`/`--lacquer` 等）保留名字但已压平，不要再给它们写回渐变或凸起阴影。
 - dev 构建的扩展 ID 固定为 `build/extension-key.json` 中的 `id`（当前 `afpeggkplomdjjiemgajjgcajieincng`）；改加载目录不影响 ID。连接器订阅服务若绑定旧路径 ID，需重装连接器。
 - CSP `script-src 'self'`：产物 HTML 禁止内联脚本与 `on*=` 属性。
-- 订阅连接：扩展优先连本机常驻服务（`roamcat-0.0.1/connector/service.mjs`，`ws://127.0.0.1:47821`，握手校验 Host 与扩展 Origin），连不上才用 NativeMessaging；`roamcat-0.0.1/connector/install.mjs` 默认一并装服务与登录自启（`--no-service` 跳过）。在 Claude 的 Bash/PowerShell 沙箱里装的连接器只存在于沙箱视图，要装到用户真实环境须在终端面板里运行。
+- 订阅连接：扩展优先连本机常驻服务（`roamcat-0.0.1/connector/service.mjs`，`ws://127.0.0.1:47821`，握手校验 Host、扩展 Origin 与配对令牌：令牌由安装器写进服务目录的 `pairing-token`，扩展经 NativeMessaging 宿主的 `pairingToken` 请求取得，放在 `Sec-WebSocket-Protocol` 里，见 SPEC 8.4），连不上才用 NativeMessaging；`roamcat-0.0.1/connector/install.mjs` 默认一并装服务与登录自启（`--no-service` 跳过）。在 Claude 的 Bash/PowerShell 沙箱里装的连接器只存在于沙箱视图，要装到用户真实环境须在终端面板里运行。
 - Vite 8 用 `rolldownOptions`（`rollupOptions` 已弃用）；HTML 中 `@ext/` 别名只对 `<script type="module">` 与 `<link rel="stylesheet">` 生效，`img/link[icon]` 需用相对路径。
 
 ## 界面多语言（i18n）

@@ -59,6 +59,7 @@
 ├────────────────────────────────────────────────────────────┤
 │ 本机连接器（Node.js 20+，Native Messaging stdio）            │
 │   host.mjs + codex.mjs / grok.mjs / antigravity.mjs          │
+│   service.mjs：常驻服务 ws://127.0.0.1:47821（配对令牌握手）  │
 └────────────────────────────────────────────────────────────┘
 ```
 
@@ -290,10 +291,27 @@
 - 启动参数：`--config <path> <origin>`（Chrome 传入调用方 origin），额外仅允许 `--parent-window=N`。
 - 来源校验：config 内 `extensionOrigin` 白名单 + `chrome-extension://<32 位 a–p>` 形态校验；两侧 origin 的结尾斜杠先归一化再比较（调用方与安装白名单可能一个带一个不带），空 pathname 与 `/` 均为合法形态（Node 的 URL 对不带路径的 chrome-extension URL 返回空 pathname）。帧协议与来源校验由 `tools/unit/connector-frame.test.mjs` 覆盖。
 - 请求类型（13 种）：`sentenceGroups status login cancel logout models classify supportBatch assist emergencyTranslate historyModel summarize diagnostics`。
+- 宿主另有一种只在 NativeMessaging 下处理的 `pairingToken`：读 config 的 `serviceTokenFile`，回 `{token}`（没登记或读不出时报“请重新运行安装命令”）。它不进 `dispatchRequest`，常驻服务不处理、不经 WebSocket 下发令牌。
+- CLI 在第一条业务请求到达时才启动（`pairingToken` 不拉起 Codex / Grok / agy）。
 
 ### 8.3 隔离与权限
 - 数据目录 `0700`，配置文件 `0600`；Codex 使用隔离 `CODEX_HOME` 但保留真实 `HOME` 供钥匙串发现。
 - 上游错误只映射为分类码 + 中文可读信息，**不回显上游原文**（可能含选区文本或密钥）。
+
+### 8.4 本机常驻连接服务（`connector/service.mjs`）
+- 只监听 `127.0.0.1:47821`；扩展经 `ws://127.0.0.1:47821/v1/connect?backend=<kind>` 优先连它，连不上（没运行、被拒、1.5 秒内没握手成功）就改用 `connectNative`，并在 60 秒内直接走浏览器连接器。浏览器的 WebSocket 看不到握手的 HTTP 状态，401 与没运行同样处理。
+- 握手校验依次为：路径 → Host 为本机（防 DNS 重绑定）→ Origin 在 `service.json` 的 `allowedOrigins` 白名单 → WebSocket 头 → **配对令牌** → 后端已安装。令牌在查后端之前校验，未配对的连接探不出装了哪些通道。
+- **配对令牌**（`connector/pairing.mjs`）：Origin 头本机任何进程都能伪造，令牌挡住的是本机其他系统账户和受限进程（同一用户的恶意进程本来就能读 CLI 登录态，不在防护范围内）。
+  - 安装：`service-install.mjs` 每次安装生成新的 32 字节随机令牌（64 位十六进制），写入服务目录的 `pairing-token`（目录 `0700`、文件 `0600`；Windows 靠 `%LOCALAPPDATA%` 的用户 ACL），`service.json` 的 `tokenFile` 指向它；`install.mjs` 在各通道 `config.json` 写 `serviceTokenFile` 指向同一文件（`--no-service` 时也写，先前装过的服务照常可用）。
+  - 传递：扩展向本通道的浏览器连接器发 `pairingToken` 要一次，缓存在 `chrome.storage.session` 的 `connectorServicePairing`（浏览器会话内有效，只对扩展页面可见）；握手时以 `Sec-WebSocket-Protocol: roamcat.v1, roamcat.token.<令牌>` 带上，不进 URL（连接失败的报错里也就没有令牌）。服务只回 `Sec-WebSocket-Protocol: roamcat.v1`，不回显令牌。
+  - 校验：两侧各取 SHA-256 摘要后 `timingSafeEqual`；缺 `roamcat.v1`、缺令牌或不符一律 `401 Unauthorized`，不拉起后端。
+  - 失效：握手失败时扩展清掉这份缓存，下次重新向浏览器连接器要；重装连接器换新令牌后约 1 分钟内（重试窗口）先走浏览器连接器，之后自动改连服务。
+- 兼容：
+  - 旧安装的 `service.json` 没有 `tokenFile`：服务只校验 Host / Origin，与改版前一致，启动时在 `service.log` 记一条“未配置配对令牌”；客户端提了 `roamcat.v1` 时照样选回。
+  - 登记了 `tokenFile` 却读不出或内容无效：服务拒绝启动（不退回只校验来源），扩展改用浏览器连接器。
+  - 旧版连接器不认 `pairingToken`、或本通道没注册浏览器连接器：扩展缓存空串，按旧握手（不带子协议）直连；之后握手失败才清掉重新要，不在每次连接时反复拉起连接器。
+  - 浏览器连接器是令牌的唯一来源：没有为该浏览器注册浏览器连接器时，扩展连不上已启用令牌的服务（安装器默认为 Chrome、Edge 注册，Windows 上装了 ego lite 时一并注册）。
+- 门禁：`tools/unit/connector-service.test.mjs`（令牌正确 / 错误 / 缺失三种握手结果与旧安装放行）、`tools/unit/connector-pairing.test.mjs`（令牌文件、比对、宿主下发且不拉起 CLI）、`tools/unit/subscription-service.test.mjs`（扩展取令牌、缓存、失败清缓存回退）；`npm run verify:service` 在真实浏览器里走一遍缺令牌 / 错令牌 / 正确令牌 / 服务停掉。
 
 ---
 
@@ -316,7 +334,7 @@
 | `readingCleanup` | 清理进度标记（崩溃恢复用） |
 
 ### 9.2 `chrome.storage.session`（会话，≤10MB，可丢失）
-`supportCache`（≤512，TTL 7 天）、`sentenceGroupCache`（≤512，TTL 24h）、`domainCache`（≤128，TTL 4h）、`pageDomain:<tabId>`、`offeredSupport:` / `pendingAssists:` / `assistResultCache:<tabId>`、`emergencySession:<tabId>`、`sentenceGroupsMode:<tabId>`、`automationPaused:<tabId>`、`bilingualPopupIntent`、`readingHistorySessions`、`diagnosticReceipts`、`diagnosticNativeClear`。
+`supportCache`（≤512，TTL 7 天）、`sentenceGroupCache`（≤512，TTL 24h）、`domainCache`（≤128，TTL 4h）、`pageDomain:<tabId>`、`offeredSupport:` / `pendingAssists:` / `assistResultCache:<tabId>`、`emergencySession:<tabId>`、`sentenceGroupsMode:<tabId>`、`automationPaused:<tabId>`、`bilingualPopupIntent`、`readingHistorySessions`、`diagnosticReceipts`、`diagnosticNativeClear`、`connectorServicePairing`（常驻服务配对令牌；空串表示浏览器连接器给不了，见 8.4）。
 > 约束：缓存写入失败（如配额）不得中断阅读请求；缓存条目不存整篇正文。
 
 ### 9.3 IndexedDB（`roamcat-reading-history`，v2）
@@ -334,6 +352,7 @@
 5. **请求元数据**：载荷不含页面 URL；遥测/诊断不含正文与密钥。
 6. **权限最小化**：`chrome.permissions.remove` 在服务/网站规则移除后回收；provider 与站点模式分离保护。
 7. **XSS 面**：扩展页面无内联脚本；`innerHTML` 仅用于静态模板或经 `escapeHtml` 的模型文本；Shadow DOM 隔离样式。
+8. **本机连接服务**：只监听回环地址；握手要 Host 为本机、Origin 在白名单、并带安装时生成的配对令牌（只有当前系统用户读得到，经浏览器连接器交给扩展）。令牌不进 URL、不进诊断，服务不回显（见 8.4）。
 
 ---
 

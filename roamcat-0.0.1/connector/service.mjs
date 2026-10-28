@@ -3,7 +3,8 @@
  * @file connector/service.mjs
  * 文件职责：本机常驻连接服务——只监听 127.0.0.1，扩展经 WebSocket 连接，不依赖浏览器的 NativeMessaging 注册。
  * 主要内容：最小 WebSocket 服务端（RFC 6455 文本帧、分片、ping/close，单条上限 1MB）；握手校验 Host 为本机、
- *   Origin 在安装时登记的扩展白名单内；每个订阅后端常驻一个客户端（ChatGPT / Grok / Google），多个连接共享，
+ *   Origin 在安装时登记的扩展白名单内、Sec-WebSocket-Protocol 带着安装时生成的配对令牌（pairing.mjs；缺失或不符回 401，
+ *   service.json 没登记令牌的旧安装只校验 Host/Origin 并记一条诊断）；每个订阅后端常驻一个客户端（ChatGPT / Grok / Google），多个连接共享，
  *   状态与诊断广播给该后端的全部连接，请求响应与进度只回给发起的连接；无连接 30 分钟后收起后端 CLI。
  *   请求分发与 NativeMessaging 宿主共用 host.mjs 的 dispatchRequest。
  * 模块边界：Node 侧入口；`node service.mjs --config service.json`；/v1/health 返回服务与后端概况。
@@ -19,6 +20,7 @@ import { readFile, rm, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { DiagnosticStore } from "./diagnostics.mjs";
+import { PAIRING_PROTOCOL, offeredProtocols, pairingTokenMatches, readPairingToken } from "./pairing.mjs";
 import {
   MAX_NATIVE_MESSAGE_BYTES, createBackendClient, dispatchRequest, failureResponse,
   loadBackendConfiguration, validateExtensionOrigin, validateRequest,
@@ -212,10 +214,12 @@ class ServiceSocket {
 
 // ---------- 服务 ----------
 
+// pairingToken 为空时是旧安装（service.json 没有 tokenFile）：只校验 Host / Origin，与改版前一致。
 export async function startService({
-  port = DEFAULT_SERVICE_PORT, host = "127.0.0.1", allowedOrigins = [], backends = {},
+  port = DEFAULT_SERVICE_PORT, host = "127.0.0.1", allowedOrigins = [], backends = {}, pairingToken = null,
   clientFactory, idleMs = DEFAULT_IDLE_MS, log = () => {},
 } = {}) {
+  if (!pairingToken) log("未配置配对令牌：握手只校验 Host 与扩展来源，本机其他账户可伪造来源连入。重新运行连接器安装命令即可启用令牌。");
   const sessions = new Map();
   for (const kind of SERVICE_BACKENDS) {
     if (typeof backends[kind] === "string" && backends[kind]) {
@@ -247,9 +251,14 @@ export async function startService({
       if (request.headers.upgrade?.toLowerCase() !== "websocket" || request.headers["sec-websocket-version"] !== "13") return reject("400 Bad Request");
       const key = request.headers["sec-websocket-key"];
       if (typeof key !== "string" || Buffer.from(key, "base64").length !== 16) return reject("400 Bad Request");
+      // 令牌在查后端之前校验：没配对的连接不该探出装了哪些订阅通道。
+      const protocols = offeredProtocols(request.headers["sec-websocket-protocol"]);
+      if (pairingToken && (!protocols.includes(PAIRING_PROTOCOL) || !pairingTokenMatches(pairingToken, protocols))) return reject("401 Unauthorized");
       const session = sessions.get(kind);
       if (!session) return reject("404 Not Found");
-      socket.write(`HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ${acceptKey(key)}\r\n\r\n`);
+      // 客户端提了子协议就必须选回一个，否则浏览器判握手失败；只回协议名，令牌不回显。
+      const selected = protocols.includes(PAIRING_PROTOCOL) ? `Sec-WebSocket-Protocol: ${PAIRING_PROTOCOL}\r\n` : "";
+      socket.write(`HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ${acceptKey(key)}\r\n${selected}\r\n`);
       socket.setNoDelay(true);
       const connection = new ServiceSocket(socket, {
         onText: text => {
@@ -291,10 +300,13 @@ async function main() {
   const config = JSON.parse(await readFile(configPath, "utf8"));
   const pidPath = typeof config.pidFile === "string" ? config.pidFile : null;
   const log = message => process.stderr.write(`${new Date().toISOString()} ${message}\n`);
+  // 登记了令牌文件却读不出来时不启动（不退回只校验来源）；扩展连不上会自动改用浏览器连接器。
+  const pairingToken = config.tokenFile === undefined ? null : await readPairingToken(config.tokenFile);
   const service = await startService({
     port: Number.isInteger(config.port) ? config.port : DEFAULT_SERVICE_PORT,
     allowedOrigins: config.allowedOrigins,
     backends: config.backends || {},
+    pairingToken,
     log,
   });
   if (pidPath) await writeFile(pidPath, String(process.pid)).catch(() => {});

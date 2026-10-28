@@ -3,6 +3,7 @@
  * 文件职责：三订阅端口管理——请求响应映射、超时与进度转发。
  * 主要内容：assist/翻译/总结120s其余45s；端口单例，断开拒全部在途。
  *   probe 在端口还在时只查状态，不拆连接；没有端口时才走 refresh。
+ *   优先连本机常驻服务（握手带经浏览器连接器取得的配对令牌），连不上改用 connectNative。
  * 模块边界：应用层；CONNECTOR_KINDS与message-protocol镜像一致（单测 guard）。
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -56,6 +57,62 @@ const SERVICE_OPEN_TIMEOUT_MS = 1500;
 const SERVICE_RETRY_MS = 60000;
 let serviceDownUntil = 0;
 
+// 配对令牌（协议名与 connector/pairing.mjs 镜像，单测对齐）：Origin 头本机任何进程都能伪造，服务握手另要安装时生成的令牌，
+// 放在 Sec-WebSocket-Protocol 里（不进 URL，连接失败的报错里也就不带令牌）。令牌文件只有当前系统用户读得到，
+// 扩展向本通道的浏览器连接器要一次，缓存在 chrome.storage.session（浏览器会话内有效、只对扩展页面可见）。
+// 空串表示这个连接器给不了（旧版连接器、没装常驻服务）：按旧握手直连，旧服务照常接受，也不再反复去要。
+// 握手失败就清掉缓存，下次重新要——重装连接器会换新令牌。
+export const SERVICE_PROTOCOL = 'roamcat.v1';
+export const SERVICE_TOKEN_PREFIX = 'roamcat.token.';
+export const SERVICE_PAIRING_KEY = 'connectorServicePairing';
+const PAIRING_TIMEOUT_MS = 3000;
+let pairingCache;
+let pairingRequest = null;
+const validPairingToken = value => typeof value === 'string' && /^[0-9a-f]{64}$/.test(value);
+
+function askPairingToken(host) {
+  return new Promise(resolve => {
+    let native = null, settled = false;
+    const finish = token => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      try { native?.disconnect(); } catch { /* 已断开 */ }
+      resolve(token);
+    };
+    const timer = setTimeout(() => finish(''), PAIRING_TIMEOUT_MS);
+    try { native = chrome.runtime.connectNative(host); }
+    catch { finish(''); return; }
+    native.onMessage.addListener(message => {
+      if (message?.id === 'pairing') finish(message.ok === true && validPairingToken(message.data?.token) ? message.data.token : '');
+    });
+    native.onDisconnect.addListener(() => { void chrome.runtime.lastError; finish(''); });
+    try { native.postMessage({id:'pairing', type:'pairingToken', payload:{}}); }
+    catch { finish(''); }
+  });
+}
+
+function servicePairingToken(host) {
+  if (pairingCache !== undefined) return Promise.resolve(pairingCache);
+  pairingRequest ??= (async () => {
+    try {
+      const stored = (await chrome.storage?.session?.get(SERVICE_PAIRING_KEY))?.[SERVICE_PAIRING_KEY];
+      if (stored === '' || validPairingToken(stored)) return stored;
+    } catch { /* 会话存储不可用：照常向连接器要 */ }
+    const token = await askPairingToken(host);
+    try { await chrome.storage?.session?.set({[SERVICE_PAIRING_KEY]:token}); } catch { /* 只留内存副本 */ }
+    return token;
+  })().then(token => { pairingCache = token; return token; }).finally(() => { pairingRequest = null; });
+  return pairingRequest;
+}
+
+// 只清掉这次握手用的那份：别的通道可能已经换回了新令牌。
+function forgetPairingToken(token) {
+  if (pairingCache !== token) return;
+  pairingCache = undefined;
+  try { void chrome.storage?.session?.remove(SERVICE_PAIRING_KEY)?.catch(() => {}); } catch { /* 会话存储不可用 */ }
+}
+
 // 返回与 chrome.runtime.Port 同形的对象（postMessage / disconnect / onMessage / onDisconnect），
 // 多两个只读信息：transport（'service' | 'native'）与 disconnectReason（断开原因原文）。
 export function openTransport(kind, host) {
@@ -81,33 +138,39 @@ export function openTransport(kind, host) {
     active = {post: message => native.postMessage(message), close: () => native.disconnect()};
     for (const message of queue.splice(0)) native.postMessage(message);
   };
+  // 浏览器的 WebSocket 看不到握手的 HTTP 状态：401（令牌不符）、没运行、超时一律按连不上处理。
+  const useService = token => {
+    const giveUp = () => { forgetPairingToken(token); serviceDownUntil = Date.now() + SERVICE_RETRY_MS; if (!done) useNative(); };
+    const url = SERVICE_URL + encodeURIComponent(kind);
+    let socket;
+    try { socket = token ? new WebSocket(url, [SERVICE_PROTOCOL, SERVICE_TOKEN_PREFIX + token]) : new WebSocket(url); }
+    catch { giveUp(); return; }
+    let opened = false;
+    const timer = setTimeout(() => {
+      if (opened) return;
+      socket.onclose = socket.onerror = socket.onopen = socket.onmessage = null;
+      try { socket.close(); } catch { /* 还没连上 */ }
+      giveUp();
+    }, SERVICE_OPEN_TIMEOUT_MS);
+    socket.onopen = () => {
+      opened = true;
+      clearTimeout(timer);
+      if (done) { socket.close(); return; }
+      port.transport = 'service';
+      active = {post: message => socket.send(JSON.stringify(message)), close: () => socket.close()};
+      for (const message of queue.splice(0)) socket.send(JSON.stringify(message));
+    };
+    socket.onmessage = event => { let message; try { message = JSON.parse(event.data); } catch { return; } emit(message); };
+    socket.onerror = () => {};
+    socket.onclose = event => {
+      clearTimeout(timer);
+      if (!opened) { giveUp(); return; }
+      fail(`local service closed (${event.code})`);
+    };
+  };
   if (typeof WebSocket !== 'function' || Date.now() < serviceDownUntil) { useNative(); return port; }
-  let socket;
-  try { socket = new WebSocket(SERVICE_URL + encodeURIComponent(kind)); }
-  catch { serviceDownUntil = Date.now() + SERVICE_RETRY_MS; useNative(); return port; }
-  let opened = false;
-  const giveUp = () => { serviceDownUntil = Date.now() + SERVICE_RETRY_MS; if (!done) useNative(); };
-  const timer = setTimeout(() => {
-    if (opened) return;
-    socket.onclose = socket.onerror = socket.onopen = socket.onmessage = null;
-    try { socket.close(); } catch { /* 还没连上 */ }
-    giveUp();
-  }, SERVICE_OPEN_TIMEOUT_MS);
-  socket.onopen = () => {
-    opened = true;
-    clearTimeout(timer);
-    if (done) { socket.close(); return; }
-    port.transport = 'service';
-    active = {post: message => socket.send(JSON.stringify(message)), close: () => socket.close()};
-    for (const message of queue.splice(0)) socket.send(JSON.stringify(message));
-  };
-  socket.onmessage = event => { let message; try { message = JSON.parse(event.data); } catch { return; } emit(message); };
-  socket.onerror = () => {};
-  socket.onclose = event => {
-    clearTimeout(timer);
-    if (!opened) { giveUp(); return; }
-    fail(`local service closed (${event.code})`);
-  };
+  // 令牌异步取得：取到之前 postMessage 先进 queue，连上哪条通道再一并发出。
+  servicePairingToken(host).then(token => { if (!done) useService(token); }, () => { if (!done) useNative(); });
   return port;
 }
 

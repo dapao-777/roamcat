@@ -4,6 +4,8 @@
  * 主要内容：Windows 用 HKCU\…\Run + 隐藏窗口的 VBScript 启动 node；macOS 用 LaunchAgent（RunAtLoad + KeepAlive）；
  *   Linux 用 systemd 用户服务（没有 systemctl 时直接后台启动并提示）。重装前按 pid 文件 + /v1/health 确认后停止旧服务；
  *   启动后轮询 /v1/health 确认可用。后端列表来自各订阅通道目录里已有的 config.json，登录数据仍留在原通道目录。
+ *   每次安装换一个新的配对令牌（服务目录下的 pairing-token，0600），service.json 的 tokenFile 指向它；
+ *   各通道 config.json 的 serviceTokenFile（install.mjs 写入）也指向同一个文件。
  * 模块边界：只由 install.mjs 调用；只写当前用户范围（不需要管理员权限）。
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -15,6 +17,7 @@ import {access,chmod,copyFile,mkdir,readdir,rm,writeFile} from 'node:fs/promises
 import {spawn,spawnSync} from 'node:child_process';
 import {homedir} from 'node:os';
 import {join} from 'node:path';
+import {PAIRING_TOKEN_FILE, writePairingToken} from './pairing.mjs';
 
 export const SERVICE_PORT = 47821;
 const RUN_KEY = 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run';
@@ -40,6 +43,11 @@ export function serviceRoot() {
   if (process.platform === 'win32') return join(process.env.LOCALAPPDATA || join(home, 'AppData/Local'), 'RoamCat Connector Service');
   if (process.platform === 'darwin') return join(home, 'Library/Application Support/RoamCat Connector Service');
   return join(process.env.XDG_DATA_HOME || join(home, '.local/share'), 'roamcat-connector-service');
+}
+
+// 配对令牌文件：浏览器连接器从这里读出令牌交给扩展，常驻服务用它校验握手。
+export function serviceTokenFile() {
+  return join(serviceRoot(), PAIRING_TOKEN_FILE);
 }
 
 const exists = path => access(path).then(() => true, () => false);
@@ -145,7 +153,9 @@ export async function installService({source, nodePath, origins, backendRoots, p
   await mkdir(root, {recursive: true, mode: 0o700});
   await chmod(root, 0o700).catch(() => {});
   await copyConnectorSources(source, root);
-  const config = {port, allowedOrigins: origins, backends, pidFile: join(root, 'service.pid')};
+  const tokenFile = serviceTokenFile();
+  await writePairingToken(tokenFile);
+  const config = {port, allowedOrigins: origins, backends, pidFile: join(root, 'service.pid'), tokenFile};
   await writeFile(join(root, 'service.json'), JSON.stringify(config, null, 2) + '\n', {mode: 0o600});
   const autostart = await enableAutostart(root, nodePath);
   let status = null;
