@@ -10,7 +10,7 @@
  *   - src/components/hero-art.js：欢迎页主图、阅读器空态与设置页印章共用的插图模板
  *     （每次调用生成独立 id，同页多处使用、或位于隐藏分区里也不会互相引用失效）；
  *   - docs/assets/roamcat.svg：落地页 favicon 与标志。
- * 用法：node tools/make-brand-cat.mjs（需 playwright-core 与本机 ego lite，或用 ROAMCAT_BROWSER 指定浏览器）。
+ * 用法：node tools/make-brand-cat.mjs（需本机 ego lite，或用 ROAMCAT_EGO 指定 ego.exe）。
  * 模块边界：构建期工具，只写上述产物；伴读猫的 SVG 仍内联在 floating-pet-svg.js，改几何须两边同步。
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -20,11 +20,10 @@
 import {writeFileSync, mkdirSync} from 'node:fs';
 import {join, dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {createRequire} from 'node:module';
+import {openBrowser} from './lib/ego.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const ICONS = join(ROOT, 'roamcat-0.0.1', 'extension', 'icons');
-const require = createRequire(import.meta.url);
 
 /* ---------- 几何（viewBox 200×220，与伴读猫坐姿一致） ---------- */
 const BODY = 'M46 194 C30 176 32 130 56 110 C74 94 126 94 144 110 C168 130 170 176 154 194 C144 202 56 202 46 194 Z';
@@ -151,17 +150,16 @@ let heroSerial = 0;
 }
 
 async function rasterize(entries) {
-  const {chromium} = require('./lib/browser.cjs');
-  const browser = await chromium.launch({headless: true});
+  const run = await openBrowser({extension: null});
   try {
-    const page = await browser.newPage({deviceScaleFactor: 1});
+    const page = run.page;
     for (const {size, svgText, file} of entries) {
-      await page.setViewportSize({width: size, height: size});
+      await page.setViewportSize({width: size, height: size}, 1);
       await page.setContent(`<!doctype html><style>html,body{margin:0;background:transparent}svg{display:block;width:${size}px;height:${size}px}</style>${svgText}`);
-      await page.screenshot({path: file, omitBackground: true, clip: {x: 0, y: 0, width: size, height: size}});
+      await page.screenshot({path: file, omitBackground: true, clip: {x: 0, y: 0, width: size, height: size}, required: true});
     }
   } finally {
-    await browser.close();
+    await run.close();
   }
 }
 

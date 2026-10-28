@@ -1,6 +1,6 @@
 /**
  * @file tools/verify-connector-service.mjs
- * 文件职责：本机常驻连接服务的端到端门禁——浏览器（默认 ego lite）加载 dist/extension，确认扩展优先经 WebSocket 连本机服务，
+ * 文件职责：本机常驻连接服务的端到端门禁——无头 ego lite 加载 dist/extension 的测试副本，确认扩展优先经 WebSocket 连本机服务，
  *   服务不可用时回退到浏览器连接器（NativeMessaging）。
  * 主要内容：先断言扩展内置的服务地址端口等于服务默认端口（47821）；再在 127.0.0.1 的空闲端口起一个带假后端、
  *   要求配对令牌的 connector/service.mjs（不启动真实 CLI），测试副本里只把这一处地址改到该端口、把连不上后的
@@ -8,14 +8,14 @@
  *   发 SUBSCRIPTION_STATUS：缺令牌、错令牌都不走 service 且清掉缓存；正确令牌时 transport=service 且拿到假后端的状态；
  *   关掉服务后再刷新，断言不再走 service（本机装了浏览器连接器时为 native，没装时报「未找到」）。
  *   报告写入 preview/connector-service.json。
- * 模块边界：用法 npm run build && node tools/verify-connector-service.mjs；不占 47821，已装的真实常驻服务照常运行。
+ * 模块边界：用法 npm run build && node tools/verify-connector-service.mjs；不占 47821，已装的真实常驻服务照常运行；
+ *   浏览器用临时配置，与日常 ego 互不影响。
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
  */
-import {createRequire} from 'node:module';
 import {EventEmitter} from 'node:events';
 import {cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync, mkdirSync} from 'node:fs';
 import {createServer} from 'node:net';
@@ -25,11 +25,9 @@ import {fileURLToPath} from 'node:url';
 import {startService, DEFAULT_SERVICE_PORT} from '../roamcat-0.0.1/connector/service.mjs';
 import {createPairingToken} from '../roamcat-0.0.1/connector/pairing.mjs';
 import {SERVICE_PAIRING_KEY} from '../roamcat-0.0.1/extension/subscription.js';
+import {EXT_ID as EXTENSION_ID, extUrl, openBrowser} from './lib/ego.mjs';
 
-const require = createRequire(import.meta.url);
-const {launchExtension} = require('./lib/extension-browser.cjs');
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const EXTENSION_ID = require('../build/extension-key.json').id;
 
 class FakeClient extends EventEmitter {
   async start() { this.emit('status', {connected: true, authenticated: true, plan: 'service-fake', email: null}); }
@@ -64,12 +62,14 @@ cpSync(dist, extensionDir, {recursive: true});
 writeFileSync(join(extensionDir, 'subscription.js'), subscription.replace(shipped, `ws://127.0.0.1:${port}/`).replace(retryWindow, `const SERVICE_RETRY_MS = ${RETRY_MS};`));
 const pairingToken = createPairingToken();
 let service = await startService({port, allowedOrigins: [`chrome-extension://${EXTENSION_ID}/`], backends: {antigravity: configPath}, pairingToken, clientFactory: () => new FakeClient()});
-const run = await launchExtension({extensionDir});
+const run = await openBrowser({extension: extensionDir});
+const extPage = await run.newPage();
 try {
-  const status = () => run.extPage.evaluate(() => chrome.runtime.sendMessage({type: 'SUBSCRIPTION_STATUS', kind: 'antigravity'}));
+  await extPage.goto(extUrl('ui/options.html'));
+  const status = () => extPage.evaluate(() => chrome.runtime.sendMessage({type: 'SUBSCRIPTION_STATUS', kind: 'antigravity'}));
   // 预置扩展的令牌缓存：'' 表示浏览器连接器给不了令牌（旧版连接器 / 没装服务）。
-  const seed = value => run.extPage.evaluate(([key, token]) => chrome.storage.session.set({[key]: token}), [SERVICE_PAIRING_KEY, value]);
-  const cached = () => run.extPage.evaluate(key => chrome.storage.session.get(key).then(stored => stored[key]), SERVICE_PAIRING_KEY);
+  const seed = value => extPage.evaluate(([key, token]) => chrome.storage.session.set({[key]: token}), [SERVICE_PAIRING_KEY, value]);
+  const cached = () => extPage.evaluate(key => chrome.storage.session.get(key).then(stored => stored[key]), SERVICE_PAIRING_KEY);
   const notService = result => result?.data?.transport !== 'service' && (result?.data?.transport === 'native' || typeof result?.data?.error === 'string');
   const describe = result => JSON.stringify(result?.data ?? result).slice(0, 200);
 
@@ -77,12 +77,12 @@ try {
   const missing = await status();
   check('缺配对令牌时服务拒绝，扩展回退到浏览器连接器', notService(missing), describe(missing));
   check('被拒后清掉令牌缓存', await cached() === undefined);
-  await run.extPage.waitForTimeout(RETRY_MS + 200);
+  await extPage.waitForTimeout(RETRY_MS + 200);
   await seed(createPairingToken());
   const wrong = await status();
   check('配对令牌错误时服务拒绝，扩展回退到浏览器连接器', notService(wrong), describe(wrong));
   check('错误令牌被清掉，下次重新向浏览器连接器要', await cached() === undefined);
-  await run.extPage.waitForTimeout(RETRY_MS + 200);
+  await extPage.waitForTimeout(RETRY_MS + 200);
   await seed(pairingToken);
   const viaService = await status();
   check('扩展带着配对令牌经本机常驻服务连上', viaService?.ok === true && viaService.data?.transport === 'service', describe(viaService));
@@ -90,7 +90,7 @@ try {
   check('连上后保留令牌缓存', await cached() === pairingToken);
   await service.close();
   service = null;
-  await run.extPage.waitForTimeout(500);
+  await extPage.waitForTimeout(500);
   const fallback = await status();
   check('服务停掉后回退到浏览器连接器', notService(fallback), describe(fallback));
 } finally {

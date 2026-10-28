@@ -368,15 +368,15 @@
 | 层 | 工具 | 覆盖 |
 |---|---|---|
 | 连接器单测 | `tools/verify-summary-timeout.mjs`（chrome mock + 定时器拦截） | 原生消息超时与计时器释放 |
-| 单元测试 | `npm test` → `tools/run-unit-tests.mjs` 显式列出 `tools/unit/*.test.mjs` 交给 `node --test`（Node 20.11+；阅读器用例依赖 `fflate`，CI 先 `npm ci`；224 例） | `gloss.mjs` 四类协议的准备/校验/纠正重试与失败码；`reading.js` 渐退状态机、迁移与读者证据；`lexicon.js` 词提名（排除规则/优先级/出现位置）；`activation.js` 自动化策略；`message-router/protocol` 注册表契约、载荷解析、设置补丁与副作用计划；`connector/host.mjs` 帧协议与来源校验；`background.js` mock 浏览器冒烟（注册表构造、信任边界、真实派发） |
+| 单元测试 | `npm test` → `tools/run-unit-tests.mjs` 显式列出 `tools/unit/*.test.mjs` 交给 `node --test`（Node 20.11+；阅读器用例依赖 `fflate`，CI 先 `npm ci`；281 例） | `gloss.mjs` 四类协议的准备/校验/纠正重试与失败码；`reading.js` 渐退状态机、迁移与读者证据；`lexicon.js` 词提名（排除规则/优先级/出现位置）；`activation.js` 自动化策略；`message-router/protocol` 注册表契约、载荷解析、设置补丁与副作用计划；`connector/host.mjs` 帧协议与来源校验；`background.js` mock 浏览器冒烟（注册表构造、信任边界、真实派发） |
 | 静态检查 | `node tools/verify-module-graph.cjs`（12 条规则：加载契约、import 解析、无环、连接器闭包纯净、分层方向、无反向依赖、文件头注释、无重复 ID、无内联脚本、manifest 资源存在、extension 脚本 `node --check` 语法（classic 按文件、ESM 经 stdin 按 module 解析）、字号档位）；`node tools/verify-deadcode.cjs`（未使用导出/导入，报告型） | 模块依赖方向、页面契约、语法与死代码 |
-| 真实扩展回归 | `tools/audit-extension.cjs`（playwright-core + 本机 ego lite 无头（`tools/lib/browser.cjs`，可用 `ROAMCAT_BROWSER` 切换），本地 fixture 文章 + 模拟模型服务） | 截至 2026-09-22：完整回归 29 项 + 摘要补充回归 22 项（去重 30 场景）：设置持久化、12 分区明暗/窄窗、术语/规则、API 模型列表、内容脚本开关、真实按键查词卡片、语言切换、已认识词撤销、历史导出清理、句子结构、整页翻译显示与清除、本地模型零请求分类、个性化空态、摘要防重与切换文章/模型过期、伴读猫拖拽持久化、欢迎页 |
-| 专项回归 | `tools/verify-bilingual-shortcut.cjs` 等（另有 `verify-catalog/jev/connector-throttle/pet-actions/popup-colors/popup-emergency/summary-timeout`） | 快捷键（页面触发/输入框忽略/旋旋翻开关/工具栏入口）、服务目录、Jev 判定、连接器节流、伴读猫操作、弹窗配色与应急翻译、摘要超时 |
-| 全界面门禁 | `npm run verify:ui`（`tools/verify-ui-all.cjs`，79 项断言；每轮先清理旧截图） | options 全 12 分区明暗/窄窗、welcome/reader/popup、页内挂件（词卡/任务条/解构卡/toast/选区条/伴读猫）、中英文档断言、横向溢出、控制台错误 |
-| 伴读猫门禁 | `npm run verify:pet`（`tools/verify-pet-buttons.cjs`，68 项断言） | 快捷坞/旋旋翻/缩放/贴边/气泡/摘要窗全部按钮的真实点击与键盘操作、文案键解析 |
+| 真实扩展回归 | `npm run verify:audit`（`tools/audit-extension.mjs`：无头 ego lite 经 `tools/lib/ego.mjs` 自写 CDP 驱动，加载 host 权限收窄为 127.0.0.1 的扩展副本，本地 fixture 文章 + 模拟模型服务） | 截至 2026-09-22：完整回归 29 项 + 摘要补充回归 22 项（去重 30 场景）：设置持久化、12 分区明暗/窄窗、术语/规则、API 模型列表、内容脚本开关、真实按键查词卡片、语言切换、已认识词撤销、历史导出清理、句子结构、整页翻译显示与清除、本地模型零请求分类、个性化空态、摘要防重与切换文章/模型过期、伴读猫拖拽持久化、欢迎页 |
+| 专项回归 | `npm run verify:options`（`tools/verify-ui.mjs`，设置页控制器行为）、`npm run verify:sites`（`tools/verify-dev-sites.mjs`，站点档案）、`npm run verify:service`（`tools/verify-connector-service.mjs`，常驻服务与配对令牌）、`tools/verify-summary-timeout.mjs` | 设置页保存/回滚/思考等级、各站点阅读块与翻译单元分区、常驻服务握手与回退、摘要超时 |
+| 全界面门禁 | `npm run verify:ui`（`tools/verify-ui-all.mjs`，79 项断言；每轮先清理旧截图） | options 全 12 分区明暗/窄窗、welcome/reader/popup、页内挂件（词卡/任务条/解构卡/toast/选区条/伴读猫）、中英文档断言、横向溢出、控制台错误 |
+| 伴读猫门禁 | `npm run verify:pet`（`tools/verify-pet-buttons.mjs`，68 项断言） | 快捷坞/旋旋翻/缩放/贴边/气泡/摘要窗全部按钮的真实点击与键盘操作、文案键解析 |
 | 连接器行为 | 临时脚本（假 spawn） | Grok 重试门控（AUTH/429 不重试、格式错误重试、过长不重试） |
 
-模块图七规则（`tools/lib/module-graph.cjs`，零依赖，可由 `audit-extension.cjs` 在浏览器回归前自动执行，失败即中止）：
+模块图七规则（`tools/lib/module-graph.cjs`，零依赖，可由 `audit-extension.mjs` 在浏览器回归前自动执行，失败即中止）：
 
 | 规则 | 内容 |
 |---|---|
@@ -392,7 +392,7 @@ R8–R11 见上表“静态检查”一行。R12 字号档位：`extension/` 与
 
 新增共享协议文件或领域层文件时必须同步更新 `tools/lib/module-graph.cjs` 清单与 §4.1。
 
-运行方式：`PLAYWRIGHT_CORE_PATH=<playwright-core 路径> node tools/<script>`；模块图检查 `node tools/verify-module-graph.cjs`（零依赖，`audit-extension.cjs` 启动浏览器前也会强制通过）；单元测试 `npm test`。截图与报告输出到 `preview/audit/`。
+运行方式：浏览器门禁 `npm run verify:*`（Node 22+，本机 ego lite；`ROAMCAT_EGO` 指定 ego.exe，`ROAMCAT_HEADED=1` 开窗观察）；模块图检查 `node tools/verify-module-graph.cjs`（零依赖，`audit-extension.mjs` 启动浏览器前也会强制通过）；单元测试 `npm test`。截图与报告输出到 `preview/audit/`。
 
 ### 12.1 开发循环（改码后为何以及如何重载）
 

@@ -18,9 +18,9 @@
 | `npm run verify:pet` | 伴读猫按钮门禁：真实点击/键盘操作全部悬浮按钮（2×2 快捷按钮/旋旋翻/缩放/贴边探头/气泡/摘要窗），断言状态与可及性 → `preview/pet-buttons/` |
 | `npm run verify:options` | 设置页行为门禁：本地 HTTP 服务 `dist/extension` + 模拟 `chrome.*`，断言句子粒度保存/失败回滚、查词按键、阅读记录、宣言弹层、模型列表与「恢复默认阅读偏好」→ `preview/verification.json`（先跑 `npm run build`） |
 | `npm run verify:audit` | 真后台端到端审计：浏览器加载 `dist/extension`（host 权限收窄为 127.0.0.1）+ 本地假模型接口，覆盖设置持久化、规则增删、词卡、解构、整页翻译、摘要、伴读猫等 30 项 → `preview/audit/`（先跑 `npm run build`） |
-| `npm run promo` | 宣传片流水线（`tools/promo/`）：提取品牌 SVG → 合成 chiptune WAV → Playwright 逐帧 `__seek(t)` 截图（1920×1080@30，可多 worker）→ ffmpeg 合成 `preview/promo/roamcat-intro.mp4`（需 `ffmpeg-static`，`--no-save` 安装；`--skip-frames` 复用已有帧） |
+| `npm run promo` | 宣传片流水线（`tools/promo/`）：提取品牌 SVG → 合成 chiptune WAV → 无头 ego lite 逐帧 `__seek(t)` 截图（1920×1080@30，可多 worker）→ ffmpeg 合成 `preview/promo/roamcat-intro.mp4`（需 `ffmpeg-static`，`--no-save` 安装；`--skip-frames` 复用已有帧） |
 
-浏览器门禁与截图脚本统一经 `tools/lib/browser.cjs` 启动浏览器，默认用本机 **ego lite**（自动找 `Program Files/Citro Labs/ego lite/Application/ego.exe`，以临时配置 + 本地调试端口自启再经 CDP 连接）。`ROAMCAT_BROWSER=msedge`/`chrome` 改用 Playwright 渠道，设为 exe 路径则用该 Chromium 系浏览器；`ROAMCAT_BROWSER_HEADLESS=0` 开窗观察。新脚本从该模块取 `chromium`，不要再写死 `channel`/`executablePath`。
+浏览器门禁与截图脚本只用本机 **ego lite**，不依赖 Playwright：统一经 `tools/lib/ego.mjs` 以临时配置启动一个独立的无头 ego（自动找 `Program Files/Citro Labs/ego lite/Application/ego.exe`，`ROAMCAT_EGO` 可指定路径），经 Chrome DevTools Protocol 直接驱动（需 Node 22+，用内置 WebSocket），不碰日常 ego 的配置与数据；`ROAMCAT_HEADED=1` 开窗观察。每个测试页开在独立窗口里（扩展看到的 `tab.active` 恒为真）；全新配置首次加载扩展会自动开欢迎引导页，`openBrowser` 启动后先关掉它（引导页是单例，否则扩展可能关掉测试页）。新脚本用 `openBrowser()`、`page.locator()` 等该模块接口，不要再引入 Playwright。
 
 ## 结构约定
 

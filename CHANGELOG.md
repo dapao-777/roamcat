@@ -25,7 +25,7 @@
 ### 改进
 - 网页内容脚本改用瘦身词典 `i18n-content.js`（约 40KB，原先每个网页都要加载约 226KB 的全量中英词典）。
 - 伴读猫不再把渲染层、语录库和设计 token 脚本在每个网页上重复注入一遍。
-- 浏览器门禁与截图脚本统一经 `tools/lib/browser.cjs` 启动浏览器，默认改用本机 ego lite；`ROAMCAT_BROWSER` 可切回 Edge/Chrome 或指定其他 Chromium 系浏览器。`verify:service` 改在空闲端口起假服务，已装真实常驻服务时也能直接跑。`tools/` 下 8 个独立回归脚本原先默认加载源码层（页面迁到 Vite 后已无 `ui/*.html`，一直起不来），改为默认加载 `dist/extension`，并把过时的断言跟上现行界面（自动连接退避标记、状态条、多行密钥框）。
+- 浏览器门禁与截图脚本只用本机 ego lite，去掉了 Playwright 依赖：新增 `tools/lib/ego.mjs`，以临时配置另起无头 ego、经 Chrome DevTools Protocol 直接驱动（需 Node 22+），不碰日常 ego 的配置与数据。`verify:*` 门禁、站点档案、宣传片逐帧截图、品牌图标与 README 截图脚本都改到这一层；已失效的一次性回归脚本与探针（11 个 `verify-*`、4 个 `probe-*`）一并删除。`verify:service` 改在空闲端口起假服务，已装真实常驻服务时也能直接跑。
 - 隐私政策与商店披露补上 Twitch 直播聊天翻译会发送的数据。
 - 浏览器连接器改为第一条真正的请求到达时才启动 Codex / Grok / agy；扩展只是来要配对令牌时不拉起 CLI。
 

@@ -1,34 +1,36 @@
 /**
  * @file tools/promo/capture.mjs
- * 宣传片逐帧捕获：Playwright 驱动本机 ego lite（tools/lib/browser.cjs）无头加载 intro.html，
+ * 宣传片逐帧捕获：无头 ego lite（tools/lib/ego.mjs）加载 intro.html，
  * 以 window.__seek(t) 确定性推进，多页并行截图到 preview/promo/frames/。
  * 用法：node tools/promo/capture.mjs [--fps 30] [--workers 4] [--from 0 --to 52]
  *        [--only t1,t2,...]（抽帧审查）
  */
-import { createRequire } from 'node:module';
-const { chromium } = createRequire(import.meta.url)('../lib/browser.cjs');
-import { mkdirSync, existsSync } from 'node:fs';
+import { mkdirSync } from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { REPO, openBrowser } from '../lib/ego.mjs';
 
 const FPS = num('--fps', 30);
 const WORKERS = num('--workers', 4);
 const FROM = num('--from', 0);
 const TO = num('--to', 33.6);
 const ONLY = arg('--only')?.split(',').map(Number) ?? null;
-const OUT = path.resolve('preview/promo/frames');
+const OUT = path.join(REPO, 'preview/promo/frames');
+const INTRO = pathToFileURL(path.join(REPO, 'tools/promo/intro.html')).href;
 const W = 1920, H = 1080;
 
 function arg(k) { const i = process.argv.indexOf(k); return i > -1 ? process.argv[i + 1] : null; }
 function num(k, d) { const v = arg(k); return v == null ? d : Number(v); }
 
-async function worker(browser, frames, tag) {
-  const page = await browser.newPage({ viewport: { width: W, height: H } });
-  await page.goto('file:///D:/RoamCat/tools/promo/intro.html');
-  await page.evaluate(() => window.__ready);
+async function worker(run, frames, tag) {
+  const page = await run.newPage();
+  await page.setViewportSize({ width: W, height: H }, 1);
+  await page.goto(INTRO);
+  await page.evaluate(() => Promise.resolve(window.__ready).then(() => true));
   for (const i of frames) {
     const t = i / FPS;
     await page.evaluate(tt => window.__seek(tt), t);
-    await page.screenshot({ path: path.join(OUT, `f${String(i).padStart(5, '0')}.png`), type: 'png' });
+    await page.screenshot({ path: path.join(OUT, `f${String(i).padStart(5, '0')}.png`), required: true });
     if (i % 150 === 0) console.log(`[w${tag}] frame ${i}`);
   }
   await page.close();
@@ -36,17 +38,17 @@ async function worker(browser, frames, tag) {
 
 const main = async () => {
   mkdirSync(OUT, { recursive: true });
-  const browser = await chromium.launch({
-    headless: true,
-    args: ['--allow-file-access-from-files', '--hide-scrollbars', '--disable-lcd-text', '--force-color-profile=srgb'],
-  });
+  const run = await openBrowser({ extension: null, args: ['--allow-file-access-from-files', '--disable-lcd-text', '--force-color-profile=srgb'] });
   const all = ONLY ? ONLY.map(t => Math.round(t * FPS)) : (() => { const a = []; for (let i = Math.round(FROM * FPS); i <= Math.round(TO * FPS); i++) a.push(i); return a; })();
   const buckets = Array.from({ length: WORKERS }, () => []);
   all.forEach((f, i) => buckets[i % WORKERS].push(f));
   console.log(`capturing ${all.length} frames @${FPS}fps, ${WORKERS} workers → ${OUT}`);
   const t0 = Date.now();
-  await Promise.all(buckets.filter(b => b.length).map((b, i) => worker(browser, b, i)));
-  await browser.close();
+  try {
+    await Promise.all(buckets.filter(b => b.length).map((b, i) => worker(run, b, i)));
+  } finally {
+    await run.close();
+  }
   console.log(`done in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
 };
 main().catch(e => { console.error(e); process.exit(1); });

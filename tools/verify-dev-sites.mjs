@@ -1,21 +1,49 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
+/**
+ * @file tools/verify-dev-sites.mjs
+ * 文件职责：站点档案端到端验收（npm run verify:sites）——把手工 fixture 按真实 URL 拦截回包，在无头 ego lite 里断言
+ *   content.js 的 inspect() 阅读块 / 翻译单元分区符合站点档案预期。
+ * 主要内容：各站点 fixture 用例、选择器合法性、example.com 负对照、github-issue 与 cli-commands 双语渲染冒烟
+ *   （本机假模型接口）；--live 时改为复核真站（墙 / 登录页记 SKIP）。
+ * 模块边界：普通 Node 运行，先 npm run build；每个测试页各自拦截请求，fixture 之外的外部请求一律拦掉；
+ *   报告写 preview/sites/verify-dev-sites.json。用法：node tools/verify-dev-sites.mjs [--live]
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+import fs from 'node:fs';
+import path from 'node:path';
+import http from 'node:http';
+import assert from 'node:assert/strict';
+import {DIST, REPO, extUrl, gateArgs, openBrowser, previewPath, sleep} from './lib/ego.mjs';
 
-// 站点档案端到端验收：把手工 fixture 按真实 URL 路由进浏览器（默认 ego lite），断言 inspect()
-// 的阅读块/翻译单元分区符合站点档案预期；含选择器合法性、example.com 负对照、
-// github-issue 双语渲染冒烟，以及 --live 真站复核（墙/登录页记 SKIP）。
-// 运行：node tools/verify-dev-sites.cjs [--live]
-const fs = require('node:fs'), path = require('node:path'), http = require('node:http'), assert = require('node:assert/strict');
-const {launchExtension, inspectTab, checkSelectors, readProfiles, sleep} = require('./lib/extension-browser.cjs');
-const LIVE = process.argv.includes('--live');
-const extensionDir = path.resolve(process.env.EXTENSION_DIR || path.join(__dirname, '../dist/extension'));
+const LIVE = gateArgs().includes('--live');
+const extensionDir = path.resolve(process.env.EXTENSION_DIR || DIST);
 if (!fs.existsSync(path.join(extensionDir, 'manifest.json'))) {
   console.error(`扩展产物缺失：${extensionDir} —— 请先运行 npm run build`);
   process.exit(1);
 }
-const fixtureDir = path.join(__dirname, 'fixtures', 'sites');
+const fixtureDir = path.join(REPO, 'tools', 'fixtures', 'sites');
 const fixture = slug => fs.readFileSync(path.join(fixtureDir, slug + '.html'), 'utf8');
+// 在目标 tab 的隔离世界里跑 content.js 的 inspect()（字面量 func，不依赖 eval）。
+const inspectTab = (extPage, tabId, limit = 5000, textLimit = 2000) =>
+  extPage.evaluate(({tabId, limit, textLimit}) => chrome.scripting.executeScript({
+    target: {tabId},
+    func: args => globalThis.__ROAMCAT_CONTENT__?.inspect?.(args.limit, args.textLimit),
+    args: [{limit, textLimit}]
+  }), {tabId, limit, textLimit}).then(frames => frames?.[0]?.result);
+// 在目标 tab 的隔离世界里按选择器列表逐个 querySelector 校验合法性。
+const checkSelectors = (extPage, tabId, selectors) =>
+  extPage.evaluate(({tabId, selectors}) => chrome.scripting.executeScript({
+    target: {tabId},
+    func: sels => sels.filter(sel => { try { document.createDocumentFragment().querySelector(sel); return false; } catch { return true; } }),
+    args: [selectors]
+  }), {tabId, selectors}).then(frames => frames?.[0]?.result);
+const readProfiles = (extPage, tabId) =>
+  extPage.evaluate(tabId => chrome.scripting.executeScript({
+    target: {tabId},
+    func: () => (globalThis.RoamCatSites?.PROFILES || []).flatMap(p => [...(p.root || []), ...(p.skip || []), ...(p.chrome || [])])
+  }), tabId).then(frames => frames?.[0]?.result || []);
 const BLOCKED_RE = /just a moment|verify you are (a )?human|are you a (human|robot)|captcha|access denied|unusual traffic|login\/\?reason/i;
 
 const cases = [
@@ -186,41 +214,45 @@ const haystack = list => list.map(item => item.text || '').join('\n');
 const findMissing = (hay, phrases) => phrases.filter(p => !hay.includes(p));
 const findPresent = (hay, phrases) => phrases.filter(p => hay.includes(p));
 
-async function probeTab(context, extPage, url) {
-  const before = new Set(context.pages());
-  // 先开 about:blank 再 goto：chrome.tabs.create 直接给 URL 的导航不经过 Playwright 路由。
-  const tabId = await extPage.evaluate(() => chrome.tabs.create({url: 'about:blank'}).then(t => t.id));
-  let page = null;
-  for (let i = 0; i < 30 && !page; i++) { await sleep(300); page = context.pages().find(p => !before.has(p) && !p.url().startsWith('chrome-extension://')) || null; }
-  if (!page) throw new Error('tab page not found');
-  await page.goto(url, {waitUntil: 'load', timeout: 30000}).catch(() => {});
+// 新开一个测试页（独立窗口）；route 给定时按它拦截这个页面的请求。页签 id 按最终网址在扩展页里查。
+async function probeTab(run, extPage, url, route = null) {
+  const page = await run.newPage();
+  await page.setViewportSize({width: 1366, height: 900}, 1);
+  if (route) await page.intercept(['*'], route);
+  await page.goto(url, {timeout: 30000}).catch(() => {});
   await sleep(2500);
+  const href = await page.url();
+  const tabId = await extPage.evaluate(async target => (await chrome.tabs.query({})).find(tab => tab.url === target)?.id ?? null, href);
+  if (!tabId) { await page.close(); throw new Error(`tab page not found: ${href}`); }
   return {page, tabId};
+}
+async function openSession() {
+  const run = await openBrowser({extension: extensionDir});
+  const extPage = await run.newPage();
+  await extPage.goto(extUrl('ui/options.html'));
+  return {run, extPage};
 }
 
 // ---- fixture 检查（含负对照与选择器合法性、双语冒烟） ----
 async function runFixtures() {
-  const session = await launchExtension({headless: true, extensionDir});
-  const {context, extPage} = session;
+  const {run, extPage} = await openSession();
   try {
-    await context.route('**/*', route => {
-      const u = new URL(route.request().url());
+    // 按真实 URL 回 fixture；本机假模型服务放行，其余外部请求一律拦掉。
+    const route = request => {
+      const u = new URL(request.url);
       const slug = fixtureRoutes.get(u.host + u.pathname.replace(/\/$/, ''));
-      if (slug) return route.fulfill({status: 200, contentType: 'text/html; charset=utf-8', body: fixture(slug)});
-      if (u.host === 'example.com' && u.pathname === '/cli-commands')
-        return route.fulfill({status: 200, contentType: 'text/html; charset=utf-8', body: fixture('cli-commands')});
-      if (u.host === 'example.com' && u.pathname === '/pretend-github-pr-files')
-        return route.fulfill({status: 200, contentType: 'text/html; charset=utf-8', body: fixture('github-pr-files')});
-      if (u.host === 'example.com')
-        return route.fulfill({status: 200, contentType: 'text/html; charset=utf-8', body: '<!doctype html><title>Example Domain</title><p>Example domain placeholder page.</p>'});
+      if (slug) return {status: 200, headers: {'Content-Type': 'text/html; charset=utf-8'}, body: fixture(slug)};
+      if (u.host === 'example.com' && u.pathname === '/cli-commands') return {status: 200, headers: {'Content-Type': 'text/html; charset=utf-8'}, body: fixture('cli-commands')};
+      if (u.host === 'example.com' && u.pathname === '/pretend-github-pr-files') return {status: 200, headers: {'Content-Type': 'text/html; charset=utf-8'}, body: fixture('github-pr-files')};
+      if (u.host === 'example.com') return {status: 200, headers: {'Content-Type': 'text/html; charset=utf-8'}, body: '<!doctype html><title>Example Domain</title><p>Example domain placeholder page.</p>'};
       // 本机假模型服务（startMockApi）要放行，否则双语检查里的翻译请求全被拦掉，只剩失败提示。
-      if (u.hostname === '127.0.0.1') return route.continue();
-      if (u.protocol.startsWith('http')) return route.abort();
-      return route.continue();
-    });
+      if (u.hostname === '127.0.0.1') return null;
+      if (u.protocol.startsWith('http')) return {abort: true};
+      return null;
+    };
     for (const c of cases) {
       await check(`fixture ${c.slug}`, async () => {
-        const {page, tabId} = await probeTab(context, extPage, c.url);
+        const {page, tabId} = await probeTab(run, extPage, c.url, route);
         try {
           const inspect = await inspectTab(extPage, tabId);
           assert.ok(inspect, 'inspect() 无结果（content script 未注入？）');
@@ -248,7 +280,7 @@ async function runFixtures() {
       });
     }
     await check('负对照：同一 fixture 在 example.com 上 diff 行应进入 blocks', async () => {
-      const {page, tabId} = await probeTab(context, extPage, NEGATIVE_URL);
+      const {page, tabId} = await probeTab(run, extPage, NEGATIVE_URL, route);
       try {
         const inspect = await inspectTab(extPage, tabId);
         assert.ok(inspect, 'inspect() 无结果');
@@ -259,7 +291,7 @@ async function runFixtures() {
       } finally { await page.close().catch(() => {}); }
     });
     await check('所有档案选择器合法', async () => {
-      const {page, tabId} = await probeTab(context, extPage, 'https://example.com/');
+      const {page, tabId} = await probeTab(run, extPage, 'https://example.com/', route);
       try {
         const all = [...new Set(await readProfiles(extPage, tabId))];
         const invalid = await checkSelectors(extPage, tabId, all);
@@ -272,7 +304,7 @@ async function runFixtures() {
       await extPage.evaluate(message => chrome.runtime.sendMessage(message), {type: 'STATE_PATCH', patch: {providerKind: 'api', assistanceMode: 'on-demand', domain: 'general'}});
       const resp = await extPage.evaluate(({message}) => chrome.runtime.sendMessage(message), {message: {type: 'STATE_PATCH', patch: {apiServices: [{id: 'audit', name: 'Local audit fixture', providerId: 'openai-compatible', baseUrl: origin + '/v1', model: 'audit-model', apiKey: 'audit-fixture-not-a-real-key', maxConcurrency: 2, options: {}}], activeApiServiceId: 'audit'}}});
       assert.ok(resp?.ok, resp?.error || 'STATE_PATCH 失败');
-      const {page, tabId} = await probeTab(context, extPage, cases[0].url);
+      const {page, tabId} = await probeTab(run, extPage, cases[0].url, route);
       try {
         await extPage.evaluate(({tabId}) => chrome.runtime.sendMessage({type: 'PAGE_UI_INJECT', tabId}), {tabId});
         const begun = await extPage.evaluate(({tabId, url}) => chrome.runtime.sendMessage({type: 'EMERGENCY_BEGIN', tabId, url}), {tabId, url: cases[0].url});
@@ -299,7 +331,7 @@ async function runFixtures() {
     });
     await check('cli-commands 命令格不翻译、行内代码原样保留、原样译文不显示', async () => {
       const url = 'https://example.com/cli-commands';
-      const {page, tabId} = await probeTab(context, extPage, url);
+      const {page, tabId} = await probeTab(run, extPage, url, route);
       try {
         await extPage.evaluate(({tabId}) => chrome.runtime.sendMessage({type: 'PAGE_UI_INJECT', tabId}), {tabId});
         const begun = await extPage.evaluate(({tabId, url}) => chrome.runtime.sendMessage({type: 'EMERGENCY_BEGIN', tabId, url}), {tabId, url});
@@ -334,10 +366,10 @@ async function runFixtures() {
         return `说明 ${verdict.described} 格有译文，命令格 0 处，行内代码 ${verdict.planCode.join(', ')}`;
       } finally { await page.close().catch(() => {}); }
     });
-  } finally { await session.close(); }
+  } finally { await run.close(); }
 }
 
-// ---- 假 OpenAI 服务（同 verify-bilingual-pipeline 的最小形态） ----
+// ---- 假 OpenAI 服务（只回整页翻译所需的最小形态） ----
 let mockServer = null;
 function startMockApi() {
   if (mockServer) return Promise.resolve(mockServer.address().port);
@@ -391,19 +423,18 @@ const liveSites = [
   {slug: 'readthedocs', url: 'https://requests.readthedocs.io/en/latest/', contentPage: true}
 ];
 async function runLive() {
-  const session = await launchExtension({headless: true, extensionDir});
-  const {context, extPage} = session;
+  const {run, extPage} = await openSession();
   try {
     for (const site of liveSites) {
       await check(`live ${site.slug}`, async () => {
-        const {page, tabId} = await probeTab(context, extPage, site.url);
+        const {page, tabId} = await probeTab(run, extPage, site.url);
         try {
           await page.evaluate(() => scrollTo(0, document.body?.scrollHeight || 1e6)).catch(() => {});
           await sleep(1200);
           await page.evaluate(() => scrollTo(0, 0)).catch(() => {});
           const title = await page.title().catch(() => '');
           const sample = await page.evaluate(() => document.body?.innerText?.slice(0, 2000) || '').catch(() => '');
-          const url = page.url();
+          const url = await page.url();
           if (BLOCKED_RE.test(title) || BLOCKED_RE.test(sample) || BLOCKED_RE.test(url)) return `SKIP 墙/登录页 (${url})`;
             let inspect = await inspectTab(extPage, tabId);
             if (!inspect) { await sleep(3000); inspect = await inspectTab(extPage, tabId); }
@@ -437,18 +468,13 @@ async function runLive() {
           } finally { await page.close().catch(() => {}); }
         });
       }
-    } finally { await session.close(); }
+    } finally { await run.close(); }
 }
 
-(async () => {
-  if (!LIVE) {
-    await runFixtures();
-  } else {
-    await runLive();
-  }
-  if (mockServer) mockServer.close();
-  fs.mkdirSync(path.resolve(__dirname, '../preview/sites'), {recursive: true});
-  fs.writeFileSync(path.resolve(__dirname, '../preview/sites/verify-dev-sites.json'), JSON.stringify(report, null, 2));
-  if (report.failures.length) process.exitCode = 1;
-  console.log(JSON.stringify({passed: report.checks.length, failures: report.failures}, null, 2));
-})().catch(error => { console.error(error); process.exitCode = 1; });
+if (!LIVE) await runFixtures();
+else await runLive();
+if (mockServer) mockServer.close();
+fs.mkdirSync(previewPath('sites'), {recursive: true});
+fs.writeFileSync(previewPath('sites', 'verify-dev-sites.json'), JSON.stringify(report, null, 2));
+if (report.failures.length) process.exitCode = 1;
+console.log(JSON.stringify({passed: report.checks.length, failures: report.failures}, null, 2));

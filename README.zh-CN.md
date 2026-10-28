@@ -272,7 +272,7 @@ node roamcat-0.0.1/connector/install.mjs --extension-id afpeggkplomdjjiemgajjgca
 | 命令 | 用途 |
 |---|---|
 | `npm run build` · `npm run build:watch` | Vite 开发构建 → `dist/extension`（扩展 ID 固定） |
-| `npm test` | 257 例单元测试（经 `tools/run-unit-tests.mjs` 调用 `node --test`） |
+| `npm test` | 281 例单元测试（经 `tools/run-unit-tests.mjs` 调用 `node --test`） |
 | `npm run verify` | 模块图门禁 R1–R11：加载契约、无环、分层方向、文件头、manifest 资源 |
 | `npm run verify:build` | 构建产物门禁：字节比对 + 浏览器实际加载冒烟 |
 | `npm run verify:ui` | 79 项全界面门禁：页面与挂件遍历、明暗主题、中英文断言，截图 → `preview/ui-audit/` |
@@ -283,7 +283,7 @@ node roamcat-0.0.1/connector/install.mjs --extension-id afpeggkplomdjjiemgajjgca
 | `npm run build:release` · `node tools/package-release.mjs` | 发布构建（不带开发 key）→ `dist/release/roamcat-<版本>-extension.zip` 与 `SHA256SUMS` |
 | `npm run gen:tokens` · `npm run gen:i18n` · `node tools/check-dict.cjs` | 由 tokens.css 重新生成 `extension/design.js` · 重新生成内容脚本词典 `extension/i18n-content.js` · 中英字典对齐校验 |
 
-浏览器门禁需要 Playwright（`npm ci` 会安装 `playwright-core`）和本机 Chromium 系浏览器：默认用 [ego lite](https://lite.ego.app/)，设 `ROAMCAT_BROWSER=msedge`（或 `chrome`、浏览器 exe 路径）可改用其他浏览器。贡献前请读 [CONTRIBUTING.md](CONTRIBUTING.md)；安全漏洞请按 [SECURITY.md](SECURITY.md) 私下报告。
+浏览器门禁需要本机 [ego lite](https://lite.ego.app/) 和 Node.js 22+：`tools/lib/ego.mjs` 以临时配置另起一个无头 ego，经 Chrome DevTools Protocol 直接驱动（不用 Playwright）；ego 装在别处时设 `ROAMCAT_EGO` 指向 `ego.exe`。贡献前请读 [CONTRIBUTING.md](CONTRIBUTING.md)；安全漏洞请按 [SECURITY.md](SECURITY.md) 私下报告。
 
 <details>
 <summary><strong>仓库布局</strong></summary>

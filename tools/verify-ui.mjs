@@ -1,15 +1,19 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
+/**
+ * @file tools/verify-ui.mjs
+ * 文件职责：设置页行为门禁（npm run verify:options）——本地 HTTP 服务 dist/extension 并注入模拟 chrome.*，
+ *   只断言控制器行为：句子粒度保存与失败回滚、查词按键、阅读记录、宣言弹层、模型列表、恢复默认阅读偏好、服务商思考等级。
+ * 主要内容：在无头 ego lite（不加载扩展）里打开 http://127.0.0.1 上的 ui/options.html；模拟的 chrome.* 只存页面 localStorage，
+ *   不碰扩展真实数据；页面向本地服务以外发起的请求记进报告。截图与多宽度溢出由 verify:ui 负责。
+ * 模块边界：普通 Node 运行，先 npm run build；报告写 preview/verification.json。
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import {DIST, openBrowser, previewPath, staticServer} from './lib/ego.mjs';
 
-// 设置页行为门禁：本地 HTTP 服务 dist/extension 并注入模拟 chrome.*，只断言控制器行为
-// （粒度保存与失败回滚、查词按键、阅读记录、宣言弹层、模型列表、恢复默认阅读偏好、服务商思考等级）；
-// 截图与多宽度溢出由 verify-ui-all.cjs（npm run verify:ui）负责。
-
-const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
-const {chromium}=require('./lib/browser.cjs');
-const root=process.env.ROAMCAT_EXTENSION_DIR?path.resolve(process.env.ROAMCAT_EXTENSION_DIR):path.resolve(__dirname,'../dist/extension'),out=path.resolve(__dirname,'../preview');
-const server=http.createServer((req,res)=>{const file=path.resolve(root,'.'+decodeURIComponent(req.url.split('?')[0]));if(!file.startsWith(root+path.sep)){res.writeHead(403).end();return;}fs.readFile(file,(e,data)=>{if(e){res.writeHead(404).end();return;}res.setHeader('Content-Type',({'.html':'text/html','.js':'text/javascript','.mjs':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.png':'image/png','.woff2':'font/woff2'})[path.extname(file)]||'application/octet-stream');res.end(data);});});
 function mockChrome(){
   const read=()=>JSON.parse(localStorage.getItem('qa-settings')||'null')||{assistanceMode:'ambient',lookupDisplay:'card',lookupKey:'D',helpLanguage:'zh',domain:'auto',providerKind:'chatgpt',automation:{sites:[]},customTerms:[],domainRules:[],apiServices:[],domainDetection:{mode:'local',api:{}}};
   const events=[];window.qa={events,failDensity:false};
@@ -30,15 +34,16 @@ function mockChrome(){
     return {ok:true,data};
   }}};
 }
-(async()=>{
- await new Promise(r=>server.listen(0,'127.0.0.1',r));const base=`http://127.0.0.1:${server.address().port}`;
- const browser=await chromium.launch({headless:true});
- const report={checks:[],errors:[]};
- try{
-  const context=await browser.newContext({viewport:{width:1440,height:1000},deviceScaleFactor:1});
-  await context.addInitScript(mockChrome);await context.addInitScript(()=>localStorage.setItem('roamcat_ui_theme','light'));
-  const page=await context.newPage();page.on('pageerror',e=>report.errors.push(e.message));
-  await page.route('**/*',route=>route.request().url().startsWith(base)?route.continue():route.abort());
+
+const server=await staticServer(DIST);const base=server.base;
+const report={checks:[],errors:[],externalRequests:[]};
+const run=await openBrowser({extension:null});
+try{
+  const page=run.page;
+  await page.setViewportSize({width:1440,height:1000},1);
+  await page.addInitScript(mockChrome);await page.addInitScript(()=>localStorage.setItem('roamcat_ui_theme','light'));
+  page.on('pageerror',e=>report.errors.push(e.message));
+  page.on('request',req=>{const url=req.url();if(/^https?:/.test(url)&&!url.startsWith(base))report.externalRequests.push(url);});
   // 句子粒度：设置页只在「显示与解构」保留单选组，保存走 SENTENCE_GROUPS_DENSITY_SET。
   const density=()=>page.locator('input[name="sentence-density"]:checked').inputValue();
   const pickDensity=value=>page.locator(`label:has(input[name="sentence-density"][value="${value}"])`).click();
@@ -65,7 +70,6 @@ function mockChrome(){
   report.checks.push('History stats render fixture data; manifesto dialog opens and closes');
   report.checks.push('History visualization renders fixture data only; no user history read or modified');
   await page.goto(base+'/ui/options.html');
-  await page.setViewportSize({width:1440,height:1000});
   await page.evaluate(()=>{const settings=JSON.parse(localStorage.getItem('qa-settings'));Object.assign(settings,{providerKind:'api',activeApiServiceId:'fixture',apiServices:[{id:'fixture',name:'Fixture',providerId:'openai-compatible',baseUrl:'http://127.0.0.1/v1',model:'fixture-model',apiKey:'fake-local-test-key',options:{}}]});localStorage.setItem('qa-settings',JSON.stringify(settings));});
   await page.reload();await page.waitForTimeout(300);assert.equal(await page.evaluate(()=>qa.events.some(e=>e.type==='SUBSCRIPTION_STATUS')),false);report.checks.push('API-only settings do not contact subscription connector');
   await page.evaluate(s=>{location.hash='#'+s},'service');await page.locator('#api-editor').evaluate(e=>e.open=true);await page.locator('#list-provider-models').click();await page.waitForTimeout(100);assert.equal(await page.locator('#provider-model-list option[value="fixture-model"]').count(),1);
@@ -82,12 +86,14 @@ function mockChrome(){
   await page.locator('#provider-fields [data-provider-option="channel"]').selectOption('tokenplan');assert.equal(await effort.isVisible(),true);assert.equal(await effort.inputValue(),'medium');
   await model.fill('sensenova-u1.5-lite');assert.equal(await effort.isVisible(),false);
   await model.fill('deepseek-v4-flash');assert.deepEqual(await levelValues(),['none','low','high','max']);assert.equal(await effort.inputValue(),'none');
-  page.once('dialog',d=>d.accept());await page.locator('#api-service-select').selectOption('zp');await page.waitForTimeout(150);
+  page.once('dialog',d=>d.accept());await page.locator('#api-service-select').selectOption('zp');await page.afterAction();await page.waitForTimeout(150);
   assert.equal(await effort.inputValue(),'high');assert.deepEqual(await levelValues(),['low','high','max']);
   await model.fill('glm-4.7-flash');assert.deepEqual(await levelValues(),['none','on']);assert.equal(await effort.inputValue(),'none');
   await model.fill('glm-5.3');assert.equal(await effort.inputValue(),'max');
   report.checks.push('Thinking level lists only the official levels of the selected model, follows model and channel changes, and falls back to the model default');
+  await page.pump();
   assert.deepEqual(report.errors,[],'页面脚本错误');
-  fs.mkdirSync(out,{recursive:true});fs.writeFileSync(out+'/verification.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
- }finally{await browser.close();server.close();}
-})().catch(e=>{console.error(e);server.close();process.exitCode=1;});
+  fs.mkdirSync(previewPath(),{recursive:true});fs.writeFileSync(previewPath('verification.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
+}catch(e){
+  console.error(e);process.exitCode=1;
+}finally{await run.close();await server.close();}

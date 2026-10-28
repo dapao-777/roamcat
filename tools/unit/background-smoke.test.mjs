@@ -2,7 +2,7 @@
  * @file tools/unit/background-smoke.test.mjs
  * 文件职责：在 Node 中以 chrome API mock 对迁移后的 background.js 做模块级冒烟测试——
  *   验证注册表能在真实模块作用域内构造（无 TDZ/引用错误）、消息监听接线完整、
- *   信任边界与载荷校验经注册表派发后行为不变。这是无浏览器环境下最接近 audit-extension.cjs 的一层。
+ *   信任边界与载荷校验经注册表派发后行为不变。这是无浏览器环境下最接近 audit-extension.mjs 的一层。
  * 主要内容：mock chrome.runtime/storage/tabs；import 真实 background.js（node:test 每文件独立进程，
  *   模块缓存只在本文件内共享，因此 import 与全部派发断言放在同一测试的子树中）；经 onMessage 监听器
  *   发送 STATE_GET / OPEN_OPTIONS / DOMAIN_TEST / FLOATING_PET_POSITION_SET / API_MODELS_LIST /

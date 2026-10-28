@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
  * @file tools/verify-module-graph.cjs
- * 文件职责：模块图检查的独立命令行入口，无需 playwright 或浏览器，可在任何 Node 20+ 环境运行。
+ * 文件职责：模块图检查的独立命令行入口，无需浏览器，可在任何 Node 20+ 环境运行。
  * 主要内容：调用 tools/lib/module-graph.cjs 的 verifyModuleGraph，逐条打印规则结果与失败详情，
- *   失败时以退出码 1 结束；tools/audit-extension.cjs 在启动浏览器前也会调用同一函数。
+ *   失败时以退出码 1 结束；tools/audit-extension.mjs 在启动浏览器前也会调用同一函数。
  * 模块边界：只做参数解析、输出与退出码；所有规则实现位于 lib/module-graph.cjs。
  *
  * This Source Code Form is subject to the terms of the Mozilla Public

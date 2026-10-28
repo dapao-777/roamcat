@@ -235,7 +235,7 @@ npm run verify:build  # 构建产物门禁 + 浏览器实际加载冒烟
 
 开发时在 `chrome://extensions` 加载 **`dist/extension`**。不要直接加载 `roamcat-0.0.1/extension` 源码目录：扩展页已迁到 `src/` 由 Vite 构建，源码目录里没有弹窗、设置页等页面。
 
-本机浏览器回归脚本（Playwright + 本机 ego lite，可用 `ROAMCAT_BROWSER=msedge` 等切换）在 `tools/` 下，需先 `npm ci` 安装 `playwright-core`（或设置 `PLAYWRIGHT_CORE_PATH`）；截图与 JSON 报告输出到 `preview/`（不入库）。
+本机浏览器回归脚本在 `tools/` 下，只用本机 ego lite（`tools/lib/ego.mjs` 以临时配置另起无头 ego、经 CDP 驱动，需 Node.js 22+，不依赖 Playwright）；截图与 JSON 报告输出到 `preview/`（不入库）。
 
 目录概览：
 

@@ -7,14 +7,14 @@
     "build": "vite build --config vite.content-ui.config.mjs --mode development && vite build --mode development",
     "build:release": "vite build --config vite.content-ui.config.mjs && vite build",
     "build:watch": "vite build --config vite.content-ui.config.mjs --mode development && vite build --mode development --watch",
-    "verify:build": "node tools/verify-build.cjs",
+    "verify:build": "npm run build && node tools/verify-build.mjs",
     "verify": "node tools/verify-module-graph.cjs",
-    "verify:sites": "node tools/verify-dev-sites.cjs",
+    "verify:sites": "node tools/verify-dev-sites.mjs",
     "verify:service": "node tools/verify-connector-service.mjs",
-    "verify:ui": "node tools/verify-ui-all.cjs",
-    "verify:pet": "node tools/verify-pet-buttons.cjs",
-    "verify:options": "node tools/verify-ui.cjs",
-    "verify:audit": "node tools/audit-extension.cjs",
+    "verify:ui": "node tools/verify-ui-all.mjs",
+    "verify:pet": "node tools/verify-pet-buttons.mjs",
+    "verify:options": "node tools/verify-ui.mjs",
+    "verify:audit": "node tools/audit-extension.mjs",
     "test": "node tools/run-unit-tests.mjs",
     "gen:tokens": "node build/gen-design-tokens.mjs",
     "gen:i18n": "node build/gen-i18n-content.mjs",
@@ -41,7 +41,6 @@
   },
   "type": "module",
   "devDependencies": {
-    "playwright-core": "^1.64.1",
     "vite": "^8.3.5"
   },
   "dependencies": {

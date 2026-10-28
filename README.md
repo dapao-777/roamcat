@@ -273,7 +273,7 @@ The full engineering spec is in [`SPEC.md`](roamcat-0.0.1/SPEC.md) (Chinese).
 | Command | What it does |
 |---|---|
 | `npm run build` · `npm run build:watch` | Vite dev build → `dist/extension` (fixed extension ID) |
-| `npm test` | 257 unit tests (`node --test` via `tools/run-unit-tests.mjs`) |
+| `npm test` | 281 unit tests (`node --test` via `tools/run-unit-tests.mjs`) |
 | `npm run verify` | Module-graph gates R1–R12: load contract, no cycles, layering, file headers, manifest resources, font-size scale |
 | `npm run verify:build` | Build-artifact gates: byte comparison + real browser load smoke test |
 | `npm run verify:ui` | 79-check UI sweep: every page and widget, light + dark, zh + en, screenshots → `preview/ui-audit/` |
@@ -284,7 +284,7 @@ The full engineering spec is in [`SPEC.md`](roamcat-0.0.1/SPEC.md) (Chinese).
 | `npm run build:release` · `node tools/package-release.mjs` | Release build (no dev key) → `dist/release/roamcat-<version>-extension.zip` + `SHA256SUMS` |
 | `npm run gen:tokens` · `npm run gen:i18n` · `node tools/check-dict.cjs` | Regenerate `extension/design.js` from tokens · regenerate the content-script dictionary `extension/i18n-content.js` · zh/en dictionary parity |
 
-Browser checks need Playwright (`npm ci` installs `playwright-core`) and a local Chromium browser: [ego lite](https://lite.ego.app/) by default, or set `ROAMCAT_BROWSER=msedge` (or `chrome`, or an exe path) to use another. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before contributing and report security issues privately per [SECURITY.md](SECURITY.md).
+Browser checks need a local [ego lite](https://lite.ego.app/) and Node.js 22+: `tools/lib/ego.mjs` starts its own headless ego with a throwaway profile and drives it over the Chrome DevTools Protocol (no Playwright). Set `ROAMCAT_EGO` to point at `ego.exe` if it is installed elsewhere. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before contributing and report security issues privately per [SECURITY.md](SECURITY.md).
 
 <details>
 <summary><strong>Repository layout</strong></summary>
