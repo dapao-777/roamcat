@@ -223,7 +223,8 @@ const LIMIT_ERROR = T('c.limit');
   }
   function setPageStatus(key,text,{error=false,busy=false,duration=0}={}){
     const previous=pageStatus.lines.get(key);
-    if(!text){pageStatus.lines.delete(key);pageStatus.dismissed.delete(key);renderPageStatus();return;}
+    // 清掉一条本来就没有的状态不重渲染：否则会顺带 clearStatusSpeech，把伴读猫的悬停提示、忙碌气泡一并清掉。
+    if(!text){pageStatus.dismissed.delete(key);if(pageStatus.lines.delete(key))renderPageStatus();return;}
     const dismissed=pageStatus.dismissed.get(key);
     if(dismissed&&error&&dismissed!==text)pageStatus.dismissed.delete(key);
     if(previous?.text===text&&previous.error===error&&previous.busy===busy)return;
