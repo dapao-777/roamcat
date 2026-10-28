@@ -76,9 +76,9 @@ RoamCat 是一个面向英语阅读的 Chrome / Edge 扩展，按双模式组织
 
 ### 从 Release 安装（发布后提供）
 
-免构建的预发布安装包 `roamcat-0.0.1-extension.zip` 会在发布后附在 GitHub Releases 中：
+免构建的预发布安装包 `roamcat-<版本>-extension.zip` 会在发布后附在 GitHub Releases 中：
 
-1. 从 GitHub Releases 下载安装包（附 `SHA256SUMS` 可校验）并解压，得到 `roamcat-0.0.1/` 目录，其中包含 `extension/`（`npm run build:release` 产物）、`connector/`（订阅连接器）、`README.md`、`LICENSE` 与 `NOTICE.txt`。
+1. 从 GitHub Releases 下载安装包（附 `SHA256SUMS` 可校验）并解压，得到与安装包版本一致的 `roamcat-<版本>/` 目录，其中包含 `extension/`（`npm run build:release` 产物）、`connector/`（订阅连接器）、`README.md`、`LICENSE` 与 `NOTICE.txt`。
 2. 打开扩展管理页：
    - Chrome：`chrome://extensions`
    - Edge：`edge://extensions`
@@ -245,7 +245,7 @@ npm run verify:build  # 构建产物门禁 + 浏览器实际加载冒烟
 - `build/`：构建期脚本与 dev 扩展 key。
 - `tools/`：模块图门禁、单元测试、构建产物门禁、浏览器回归脚本。
 
-词频数据与本地模型的生成脚本、Release 打包工具目前在维护者的源码工作区中，尚未纳入本仓库；Release ZIP 与 `roamcat-0.0.1/` 内容对应（`extension/` 为 `npm run build:release` 产物，另含 `connector/` 与说明/许可文件）。
+词频数据与本地模型的生成脚本目前在维护者的源码工作区中，尚未纳入本仓库。Release 打包工具为 `tools/package-release.mjs`，在 `npm run build:release` 后运行，生成 `dist/release/roamcat-<版本>-extension.zip` 与 `SHA256SUMS`。ZIP 内的顶层目录为 `roamcat-<版本>/`（`extension/` 为发布构建产物，另含 `connector/` 与说明/许可文件）。
 
 ## 许可与第三方材料
 

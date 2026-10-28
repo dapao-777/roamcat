@@ -3664,8 +3664,8 @@
   const pullViaMessage = () => {
     try {
       chrome.runtime?.sendMessage?.({ type: 'STATE_GET' }, (res) => {
-        void chrome.runtime?.lastError;
-        const v = res?.uiLang;
+        if (chrome.runtime?.lastError || res?.ok !== true) return;
+        const v = res.data?.uiLang;
         if (VALID.has(v) && v !== pref) setPref(v);
       });
     } catch {}
