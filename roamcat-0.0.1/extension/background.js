@@ -1881,6 +1881,20 @@ async function videoCueTranslate(message, sender) {
 // 订阅通道每次往返约 10 秒、页面至多 3 批并发，本来就到不了这个量，不限。
 const LIVE_CHAT_API_PER_MINUTE = 12;
 const liveChatRate = createRateWindow({limit: LIVE_CHAT_API_PER_MINUTE, windowMs: 60_000});
+// 直播聊天要跟得上滚动：Google 订阅默认的 gemini-3.8-flash-high 先思考，实测一分钟一条都没译出、随后请求失败；
+// 同系列 -low 档约 40 秒译出 12 条。与听写同一规则：模型列表里有同系列 -low 时改用它（结果按所选模型缓存十分钟）。
+let liveChatLowModel = {from: '', to: '', at: 0};
+async function liveChatSettings(settings) {
+  const model = String(settings.subscriptionModel || '');
+  const low = model.replace(/-(?:high|medium)$/, '-low');
+  if (settings.providerKind !== 'antigravity' || low === model) return settings;
+  if (liveChatLowModel.from !== model || Date.now() - liveChatLowModel.at > 600_000) {
+    const models = await listSubscriptionModels(false, 'antigravity').catch(() => null);
+    if (!models) return settings;
+    liveChatLowModel = {from: model, to: models.some(item => item.id === low) ? low : model, at: Date.now()};
+  }
+  return {...settings, subscriptionModel: liveChatLowModel.to};
+}
 // Twitch 直播聊天：走整页翻译协议（每批至多 8 条，上下文只带频道名），订阅通道每次往返有约 10 秒固定开销，
 // 批越大吞吐越高；流式进度经 SS_LIVE_CHAT_PROGRESS 推回页面，译完一条显示一条。不写阅读记录，只在开关打开的活动标签页里翻。
 async function liveChatTranslate(message, sender) {
@@ -1909,7 +1923,7 @@ async function liveChatTranslate(message, sender) {
     sent = key;
     void chrome.tabs.sendMessage(source.tabId, {type: 'SS_LIVE_CHAT_PROGRESS', requestId, items: progress.items}, {frameId: 0, ...(sender.documentId ? {documentId: sender.documentId} : {})}).catch(() => {});
   };
-  try { return await translateItems(items, state.settings, diagnostics.trace(message), {scope: 'page', onProgress, origin: new URL(source.url).origin, sourceHash: source.sourceHash, guard}); }
+  try { return await translateItems(items, await liveChatSettings(state.settings), diagnostics.trace(message), {scope: 'page', onProgress, origin: new URL(source.url).origin, sourceHash: source.sourceHash, guard}); }
   finally { open = false; }
 }
 async function youtubeCaptionFetch(message, sender) {

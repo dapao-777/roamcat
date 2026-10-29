@@ -39,6 +39,8 @@
   let startX = 0, startY = 0;
   let initialRight = 24, initialBottom = 84;
   let currentRight = 24, currentBottom = 84;
+  // 实际显示的 right：落在站点固定侧栏（Twitch 聊天栏）里时挪到侧栏左边；用户在这一页拖过猫就按用户放的位置。
+  let shownRight = 24, keepOutOff = false;
   let isDockOpen = false;
   let isSummaryOpen = false;
   let petScale = 1;
@@ -52,7 +54,7 @@
   let detectedDomain = 'general';
 
   // 纯函数、样式与 SVG 拆在 floating-pet-*.js，与本文件同批注入且先于本文件执行。
-  const {domainName, petShortcutBlocked, parseRgba, getLuminance, getElementBg, getPetStyles, renderPeekingCatSvg, renderCatSvg} = globalThis.RoamCatPetParts;
+  const {domainName, petShortcutBlocked, parseRgba, getLuminance, getElementBg, hasKeepOut, keepOutRight, getPetStyles, renderPeekingCatSvg, renderCatSvg} = globalThis.RoamCatPetParts;
 
   function detectPageTheme() {
     try {
@@ -141,7 +143,7 @@
       // 8. Sample background color underneath the pet's actual screen position
       if (window.innerWidth && window.innerHeight) {
         try {
-          const sampleX = Math.max(10, Math.min(window.innerWidth - (currentRight || 24) - 20, window.innerWidth - 10));
+          const sampleX = Math.max(10, Math.min(window.innerWidth - (shownRight || 24) - 20, window.innerWidth - 10));
           const sampleY = Math.max(10, Math.min(window.innerHeight - (currentBottom || 84) - 20, window.innerHeight - 10));
           const elements = document.elementsFromPoint ? document.elementsFromPoint(sampleX, sampleY) : [];
           for (const el of elements) {
@@ -509,6 +511,9 @@
         this.syncTheme();
         this.fitSpeechBubble();
       }, { signal });
+      // 有固定侧栏的站点（Twitch）：侧栏是单页应用晚些才渲染、也会收起展开，定时重算一次避让位置。
+      clearInterval(this._keepOutTimer);
+      if (hasKeepOut()) this._keepOutTimer = setInterval(() => { if (!isDragging && hostEl) this.clampPosition(); }, 1500);
 
       // Keep theme synced with document changes, system switches, or tab reactivation
       matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => this.syncTheme(), { signal });
@@ -619,7 +624,8 @@
       dragMoved = false;
       startX = e.clientX;
       startY = e.clientY;
-      initialRight = currentRight;
+      // 从看到的位置开始拖（可能是避让后挪过的位置），不跳回保存的位置。
+      initialRight = shownRight;
       initialBottom = currentBottom;
       this.container.classList.add('dragging');
       this.avatarWrap.classList.add('is-pressed');
@@ -635,6 +641,7 @@
       if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
         if (!dragMoved) this.closeQuickDock();
         dragMoved = true;
+        keepOutOff = true;
       }
 
       if (dragMoved) {
@@ -697,7 +704,8 @@
       currentRight = Math.min(Math.max(minRight, currentRight), maxRight);
       currentBottom = Math.min(Math.max(8, currentBottom), maxBottom);
 
-      const isLeftSide = isDocked ? this.container.classList.contains('is-left') : currentRight > (window.innerWidth / 2);
+      shownRight = isDocked || isDragging || keepOutOff ? currentRight : keepOutRight(currentRight, currentBottom, petW, petH);
+      const isLeftSide = isDocked ? this.container.classList.contains('is-left') : shownRight > (window.innerWidth / 2);
       if (isLeftSide) {
         this.container.classList.add('is-left');
       } else {
@@ -705,7 +713,7 @@
       }
 
       if (hostEl) {
-        hostEl.style.right = `${currentRight}px`;
+        hostEl.style.right = `${shownRight}px`;
         hostEl.style.bottom = `${currentBottom}px`;
       }
 
@@ -713,11 +721,11 @@
       if (isSummaryOpen && this.summaryWindow) {
         const sideGap = petW + 12;
         if (isLeftSide) {
-          const summaryLeft = Math.max(16, Math.min((window.innerWidth - currentRight) + sideGap, window.innerWidth - 480));
+          const summaryLeft = Math.max(16, Math.min((window.innerWidth - shownRight) + sideGap, window.innerWidth - 480));
           this.summaryWindow.style.left = `${summaryLeft}px`;
           this.summaryWindow.style.right = 'auto';
         } else {
-          const summaryRight = Math.max(16, Math.min(currentRight + sideGap, window.innerWidth - 480));
+          const summaryRight = Math.max(16, Math.min(shownRight + sideGap, window.innerWidth - 480));
           this.summaryWindow.style.right = `${summaryRight}px`;
           this.summaryWindow.style.left = 'auto';
         }
@@ -1349,6 +1357,7 @@
       clearTimeout(this._glanceTimer);
       clearTimeout(this._glanceReset);
       clearInterval(this._sleepWatchdogInterval);
+      clearInterval(this._keepOutTimer);
       this.stopQuoteTicker();
       try { this._abort?.abort(); } catch {}
       this._abort = null;

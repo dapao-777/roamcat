@@ -1,9 +1,9 @@
 /**
  * @file extension/live-chat.js
  * 文件职责：Twitch 直播聊天的实时翻译——新消息进来时在原文下方补一行简体中文译文。
- * 主要内容：在聊天输入区放「译」开关（状态存进 settings.video.liveChat），观察聊天列表的新增消息，
+ * 主要内容：在聊天输入区放「译」开关（状态存进 settings.video.liveChat；出错/限速时开关上方弹提示），观察聊天列表的新增消息，
  *   过滤表情/单词梗/已是中文的消息，按最新优先、每批至多 8 条经 LIVE_CHAT_TRANSLATE 送翻译；
- *   进队即显示「…」占位，后台流式进度（SS_LIVE_CHAT_PROGRESS）到一条显示一条。
+ *   进队即在消息末尾放一个淡色小圆点，后台流式进度（SS_LIVE_CHAT_PROGRESS）到一条显示一条。
  * 模块边界：只在 www.twitch.tv 的主框架运行，界面在隔离世界；不读历史聊天、不写阅读记录，
  *   积压过多时丢弃旧消息，只追当下正在滚动的那几条。
  *
@@ -34,13 +34,13 @@
   const BATCH_SIZE = 8;
   const MAX_QUEUE = 24;
   const MAX_INFLIGHT = 3;
-  const PENDING_TEXT = '…';
   const MAX_TEXT = 500;
   const RETRY_AFTER_MS = 8000;
+  const TIP_MS = 6000;
   const BACKFILL = 6;
   const CACHE_LIMIT = 300;
 
-  const state = {enabled: false, ready: false, container: null, observer: null, toggle: null, queue: [], inflight: 0, timer: 0, pausedUntil: 0, error: '', note: '', seq: 0, flights: new Map()};
+  const state = {enabled: false, ready: false, container: null, observer: null, toggle: null, tip: null, tipTimer: 0, queue: [], inflight: 0, timer: 0, pausedUntil: 0, error: '', note: '', seq: 0, flights: new Map()};
   const cache = new Map();
 
   function alive() { try { return Boolean(runtime?.id); } catch { return false; } }
@@ -79,17 +79,21 @@
   }
 
   function translationNode(line) { return line.querySelector('[' + OWN + '="live-chat-translation"]'); }
+  // 排队中只在消息末尾放一个淡色小圆点，不另占一行：慢通道下整片「…」会把聊天撑高一倍，失败撤掉时还整段跳动。
+  const PENDING_STYLE = 'display:inline-block;width:.4em;height:.4em;margin-inline-start:.45em;border-radius:50%;background:currentColor;opacity:.35;vertical-align:middle';
+  const TRANSLATION_STYLE = 'display:block;margin-top:2px;font-size:.92em;line-height:1.4;white-space:normal;overflow-wrap:anywhere;opacity:.78';
   function paint(line, body, text, pending = false) {
     let node = translationNode(line);
     if (!node) {
-      node = document.createElement('div');
+      node = document.createElement('span');
       node.setAttribute(OWN, 'live-chat-translation');
       node.lang = 'zh-CN';
-      node.style.cssText = 'display:block;margin-top:2px;font-size:.92em;line-height:1.4;white-space:normal;overflow-wrap:anywhere';
       body.after(node);
     }
-    node.textContent = text;
-    node.style.opacity = pending ? '.4' : '.78';
+    node.style.cssText = pending ? PENDING_STYLE : TRANSLATION_STYLE;
+    node.toggleAttribute('data-pending', pending);
+    node.setAttribute('aria-hidden', String(pending));
+    node.textContent = pending ? '' : text;
   }
   function unpaint(line) { translationNode(line)?.remove(); }
   function finish(item, translation) {
@@ -114,7 +118,7 @@
     if (cache.has(text)) { line.setAttribute(MARK, 'done'); paint(line, body, cache.get(text)); return; }
     const seq = ++state.seq;
     state.queue.push({id: 'lc-' + seq, seq, line, body, text});
-    paint(line, body, PENDING_TEXT, true);
+    paint(line, body, '', true);
     trimQueue();
     schedule();
   }
@@ -175,8 +179,10 @@
       setNote('');
     } catch (error) {
       if (!state.flights.has(requestId)) return;
-      // 失败的这批不再重试（聊天早已滚走），只暂停一会儿再接新消息，并把原因写到开关提示里。
+      // 失败的这批不再重试（聊天早已滚走），只暂停一会儿再接新消息，并在开关上方提示原因。
       for (const item of batch) if (item.line.getAttribute(MARK) !== 'done') { item.line.setAttribute(MARK, 'skip'); unpaint(item.line); }
+      // 途中改了设置或切到后台而作废的批次不算出错：丢掉这批、不暂停也不提示。
+      if (['STALE', 'CANCELLED'].includes(error?.code)) return;
       state.pausedUntil = Date.now() + RETRY_AFTER_MS;
       setError(error?.message || T('c.lc.failed'));
     } finally {
@@ -225,11 +231,12 @@
     const shadow = host.attachShadow({mode: 'closed'});
     const tokens = globalThis.RoamCatDesign?.cssFor?.(':host') || '';
     shadow.innerHTML = `<style>${tokens}</style><style>
-      button{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 var(--space-2,8px);border:1px solid transparent;border-radius:var(--radius-medium,6px);background:transparent;color:inherit;font:600 var(--fs-3,14px)/1 var(--ui,sans-serif);cursor:pointer}
+      button{position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 var(--space-2,8px);border:1px solid transparent;border-radius:var(--radius-medium,6px);background:transparent;color:inherit;font:600 var(--fs-3,14px)/1 var(--ui,sans-serif);cursor:pointer}
       button:hover{background:color-mix(in srgb,currentColor 14%,transparent)}
       button:focus-visible{outline:2px solid var(--accent,#9b8cff);outline-offset:1px}
       button[aria-pressed="true"]{border-color:color-mix(in srgb,var(--accent,#9b8cff) 60%,transparent);color:var(--accent,#9b8cff)}
       button[data-error]{border-color:var(--danger,#e5484d)}
+      button[data-error]::after{content:"";position:absolute;top:2px;right:2px;width:7px;height:7px;border-radius:50%;background:var(--danger,#e5484d)}
     </style><button type="button" part="button"></button>`;
     const button = shadow.querySelector('button');
     button.addEventListener('click', event => { if (event.isTrusted) void setEnabled(!state.enabled, true); });
@@ -249,8 +256,57 @@
     button.title = detail ? label + '\n' + detail : label;
     button.toggleAttribute('data-error', Boolean(state.error));
   }
-  function setError(message) { if (state.error !== message) { state.error = message; renderToggle(); } }
-  function setNote(message) { if (state.note !== message) { state.note = message; renderToggle(); } }
+  function setError(message) {
+    if (state.error === message) return;
+    state.error = message;
+    renderToggle();
+    if (message) showTip(T('c.lc.errorTip', {reason: message}), 'error');
+    else if (state.tip?.box.dataset.kind === 'error') hideTip();
+  }
+  function setNote(message) {
+    if (state.note === message) return;
+    state.note = message;
+    renderToggle();
+    if (message) showTip(message, 'note');
+  }
+  // 出错或限速时在「译」按钮上方弹一条提示，几秒后自己收起；出错期间按钮右上角留一个小红点。
+  // 以前只写在悬停提示（title）里，几乎看不到。提示挂在页面根上、按按钮位置固定定位，不会被聊天栏裁掉；
+  // 层级与伴读猫相同、挂得比它晚，避让后的猫就在聊天栏左边，提示要盖在猫上面。
+  function createTip() {
+    const host = document.createElement('div');
+    host.setAttribute(OWN, 'live-chat-tip');
+    for (const [name, value] of [['all', 'initial'], ['position', 'fixed'], ['z-index', '2147483647'], ['display', 'none']]) host.style.setProperty(name, value, 'important');
+    const shadow = host.attachShadow({mode: 'closed'});
+    shadow.innerHTML = `<style>${globalThis.RoamCatDesign?.cssFor?.(':host') || ''}</style><style>
+      .tip{display:flex;align-items:flex-start;gap:var(--space-2,8px);box-sizing:border-box;width:max-content;max-width:min(300px,calc(100vw - 16px));padding:8px 6px 8px 12px;border:1px solid var(--line);border-radius:var(--radius-medium,6px);background:var(--surface);color:var(--ink);box-shadow:var(--elev-2);font:500 var(--fs-2,13px)/1.45 var(--ui,sans-serif)}
+      .tip[data-kind="error"]{border-color:var(--danger,#e5484d)}
+      p{margin:0;min-width:0;overflow-wrap:anywhere}
+      button{flex:none;width:22px;height:22px;padding:0;border:0;border-radius:var(--radius-small,4px);background:transparent;color:inherit;font:600 var(--fs-3,14px)/1 var(--ui,sans-serif);opacity:.7;cursor:pointer}
+      button:hover{opacity:1;background:var(--surface-hover)}
+      button:focus-visible{outline:var(--focus-ring);outline-offset:1px}
+    </style><div class="tip" role="status"><p></p><button type="button" aria-label="${T('c.lc.dismiss')}">×</button></div>`;
+    shadow.querySelector('button').addEventListener('click', hideTip);
+    return {host, box: shadow.querySelector('.tip'), text: shadow.querySelector('p')};
+  }
+  function showTip(message, kind) {
+    const button = state.toggle?.button;
+    if (!button?.isConnected) return;
+    state.tip ||= createTip();
+    const {host, box, text} = state.tip;
+    text.textContent = message;
+    box.dataset.kind = kind;
+    const rect = button.getBoundingClientRect();
+    host.style.setProperty('right', `${Math.max(8, Math.round(innerWidth - rect.right))}px`, 'important');
+    host.style.setProperty('bottom', `${Math.round(innerHeight - rect.top + 8)}px`, 'important');
+    host.style.setProperty('display', 'block', 'important');
+    if (host !== document.documentElement.lastElementChild) document.documentElement.append(host);
+    clearTimeout(state.tipTimer);
+    state.tipTimer = setTimeout(hideTip, TIP_MS);
+  }
+  function hideTip() {
+    clearTimeout(state.tipTimer);
+    state.tip?.host.style.setProperty('display', 'none', 'important');
+  }
   function placeToggle() {
     const anchor = document.querySelector('[data-a-target="chat-settings"]') || document.querySelector('[data-a-target="video-chat-settings"]');
     if (!anchor?.parentElement) return;
@@ -265,6 +321,7 @@
     state.error = '';
     state.note = '';
     renderToggle();
+    hideTip();
     if (!enabled) { state.queue = []; state.flights.clear(); clearTimeout(state.timer); state.timer = 0; clearTranslations(); }
     else backfill();
     if (!persist) return;
@@ -283,6 +340,8 @@
     state.observer?.disconnect();
     clearTimeout(state.timer);
     state.toggle?.host.remove();
+    hideTip();
+    state.tip?.host.remove();
   }
 
   runtime.onMessage.addListener((message, sender) => {

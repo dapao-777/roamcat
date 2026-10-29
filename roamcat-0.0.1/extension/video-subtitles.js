@@ -165,6 +165,7 @@
         select:focus-visible,button:focus-visible{outline:var(--focus-ring);outline-offset:var(--focus-offset)}
         .notice{display:none;padding:8px 16px;border-bottom:1px solid var(--line);background:var(--warning-soft);color:var(--warning);font:var(--weight-medium) var(--type-support)/var(--leading-support) var(--ui,sans-serif)}
         .notice[data-kind="error"]{background:var(--danger-soft);color:var(--danger)}
+        .notice[data-kind="info"]{background:var(--accent-soft);color:var(--ink)}
         .list{max-height:min(52vh,620px);overflow:auto;padding:4px 0;background:var(--paper)}
         .cue{display:grid;grid-template-columns:70px minmax(0,1fr);gap:12px;width:100%;box-sizing:border-box;border-top:1px solid var(--line);background:transparent;color:var(--ink)}
         .cue:first-child,.cue[data-continues="true"]{border-top-color:transparent}
@@ -521,11 +522,18 @@
       const learning = {loop: loopOn, autoPause, theater: theaterOn};
       for (const [action, on] of Object.entries(learning)) menu.querySelector(`[data-action="${action}"]`).setAttribute('aria-checked', String(on));
       menu.querySelector('[data-action="resetPosition"]').hidden = settings.offset < 0;
+      syncDownload();
       menu.hidden = !menuOpen;
       menuToggle.setAttribute('aria-expanded', String(menuOpen));
       const chips = [loopOn && T('vid.chipLoop'), autoPause && T('vid.chipAutoPause'), dictationActive() && T('vid.asrDelayed')].filter(Boolean);
       overlayChip.replaceChildren(...chips.map(text => Object.assign(document.createElement('span'), {textContent: text})));
       overlayChip.hidden = !chips.length;
+    }
+    // 「下载双语字幕」只在有成段字幕时出现（直播和没读到字幕时没有东西可下）。
+    function syncDownload() {
+      const empty = !source?.groups?.length;
+      menu.querySelector('[data-action="download"]').hidden = empty;
+      transcriptShadow.querySelector('.download').hidden = empty;
     }
     // 字幕层在三种情况下要显示：开着双语、开着菜单、开着循环/每句暂停（角标提示）。
     function overlayActive() { return settings.bilingual || menuOpen || loopOn || autoPause; }
@@ -568,10 +576,17 @@
       }
       return null;
     }
-    function transcriptAnchor() {
+    // 原文稿面板的位置：YouTube 观看页放在标题区（#below）最前面——播放器外壳是绝对定位、固定高度的，
+    // 插在 ytd-player 后面会溢出到标题区底下，被标题和频道栏盖住。其它页面放在播放器后面，并跳出绝对定位的外壳。
+    function transcriptSlot() {
       if (!video) return null;
-      if (youtubeControls()) return video.closest('ytd-player') || video.closest('#player') || video.closest('.html5-video-player') || video;
-      return video.closest('[data-player],.video-player,.player') || video;
+      if (youtubeControls()) {
+        const below = video.closest('ytd-watch-flexy, ytd-watch-grid')?.querySelector('#below');
+        if (below) return {first: below};
+      }
+      let anchor = youtubeControls() ? video.closest('ytd-player') || video.closest('.html5-video-player') || video : video.closest('[data-player],.video-player,.player') || video;
+      while (anchor.parentElement && anchor.parentElement !== document.body && /^(absolute|fixed)$/.test(getComputedStyle(anchor.parentElement).position)) anchor = anchor.parentElement;
+      return {after: anchor};
     }
     function placeUi() {
       if (!video?.isConnected) { controlHost.remove(); transcriptHost.remove(); return; }
@@ -603,10 +618,11 @@
         } else controlHost.remove();
       }
       const row = controlHost.parentElement?.matches?.(`[${HOST_ATTRIBUTE}="video-subtitles-row"]`) ? controlHost.parentElement : null;
-      const after = row || transcriptAnchor();
-      if (after?.parentElement && transcriptHost.previousElementSibling !== after) after.insertAdjacentElement('afterend', transcriptHost);
       const fullscreenParent = fullscreen && fullscreen.contains(video) ? fullscreen : null;
-      if (fullscreenParent && transcriptOpen && transcriptHost.parentElement !== fullscreenParent) fullscreenParent.append(transcriptHost);
+      const slot = fullscreenParent && transcriptOpen ? null : row ? {after: row} : transcriptSlot();
+      if (!slot) { if (fullscreenParent && transcriptHost.parentElement !== fullscreenParent) fullscreenParent.append(transcriptHost); }
+      else if (slot.first) { if (slot.first.firstElementChild !== transcriptHost) slot.first.prepend(transcriptHost); }
+      else if (slot.after.parentElement && transcriptHost.previousElementSibling !== slot.after) slot.after.insertAdjacentElement('afterend', transcriptHost);
       if (overlayActive()) placeOverlay();
       placeTheater();
     }
@@ -1007,25 +1023,50 @@
     let hintTimer = null;
     function showOverlayHint(message) {
       overlayEmptyText.textContent = message;
+      overlayEmpty.dataset.kind = 'hint';
       overlayEmpty.hidden = false;
       overlayEmpty.querySelector('.retry').hidden = true;
       clearTimeout(hintTimer);
-      hintTimer = setTimeout(() => { overlayEmpty.hidden = true; overlayEmpty.querySelector('.retry').hidden = false; }, 2500);
+      hintTimer = setTimeout(() => { overlayEmpty.hidden = true; }, 2500);
     }
     function readDomCaption() {
       if (!isYoutube() || !video) return '';
       const root = video.closest('.html5-video-player') || document;
       return [...root.querySelectorAll('.ytp-caption-segment')].map(node => node.textContent || '').join(' ').replace(/\s+/g, ' ').trim();
     }
+    // YouTube 直播：时间显示带 ytp-live，或「直播」标记可见。带回看的直播 duration 是有限值，不能只看 Infinity；
+    // 还没载入或播放出错时 duration 是 NaN，不算直播。
+    function isLiveStream() {
+      if (!video) return false;
+      if (video.duration === Infinity) return true;
+      const player = video.closest('.html5-video-player');
+      const badge = player?.querySelector('.ytp-live-badge');
+      return Boolean(player?.querySelector('.ytp-time-display.ytp-live') || (badge && getComputedStyle(badge).display !== 'none'));
+    }
+    // 直播读不到字幕轨道，双语字幕跟着播放器自己显示的 CC 走：CC 开着就安静等下一句，关着才提示去打开。
+    function liveCaptionState() {
+      const cc = video?.closest('.html5-video-player')?.querySelector('.ytp-subtitles-button');
+      if (!cc || !cc.getClientRects().length) return 'live-none';
+      return cc.getAttribute('aria-pressed') === 'true' ? 'live-waiting' : 'live-off';
+    }
+    // 原文稿面板和提示条按当前读取状态说明情况：[提示条文案, 样式, 标题行短文案]。直播没有可回看的原文稿，单独说明，
+    // 标题行只放短标签，免得长说明把标题行挤成两行。
+    function sourceStateMessage(state = captionState) {
+      if (state !== 'loading' && state !== 'ready' && isLiveStream()) return [T('vid.liveTranscript'), 'info', T('vid.liveShort')];
+      const messages = {none:[T('vid.noCaptions'),'warning'],loading:[T('vid.loadingCaptions'),''],ready:[T('vid.loadingCaptions'),''],unavailable:[T('vid.timelineUnavailable'),'error'],'bridge-unavailable':[T('vid.componentNotReady'),'error']};
+      return messages[state] || messages.unavailable;
+    }
     // 没有字幕可用时的提示只停留几秒，不长期压在画面上；同一种状态关掉后不再反复弹。
     function showEmptyNotice(state) {
-      const message = state === 'bridge-unavailable' ? T('vid.componentNotReady') : state === 'none' ? T('vid.noTrackBody') : T('vid.timelineUnavailable');
+      const messages = {'bridge-unavailable': T('vid.componentNotReady'), none: T('vid.noTrackBody'), 'live-off': T('vid.liveCcOff'), 'live-none': T('vid.liveNoCc')};
+      const message = messages[state] || T('vid.timelineUnavailable');
       const id = `${lastUrl}\u0000${state}`;
       if (emptyDismissedFor === id) { overlayEmpty.hidden = true; return; }
       if (overlayEmpty.hidden || overlayEmptyText.textContent !== message) {
         overlayEmptyText.textContent = message;
         overlayEmpty.title = state === 'none' ? T('vid.noTrackDetail') : message;
-        overlayEmpty.querySelector('.retry').hidden = false;
+        overlayEmpty.dataset.kind = 'empty';
+        overlayEmpty.querySelector('.retry').hidden = state.startsWith('live-');
         overlayEmpty.hidden = false;
         clearTimeout(emptyTimer);
         emptyTimer = setTimeout(() => { emptyDismissedFor = id; overlayEmpty.hidden = true; }, EMPTY_NOTICE_MS);
@@ -1139,10 +1180,11 @@
       renderOriginalWords(text, group);
       layoutLines(text, group, translated);
       updateKaraoke(group);
-      if (text || captionState === 'ready' || captionState === 'loading') {
+      const liveState = !text && captionState !== 'ready' && captionState !== 'loading' && isLiveStream() ? liveCaptionState() : '';
+      if (text || captionState === 'ready' || captionState === 'loading' || liveState === 'live-waiting') {
         clearTimeout(emptyTimer);
-        if (overlayEmpty.querySelector('.retry').hidden === false) overlayEmpty.hidden = true;
-      } else showEmptyNotice(captionState);
+        if (overlayEmpty.dataset.kind === 'empty') overlayEmpty.hidden = true;
+      } else showEmptyNotice(liveState || captionState);
     }
     // 生词标注：整份字幕交给本地词库分析一次（ANALYZE：5 万词频 + 阅读记录，不调用模型；已认识的词不会出现）。
     // 每组最多标两个词，按词库给的优先级取前两个；查过的词标“seen”，其余难词标“hard”。
@@ -1414,10 +1456,9 @@
       else if (isYoutube() && (next.state === 'none' || next.state === 'unavailable')) failedVideoId = videoIdFromLocation();
       if (next.state !== 'ready') {
         if (source) clearSource();
-        const messages = {none:[T('vid.noCaptions'),'warning'],loading:[T('vid.loadingCaptions'),''],unavailable:[T('vid.timelineUnavailable'),'error'],'bridge-unavailable':[T('vid.componentNotReady'),'error']};
-        const [message, kind] = messages[next.state] || messages.unavailable;
+        const [message, kind, short = message] = sourceStateMessage();
         showNotice(message, kind);
-        progress.textContent = message;
+        progress.textContent = short;
         noteDomCaption();
         renderOverlay();
         return;
@@ -1542,7 +1583,13 @@
       }
     }
     function renderTranscript(reset = false) {
-      if (!source) { list.replaceChildren(); progress.textContent = T('vid.readingCues'); return; }
+      syncDownload();
+      // 还没有字幕时按读取状态写明原因，别和下面的提示条说法相反（例如一边「正在读取」一边「未找到」）。
+      if (!source) {
+        const [message, kind, short = message] = sourceStateMessage();
+        list.replaceChildren(); progress.textContent = short; showNotice(message, kind);
+        return;
+      }
       const previousScroll = list.scrollTop;
       if (reset) list.replaceChildren();
       const limit = Math.min(renderedCount || RENDER_PAGE_SIZE, source.cues.length);

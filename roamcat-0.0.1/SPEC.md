@@ -454,6 +454,7 @@ MV3 下改代码必须重载扩展：service worker 变更需重载扩展本身�
 | 27 | 品牌形象：扫描线猫与亮色界面不搭 | 伴读猫与 logo 改为麻薯猫亮暗双版（`--pet-cat-*` / `--rc-cat-*` 变量，`icons/roamcat-light.svg`），全部 logo 资产与插图由 `tools/make-brand-cat.mjs` 生成 |
 | 28 | 界面审查：侧栏进诊断页要等 5 秒；小字对比度 3.2–4.3；`ui.css` 在手动亮色下覆写 13 个主题 token；查词卡开局出错无出路 | `optionsSectionEnter` 先记当前分区；弱化文字 token 加深达 AA；删除覆写块；错误态补「重试 / 连接或修复服务」，任务条错误态危险色 |
 | 29 | 完全没有字幕轨道的视频无法翻译 | 新增 YouTube 云端听写：消息 `VIDEO_AUDIO_TRANSCRIBE`（77→78 种，内容脚本白名单 36→37）、连接器请求 `transcribe`（13→14 种）、共享协议文件 `audio-transcription.mjs` 与页内采集 `video-dictation.js`；只用已连接的 Google（Antigravity）订阅，不新增 API 配置；`tools/verify-video-dictation.mjs` 在 ego lite 中用真实 captureStream/MediaRecorder 验证采集、暂停续录、停止与回看；真机实测（agy 1.4.9，116 秒英文语音 6 段，每段 15–20 秒）后，听写改用同系列 `-low` 档，快速失败的片段重放一次 |
+| 30 | 真站走查：YouTube 原文稿面板被标题区盖住；直播原文稿同时显示「正在读取」与「未找到」；Twitch 聊天在默认 flash-high 档下一分钟零译文、大片「…」撑高聊天、出错只在悬停提示里；伴读猫压住 Twitch 聊天输入框 | 原文稿面板改放 YouTube `#below` 最前面（其它页面跳出绝对定位外壳）；直播按 `.ytp-live` 判定，原文稿说明无可回看原文稿、隐藏下载，画面提示按 CC 状态；`LIVE_CHAT_TRANSLATE` 在 Google 订阅下改用同系列 `-low`（与听写同规则）；排队改为消息末尾淡色圆点，出错/限速在「译」上方弹提示并留红点；`floating-pet-helpers.js` 新增 `keepOutRight`，Twitch 上猫落进聊天栏时显示位置挪到栏左（保存位置不变，本页拖过则不挪） |
 
 
 ### 14.2 遗留 / 观察项

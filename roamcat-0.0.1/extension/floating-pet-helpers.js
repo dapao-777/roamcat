@@ -2,7 +2,7 @@
  * @file extension/floating-pet-helpers.js
  * 文件职责：伴读猫的无状态辅助函数（classic script，禁 ESM 语法）——领域名称、快捷键抢键判断、
  *   阅读量估算与页面背景色取样，以及把拆分文件里的原型方法装回 RoamCatPetWidget 的 defineMethods。
- * 主要内容：globalThis.RoamCatPetParts 上的 domainName、petShortcutBlocked、calculateReadingMeta、
+ * 主要内容：globalThis.RoamCatPetParts 上的 domainName、petShortcutBlocked、calculateReadingMeta、hasKeepOut、keepOutRight（避让站点固定侧栏）、
  *   parseRgba、getLuminance、getElementBg、defineMethods。
  * 模块边界：不持有伴读猫状态、不挂 DOM；须与其余 floating-pet-*.js 同批注入且排在 floating-pet.js 之前；
  *   必须保持非 ESM（module-graph R1 强制）。
@@ -77,6 +77,25 @@
     return null;
   }
 
+  // 站点上固定占着右侧的区域（Twitch 聊天栏，输入框和表情按钮都在里面）：猫落在里面时，
+  // 显示位置挪到这块区域左边；只算显示位置，不改保存的位置。左边放不下就不挪。
+  const KEEP_OUT = {'www.twitch.tv': '.right-column, .chat-shell'};
+  function hasKeepOut() { return Boolean(KEEP_OUT[location.hostname]); }
+  function keepOutRight(right, bottom, petW, petH) {
+    const selector = KEEP_OUT[location.hostname];
+    if (!selector) return right;
+    const left = window.innerWidth - right - petW;
+    const top = window.innerHeight - bottom - petH;
+    for (const zone of document.querySelectorAll(selector)) {
+      const rect = zone.getBoundingClientRect();
+      if (rect.width < 120 || rect.height < 120) continue;
+      if (left >= rect.right || left + petW <= rect.left || top >= rect.bottom || top + petH <= rect.top) continue;
+      const shifted = Math.round(window.innerWidth - rect.left + 8);
+      return shifted + petW <= window.innerWidth ? shifted : right;
+    }
+    return right;
+  }
+
   // 按类方法的语义（不可枚举、可写、可配置）把方法装到原型上，供拆出的摘要窗/语录气泡使用。
   function defineMethods(proto, methods) {
     for (const [name, descriptor] of Object.entries(Object.getOwnPropertyDescriptors(methods))) {
@@ -84,5 +103,5 @@
     }
   }
 
-  Object.assign(parts, {domainName, petShortcutBlocked, calculateReadingMeta, parseRgba, getLuminance, getElementBg, defineMethods});
+  Object.assign(parts, {domainName, petShortcutBlocked, calculateReadingMeta, parseRgba, getLuminance, getElementBg, hasKeepOut, keepOutRight, defineMethods});
 })();
