@@ -13,6 +13,7 @@
     "verify:service": "node tools/verify-connector-service.mjs",
     "verify:ui": "node tools/verify-ui-all.mjs",
     "verify:pet": "node tools/verify-pet-buttons.mjs",
+    "verify:dictation": "node tools/verify-video-dictation.mjs",
     "verify:options": "node tools/verify-ui.mjs",
     "verify:audit": "node tools/audit-extension.mjs",
     "test": "node tools/run-unit-tests.mjs",

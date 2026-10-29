@@ -26,7 +26,7 @@
 - 不做整页默认中文化、不做后台预译整篇。
 - 不做用户能力画像：个性化分析只能提出可逆的提示密度/优先词调整，禁止掌握率、能力等级、敏感画像（`personalization.mjs` 的指令与结果校验强制此约束）。
 - 不自建云服务、不中转请求。
-- 视频不听写：没有字幕轨道时不上传音频；双语字幕只在用户打开后发送播放点附近的字幕文本。
+- 视频不默认听写：双语字幕只在用户打开后发送播放点附近的字幕文本；无字幕的 YouTube 视频只有用户在字幕设置里手动开启云端听写，才分段上传播放器音轨（见 6.4.1）。
 
 ### 1.3 关键产品决策（2026-09-21 起）
 本页双语翻译**不做数据/费用二次确认**：工具栏「翻译本页」与 `Alt+Shift+T` 立即开始；停止不能撤回已发送请求。此决策同步体现在 `README.md`、`manifest.json` 命令描述、`ui/popup.html`（确认面板已移除）、`ui/popup.js`（intent 焦点直接 `popupEmergencyStart()`）。
@@ -73,7 +73,7 @@
 | 来源 | 可信度 | 约束 |
 |---|---|---|
 | 扩展页面（popup/options/welcome/reader） | 高（trusted） | 可访问全部消息；`API_MODELS_LIST` 仅 options 页，`READER_TRANSLATE` 仅扩展页 |
-| 内容脚本（网页上下文） | 低 | 仅 `contentAllowed` 白名单 36 种消息；密钥/历史数据不直接暴露 |
+| 内容脚本（网页上下文） | 低 | 仅 `contentAllowed` 白名单 37 种消息；密钥/历史数据不直接暴露 |
 | 模型返回内容 | 不可信数据 | 全部经 `gloss.mjs` 的结构化校验后才进入 UI |
 | 网页 DOM 文本 | 不可信数据 | 提示词统一声明 `SOURCE_DATA_INSTRUCTIONS`（数据非指令） |
 
@@ -119,13 +119,14 @@
 | `activation.js` / `auto-start.js` | 自动开启策略、动态注册 content script、SPA 导航检测；`pageOrigin`/`sitePattern`/`validateAutomation`/`validateVideo`/`registrationMatches` 为纯函数（已纳入领域层 lint 与单测） | `registrationMatches()` 是权限/注册的唯一事实源 |
 | `shared.js` | `DEFAULT_SETTINGS`、`normalizeSettings`、`wordId`、`request()` | 旧配置键不得通过 spread 复活 |
 | `message-router.js` | 类型化消息路由器：注册表构造、重复类型即失败、`parse`+`handle` 两段派发 | 泛型实现，不认识任何具体消息；未知类型抛「未知请求。」 |
-| `message-protocol.js` | 消息协议唯一事实源：`MESSAGE_TYPES`（77 种）、`CONTENT_ALLOWED_TYPES`、纯载荷解析器与自 `background.js` 下沉的 `validatePatch`（设置补丁校验）、`settingsPatchEffects`（STATE_PATCH 副作用计划）、`parseAssistRequest`/`parsePassageRequestRef`（请求身份）、`onDemandSuggestionDecision`（按需建议判定）、`text`/`domain`/`customDetectionService` | 只依赖 `shared.js`、`domain-routing.js`、`api-providers.mjs`、`gloss.mjs` 等领域/协议模块；新增类型必须同步注册表与第 5 节 |
+| `message-protocol.js` | 消息协议唯一事实源：`MESSAGE_TYPES`（78 种）、`CONTENT_ALLOWED_TYPES`、纯载荷解析器与自 `background.js` 下沉的 `validatePatch`（设置补丁校验）、`settingsPatchEffects`（STATE_PATCH 副作用计划）、`parseAssistRequest`/`parsePassageRequestRef`（请求身份）、`onDemandSuggestionDecision`（按需建议判定）、`text`/`domain`/`customDetectionService` | 只依赖 `shared.js`、`domain-routing.js`、`api-providers.mjs`、`gloss.mjs` 等领域/协议模块；新增类型必须同步注册表与第 5 节 |
 | `api-providers.mjs` / `api-transport.mjs` | 33 家服务商目录、8 种协议适配、结构化输出能力探测、模型列表、各协议 usage 抽取（`onUsage` 回调） | HTTPS only（本机回环除外）；同源重定向禁止；密钥不进内容脚本 |
 | `thinking-levels.mjs` | 按「服务商 + 模型」声明思考档位（官方档位名、默认档、请求参数），供设置页与请求层共用 | 只收录官方文档写明的模型；未收录模型返回 null，请求沿用关闭思考参数 |
 | `rate-window.mjs` | 按键计数的滑动时间窗限额 `createRateWindow({limit,windowMs})`（`take`/`forget`） | 纯函数领域模块；计数只在内存，SW 重启归零——只作防失控上限，不承担正确性 |
 | `usage-stats.mjs` | 模型用量统计：调用事件规范化、按日/按服务×模型聚合（保留约 62 天、≤60 组合）、`summarizeUsage` UI 汇总 | 纯函数领域模块；只存计数与模型/服务标识，不存正文、密钥或网址；写串行化在 `background.js` |
 | `gloss.mjs` | 提示词、JSON Schema、响应校验/纠正（扩展与连接器共享） | `SUPPORT_POLICY_VERSION` 变更即使全部缓存失效 |
 | `sentence-groups.mjs` / `assistance-stream.mjs` / `personalization.mjs` | 解构协议与修复、流式进度解析、个性化策略机 | 共享文件被连接器安装副本引用，改动需双边同步 |
+| `audio-transcription.mjs` | 听写音频片段校验（仅 WebM/WAV 容器头、0.5–25 秒、≤512KB base64）、听写 JSON Schema 与时间戳校验（不倒序、不重叠、不越界） | 扩展后台与连接器共用；连接器只把通过校验的片段写盘交给 CLI |
 
 ### 4.2 内容脚本
 | 文件 | 职责 | 关键约束 |
@@ -175,10 +176,10 @@
 - 统一信封：请求 `{type, ...payload}` → 响应 `{ok:true,data,traceId}` / `{ok:false,error,code,traceId}`。
 - `sender.id !== chrome.runtime.id` 一律拒绝；`trusted = sender.url` 以扩展页开头。
 - 全部消息类型登记在 `message-protocol.js` 的 `MESSAGE_TYPES`（唯一事实源），由 `background.js` 的 `messageHandlers` 注册表逐一分派；`createMessageRouter` 构造期拒绝重复类型，未注册类型抛「未知请求。」；`tools/unit/message-router.test.mjs` 的源码契约测试强制注册表与清单一致。
-- 内容脚本仅可用白名单（`contentAllowed`，36 种，以 `CONTENT_ALLOWED_TYPES` 为准）：状态读取、分析、支持批次、解构、求助、翻译、历史信号、诊断回执、伴读猫位置等。
+- 内容脚本仅可用白名单（`contentAllowed`，37 种，以 `CONTENT_ALLOWED_TYPES` 为准）：状态读取、分析、支持批次、解构、求助、翻译、历史信号、诊断回执、伴读猫位置等。
 - 数据变更类消息进入 `activeDataRequests` 集合，供清理时排空（`clearReadingData`）。
 
-### 5.2 消息分组（77 种，与 `MESSAGE_TYPES` 顺序一致）
+### 5.2 消息分组（78 种，与 `MESSAGE_TYPES` 顺序一致）
 | 分组 | 类型 |
 |---|---|
 | 状态与设置（8） | `STATE_GET` `STATE_PATCH` `AUTOMATION_GET` `AUTOMATION_PATCH` `PAGE_ACTIVITY_SET` `VIDEO_SETTINGS_PATCH` `FLOATING_PET_POSITION_SET` `OPEN_OPTIONS` |
@@ -186,7 +187,7 @@
 | 领域识别（4） | `RESOLVE_DOMAIN` `PAGE_DOMAIN_GET` `PAGE_DOMAIN_SET` `DOMAIN_TEST` |
 | 阅读辅助（12） | `ANALYZE` `SUPPORT_BATCH` `ASSIST` `ASSIST_PREVIEW` `ASSIST_COMMIT` `PREPARED_SUPPORT` `PREPARED_ASSIST` `ENCOUNTER` `INTERACT` `READING_ACTIVITY` `WORD_PREFERENCE_SET` `ON_DEMAND_SUGGESTION` |
 | 阅读解构（5） | `SENTENCE_GROUPS_GET` `SENTENCE_GROUPS_SET` `SENTENCE_GROUPS_DENSITY_SET` `SENTENCE_GROUPS_LINE_STYLE_SET` `SENTENCE_GROUPS_BATCH` |
-| 翻译（9） | `EMERGENCY_BEGIN` `EMERGENCY_TRANSLATE` `EMERGENCY_CANCEL_REQUEST` `EMERGENCY_END` `PASSAGE_TRANSLATE` `VIDEO_CUE_TRANSLATE` `LIVE_CHAT_TRANSLATE` `PAGE_SUMMARY` `READER_TRANSLATE` |
+| 翻译（10） | `EMERGENCY_BEGIN` `EMERGENCY_TRANSLATE` `EMERGENCY_CANCEL_REQUEST` `EMERGENCY_END` `PASSAGE_TRANSLATE` `VIDEO_CUE_TRANSLATE` `VIDEO_AUDIO_TRANSCRIBE` `LIVE_CHAT_TRANSLATE` `PAGE_SUMMARY` `READER_TRANSLATE` |
 | 历史与个性化（17） | `HISTORY_GET` `HISTORY_CONFIG` `HISTORY_BEGIN` `HISTORY_TICK` `HISTORY_COMMIT` `HISTORY_ANNOTATION` `HISTORY_DELETE` `HISTORY_SUMMARY_EDIT` `HISTORY_CLEAR` `HISTORY_EXPORT` `HISTORY_RULE_SET` `PERSONALIZATION_GET` `PERSONALIZATION_ANALYZE` `PERSONALIZATION_APPLY` `PERSONALIZATION_DISMISS` `PERSONALIZATION_ROLLBACK` `PERSONALIZATION_RESET` |
 | 数据与诊断（15） | `READING_DATA_EXPORT` `MEMORY_CLEAR` `DIAGNOSTICS_GET` `DIAGNOSTICS_EXPORT` `DIAGNOSTICS_SET` `DIAGNOSTICS_CLEAR` `DIAGNOSTICS_RENDER` `USAGE_STATS_GET` `USAGE_STATS_CLEAR` `POPUP_INTENT_TAKE` `PAGE_UI_INJECT` `ENSURE_PAGE_UI` `AUTO_BOOTSTRAP_CHECK` `YOUTUBE_CAPTIONS_BRIDGE` `YOUTUBE_CAPTION_FETCH` |
 
@@ -225,7 +226,11 @@
 - 开关：`VIDEO_SUPPORT_ENABLED=true`。播放器按钮为「双语 / 这句 / 原文」。`video.bilingual` 默认 false，打开后才调用模型。
 - 字幕来源：YouTube 播放器轨道（人工优先于自动，优先片源语言）与 HTML `textTracks`。播放器暂时没有轨道时，主世界再问一次 YouTube 播放器接口。字幕正文只从 `www.youtube.com/api/timedtext` 拉取。
 - 翻译：把相邻字幕收成短句，从播放点起每批最多 4 句、向前约 12 句，走 `VIDEO_CUE_TRANSLATE`（复用选段翻译，不写阅读记录）。点击原文行仍走原来的单句求助。
-- 没有文字轨道时不采集、不上传音频。画面上若已有平台字幕，只翻译当前这一行。
+- 没有文字轨道时默认不采集、不上传音频。画面上若已有平台字幕，只翻译当前这一行。
+- 云端听写（仅 YouTube）：字幕设置里「开始云端听写」由用户手动开启，要求服务来源为 Google（Antigravity）订阅且选了 Gemini 模型；`VIDEO_AUDIO_TRANSCRIBE` 先以 `check:true` 只验配置与登录态（不上传、不耗额度），通过后才开始采集。
+- 采集（`video-dictation.js`）：`video.captureStream()` 只取音轨（不申请麦克风），MediaRecorder 录成约 20 秒的独立 WebM/Opus 片段（≤25 秒、≤512KB），待听写队列最多 2 段，跟不上就停。拖动、倍速变化、换源、页面隐藏、换视频、广告出现或关掉「双语」即停止；暂停时收尾当前片段，播放后续录。播完时收尾最后一段：YouTube 自动连播倒计时（实测约 7 秒）短于单段听写（15–20 秒），`video-subtitles.js` 在听写未结束时点倒计时上的 `.ytp-autonav-endscreen-upnext-cancel-button`（不改自动播放开关）并提示「已取消自动连播」；没在听写时不干预连播。换视频导致的停止提示「已停止」原因而非「可回看」（字幕随换源清空）。
+- 听写：后台校验页面为活动的 YouTube 主框架、每标签页一条在途、全局至多 2 条，经连接器 `transcribe` 请求交给 agy 单轮（`--sandbox`、禁斜杠命令）。所选 Gemini 档在模型列表里有同系列 `-low` 档时，连接器改用它（`dictationModel`）：实测 agy 1.4.9 听一段 20 秒 WebM，`gemini-3.8-flash-high` 先思考约 1 万 token，单段约 94 秒，超过 90 秒超时；`-low` 不思考，约 16 秒，转写与译文质量相当。25 秒内失败的一般错误（`NATIVE_RPC` / `OUTPUT_INVALID`，含时间戳校验不过）重放同一片段一次：实测约 1/9 的调用偶发失败，重放即成功；25 秒加上单次 90 秒超时，仍在扩展侧 120 秒的等待之内。超时、限额、登录错误不重试。音频以随机文件名写入连接器隔离工作目录、只让模型用原生文件读取，调用结束（含失败）即删除。结果按 `audio-transcription.mjs` 校验后带回原文与简体中文译文，不再走 `VIDEO_CUE_TRANSLATE`，不写阅读记录。
+- 显示：片段时间换算回视频时间轴；听写进行中字幕整体延迟显示（角标「云端听写 · 字幕延迟」），停止后按原时间轴回看，可在原文稿查看、导出。一次会话最多 2,000 条。听写进行中或已有听写字幕时，不再用迟到的轨道读取结果覆盖。
 
 ### 6.4.2 Twitch 直播聊天翻译
 - 开关：`video.liveChat` 默认 false；设置页「Twitch 直播聊天实时翻译」与聊天输入区「译」按钮共用，经 `VIDEO_SETTINGS_PATCH` 保存并由 `SS_VIDEO_SETTINGS` 同步到各标签页。
@@ -290,7 +295,7 @@
 - 请求：`{id, type, payload?, traceId?}`；响应：`{id, ok, data|error, code, detail}`；事件：`status` / `diagnostic` / `assistProgress` / `translationProgress`。
 - 启动参数：`--config <path> <origin>`（Chrome 传入调用方 origin），额外仅允许 `--parent-window=N`。
 - 来源校验：config 内 `extensionOrigin` 白名单 + `chrome-extension://<32 位 a–p>` 形态校验；两侧 origin 的结尾斜杠先归一化再比较（调用方与安装白名单可能一个带一个不带），空 pathname 与 `/` 均为合法形态（Node 的 URL 对不带路径的 chrome-extension URL 返回空 pathname）。帧协议与来源校验由 `tools/unit/connector-frame.test.mjs` 覆盖。
-- 请求类型（13 种）：`sentenceGroups status login cancel logout models classify supportBatch assist emergencyTranslate historyModel summarize diagnostics`。
+- 请求类型（14 种）：`sentenceGroups status login cancel logout models classify supportBatch assist emergencyTranslate historyModel summarize diagnostics transcribe`。`transcribe` 只有 Google（Antigravity）客户端实现，旧连接器会回「不支持的连接器请求」，扩展提示重新安装连接器。
 - 宿主另有一种只在 NativeMessaging 下处理的 `pairingToken`：读 config 的 `serviceTokenFile`，回 `{token}`（没登记或读不出时报“请重新运行安装命令”）。它不进 `dispatchRequest`，常驻服务不处理、不经 WebSocket 下发令牌。
 - CLI 在第一条业务请求到达时才启动（`pairingToken` 不拉起 Codex / Grok / agy）。
 
@@ -368,10 +373,10 @@
 | 层 | 工具 | 覆盖 |
 |---|---|---|
 | 连接器单测 | `tools/verify-summary-timeout.mjs`（chrome mock + 定时器拦截） | 原生消息超时与计时器释放 |
-| 单元测试 | `npm test` → `tools/run-unit-tests.mjs` 显式列出 `tools/unit/*.test.mjs` 交给 `node --test`（Node 20.11+；阅读器用例依赖 `fflate`，CI 先 `npm ci`；281 例） | `gloss.mjs` 四类协议的准备/校验/纠正重试与失败码；`reading.js` 渐退状态机、迁移与读者证据；`lexicon.js` 词提名（排除规则/优先级/出现位置）；`activation.js` 自动化策略；`message-router/protocol` 注册表契约、载荷解析、设置补丁与副作用计划；`connector/host.mjs` 帧协议与来源校验；`background.js` mock 浏览器冒烟（注册表构造、信任边界、真实派发） |
+| 单元测试 | `npm test` → `tools/run-unit-tests.mjs` 显式列出 `tools/unit/*.test.mjs` 交给 `node --test`（Node 20.11+；阅读器用例依赖 `fflate`，CI 先 `npm ci`；287 例） | `gloss.mjs` 四类协议的准备/校验/纠正重试与失败码；`reading.js` 渐退状态机、迁移与读者证据；`lexicon.js` 词提名（排除规则/优先级/出现位置）；`activation.js` 自动化策略；`message-router/protocol` 注册表契约、载荷解析、设置补丁与副作用计划；`connector/host.mjs` 帧协议与来源校验；`background.js` mock 浏览器冒烟（注册表构造、信任边界、真实派发） |
 | 静态检查 | `node tools/verify-module-graph.cjs`（12 条规则：加载契约、import 解析、无环、连接器闭包纯净、分层方向、无反向依赖、文件头注释、无重复 ID、无内联脚本、manifest 资源存在、extension 脚本 `node --check` 语法（classic 按文件、ESM 经 stdin 按 module 解析）、字号档位）；`node tools/verify-deadcode.cjs`（未使用导出/导入，报告型） | 模块依赖方向、页面契约、语法与死代码 |
 | 真实扩展回归 | `npm run verify:audit`（`tools/audit-extension.mjs`：无头 ego lite 经 `tools/lib/ego.mjs` 自写 CDP 驱动，加载 host 权限收窄为 127.0.0.1 的扩展副本，本地 fixture 文章 + 模拟模型服务） | 截至 2026-09-22：完整回归 29 项 + 摘要补充回归 22 项（去重 30 场景）：设置持久化、12 分区明暗/窄窗、术语/规则、API 模型列表、内容脚本开关、真实按键查词卡片、语言切换、已认识词撤销、历史导出清理、句子结构、整页翻译显示与清除、本地模型零请求分类、个性化空态、摘要防重与切换文章/模型过期、伴读猫拖拽持久化、欢迎页 |
-| 专项回归 | `npm run verify:options`（`tools/verify-ui.mjs`，设置页控制器行为）、`npm run verify:sites`（`tools/verify-dev-sites.mjs`，站点档案）、`npm run verify:service`（`tools/verify-connector-service.mjs`，常驻服务与配对令牌）、`tools/verify-summary-timeout.mjs` | 设置页保存/回滚/思考等级、各站点阅读块与翻译单元分区、常驻服务握手与回退、摘要超时 |
+| 专项回归 | `npm run verify:options`（`tools/verify-ui.mjs`，设置页控制器行为）、`npm run verify:sites`（`tools/verify-dev-sites.mjs`，站点档案）、`npm run verify:service`（`tools/verify-connector-service.mjs`，常驻服务与配对令牌）、`npm run verify:dictation`（`tools/verify-video-dictation.mjs`，无字幕视频云端听写的采集/续录/停止/回看/播完取消连播）、`tools/verify-summary-timeout.mjs` | 设置页保存/回滚/思考等级、各站点阅读块与翻译单元分区、常驻服务握手与回退、摘要超时 |
 | 全界面门禁 | `npm run verify:ui`（`tools/verify-ui-all.mjs`，79 项断言；每轮先清理旧截图） | options 全 12 分区明暗/窄窗、welcome/reader/popup、页内挂件（词卡/任务条/解构卡/toast/选区条/伴读猫）、中英文档断言、横向溢出、控制台错误 |
 | 伴读猫门禁 | `npm run verify:pet`（`tools/verify-pet-buttons.mjs`，68 项断言） | 快捷坞/旋旋翻/缩放/贴边/气泡/摘要窗全部按钮的真实点击与键盘操作、文案键解析 |
 | 连接器行为 | 临时脚本（假 spawn） | Grok 重试门控（AUTH/429 不重试、格式错误重试、过长不重试） |
@@ -448,10 +453,11 @@ MV3 下改代码必须重载扩展：service worker 变更需重载扩展本身�
 | 26 | CI 连续失败：Node 20 不展开 `node --test` 通配符、英文环境下中文断言失败、未装 `fflate` | `npm test` 改由 `tools/run-unit-tests.mjs` 显式列文件；单测 mock 固定 `getUILanguage`；CI 先 `npm ci --ignore-scripts` |
 | 27 | 品牌形象：扫描线猫与亮色界面不搭 | 伴读猫与 logo 改为麻薯猫亮暗双版（`--pet-cat-*` / `--rc-cat-*` 变量，`icons/roamcat-light.svg`），全部 logo 资产与插图由 `tools/make-brand-cat.mjs` 生成 |
 | 28 | 界面审查：侧栏进诊断页要等 5 秒；小字对比度 3.2–4.3；`ui.css` 在手动亮色下覆写 13 个主题 token；查词卡开局出错无出路 | `optionsSectionEnter` 先记当前分区；弱化文字 token 加深达 AA；删除覆写块；错误态补「重试 / 连接或修复服务」，任务条错误态危险色 |
+| 29 | 完全没有字幕轨道的视频无法翻译 | 新增 YouTube 云端听写：消息 `VIDEO_AUDIO_TRANSCRIBE`（77→78 种，内容脚本白名单 36→37）、连接器请求 `transcribe`（13→14 种）、共享协议文件 `audio-transcription.mjs` 与页内采集 `video-dictation.js`；只用已连接的 Google（Antigravity）订阅，不新增 API 配置；`tools/verify-video-dictation.mjs` 在 ego lite 中用真实 captureStream/MediaRecorder 验证采集、暂停续录、停止与回看；真机实测（agy 1.4.9，116 秒英文语音 6 段，每段 15–20 秒）后，听写改用同系列 `-low` 档，快速失败的片段重放一次 |
 
 
 ### 14.2 遗留 / 观察项
-- 视频双语字幕已启用（`VIDEO_SUPPORT_ENABLED=true`）。播放器提供「双语 / 这句 / 原文」；双语只翻译播放点附近的字幕文本（含 YouTube 自动字幕），不上传音频，没有字幕轨道时不听写。
+- 视频双语字幕已启用（`VIDEO_SUPPORT_ENABLED=true`）。播放器提供「双语 / 这句 / 原文」；双语只翻译播放点附近的字幕文本（含 YouTube 自动字幕）；没有字幕轨道的 YouTube 视频可手动开启云端听写（Google 订阅），每段约 20 秒。实测连接器改用 `-low` 档后，单段约 16 秒，快于播放；若订阅单轮耗时长于片段时长（高峰期或网络慢），队列积压后会自动停止。
 - API 模式每个新 (provider, endpoint, model, key) 组合会多发一次 128-token 能力探测请求（1 小时缓存）。
 - 伴读猫默认开启、经 `chrome.scripting` 按需注册到普通网页（关闭后不注入）。
 - Linux 连接器实测覆盖不足；Google 高思考模型等待时间是独立性能问题。
@@ -463,4 +469,4 @@ MV3 ✓ · 图标文件真实存在 ✓ · 无内联脚本/处理器 ✓ · asyn
 ---
 
 ## 15. 修订方式
-修改本规范须同步更新受影响章节；涉及消息类型、存储键、连接器协议、策略版本号（`SUPPORT_POLICY_VERSION` / `SENTENCE_GROUPS_POLICY_VERSION`）的变更，必须在「变更记录」登记，并确认连接器安装副本内的共享文件（`gloss.mjs`、`sentence-groups.mjs`、`assistance-stream.mjs`、`personalization.mjs`、`diagnostics.mjs`）已双边同步。
+修改本规范须同步更新受影响章节；涉及消息类型、存储键、连接器协议、策略版本号（`SUPPORT_POLICY_VERSION` / `SENTENCE_GROUPS_POLICY_VERSION`）的变更，必须在「变更记录」登记，并确认连接器安装副本内的共享文件（`audio-transcription.mjs`、`gloss.mjs`、`sentence-groups.mjs`、`assistance-stream.mjs`、`personalization.mjs`、`diagnostics.mjs`）已双边同步。

@@ -421,7 +421,7 @@ export class CliClient extends EventEmitter {
     });
   }
 
-  async runTask({ context, model, instructions, payload, schema, parse, onProgress }) {
+  async runTask({ context, model, instructions, payload, schema, parse, onProgress, singleTurn = false }) {
     await this.start();
     if (!this.account) throw this.hooks.authRequired();
     if (this.workSlots >= MAX_WORK_ITEMS) throw new Error('当前订阅任务较多，请稍后重试。');
@@ -430,7 +430,7 @@ export class CliClient extends EventEmitter {
     const startedAt = Date.now();
     try {
       this.record({ ...context, stage: 'request', status: 'start', code: 'OK' });
-      const parsed = await this.hooks.executeTask(this, { instructions, payload, schema, model, parse });
+      const parsed = await this.hooks.executeTask(this, { instructions, payload, schema, model, parse, singleTurn });
       if (typeof onProgress === 'function') {
         try { await onProgress(parsed); } catch { /* progress is best-effort */ }
       }

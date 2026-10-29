@@ -2338,6 +2338,7 @@ const LIMIT_ERROR = T('c.limit');
     onPrepareBridge:()=>request('YOUTUBE_CAPTIONS_BRIDGE',{}),
     onFetchCaption:async url=>{const result=await request('YOUTUBE_CAPTION_FETCH',{url});return typeof result?.text==='string'?result.text:'';},
     onTranslate:async items=>request('VIDEO_CUE_TRANSLATE',{requestId:'cap-'+crypto.randomUUID(),items}),
+    onTranscribe:payload=>request('VIDEO_AUDIO_TRANSCRIBE',payload),
     // 视频页常常还没判定过领域（state.domain 为 null），这时不传 domain，交给后台按设置推断；传 null 会被判为不支持的领域。
     onAnalyze:async text=>request('ANALYZE',state.domain?{text,domain:state.domain}:{text})});
   }

@@ -1,8 +1,8 @@
 /**
  * @file extension/video-subtitles.js
  * 文件职责：视频字幕——播放器上的原文稿、单句求助，以及跟着播放走的双语字幕。
- * 主要内容：读取 YouTube / HTML 字幕轨道（含自动字幕），用户打开「双语」后才把当前附近字幕送给翻译；没有文字轨道时不上传音频。
- * 模块边界：界面在隔离世界；YouTube 轨道正文由主世界桥从播放器请求里截下。不听写、不预译整段。
+ * 主要内容：读取 YouTube / HTML 字幕轨道；可主动开启 Google 订阅音频听写，显示延迟双语字幕。
+ * 模块边界：界面在隔离世界；采集由 video-dictation.js 管理，订阅请求经后台验证。
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -301,6 +301,7 @@
         <div class="row"><span class="label">${T('vid.mTheater')}<kbd>Alt+T</kbd></span><button class="switch" type="button" role="switch" data-action="theater" aria-label="${T('vid.mTheater')}"></button></div>
         <hr>
         <div class="actions"><button class="action" type="button" data-action="assist">${T('vid.assistBtn')}</button><button class="action" type="button" data-action="transcript">${T('vid.transcriptBtn')}</button><button class="action" type="button" data-action="download">${T('vid.mDownload')}</button><button class="action" type="button" data-action="resetPosition">${T('vid.mResetPosition')}</button></div>
+        <section class="dictation"><hr><button class="action" type="button" data-action="dictation">${T('vid.asrStart')}</button><p class="hint">${T('vid.asrConsent')}</p><p class="hint asr-status" role="status"></p></section>
         <p class="hint">${T('vid.mShortcuts')}</p>
       </div>`;
     const overlayStack = overlayShadow.querySelector('.stack');
@@ -376,6 +377,75 @@
     let transcriptFollowPausedUntil = 0;
     let priorityRequest = null;
     const translations = new Map();
+    let dictation = null, dictationStarting = false, dictationEpoch = 0, dictationDelay = null, dictationStatus = '', autoplayHoldTimer = null;
+    const dictationActive = () => Boolean(dictation || dictationStarting);
+    const subtitleTime = () => (video?.currentTime || 0) - (dictationActive() ? dictationDelay || 0 : 0);
+    function stopDictation() {
+      dictationEpoch += 1;
+      dictationStarting = false;
+      clearInterval(autoplayHoldTimer); autoplayHoldTimer = null;
+      const current = dictation; dictation = null;
+      current?.stop();
+      dictationDelay = null;
+      dictationStatus = T('vid.asrStopped');
+      syncMenu();
+    }
+    // 听写中播到结尾时最后一段还在路上：YouTube 自动连播倒计时（实测约 7 秒）短于单段听写（约 15–20 秒），
+    // 换到下一个视频会丢掉这一段和本视频的听写字幕。只点倒计时上的「取消」，等同用户点一次，不改自动播放开关。
+    function holdAutoplayForDictation() {
+      if (!dictationActive() || !isYoutube() || !video) return;
+      clearInterval(autoplayHoldTimer);
+      const epoch = dictationEpoch, root = video.closest('.html5-video-player') || document;
+      let ticks = 0;
+      const tick = () => {
+        const cancel = root.querySelector('.ytp-autonav-endscreen-upnext-cancel-button');
+        const shown = Boolean(cancel?.getClientRects().length);
+        if (!shown && epoch === dictationEpoch && ++ticks < 40) return;
+        clearInterval(autoplayHoldTimer); autoplayHoldTimer = null;
+        if (!shown || epoch !== dictationEpoch) return;
+        cancel.click();
+        showOverlayHint(T('vid.asrAutoplayHeld'));
+      };
+      autoplayHoldTimer = setInterval(tick, 200);
+      tick();
+    }
+    async function toggleDictation() {
+      if (dictationActive()) { stopDictation(); renderOverlay(true); return; }
+      if (!isYoutube() || !video || !globalThis.RoamCatVideoDictation || !currentCallbacks.onTranscribe) return;
+      const epoch = ++dictationEpoch, media = video, url = location.href;
+      dictationStarting = true; dictationStatus = T('vid.asrConnecting'); syncMenu();
+      try {
+        await currentCallbacks.onTranscribe({check: true});
+        if (epoch !== dictationEpoch || destroyed || video !== media || url !== location.href) return;
+        await setVideoSettings({bilingual: true});
+        if (epoch !== dictationEpoch || destroyed || video !== media || url !== location.href) return;
+        if (!settings.bilingual) throw new Error(T('vid.saveFailRevert'));
+        clearSource(); captionState = 'loading'; dictationDelay = null;
+        loopOn = false; autoPause = false;
+        dictation = RoamCatVideoDictation.create({video: media,
+          eligible: () => url === location.href && !document.querySelector('.html5-video-player.ad-showing'),
+          transcribe: audio => currentCallbacks.onTranscribe({audio}),
+          onSegments: (cues, start, end) => {
+            if (epoch !== dictationEpoch) return;
+            const existing = source?.kind === 'dictation' ? source.cues : [];
+            if (existing.length + cues.length > 2000) { stopDictation(); showOverlayHint(T('vid.asrLimit')); return; }
+            if (dictationDelay === null || subtitleTime() > end) dictationDelay = Math.max(0, media.currentTime - start);
+            applySource({state: 'ready', kind: 'dictation', key: `dictation:${epoch}`, language: '', cues: [...existing, ...cues]});
+          },
+          onStatus: (message, stopped = false) => {
+            if (epoch !== dictationEpoch) return;
+            dictationStatus = message;
+            if (stopped) { dictation = null; dictationStarting = false; dictationDelay = null; }
+            syncMenu();
+            if (stopped && message) showOverlayHint(message);
+          },
+        });
+      } catch (error) {
+        if (epoch === dictationEpoch) { dictationStatus = error.message || T('vid.asrFailed'); showOverlayHint(dictationStatus); }
+      } finally {
+        if (epoch === dictationEpoch) { dictationStarting = false; syncMenu(); renderOverlay(true); }
+      }
+    }
 
     function isYoutube() { return /(^|\.)youtube\.com$/.test(location.hostname); }
     function formatTime(seconds) {
@@ -439,6 +509,11 @@
     }
     // 菜单与状态角标跟随当前设置和学习状态（循环 / 每句暂停 / 影院）。
     function syncMenu() {
+      menu.querySelector('.dictation').hidden = !isYoutube();
+      const dictationButton = menu.querySelector('[data-action="dictation"]');
+      dictationButton.textContent = T(dictationActive() ? 'vid.asrStop' : 'vid.asrStart');
+      dictationButton.setAttribute('aria-pressed', String(dictationActive()));
+      menu.querySelector('.asr-status').textContent = dictationStatus;
       for (const group of menu.querySelectorAll('.seg[data-setting]')) {
         for (const button of group.querySelectorAll('button')) button.setAttribute('aria-pressed', String(String(settings[group.dataset.setting]) === button.dataset.value));
       }
@@ -448,7 +523,7 @@
       menu.querySelector('[data-action="resetPosition"]').hidden = settings.offset < 0;
       menu.hidden = !menuOpen;
       menuToggle.setAttribute('aria-expanded', String(menuOpen));
-      const chips = [loopOn && T('vid.chipLoop'), autoPause && T('vid.chipAutoPause')].filter(Boolean);
+      const chips = [loopOn && T('vid.chipLoop'), autoPause && T('vid.chipAutoPause'), dictationActive() && T('vid.asrDelayed')].filter(Boolean);
       overlayChip.replaceChildren(...chips.map(text => Object.assign(document.createElement('span'), {textContent: text})));
       overlayChip.hidden = !chips.length;
     }
@@ -723,10 +798,9 @@
       const words = sourceText.split(/\s+/).filter(word => /[A-Za-z]/.test(word));
       return words.length > 0 && words.length < 6;
     }
-    function currentGroupIndex() {
+    function currentGroupIndex(time = video?.currentTime || 0) {
       const groups = source?.groups || [];
       if (!groups.length || !video) return -1;
-      const time = video.currentTime;
       let found = -1;
       for (let index = 0; index < groups.length; index += 1) {
         if (groups[index].startTime <= time + 0.2) found = index;
@@ -736,7 +810,7 @@
     }
     function groupAt(time) {
       const groups = source?.groups || [];
-      const index = currentGroupIndex();
+      const index = currentGroupIndex(time);
       if (index < 0) return null;
       const group = groups[index];
       return time <= group.endTime + 0.35 ? group : null;
@@ -1009,6 +1083,7 @@
     }
     // 逐词高亮：说过的词全亮、还没说到的稍暗、正在说的词下面有一道亮线；只在当前词变化时改 DOM。
     function updateKaraoke(group) {
+      if (dictationActive()) return;
       const on = settings.karaoke && Boolean(group) && settings.display !== 'translation';
       overlayHost.dataset.karaoke = String(on);
       if (!on) return;
@@ -1044,7 +1119,7 @@
         return;
       }
       if (source?.groups?.length && analyzedSignature !== source.signature) void analyzeSource();
-      const group = source?.groups?.length ? groupAt(video.currentTime) : null;
+      const group = source?.groups?.length ? groupAt(subtitleTime()) : null;
       const live = !source?.cues?.length ? domCaptionText : '';
       const text = group ? group.text : live;
       const cached = group ? translations.get(groupKey(group)) : live ? translations.get(`live:${live}`) : null;
@@ -1131,7 +1206,7 @@
       noticeTimer = setTimeout(hideTranslateFailure, EMPTY_NOTICE_MS);
     }
     function hideTranslateFailure() { clearTimeout(noticeTimer); overlayNotice.hidden = true; }
-    function wantsTranslation() { return settings.bilingual && settings.display !== 'original' && !destroyed; }
+    function wantsTranslation() { return source?.kind !== 'dictation' && settings.bilingual && settings.display !== 'original' && !destroyed; }
     function videoTitle() {
       const heading = isYoutube() ? document.querySelector('h1.ytd-watch-metadata, #title h1')?.textContent : '';
       return String(heading || document.title || '').replace(/\s*-\s*YouTube\s*$/i, '').replace(/\s+/g, ' ').trim().slice(0, 160);
@@ -1308,7 +1383,7 @@
         domCaptionText = '';
       }
       const previous = new Map(translations);
-      source = {...next, signature, groups: groupCues(next.cues)};
+      source = {...next, signature, groups: next.kind === 'dictation' ? next.cues.map((cue, index) => ({...cue, cueIndex: index, cueEnd: index})) : groupCues(next.cues)};
       renderedCount = Math.min(RENDER_PAGE_SIZE, source.cues.length);
       if (sameTrack) {
         translations.clear();
@@ -1317,6 +1392,7 @@
           if (previous.has(key)) translations.set(key, previous.get(key));
         }
       }
+      if (next.kind === 'dictation') for (const group of source.groups) translations.set(groupKey(group), {status: 'ok', text: group.translation});
       return true;
     }
     function clearSource() {
@@ -1354,7 +1430,7 @@
       renderOverlay();
     }
     async function refreshSource() {
-      if (destroyed || refreshBusy || !video) return;
+      if (destroyed || refreshBusy || !video || dictationActive() || source?.kind === 'dictation') return;
       const youtubeId = isYoutube() ? videoIdFromLocation() : '';
       if (youtubeId && failedVideoId === youtubeId) {
         refreshSkips += 1;
@@ -1370,7 +1446,8 @@
       try {
         const generation = sessionGeneration;
         const next = isYoutube() ? await youtubeSource() : htmlTrackSource();
-        if (!destroyed && generation === sessionGeneration) applySource(next);
+        // 读轨道期间用户可能已开启听写：迟到的「无字幕」结果不能覆盖听写字幕。
+        if (!destroyed && generation === sessionGeneration && !dictationActive() && source?.kind !== 'dictation') applySource(next);
       } finally { refreshBusy = false; }
     }
 
@@ -1542,8 +1619,9 @@
 
     function restoreNativeState() { restoreHtmlTrack(); restoreYoutube(); }
     function markAssistIntervened() { if (activeAssist) activeAssist.intervened = true; }
-    const MEDIA_LISTENERS = [['timeupdate',updateActiveCue],['emptied',onMediaChanged],['loadedmetadata',onMediaChanged],['play',markAssistIntervened],['play',startPlayLoop],['pause',stopPlayLoop],['seeked',onUserSeeked],['seeked',updateActiveCue],['seeking',markAssistIntervened],['seeked',markAssistIntervened],['ratechange',markAssistIntervened],['volumechange',markAssistIntervened]];
+    const MEDIA_LISTENERS = [['timeupdate',updateActiveCue],['emptied',onMediaChanged],['loadedmetadata',onMediaChanged],['ended',holdAutoplayForDictation],['play',markAssistIntervened],['play',startPlayLoop],['pause',stopPlayLoop],['seeked',onUserSeeked],['seeked',updateActiveCue],['seeking',markAssistIntervened],['seeked',markAssistIntervened],['ratechange',markAssistIntervened],['volumechange',markAssistIntervened]];
     function detachVideo() {
+      stopDictation();
       if (!video) return;
       closeActiveAssist();
       stopPlayLoop();
@@ -1561,6 +1639,10 @@
       placeUi(); if (video) void refreshSource();
     }
     function onMediaChanged() {
+      const dictating = dictationActive();
+      stopDictation();
+      // 换了视频，下面 clearSource 会清掉听写字幕，不能再提示「可回看」。
+      if (dictating) { dictationStatus = T('vid.asrInterrupted'); syncMenu(); }
       sessionGeneration += 1;
       failedVideoId = '';
       discoverAttemptedFor = '';
@@ -1582,6 +1664,7 @@
 
     // 所有视频设置都走这里：先在本页生效，再存到扩展；保存失败就退回原值并提示。
     async function setVideoSettings(patch) {
+      if (patch.bilingual === false) stopDictation();
       const previous = settings;
       settings = normalizedSettings({...settings, ...patch});
       applySettingsToUi();
@@ -1647,14 +1730,14 @@
     bilingualButton.addEventListener('click', () => { void setBilingual(!settings.bilingual); });
     menuToggle.addEventListener('click', () => setMenuOpen(!menuOpen));
     overlayOriginal.addEventListener('click', event => {
-      const group = source?.groups?.length ? groupAt(video?.currentTime || 0) : null;
+      const group = source?.groups?.length ? groupAt(subtitleTime()) : null;
       if (!group) return;
       const word = event.target.closest?.('.w')?.dataset.word || '';
       requestAssist(group.cueIndex, word ? event.target.closest('.w') : overlayOriginal, word, group);
     });
     overlayTranslation.addEventListener('click', () => {
       if (settings.display !== 'translation') return;
-      const group = source?.groups?.length ? groupAt(video?.currentTime || 0) : null;
+      const group = source?.groups?.length ? groupAt(subtitleTime()) : null;
       if (group) requestAssist(group.cueIndex, overlayTranslation, '', group);
     });
     overlayShadow.querySelector('.retry').addEventListener('click', () => retryCaptions());
@@ -1671,6 +1754,7 @@
       }
       if (button.dataset.setting === 'blur' || button.dataset.setting === 'karaoke') { const key = button.dataset.setting; void setVideoSettings({[key]: !settings[key]}); return; }
       const action = button.dataset.action;
+      if (action === 'dictation') { void toggleDictation(); return; }
       if (action === 'loop') setLoop(!loopOn);
       else if (action === 'autoPause') setAutoPause(!autoPause);
       else if (action === 'theater') setTheater(!theaterOn);
@@ -1735,6 +1819,7 @@
     observer.observe(document.documentElement, {childList: true, subtree: true});
     function periodicRefresh() {
       if (location.href !== lastUrl) {
+        stopDictation();
         lastUrl = location.href;
         sessionGeneration += 1;
         discoverAttemptedFor = '';

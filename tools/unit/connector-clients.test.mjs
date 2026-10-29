@@ -25,7 +25,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {GrokClient} from '../../roamcat-0.0.1/connector/grok.mjs';
 import {CodexClient} from '../../roamcat-0.0.1/connector/codex.mjs';
-import {AntigravityClient} from '../../roamcat-0.0.1/connector/antigravity.mjs';
+import {AntigravityClient, dictationModel} from '../../roamcat-0.0.1/connector/antigravity.mjs';
 
 function tempDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'roamcat-connector-'));
@@ -259,6 +259,71 @@ test('Codex 未连接订阅时任务以 AUTH_REQUIRED 失败', async () => {
 });
 
 const AGY_MODELS = 'Fetching available models...\ngemini-3.8-flash-low\tGemini 3.8 Flash (Low)\ngemini-3.8-flash-high\tGemini 3.8 Flash (High)\n';
+test('Antigravity 听写用独立文件读取；成功和解析失败都删除音频', async () => {
+  for (const valid of [true, false]) {
+    const dataDir = tempDir();
+    let audioPath;
+    const {spawnImpl, calls} = createFakeSpawn(({args}) => {
+      if (args[0] === 'models') return {stdout: AGY_MODELS};
+      assert.ok(!args.includes('--input-format'), '音频不得走只接受文本的 stream-json');
+      const prompt = args[args.indexOf('-p') + 1];
+      const name = prompt.match(/@(audio-[a-f0-9-]+\.wav)/)?.[1];
+      assert.ok(name);
+      audioPath = path.join(dataDir, 'work', name);
+      assert.equal(fs.readFileSync(audioPath).subarray(0,4).toString(), 'RIFF');
+      assert.ok(!prompt.includes('UklGR'), '不得把音频 base64 放进提示词');
+      return {stdout: JSON.stringify({status:'SUCCESS',response:JSON.stringify({segments:valid?[{start:0,end:1,text:'Hi',translation:'你好'}]:[{start:0,end:99,text:'Hi',translation:'你好'}]})})};
+    });
+    const client = agyClient(dataDir, spawnImpl);
+    try {
+      const request = {base64:Buffer.from('RIFFxxxxWAVEdataxxxx').toString('base64'),mimeType:'audio/wav',duration:3,model:'gemini-3.8-flash-low'};
+      if (valid) assert.equal((await client.transcribe(request)).segments[0].translation, '你好');
+      else await assert.rejects(client.transcribe(request));
+      assert.equal(calls.length, valid ? 2 : 3, '时间戳无效会重放一次，仍无效才失败');
+      assert.equal(fs.existsSync(audioPath), false);
+    } finally { await client.close(); fs.rmSync(dataDir, {recursive:true,force:true}); }
+  }
+});
+test('Antigravity 听写改用所选 Gemini 同系列的 -low 档（high 档思考过久会超时）', async () => {
+  const models = ['gemini-3.8-flash-low', 'gemini-3.8-flash-medium', 'gemini-3.8-flash-high', 'gemini-3.8-pro-high'].map(id => ({id}));
+  assert.equal(dictationModel('gemini-3.8-flash-high', models), 'gemini-3.8-flash-low');
+  assert.equal(dictationModel('gemini-3.8-flash-medium', models), 'gemini-3.8-flash-low');
+  assert.equal(dictationModel('gemini-3.8-flash-low', models), 'gemini-3.8-flash-low');
+  assert.equal(dictationModel('gemini-3.8-pro-high', models), 'gemini-3.8-pro-high', '同系列没有 -low 档时保留所选模型');
+  const dataDir = tempDir();
+  const {spawnImpl, calls} = createFakeSpawn(({args}) => args[0] === 'models'
+    ? {stdout: AGY_MODELS}
+    : {stdout: JSON.stringify({status:'SUCCESS',response:JSON.stringify({segments:[]})})});
+  const client = agyClient(dataDir, spawnImpl);
+  try {
+    await client.transcribe({base64:Buffer.from('RIFFxxxxWAVEdataxxxx').toString('base64'),mimeType:'audio/wav',duration:3,model:'gemini-3.8-flash-high'});
+    const {args} = calls.at(-1);
+    assert.equal(args[args.indexOf('--model') + 1], 'gemini-3.8-flash-low');
+    assert.equal(calls.length, 2, '复用启动时探测到的模型列表，不再多跑一次 agy models');
+  } finally { await client.close(); fs.rmSync(dataDir, {recursive:true,force:true}); }
+});
+test('Antigravity 听写快速失败的一般错误重试一次；限额错误不重试；两种情况都删除音频', async () => {
+  for (const [error, retried] of [['INVALID_ARGUMENT (code 400): Request contains an invalid argument.', true], ['429 rate limit exceeded', false]]) {
+    const dataDir = tempDir();
+    let attempts = 0, audioPath;
+    const {spawnImpl, calls} = createFakeSpawn(({args}) => {
+      if (args[0] === 'models') return {stdout: AGY_MODELS};
+      audioPath = path.join(dataDir, 'work', args[args.indexOf('-p') + 1].match(/@(audio-[a-f0-9-]+\.wav)/)[1]);
+      assert.ok(fs.existsSync(audioPath), '重试时音频仍在');
+      return ++attempts === 1
+        ? {stdout: JSON.stringify({status:'ERROR', error}), code: 3}
+        : {stdout: JSON.stringify({status:'SUCCESS',response:JSON.stringify({segments:[{start:0,end:1,text:'Hi',translation:'你好'}]})})};
+    });
+    const client = agyClient(dataDir, spawnImpl);
+    try {
+      const request = {base64:Buffer.from('RIFFxxxxWAVEdataxxxx').toString('base64'),mimeType:'audio/wav',duration:3,model:'gemini-3.8-flash-low'};
+      if (retried) assert.equal((await client.transcribe(request)).segments[0].text, 'Hi');
+      else await assert.rejects(client.transcribe(request), error => error.code === 'RATE_LIMIT');
+      assert.equal(calls.length, retried ? 3 : 2);
+      assert.equal(fs.existsSync(audioPath), false);
+    } finally { await client.close(); fs.rmSync(dataDir, {recursive:true,force:true}); }
+  }
+});
 function agyClient(dataDir, spawnImpl) {
   return new AntigravityClient({agyPath: 'agy', dataDir, timeoutMs: 4000, spawnImpl, diagnostic: null});
 }

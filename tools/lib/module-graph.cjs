@@ -33,6 +33,7 @@ const path = require('node:path');
 // SPEC.md 第 4.1/15 节：扩展与本机连接器共享的协议层文件，连接器在 Node 中直接 import。
 // 修改本清单必须同步 SPEC 与 connector 侧引用。
 const SHARED_PROTOCOL = Object.freeze([
+  'audio-transcription.mjs',
   'gloss.mjs',
   'sentence-groups.mjs',
   'assistance-stream.mjs',

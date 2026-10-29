@@ -13,6 +13,7 @@
 
  */
 import './i18n.js';
+import {normalizeAudio, normalizeTranscription} from './audio-transcription.mjs';
 import { DOMAINS, wordId, normalizeSettings, activeApiProvider, apiProviderForTask, settleWelcomeGuide, settleOptionsPages, focusOptionsPage, optionsPageUrl } from './shared.js';
 import {
   MESSAGE_TYPES,
@@ -40,6 +41,7 @@ import { analyze, analyzeBatch, englishTokenStats, ensureLexicon, historyMatches
 import { encounter, interact, migrateSupportWord, normalizeKnownAt, normalizeSenseLabel, readingEvidence } from './reading.js';
 import {
   historyModelSubscription,
+  transcribeSubscription,
   subscriptionStatus,
   onNativeDiagnostic,
   syncNativeDiagnostics,
@@ -1836,6 +1838,29 @@ async function emergencyCancelRequest(message,sender){
   await pruneBackgroundQueue();
   return result;
 }
+const audioRequests = new Set(); // 只约束存活中的请求，SW 重启后不会复用音频。
+async function videoAudioTranscribe(message, sender) {
+  const page = await readingSource(sender), state = await load(), generation = providerGeneration;
+  const url = new URL(page.url);
+  if (!VIDEO_SUPPORT_ENABLED || !['www.youtube.com', 'm.youtube.com', 'youtube.com'].includes(url.hostname) || url.protocol !== 'https:'
+    || !state.settings.automation.videoSites || !page.active || await tabPaused(page.tabId)) throw new Error(M('请在活动的 YouTube 页面开启视频功能。', 'Enable video features on the active YouTube page.'));
+  if (state.settings.providerKind !== 'antigravity' || !/^gemini-/.test(state.settings.subscriptionModel || '')) throw new Error(M('请在设置中选择已连接的 Google 订阅和 Gemini 模型。', 'Select your connected Google subscription and a Gemini model in settings.'));
+  // 开始采集前检查配置；这一步不会上传音频或消耗模型请求。
+  if (message.check === true) {
+    const status = await probeSubscription('antigravity');
+    if (!status?.authenticated) throw new Error(M('请先连接 Google 订阅。', 'Connect your Google subscription first.'));
+    return {ready: true};
+  }
+  const audio = normalizeAudio(message.audio);
+  if (audioRequests.has(page.tabId) || audioRequests.size >= 2) throw new Error(M('听写任务尚未完成，请稍后重试。', 'Transcription is still busy. Try again shortly.'));
+  audioRequests.add(page.tabId);
+  try {
+    const result = await transcribeSubscription(audio, state.settings.subscriptionModel, diagnostics.trace(message)?.traceId);
+    const current = await readingSource(sender);
+    if (generation !== providerGeneration || page.sourceHash !== current.sourceHash || !current.active || await tabPaused(page.tabId)) throw staleWork();
+    return normalizeTranscription(result, audio.duration);
+  } finally { audioRequests.delete(page.tabId); }
+}
 async function videoCueTranslate(message, sender) {
   if (!VIDEO_SUPPORT_ENABLED) throw new Error(M('视频字幕功能暂未开放。','Video subtitles are not available yet.'));
   const source = await readingSource(sender);
@@ -2779,7 +2804,7 @@ async function reconcileAutoScript(settings) {
   if (wanted.length) await chrome.scripting.registerContentScripts(wanted);
 }
 
-const VIDEO_UI_FILES=['vendor/youtube-caption-json3.js','video-subtitles.js'];
+const VIDEO_UI_FILES=['vendor/youtube-caption-json3.js','video-dictation.js','video-subtitles.js'];
 async function injectPageUI(tabId, includeVideo = false, petWanted) {
   if (petWanted === undefined) petWanted = (await load(false)).settings.floatingPet?.enabled !== false;
   const probe = await chrome.scripting.executeScript({
@@ -3264,6 +3289,7 @@ const messageHandlers = [
   },
   { type: 'PASSAGE_TRANSLATE', handle: (message, { sender, trusted }) => passageTranslate(message, sender) },
   { type: 'VIDEO_CUE_TRANSLATE', handle: (message, { sender }) => videoCueTranslate(message, sender) },
+  { type: 'VIDEO_AUDIO_TRANSCRIBE', handle: (message, { sender }) => videoAudioTranscribe(message, sender) },
   { type: 'LIVE_CHAT_TRANSLATE', handle: (message, { sender }) => liveChatTranslate(message, sender) },
   { type: 'READER_TRANSLATE', handle: (message, { sender, trusted }) => readerTranslate(message, sender, trusted) },
   { type: 'EMERGENCY_TRANSLATE', handle: (message, { sender, trusted }) => emergencyTranslate(message, sender) },

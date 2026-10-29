@@ -144,6 +144,14 @@ test('迁移后的 background.js 在 mock 浏览器中构造注册表并按信�
     assert.match(unknown.error, /未知请求。/u);
   });
 
+  await t.test('音频听写拒绝非 YouTube 页面与子框架', async () => {
+    for (const sender of [contentPage(chrome), {...contentPage(chrome),frameId:2}]) {
+      const response = await send({type:'VIDEO_AUDIO_TRANSCRIBE',check:true}, sender);
+      assert.equal(response.ok, false);
+      assert.match(response.error, /YouTube|主框架/);
+    }
+  });
+
   await t.test('parse 阶段提取的载荷校验经真实派发生效', async () => {
     const badDomainTest = await send({type: 'DOMAIN_TEST', text: '  '}, trustedPopup(chrome));
     assert.equal(badDomainTest.ok, false);

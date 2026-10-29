@@ -25,7 +25,7 @@ const RUN_VALUE = 'RoamCatConnectorService';
 const LAUNCH_LABEL = 'com.roamcat.connector';
 const SYSTEMD_UNIT = 'roamcat-connector.service';
 const SKIP = new Set(['install.mjs', 'service-install.mjs']);
-const EXTENSION_DEPS = ['gloss.mjs', 'assistance-stream.mjs', 'diagnostics.mjs', 'personalization.mjs', 'sentence-groups.mjs'];
+const EXTENSION_DEPS = ['audio-transcription.mjs', 'gloss.mjs', 'assistance-stream.mjs', 'diagnostics.mjs', 'personalization.mjs', 'sentence-groups.mjs'];
 
 // 把连接器源码（不含安装器）与它依赖的扩展侧共享模块复制到 root/connector、root/extension。
 export async function copyConnectorSources(source, root) {

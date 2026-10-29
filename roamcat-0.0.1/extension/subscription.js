@@ -262,7 +262,7 @@ function createConnector({kind,host,label,cliName,loginHosts}) {
       const timer = setTimeout(() => {
         disconnect(current,new Error(type === 'assist' ? M(`${label} 订阅帮助超时，已断开连接并停止请求。请刷新连接后重试。`,`${label} subscription help timed out; disconnected and request stopped. Refresh the connection and retry.`) : type === 'emergencyTranslate' ? M(`${label} 订阅翻译超时，已断开连接并停止请求。请刷新连接后重试。`,`${label} subscription translation timed out; disconnected and request stopped. Refresh the connection and retry.`) : M(`本地 ${label} 连接器没有及时响应，请刷新连接后重试。`,`The local ${label} connector did not respond in time; refresh the connection and retry.`)));
         current.disconnect();
-      },['assist','emergencyTranslate','summarize'].includes(type) ? 120000 : 45000);
+      },['assist','emergencyTranslate','summarize','transcribe'].includes(type) ? 120000 : 45000);
       state.pending.set(id,{resolve,reject,timer,type,onProgress});
       try { current.postMessage({id,type,payload,...(validTraceId(traceId)?{traceId}:{})}); }
       catch {
@@ -348,6 +348,9 @@ function connector(kind) {
   return kind === 'grok' ? connectors.grok : kind === 'antigravity' ? connectors.antigravity : connectors.chatgpt;
 }
 
+export async function transcribeSubscription(audio, model, traceId) {
+  return connector('antigravity').send('transcribe', {...audio, model}, traceId);
+}
 export function subscriptionStatus(kind) { return connector(kind).snapshot(); }
 export function onSubscriptionStatus(listener,kind) { connector(kind).state.listeners.add(listener); }
 export function refreshSubscription(kind) { return connector(kind).refresh(); }

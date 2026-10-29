@@ -130,6 +130,10 @@ export async function resolveCodexPath(recorded) {
 // 一次请求的分发：NativeMessaging 宿主与本机常驻服务共用。emit 用于推送进度事件（带请求 id）。
 export async function dispatchRequest({ client, diagnostics, request, emit }) {
   switch (request.type) {
+    case "transcribe": {
+      if (typeof client.transcribe !== "function") throw new Error("听写需要 Google 订阅连接器，请更新本地连接器。");
+      return client.transcribe(request.payload, {traceId: request.traceId});
+    }
     case "sentenceGroups": return client.sentenceGroups(request.payload, { traceId: request.traceId });
     case "status": return client.refreshStatus();
     case "login": return client.login();
