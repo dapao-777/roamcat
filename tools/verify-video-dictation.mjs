@@ -8,7 +8,7 @@
  */
 import fs from 'node:fs/promises';
 import assert from 'node:assert/strict';
-import {openBrowser, DIST, previewPath} from './lib/ego.mjs';
+import {openBrowser, DIST, assertFreshDist, previewPath} from './lib/ego.mjs';
 import {normalizeAudio} from '../roamcat-0.0.1/extension/audio-transcription.mjs';
 
 // 足够长的确定性 WAV，真实 MediaRecorder 编码，不替换媒体 API。
@@ -17,6 +17,7 @@ wav.write('RIFF'); wav.writeUInt32LE(wav.length-8,4); wav.write('WAVEfmt ',8); w
 wav.writeUInt16LE(1,20); wav.writeUInt16LE(1,22); wav.writeUInt32LE(16000,24); wav.writeUInt32LE(32000,28); wav.writeUInt16LE(2,32); wav.writeUInt16LE(16,34); wav.write('data',36); wav.writeUInt32LE(wav.length-44,40);
 const speech = process.argv.find(arg=>arg.startsWith('--speech-fixture='))?.slice(17);
 const media = speech ? await fs.readFile(speech) : wav;
+assertFreshDist();
 const run = await openBrowser({extension:null});
 const errors = [], checks = [];
 try {

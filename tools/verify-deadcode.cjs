@@ -5,7 +5,7 @@
  *   合并计数，不会把连接器在用的共享导出误报为死代码。数据溯源类导出（FREQUENCY_SOURCE 等）为
  *   许可归属元数据，属于有意保留，由 allowlist 显式排除。
  * 主要内容：导出符号跨文件引用计数、import 绑定去声明后的使用计数、中文报告清单。
- * 模块边界：只读文件系统；不修改任何文件；退出码恒为 0（报告型工具，由人工或 review 消费）。
+ * 模块边界：只读文件系统；不修改任何文件；发现未使用的导出或 import 绑定时以退出码 1 失败（CI 门禁）。
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -81,3 +81,5 @@ console.log('=== 未被使用的导出（' + unusedExports.length + '）===');
 unusedExports.forEach(x => console.log('  ' + x));
 console.log('=== 未被使用的 import 绑定（' + unusedImports.length + '）===');
 unusedImports.forEach(x => console.log('  ' + x));
+// 作为门禁：有未使用的导出或 import 绑定就以失败退出（CI 会拦下）；确属有意保留的导出登记在 INTENTIONAL_EXPORTS。
+process.exitCode = unusedExports.length || unusedImports.length ? 1 : 0;

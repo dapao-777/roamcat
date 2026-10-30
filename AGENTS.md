@@ -11,7 +11,7 @@
 | `npm run gen:i18n` | 由 `extension/i18n.js` 生成内容脚本专用的瘦身词典 `extension/i18n-content.js`（改了网页侧文案或网页侧脚本新用了别的命名空间后必须重跑；`i18n-content.test.mjs` 拦截漂移） |
 | `npm run verify` | 模块图静态门禁（R1–R12；R1–R11 只扫 `roamcat-0.0.1/extension` 与 `connector`，R12 字号档位另扫 `src/`） |
 | `npm run verify:sites` | 站点档案端到端：fixture 按真实 URL 路由进浏览器断言 inspect()（加 `--live` 复核真站） |
-| `npm run verify:service` | 本机常驻连接服务端到端：先断言扩展内置服务地址端口 = 47821，再在 127.0.0.1 空闲端口起带假后端的 `connector/service.mjs`（要求配对令牌；测试副本只改这一处地址并缩短重试窗口，不占用真实服务的 47821），浏览器加载 `dist/extension`，预置 `chrome.storage.session` 令牌缓存，断言缺令牌 / 错令牌回退浏览器连接器、正确令牌经 WebSocket 连上、服务停掉后回退 → `preview/connector-service.json`（先跑 `npm run build`） |
+| `npm run verify:service` | 本机常驻连接服务端到端：先断言扩展内置服务地址端口 = 47821，再在 127.0.0.1 空闲端口起带假后端的 `connector/service.mjs`（要求配对令牌；测试副本改这一处地址、缩短重试窗口，并把浏览器连接器宿主名换成不存在的名字——回退立刻报「未找到」，不拉起本机真实安装的连接器、不占用真实服务的 47821），浏览器加载 `dist/extension`，预置 `chrome.storage.session` 令牌缓存，断言缺令牌 / 错令牌回退浏览器连接器、正确令牌经 WebSocket 连上、服务停掉后回退 → `preview/connector-service.json`（先跑 `npm run build`） |
 | `npm test` | 单元测试：`tools/run-unit-tests.mjs` 列出 `tools/unit/*.test.mjs` 再交给 `node --test`（Node 20 不展开通配符，故不直接传 glob） |
 | `npm run verify:build` | 构建产物门禁：字节比对 + 浏览器实际加载 `dist/extension` 冒烟 |
 | `npm run verify:ui` | 全界面 UI 门禁：浏览器加载 `dist/extension`，遍历 popup/options 全分区/welcome/reader 与页内挂件（词卡 HUD/任务条/解构卡/toast/选区条/伴读猫全状态），双主题截图 + 断言 → `preview/ui-audit/`（先跑 `npm run build`） |
@@ -22,7 +22,7 @@
 | `npm run verify:audit` | 真后台端到端审计：浏览器加载 `dist/extension`（host 权限收窄为 127.0.0.1）+ 本地假模型接口，覆盖设置持久化、规则增删、词卡、解构、整页翻译、摘要、伴读猫等 30 项 → `preview/audit/`（先跑 `npm run build`） |
 | `npm run promo` | 宣传片流水线（`tools/promo/`）：提取品牌 SVG → 合成 chiptune WAV → 无头 ego lite 逐帧 `__seek(t)` 截图（1920×1080@30，可多 worker）→ ffmpeg 合成 `preview/promo/roamcat-intro.mp4`（需 `ffmpeg-static`，`--no-save` 安装；`--skip-frames` 复用已有帧） |
 
-浏览器门禁与截图脚本只用本机 **ego lite**，不依赖 Playwright：统一经 `tools/lib/ego.mjs` 以临时配置启动一个独立的无头 ego（自动找 `Program Files/Citro Labs/ego lite/Application/ego.exe`，`ROAMCAT_EGO` 可指定路径），经 Chrome DevTools Protocol 直接驱动（需 Node 22+，用内置 WebSocket），不碰日常 ego 的配置与数据；`ROAMCAT_HEADED=1` 开窗观察。每个测试页开在独立窗口里（扩展看到的 `tab.active` 恒为真）；全新配置首次加载扩展会自动开欢迎引导页，`openBrowser` 启动后先关掉它（引导页是单例，否则扩展可能关掉测试页）。ego 自己在全新配置上也会开首次引导（`chrome://onboarding/`，`--no-first-run` 管不住），其中会请求「设为默认浏览器」并弹出 Windows「默认应用」设置页；`openBrowser` 连上后把它停掉并导航到空白页（直接关掉会触发 ego 的退出流程）。新脚本用 `openBrowser()`、`page.locator()` 等该模块接口，不要再引入 Playwright。
+浏览器门禁与截图脚本只用本机 **ego lite**，不依赖 Playwright：统一经 `tools/lib/ego.mjs` 以临时配置启动一个独立的无头 ego（自动找 `Program Files/Citro Labs/ego lite/Application/ego.exe`，`ROAMCAT_EGO` 可指定路径），经 Chrome DevTools Protocol 直接驱动（需 Node 22+，用内置 WebSocket），不碰日常 ego 的配置与数据；`ROAMCAT_HEADED=1` 开窗观察。每个测试页开在独立窗口里（扩展看到的 `tab.active` 恒为真）；全新配置首次加载扩展会自动开欢迎引导页，`openBrowser` 启动后先关掉它（引导页是单例，否则扩展可能关掉测试页）。ego 自己在全新配置上也会开首次引导（`chrome://onboarding/`，`--no-first-run` 管不住），其中会请求「设为默认浏览器」并弹出 Windows「默认应用」设置页；`openBrowser` 连上后把它停掉并导航到空白页（直接关掉会触发 ego 的退出流程）。构建会把源码指纹写进 `dist/.roamcat-build.json`（`build/source-stamp.mjs`），浏览器门禁启动前核对：源码在构建后改过、产物被手改过或 dist 是生产构建时直接报错要求先 `npm run build`；拷贝或经本地服务读取 dist 的门禁显式调用 `assertFreshDist()`。临时实验可设 `ROAMCAT_ALLOW_STALE_DIST=1` 跳过（只警告）。CI（`.github/workflows/ci.yml`）跑模块图、单测、字典、死代码检查，Node 22/24 上再做生产与开发构建；浏览器门禁只在本机跑。新脚本用 `openBrowser()`、`page.locator()` 等该模块接口，不要再引入 Playwright。
 
 ## 结构约定
 

@@ -17,6 +17,7 @@ import {minify} from 'vite';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {transformManifest} from './manifest.mjs';
+import {writeBuildStamp} from './source-stamp.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const EXTENSION_SOURCE = path.join(repoRoot, 'roamcat-0.0.1', 'extension');
@@ -65,6 +66,8 @@ export function roamcatExtension({mode}) {
       const key = mode === 'production' ? undefined : JSON.parse(readFileSync(KEY_FILE, 'utf8')).key;
       const output = transformManifest(manifest, {dev: mode !== 'production', key});
       writeFileSync(path.join(outDir, 'manifest.json'), `${JSON.stringify(output, null, 2)}\n`);
+      // 产物全部写完再记指纹：浏览器门禁启动前据此判断 dist 是否最新、是否被手改过。
+      writeBuildStamp(mode);
       console.log(`[roamcat-extension] 已拷贝扩展源码层并写入 manifest（mode=${mode}）`);
     },
   };

@@ -13,7 +13,7 @@
  */
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
-import {DIST, openBrowser, previewPath, staticServer} from './lib/ego.mjs';
+import {DIST, assertFreshDist, openBrowser, previewPath, staticServer} from './lib/ego.mjs';
 
 function mockChrome(){
   const read=()=>JSON.parse(localStorage.getItem('qa-settings')||'null')||{assistanceMode:'ambient',lookupDisplay:'card',lookupKey:'D',helpLanguage:'zh',domain:'auto',providerKind:'chatgpt',automation:{sites:[]},customTerms:[],domainRules:[],apiServices:[],domainDetection:{mode:'local',api:{}}};
@@ -37,6 +37,7 @@ function mockChrome(){
   }}};
 }
 
+assertFreshDist();
 const server=await staticServer(DIST);const base=server.base;
 const report={checks:[],errors:[],externalRequests:[]};
 const run=await openBrowser({extension:null});

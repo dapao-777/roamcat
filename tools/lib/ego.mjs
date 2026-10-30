@@ -22,6 +22,7 @@ import path from 'node:path';
 import http from 'node:http';
 import {spawn, spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
+import {checkBuildStamp} from '../../build/source-stamp.mjs';
 
 export const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const DIST = path.join(REPO, 'dist', 'extension');
@@ -115,8 +116,19 @@ function seedLocalState(profile) {
 }
 
 // extension：未打包扩展目录（默认 dist/extension），传 null 则不加载扩展。
+// dist/extension 必须是当前源码的开发构建原样：源码在构建后改过、产物被手改过、或是生产构建时，门禁结果不可信。
+// 直接加载 dist 的门禁由 openBrowser 自动核对；先拷贝 dist 再改的门禁、或用本地服务读 dist 的门禁自行调用。
+// 临时实验（例如故意改产物做对照）可设 ROAMCAT_ALLOW_STALE_DIST=1 跳过，只打印警告。
+export function assertFreshDist() {
+  const problem = checkBuildStamp();
+  if (!problem) return;
+  if (process.env.ROAMCAT_ALLOW_STALE_DIST === '1') { console.warn(`[ego] 警告：${problem}`); return; }
+  throw new Error(problem);
+}
+
 export async function openBrowser({extension = DIST, args = []} = {}) {
   if (extension && !fs.existsSync(path.join(extension, 'manifest.json'))) throw new Error(`扩展目录不存在或缺 manifest.json：${extension}（先运行 npm run build）`);
+  if (extension && path.resolve(extension) === DIST) assertFreshDist();
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'roamcat-ego-'));
   seedLocalState(profile);
   const flags = ['--remote-debugging-port=0', `--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check',

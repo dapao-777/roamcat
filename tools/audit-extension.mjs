@@ -18,7 +18,7 @@ import http from 'node:http';
 import os from 'node:os';
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
-import {REPO, DIST, openBrowser, extUrl, gateArgs, noteScreenshots, previewPath, tabIdOf} from './lib/ego.mjs';
+import {REPO, DIST, assertFreshDist, openBrowser, extUrl, gateArgs, noteScreenshots, previewPath, tabIdOf} from './lib/ego.mjs';
 
 const {verifyModuleGraph}=createRequire(import.meta.url)('./lib/module-graph.cjs');
 const args=gateArgs(),FAST=args.includes('--fast'),CONTENT_ONLY=args.includes('--content-only');
@@ -37,6 +37,7 @@ for(const failure of graph.failures)console.error('GRAPH '+failure.rule+': '+fai
 if(graph.failures.length){console.error('模块图检查未通过，已中止浏览器审计。可单独运行：node tools/verify-module-graph.cjs');process.exit(1);}
 console.log('PASS 模块图与加载契约（'+graph.stats.files+' 个文件，'+graph.stats.edges+' 条 import 边）');
 // 测试副本：host 权限收窄为 127.0.0.1，确认审计全程不碰外网；扩展 ID 来自 manifest.key，与 dist 一致。
+assertFreshDist();
 const extension=fs.mkdtempSync(path.join(os.tmpdir(),'roamcat-audit-ext-'));fs.cpSync(DIST,extension,{recursive:true});
 const manifestPath=path.join(extension,'manifest.json'),manifest=JSON.parse(fs.readFileSync(manifestPath,'utf8'));manifest.host_permissions=['http://127.0.0.1/*'];fs.writeFileSync(manifestPath,JSON.stringify(manifest));
 await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin=`http://127.0.0.1:${server.address().port}`;

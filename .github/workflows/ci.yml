@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   verify:
-    name: Module graph + unit tests (Node ${{ matrix.node }})
+    name: Module graph, unit tests, dead code and build (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -31,3 +31,11 @@ jobs:
       # 中英字典对齐 + 代码里用到的键都在字典里（缺键时界面会直接显示键名）。
       - name: i18n dictionary check
         run: node tools/check-dict.cjs
+      # 死代码：未被使用的导出或 import 绑定直接失败（有意保留的导出登记在脚本的 INTENTIONAL_EXPORTS）。
+      - name: Dead code check
+        run: node tools/verify-deadcode.cjs
+      # 构建：Vite 页面、源码层拷贝与 manifest 变换；生产构建还会压缩源层 classic 脚本。浏览器门禁要本机 ego lite，CI 不跑。
+      # pdfjs-dist 6 声明需要 Node 22.13+，Node 20 只跑上面的静态检查与单测。
+      - name: Build (release, then development)
+        if: matrix.node != '20'
+        run: npm run build:release && npm run build
