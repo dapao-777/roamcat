@@ -1,5 +1,7 @@
 # RoamCat 工程笔记
 
+完整项目的构建与验证要求 Node.js 22.13+（Node 24 已验证）；随发布包单独安装的本机连接器可用 Node 20.11+。CI 在 Node 22.13.0 与 24 上均跑静态检查、单测及生产/开发构建。
+
 ## 构建与验证
 
 `verify:all` 拒绝未知参数、无效门禁名称/并发数，以及过滤后零项的组合；零项运行不会记为通过。
@@ -9,7 +11,7 @@
 | `npm run build` | Vite 开发构建 → `dist/extension/`（manifest 注入固定 key，供 chrome://extensions 加载） |
 | `npm run build:release` | 生产构建（minify、无 key） |
 | `node tools/package-release.mjs` | 发布打包：在 `build:release` 之后运行，按白名单生成 `dist/release/roamcat-<版本>-extension.zip` 与 `SHA256SUMS`（只打包、不上传） |
-| `npm run build:watch` | watch 模式持续构建 |
+| `npm run build:watch` | `tools/watch-build.mjs` 监听 src/、扩展源码、build/ 与根配置的增删改，合并保存并串行执行完整开发构建（先 content-ui 后页面与源码拷贝），失败后继续监听；忽略自身生成的 content-ui.js，退出时关闭监听 |
 | `npm run gen:i18n` | 由 `extension/i18n.js` 生成内容脚本专用的瘦身词典 `extension/i18n-content.js`（改了网页侧文案或网页侧脚本新用了别的命名空间后必须重跑；`i18n-content.test.mjs` 拦截漂移） |
 | `npm run verify:all` | 一键跑全部门禁（`tools/run-gates.mjs`）：静态检查（单测/模块图/字典/死代码）失败即停 → 构建一次 → 浏览器门禁 → 生产构建门禁，打印汇总表，日志写 `preview/gates/logs/`、汇总写 `preview/gates/summary.json`；`-- --quick` 跳过站点与生产构建门禁且性能门禁不等休眠，`-- --only=video,livechat` / `-- --skip=sites`，`-- --jobs=2` 浏览器门禁两路并行，`-- --keep-going` 静态失败也继续 |
 | `npm run verify` | 模块图静态门禁（R1–R12，约 1 秒；R11 语法检查在单个子进程里用 vm 只编译不执行；R1–R11 只扫 `roamcat-0.0.1/extension` 与 `connector`，R12 字号档位另扫 `src/`） |

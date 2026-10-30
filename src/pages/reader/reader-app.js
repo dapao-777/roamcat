@@ -49,6 +49,7 @@ export class RoamcatReader extends LitElement {
     this.sidebar = [];
     this.blocks = [];
     this.translations = new Map();
+    this._translationParts = new Map();
     this.bilingual = true;
     this.progress = '';
     this.parsing=false;
@@ -104,7 +105,7 @@ export class RoamcatReader extends LitElement {
     }
   }
 
-  beginOpen(){this._loadController?.abort();this._loadController=new AbortController();this.translating=false;this.parsing=true;this.pageIndex=0;this.error='';return {id:++this._openId,signal:this._loadController.signal};}
+  beginOpen(){this._loadController?.abort();this._loadController=new AbortController();this._translationParts.clear();this.translating=false;this.parsing=true;this.pageIndex=0;this.error='';return {id:++this._openId,signal:this._loadController.signal};}
   disconnectedCallback(){this._loadController?.abort();this._openId++;super.disconnectedCallback();}
   async openData(data, name,opening=this.beginOpen()) {
     this.blocks = [];
@@ -170,7 +171,14 @@ export class RoamcatReader extends LitElement {
     if(this.parsing||this.translating)return;
     const opening=this._openId;
     const pending = this.blocks.filter(block => ENGLISH_RE.test(block.text) && !this.translations.has(block.id));
-    const batches = translationBatches(pending);
+    const planned = translationBatches(pending);
+    const groups = new Map(), owners = new Map();
+    for (const chunk of planned.flat()) {
+      if (!groups.has(chunk.blockId)) groups.set(chunk.blockId, []);
+      groups.get(chunk.blockId)[chunk.part] = chunk.id;
+      owners.set(chunk.id, chunk.blockId);
+    }
+    const batches = planned.map(batch => batch.filter(chunk => !this._translationParts.has(chunk.id))).filter(batch => batch.length);
     if (!batches.length) return;
     this.error = '';
     this.translating = true;
@@ -186,16 +194,30 @@ export class RoamcatReader extends LitElement {
           const batch = batches[next++];
           try {
             // 模型偶发漏条/夹杂格式时整批被校验拒收：拆成单条逐个重试，一条坏数据不拖累同批其余段落。
-            const items = await request('READER_TRANSLATE', {items: batch}).then(result => result.items || [], async error => {
+            const payload = batch.map(({id, text}) => ({id, text}));
+            let items;
+            try {
+              const result = await request('READER_TRANSLATE', {items: payload});
+              items = result.items || [];
+            } catch (error) {
               if (batch.length === 1 || opening !== this._openId) throw error;
-              const singles = await Promise.allSettled(batch.map(item => request('READER_TRANSLATE', {items: [item]})));
+              const singles = await Promise.allSettled(payload.map(item => request('READER_TRANSLATE', {items: [item]})));
               const ok = singles.filter(single => single.status === 'fulfilled').flatMap(single => single.value.items || []);
               if (ok.length < batch.length) failed ??= singles.find(single => single.status === 'rejected')?.reason || error;
-              return ok;
-            });
+              items = ok;
+            }
             if(opening!==this._openId)return;
             failuresWithoutProgress = items.length ? 0 : failuresWithoutProgress + 1;
-            for (const item of items) this.translations.set(item.id, item.translation);
+            for (const item of items) {
+              const blockId = owners.get(item.id);
+              if (!blockId) continue;
+              this._translationParts.set(item.id, item.translation);
+              const parts = groups.get(blockId);
+              if (parts.every(id => this._translationParts.has(id))) {
+                this.translations.set(blockId, parts.map(id => this._translationParts.get(id).trim()).join(' '));
+                for (const id of parts) this._translationParts.delete(id);
+              }
+            }
             this.requestUpdate();
             done += 1;
             this.progress = t('rd.translating',{done,total:batches.length});

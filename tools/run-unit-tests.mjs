@@ -2,7 +2,7 @@
  * @file tools/run-unit-tests.mjs
  * 文件职责：`npm test` 的入口——列出 tools/unit 下全部 *.test.mjs，再以显式文件参数调用 `node --test`。
  *   Node 20 的 `node --test` 不展开通配符（会报 Could not find 'tools/unit/*.test.mjs'），
- *   Node 21+ 才支持；显式列文件在 20/22/24 上行为一致，CI 矩阵三个版本都能跑到全部用例。
+ *   Node 21+ 才支持；仍显式列文件以保证跨版本行为一致，项目完整验证要求 Node 22.13+。
  * 主要内容：按文件名排序收集测试文件，透传额外参数（如 --test-reporter），继承子进程退出码。
  * 模块边界：零依赖构建期脚本，只读目录、不改文件。
  *

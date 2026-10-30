@@ -121,7 +121,7 @@
 
 **方式 A：Release 安装包。** 从 [Releases](https://github.com/dapao-777/roamcat/releases/latest) 下载 `roamcat-0.5.0-extension.zip` 并解压。打开 `chrome://extensions`（或 `edge://extensions`），开启**开发者模式**，点**加载已解压的扩展**，选择解压出的 **`roamcat-0.5.0/extension`** 文件夹。要用订阅连接器，在包含 `roamcat-0.5.0/` 的目录里运行 `node roamcat-0.5.0/connector/install.mjs`（需要 Node.js 20.11+）；它会按这个文件夹算出扩展 ID，移动文件夹后要重新运行。
 
-**方式 B：从源码构建**（需要 Node.js 20.11+）：
+**方式 B：从源码构建**（需要 Node.js 22.13+；Node 24 已验证）：
 
 ```sh
 git clone https://github.com/dapao-777/roamcat.git
@@ -271,8 +271,8 @@ node roamcat-0.0.1/connector/install.mjs --extension-id afpeggkplomdjjiemgajjgca
 
 | 命令 | 用途 |
 |---|---|
-| `npm run build` · `npm run build:watch` | Vite 开发构建 → `dist/extension`（扩展 ID 固定） |
-| `npm test` | 281 例单元测试（经 `tools/run-unit-tests.mjs` 调用 `node --test`） |
+| `npm run build` · `npm run build:watch` | 开发构建 → `dist/extension`（扩展 ID 固定）；watch 监听页面、页内 UI、只复制的扩展文件与构建配置并串行重建 |
+| `npm test` | 单元测试（经 `tools/run-unit-tests.mjs` 调用 `node --test`，数量以运行结果为准） |
 | `npm run verify` | 模块图门禁 R1–R11：加载契约、无环、分层方向、文件头、manifest 资源 |
 | `npm run verify:build` | 构建产物门禁：字节比对 + 浏览器实际加载冒烟 |
 | `npm run verify:ui` | 79 项全界面门禁：页面与挂件遍历、明暗主题、中英文断言，截图 → `preview/ui-audit/` |

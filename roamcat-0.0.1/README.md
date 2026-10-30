@@ -221,7 +221,7 @@ ChatGPT 订阅是否包含可用 Codex 权益、可选模型和调用额度由 O
 
 仓库根目录包含本目录（产品包 `roamcat-0.0.1/`）、`src/` 页面应用层、`build/` 构建脚本、`tools/` 验证脚本和单元测试，检出体积约 48 MB。`package.json` 保持 `private: true` 是为了防止误发布到 npm，不影响 GitHub 源码公开。
 
-要求 Node.js **20.11 或更新版本**（Node 24 已验证）。静态检查与单元测试均为零依赖；浏览器加载请先构建：
+项目构建与验证要求 Node.js **22.13 或更新版本**（Node 24 已验证）；本机连接器可单独使用 Node 20.11+。单元测试需先安装项目依赖；浏览器加载请先构建：
 
 ```sh
 git clone https://github.com/dapao-777/roamcat.git

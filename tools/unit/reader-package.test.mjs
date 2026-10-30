@@ -20,6 +20,7 @@ import {fileURLToPath, pathToFileURL} from 'node:url';
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const {parseEpub, blocksFromXhtml, decodeEntities} = await import(pathToFileURL(path.join(repoRoot, 'src/pages/reader/epub-package.mjs')).href);
 const {blocksFromTextItems, translationBatches} = await import(pathToFileURL(path.join(repoRoot, 'src/pages/reader/pdf-blocks.mjs')).href);
+const {normalizeEmergencyItems} = await import(pathToFileURL(path.join(repoRoot, 'roamcat-0.0.1/extension/gloss.mjs')).href);
 
 function epubBytes(overrides = {}) {
   const files = {
@@ -144,10 +145,8 @@ test('translationBatches() 满足后台 1–4 项/≤12000 字符契约', () => 
   for (const batch of batches) {
     assert.ok(batch.length >= 1 && batch.length <= 4);
     assert.ok(batch.reduce((sum, item) => sum + item.text.length, 0) <= 12000);
-    for (const item of batch) assert.deepEqual(Object.keys(item).sort(), ['id', 'text']);
+    assert.doesNotThrow(() => normalizeEmergencyItems(batch.map(({id, text}) => ({id, text}))));
   }
-  const oversized = translationBatches([{id: 'b0', role: 'p', text: 'x'.repeat(5000)}]);
-  assert.equal(oversized.length, 0, '超过 4000 字符的块应被跳过');
   // 图注、公式碎片、源码不送翻；单词标题照常翻译。
   const mixed = translationBatches([
     {id: 'a', role: 'p', text: 'Tx Tx ... Tx Tx ...'},
@@ -157,4 +156,27 @@ test('translationBatches() 满足后台 1–4 项/≤12000 字符契约', () => 
     {id: 'e', role: 'p', text: 'The proof-of-work also solves the problem.'}
   ]);
   assert.deepEqual(mixed.flat().map(item => item.id), ['d', 'e']);
+});
+
+test('translationBatches() 长段按句末分片，保留全部文字与最后的短片', () => {
+  const text = 'Careful readers compare evidence before drawing a conclusion. '.repeat(130) + 'Yes.';
+  const chunks = translationBatches([{id: 'long', role: 'p', text}]).flat();
+  assert.ok(chunks.length >= 3);
+  assert.equal(chunks.map(chunk => chunk.text).join(''), text);
+  assert.equal(new Set(chunks.map(chunk => chunk.id)).size, chunks.length);
+  assert.ok(chunks.slice(0, -1).every(chunk => chunk.text.endsWith('. ')));
+  assert.ok(chunks.every((chunk, index) => chunk.blockId === 'long' && chunk.part === index && chunk.parts === chunks.length && chunk.text.length <= 4000));
+  for (const batch of translationBatches([{id: 'long', role: 'p', text}])) {
+    assert.doesNotThrow(() => normalizeEmergencyItems(batch.map(({id, text}) => ({id, text}))));
+  }
+});
+
+test('translationBatches() 超长单词/代理对和短尾片不丢字、不拆 Unicode 字符', () => {
+  for (const text of ['Useful evidence ' + 'x'.repeat(7984) + ' end', 'Useful evidence ' + 'x'.repeat(3983) + '😀' + 'y'.repeat(4000) + ' ok']) {
+    const chunks = translationBatches([{id: 'unicode', role: 'p', text}]).flat();
+    assert.equal(chunks.map(chunk => chunk.text).join(''), text);
+    assert.ok(chunks.every(chunk => chunk.text.length <= 4000 && !/[\uD800-\uDBFF]$/u.test(chunk.text) && !/^[\uDC00-\uDFFF]/u.test(chunk.text)));
+  }
+  const tail = translationBatches([{id: 'tail', role: 'p', text: 'Useful evidence ' + 'x'.repeat(3984) + 'z'}]).flat();
+  assert.equal(tail.at(-1).text, 'z');
 });

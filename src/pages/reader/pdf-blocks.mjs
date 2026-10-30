@@ -89,9 +89,40 @@ export function isProse(text, role = 'p') {
   return symbols / text.length < 0.04;
 }
 
-// 翻译批次契约与 normalizeEmergencyItems 一致：1–4 项、总字数 ≤12000、单项 ≤4000。
+// 优先在后半段的句末/空白处切分；没有边界的长词也不拆开 UTF-16 代理对。
+function splitTranslationText(text, maxChars) {
+  const parts = [];
+  let start = 0;
+  while (text.length - start > maxChars) {
+    let end = start + maxChars;
+    if (/[\uD800-\uDBFF]/u.test(text[end - 1]) && /[\uDC00-\uDFFF]/u.test(text[end])) end--;
+    const slice = text.slice(start, end);
+    const floor = Math.floor(maxChars / 2);
+    const sentences = [...slice.matchAll(/[.!?。！？]["'”’)]*\s+/gu)];
+    const sentence = sentences.at(-1);
+    if (sentence && sentence.index + sentence[0].length >= floor) end = start + sentence.index + sentence[0].length;
+    else {
+      const spaces = [...slice.matchAll(/\s+/gu)];
+      const space = spaces.at(-1);
+      if (space && space.index + space[0].length >= floor) end = start + space.index + space[0].length;
+    }
+    parts.push(text.slice(start, end));
+    start = end;
+  }
+  if (start < text.length) parts.push(text.slice(start));
+  return parts;
+}
+
+// 内部批次附带 blockId/part/parts 以便合并原段落；发送后台时只取 id/text。
+// 协议仍为 1–4 项、总字数 ≤12000、单项 ≤4000，正文资格按原块判定，不能再过滤末尾短片。
 export function translationBatches(blocks, maxChars = 4000) {
-  const pending = blocks.filter(block => typeof block.text === 'string' && block.text.trim() && block.text.length <= maxChars && BLOCK_TAGS.has(block.role || 'p') && isProse(block.text, block.role));
+  if (!Number.isInteger(maxChars) || maxChars < 2 || maxChars > 4000) throw new RangeError('Translation chunk size must be between 2 and 4000.');
+  const pending = blocks
+    .filter(block => typeof block.text === 'string' && block.text.trim() && BLOCK_TAGS.has(block.role || 'p') && isProse(block.text, block.role))
+    .flatMap(block => {
+      const texts = splitTranslationText(block.text, maxChars);
+      return texts.map((text, part) => ({id: texts.length === 1 ? block.id : `${block.id}_part${part + 1}`, text, blockId: block.id, part, parts: texts.length}));
+    });
   const batches = [];
   let batch = [], total = 0;
   for (const block of pending) {
@@ -100,7 +131,7 @@ export function translationBatches(blocks, maxChars = 4000) {
       batch = [];
       total = 0;
     }
-    batch.push({id: block.id, text: block.text});
+    batch.push(block);
     total += block.text.length;
   }
   if (batch.length) batches.push(batch);

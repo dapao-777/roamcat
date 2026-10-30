@@ -121,7 +121,7 @@ Requires **Chrome or Edge 125+**.
 
 **Option A — Release package.** Download `roamcat-0.5.0-extension.zip` from [Releases](https://github.com/dapao-777/roamcat/releases/latest) and unzip it. Open `chrome://extensions` (or `edge://extensions`), turn on **Developer mode**, choose **Load unpacked** and pick the unzipped **`roamcat-0.5.0/extension`** folder. For the subscription connector, run `node roamcat-0.5.0/connector/install.mjs` from the directory containing `roamcat-0.5.0/` (Node.js 20.11+); it works out the extension ID from that folder, so rerun it if you move the folder.
 
-**Option B — build from source** (Node.js 20.11+):
+**Option B — build from source** (Node.js 22.13+; Node 24 verified):
 
 ```sh
 git clone https://github.com/dapao-777/roamcat.git
@@ -272,8 +272,8 @@ The full engineering spec is in [`SPEC.md`](roamcat-0.0.1/SPEC.md) (Chinese).
 
 | Command | What it does |
 |---|---|
-| `npm run build` · `npm run build:watch` | Vite dev build → `dist/extension` (fixed extension ID) |
-| `npm test` | 281 unit tests (`node --test` via `tools/run-unit-tests.mjs`) |
+| `npm run build` · `npm run build:watch` | Dev build → `dist/extension` (fixed extension ID); watch rebuilds page UI, in-page UI, copied extension files and build config in sequence |
+| `npm test` | Unit tests (`node --test` via `tools/run-unit-tests.mjs`; prints the current count) |
 | `npm run verify` | Module-graph gates R1–R12: load contract, no cycles, layering, file headers, manifest resources, font-size scale |
 | `npm run verify:build` | Build-artifact gates: byte comparison + real browser load smoke test |
 | `npm run verify:ui` | 79-check UI sweep: every page and widget, light + dark, zh + en, screenshots → `preview/ui-audit/` |

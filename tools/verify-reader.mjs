@@ -142,6 +142,82 @@ try {
     assert.equal(result.bad, false);
     assert.ok(result.error.includes('One item failed'));
   });
+  await gate.check('超长段落全部分片送翻并按原顺序合并，不把其他段落混入译文', async () => {
+    const result = await page.evaluate(async () => {
+      const {app, seed, send} = readerFixture;
+      seed('Long paragraphs');
+      const text = 'Readers compare reliable evidence before accepting a scientific conclusion. '.repeat(130).trim();
+      app.blocks = [{id: 'long', role: 'p', text}, {id: 'short', role: 'p', text: 'Short paragraphs remain independent.'}];
+      const requests = [];
+      chrome.runtime.sendMessage = message => {
+        if (message.type !== 'READER_TRANSLATE') return send.call(chrome.runtime, message);
+        requests.push(message.items);
+        return Promise.resolve({ok: true, data: {items: [...message.items].reverse().map(item => ({id: item.id, translation: item.id}))}});
+      };
+      try {
+        await app.translateAll();
+        await app.updateComplete;
+        return {text, requests, merged: app.translations.get('long'), short: app.translations.get('short'), rendered: app.querySelectorAll('.reader-translation').length, error: app.error};
+      } finally { chrome.runtime.sendMessage = send; }
+    });
+    const chunks = result.requests.flat().filter(item => item.id !== 'short');
+    assert.ok(chunks.length >= 3);
+    assert.equal(chunks.map(item => item.text).join(''), result.text);
+    for (const batch of result.requests) {
+      assert.ok(batch.length <= 4 && batch.reduce((sum, item) => sum + item.text.length, 0) <= 12000);
+      for (const item of batch) { assert.ok(item.text.length <= 4000); assert.deepEqual(Object.keys(item).sort(), ['id', 'text']); }
+    }
+    assert.equal(result.merged, chunks.map(item => item.id).join(' '));
+    assert.equal(result.short, 'short');
+    assert.equal(result.rendered, 2);
+    assert.equal(result.error, '');
+    return {chunks: chunks.length, chars: result.text.length};
+  });
+  await gate.check('长段落单片失败后只补缺片，换书则清除片段缓存', async () => {
+    const result = await page.evaluate(async () => {
+      const {app, seed, send} = readerFixture;
+      seed('Partial long paragraph');
+      const text = 'Readers compare reliable evidence before accepting a scientific conclusion. '.repeat(70).trim();
+      app.blocks = [{id: 'long', role: 'p', text}];
+      let failing = true;
+      const requests = [];
+      chrome.runtime.sendMessage = message => {
+        if (message.type !== 'READER_TRANSLATE') return send.call(chrome.runtime, message);
+        requests.push(...message.items.map(item => item.id));
+        return Promise.resolve(failing && message.items.some(item => item.id.endsWith('_part2')) ? {ok: false, error: 'One fragment failed'}
+          : {ok: true, data: {items: message.items.map(item => ({id: item.id, translation: item.id}))}});
+      };
+      try {
+        await app.translateAll();
+        const first = {error: app.error, complete: app.translations.has('long'), cached: app._translationParts.size};
+        requests.length = 0;
+        failing = false;
+        await app.translateAll();
+        const retried = [...requests], translation = app.translations.get('long'), error = app.error;
+        // 再制造部分结果，确认换书后相同 ID 也不能复用旧片段。
+        seed('Another partial book');
+        app.blocks = [{id: 'long', role: 'p', text}];
+        failing = true;
+        await app.translateAll();
+        seed('New book');
+        app.blocks = [{id: 'long', role: 'p', text}];
+        const cleared = app._translationParts.size;
+        requests.length = 0;
+        failing = false;
+        await app.translateAll();
+        return {first, retried, translation, error, cleared, newRequests: requests, newTranslation: app.translations.get('long')};
+      } finally { chrome.runtime.sendMessage = send; }
+    });
+    assert.ok(result.first.error.includes('One fragment failed'));
+    assert.equal(result.first.complete, false);
+    assert.equal(result.first.cached, 1);
+    assert.deepEqual(result.retried, ['long_part2']);
+    assert.equal(result.translation, 'long_part1 long_part2');
+    assert.equal(result.error, '');
+    assert.equal(result.cleared, 0);
+    assert.deepEqual(result.newRequests, ['long_part1', 'long_part2']);
+    assert.equal(result.newTranslation, 'long_part1 long_part2');
+  });
   await gate.check('远程文档文件名含裸百分号时仍可打开', async () => {
     const result = await page.evaluate(async bytes => {
       const fetchOriginal = window.fetch, {app} = readerFixture;

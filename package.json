@@ -6,7 +6,7 @@
   "scripts": {
     "build": "vite build --config vite.content-ui.config.mjs --mode development && vite build --mode development",
     "build:release": "vite build --config vite.content-ui.config.mjs && vite build",
-    "build:watch": "vite build --config vite.content-ui.config.mjs --mode development && vite build --mode development --watch",
+    "build:watch": "node tools/watch-build.mjs",
     "verify:build": "npm run build && node tools/verify-build.mjs",
     "verify:release": "node tools/verify-release.mjs",
     "verify": "node tools/verify-module-graph.cjs",
@@ -44,7 +44,7 @@
   },
   "homepage": "https://github.com/dapao-777/roamcat",
   "engines": {
-    "node": ">=20.11"
+    "node": ">=22.13.0"
   },
   "type": "module",
   "devDependencies": {

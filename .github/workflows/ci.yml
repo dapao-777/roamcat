@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: ['20', '22', '24']
+        node: ['22.13.0', '24']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -35,7 +35,6 @@ jobs:
       - name: Dead code check
         run: node tools/verify-deadcode.cjs
       # 构建：Vite 页面、源码层拷贝与 manifest 变换；生产构建还会压缩源层 classic 脚本。浏览器门禁要本机 ego lite，CI 不跑。
-      # pdfjs-dist 6 声明需要 Node 22.13+，Node 20 只跑上面的静态检查与单测。
+      # 最低支持的 Node 22.13 与 Node 24 都跑完整构建，防止环境声明低于实际依赖要求。
       - name: Build (release, then development)
-        if: matrix.node != '20'
         run: npm run build:release && npm run build
