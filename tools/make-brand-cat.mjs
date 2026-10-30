@@ -4,7 +4,7 @@
  *   同一套几何，一次产出产品 logo、单色标、各尺寸 PNG 图标与页面插图，避免各处手改漂移。
  * 主要内容：
  *   - extension/icons/roamcat.svg 与 roamcat-icon-src.svg：砚底圆角砖上的应用图标（完整边缘光）；
- *   - extension/icons/roamcat-light.svg：奶白圆角砖上的亮色版，扩展页与页内挂件在亮色主题下使用；
+ *   - extension/icons/roamcat-light.svg：粉蓝晨光圆角砖上的亮色版（奶白麻薯），扩展页与页内挂件在亮色主题下使用；
  *   - extension/icons/roamcat-cat-ink.svg：fill=currentColor 的单色标，眼睛与 ω 嘴以 mask 镂空；
  *   - extension/icons/icon-{16,32,48,128,256,512}.png：经本机 ego lite 栅格化，16/32 用加粗简化版；
  *   - src/components/hero-art.js：欢迎页主图、阅读器空态与设置页印章共用的插图模板
@@ -48,8 +48,9 @@ const LIGHT = {
 };
 const TILES = {
   dark: {stops: ['#1f2433', '#0b0e13'], border: 'none'},
-  // 亮色砖用暖拿铁色：白麻薯在米白界面上的小尺寸 logo 里要有足够对比，奶白砖会和卡片糊成一片。
-  light: {stops: ['#e9dccb', '#cdb79e'], border: 'rgba(96, 70, 48, 0.35)'},
+  // 亮色砖用粉 → 淡紫 → 天蓝的对角晨光渐变，呼应彩虹边缘光：奶白砖会和米白卡片糊成一片，
+  // 之前的暖拿铁砖虽有对比但发闷、小尺寸里白麻薯也不显。
+  light: {linear: true, stops: ['#ffdce9', '#eadff9', '#cfe6fb'], border: 'rgba(110, 96, 150, 0.22)'},
 };
 const kebab = key => key.replace(/[A-Z]/g, ch => '-' + ch.toLowerCase()).replace(/(\D)(\d)$/, '$1-$2');
 /** 'vars' 输出 var(--rc-cat-*, 深色默认值)，供随主题切换的页面插图；否则输出该调色板的字面色值。 */
@@ -101,7 +102,7 @@ function catBody(id, pal, {detail = 'full', floor = true, floorInset = 0, whiske
   return out;
 }
 
-/** 应用图标：圆角底板 + 猫。theme='dark' 为砚底版（工具栏/商店/README 默认），'light' 为亮色页面里的奶白版。 */
+/** 应用图标：圆角底板 + 猫。theme='dark' 为砚底版（工具栏/商店/README 默认），'light' 为亮色页面里粉蓝晨光砖上的奶白版。 */
 function appIcon(detail, theme = 'dark') {
   const id = theme === 'light' ? 'rc-logo-light' : 'rc-logo';
   const pal = theme === 'light' ? LIGHT : DARK;
@@ -112,8 +113,12 @@ function appIcon(detail, theme = 'dark') {
   // 猫体纵向 82–200 的中点落在底板中心略偏下，耳尖与圆角之间留白。
   const tx = 64 - 100 * scale, ty = 68 - 141 * scale;
   const border = tile.border === 'none' ? '' : `<rect x="0.75" y="0.75" width="126.5" height="126.5" rx="27.25" fill="none" stroke="${tile.border}" stroke-width="1.5"/>`;
+  const stops = tile.stops.map((color, index) => `<stop offset="${tile.stops.length === 2 ? index : index / (tile.stops.length - 1)}" stop-color="${color}"/>`).join('');
+  const tileGradient = tile.linear
+    ? `<linearGradient id="${id}-tile" x1="0" y1="0" x2="1" y2="1">${stops}</linearGradient>`
+    : `<radialGradient id="${id}-tile" cx="0.5" cy="0.9" r="0.85">${stops}</radialGradient>`;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><title>RoamCat</title><defs>${defs(id, pal)}`
-    + `<radialGradient id="${id}-tile" cx="0.5" cy="0.9" r="0.85"><stop offset="0" stop-color="${tile.stops[0]}"/><stop offset="1" stop-color="${tile.stops[1]}"/></radialGradient></defs>`
+    + `${tileGradient}</defs>`
     + `<rect width="128" height="128" rx="28" fill="url(#${id}-tile)"/>${border}`
     + `<g transform="translate(${tx.toFixed(2)} ${ty.toFixed(2)}) scale(${scale})">${catBody(id, pal, {detail, floor: !tiny, floorInset: 18, lineWidth: theme === 'light' ? 2.6 : 1.2})}</g></svg>`;
 }
