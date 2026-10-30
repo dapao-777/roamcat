@@ -19,6 +19,7 @@ import os from 'node:os';
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {REPO, DIST, assertFreshDist, openBrowser, extUrl, gateArgs, noteScreenshots, previewPath, tabIdOf} from './lib/ego.mjs';
+import {printGateSummary} from './lib/gate-report.mjs';
 
 const {verifyModuleGraph}=createRequire(import.meta.url)('./lib/module-graph.cjs');
 const args=gateArgs(),FAST=args.includes('--fast'),CONTENT_ONLY=args.includes('--content-only');
@@ -143,4 +144,4 @@ try{
  await check('Welcome page and interactive samples load',async()=>{await page.goto(base+'/ui/welcome.html');await page.waitForTimeout(300);assert.ok(await page.locator('#welcome-hero-title').isVisible());await page.screenshot({path:path.join(out,'welcome.png')});});
  await page.pump();
 }catch(e){report.failures.push({name:'audit run',error:e.message});console.error(e);}
-finally{await run.close();server.close();fs.rmSync(extension,{recursive:true,force:true,maxRetries:5,retryDelay:300});noteScreenshots(report);fs.writeFileSync(path.join(out,'report.json'),JSON.stringify(report,null,2));if(report.failures.length||report.pageErrors.length)process.exitCode=1;console.log(JSON.stringify({passed:report.checks.length,failures:report.failures,pageErrors:report.pageErrors,warnings:report.warnings||[],uiIssues:report.ui.filter(x=>x.errors.length||x.overflow.length)},null,2));}
+finally{await run.close();server.close();fs.rmSync(extension,{recursive:true,force:true,maxRetries:5,retryDelay:300});noteScreenshots(report);fs.writeFileSync(path.join(out,'report.json'),JSON.stringify(report,null,2));if(report.failures.length||report.pageErrors.length)process.exitCode=1;console.log(JSON.stringify({passed:report.checks.length,failures:report.failures,pageErrors:report.pageErrors,warnings:report.warnings||[],uiIssues:report.ui.filter(x=>x.errors.length||x.overflow.length)},null,2));printGateSummary('audit',report.checks.length,report.failures.length+report.pageErrors.length);}

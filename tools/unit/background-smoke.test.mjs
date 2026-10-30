@@ -144,6 +144,36 @@ test('迁移后的 background.js 在 mock 浏览器中构造注册表并按信�
     assert.match(denied.error, /此操作不能从网页执行。/u);
   });
 
+  await t.test('网页状态快照完整保留已保存的字幕外观，不带服务凭据', async () => {
+    const before = await send({type: 'STATE_GET'}, trustedPopup(chrome));
+    const video = {fontSize: 28, theme: 'dark', bilingual: true, display: 'translation', translationFirst: false, translationColor: 'yellow', blur: true, offset: 35, karaoke: false, liveChat: false};
+    try {
+      const saved = await send({type: 'VIDEO_SETTINGS_PATCH', patch: video}, trustedPopup(chrome));
+      assert.equal(saved.ok, true, saved.error);
+      const snapshot = await send({type: 'STATE_GET'}, contentPage(chrome));
+      assert.equal(snapshot.ok, true, snapshot.error);
+      assert.deepEqual(snapshot.data.settings.video, video);
+      for (const key of ['apiServices', 'domainDetection', 'subscriptionModel']) assert.equal(Object.hasOwn(snapshot.data.settings, key), false);
+    } finally {
+      await send({type: 'VIDEO_SETTINGS_PATCH', patch: before.data.settings.video}, trustedPopup(chrome));
+    }
+  });
+
+  await t.test('长难句与公式开关经网页状态快照同步', async () => {
+    const before = await send({type: 'STATE_GET'}, trustedPopup(chrome));
+    try {
+      for (const enabled of [false, true]) {
+        const saved = await send({type: 'STATE_PATCH', patch: {complexSentenceAssist: enabled, formulaAssist: enabled}}, trustedPopup(chrome));
+        assert.equal(saved.ok, true, saved.error);
+        const snapshot = await send({type: 'STATE_GET'}, contentPage(chrome));
+        assert.equal(snapshot.data.settings.complexSentenceAssist, enabled);
+        assert.equal(snapshot.data.settings.formulaAssist, enabled);
+      }
+    } finally {
+      await send({type: 'STATE_PATCH', patch: {complexSentenceAssist: before.data.settings.complexSentenceAssist, formulaAssist: before.data.settings.formulaAssist}}, trustedPopup(chrome));
+    }
+  });
+
   await t.test('未知类型得到与旧 switch default 一致的错误', async () => {
     const unknown = await send({type: 'NOT_A_REAL_TYPE'}, trustedPopup(chrome));
     assert.equal(unknown.ok, false);

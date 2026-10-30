@@ -52,6 +52,7 @@ import {
   cancelSubscription,
   logoutSubscription,
   listSubscriptionModels,
+  lowTierModel,
   classifySubscription,
   supportSubscription,
   assistSubscription,
@@ -394,11 +395,19 @@ function publicState(state,trusted) {
         lookupKey: source.lookupKey,
         lookupDisplay: source.lookupDisplay,
         readingStyle: globalThis.RoamCatReadingStyle.normalize(source.readingStyle),
+        complexSentenceAssist: source.complexSentenceAssist !== false,
+        formulaAssist: source.formulaAssist !== false,
         domain: source.domain,
         video: {
           fontSize: source.video.fontSize,
           theme: source.video.theme,
           bilingual: source.video.bilingual === true,
+          display: source.video.display,
+          translationFirst: source.video.translationFirst !== false,
+          translationColor: source.video.translationColor,
+          blur: source.video.blur === true,
+          offset: source.video.offset,
+          karaoke: source.video.karaoke !== false,
           liveChat: source.video.liveChat === true
         },
         floatingPet: {
@@ -1886,12 +1895,11 @@ const liveChatRate = createRateWindow({limit: LIVE_CHAT_API_PER_MINUTE, windowMs
 let liveChatLowModel = {from: '', to: '', at: 0};
 async function liveChatSettings(settings) {
   const model = String(settings.subscriptionModel || '');
-  const low = model.replace(/-(?:high|medium)$/, '-low');
-  if (settings.providerKind !== 'antigravity' || low === model) return settings;
+  if (settings.providerKind !== 'antigravity' || !/-(?:high|medium)$/.test(model)) return settings;
   if (liveChatLowModel.from !== model || Date.now() - liveChatLowModel.at > 600_000) {
     const models = await listSubscriptionModels(false, 'antigravity').catch(() => null);
     if (!models) return settings;
-    liveChatLowModel = {from: model, to: models.some(item => item.id === low) ? low : model, at: Date.now()};
+    liveChatLowModel = {from: model, to: lowTierModel(model, models), at: Date.now()};
   }
   return {...settings, subscriptionModel: liveChatLowModel.to};
 }

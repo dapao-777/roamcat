@@ -36,6 +36,15 @@ test('decodeEntities() 解码命名与数字实体', () => {
   assert.equal(decodeEntities('a &amp; b &lt;c&gt; &#65; &#x42;'), 'a & b <c> A B');
 });
 
+test('decodeEntities() 对无效 Unicode 数字实体使用替代字符，不中断整本书', () => {
+  assert.equal(decodeEntities('&#x1F600; &#x110000; &#999999999; &#xD800; &#0;'), '😀 � � � �');
+  assert.equal(decodeEntities('&#12abc; &unknown;'), '&#12abc; &unknown;');
+});
+
+test('decodeEntities() 未知实体不会读取对象原型上的属性', () => {
+  for (const key of ['constructor', 'toString', '__proto__', 'hasOwnProperty']) assert.equal(decodeEntities(`&${key};`), `&${key};`);
+});
+
 test('blocksFromXhtml() 切分块级元素并剔除 script/style', () => {
   const blocks = blocksFromXhtml('<body><h2>Title</h2><p>One <b>two</b> three.</p><script>bad()</script><p>Four.</p></body>');
   assert.equal(blocks.length, 3);
@@ -43,6 +52,11 @@ test('blocksFromXhtml() 切分块级元素并剔除 script/style', () => {
   assert.equal(blocks[0].text, 'Title');
   assert.equal(blocks[1].text, 'One two three.');
   assert.ok(!blocks.some(block => block.text.includes('bad(')));
+});
+
+test('blocksFromXhtml() 行内标签保留原有单词连接，换行仍分隔文本', () => {
+  const blocks = blocksFromXhtml('<body><p>Inter<span>national</span> evidence makes read<em>ing</em> easier.<br/>One <b>more</b> line.</p></body>');
+  assert.deepEqual(blocks, [{role: 'p', text: 'International evidence makes reading easier. One more line.'}]);
 });
 
 test('parseEpub() 走 container→OPF→spine 链路产出章节块', () => {
@@ -59,6 +73,20 @@ test('parseEpub() 走 container→OPF→spine 链路产出章节块', () => {
 test('parseEpub() 拒绝非 EPUB 数据', () => {
   assert.throws(() => parseEpub(strToU8('not a zip')));
   assert.throws(() => parseEpub(zipSync({'x.txt': strToU8('hi')})));
+});
+
+test('parseEpub() 解码根文件、正文与导航链接中的 XML 实体和 URL 转义', () => {
+  const files = {
+    'META-INF/container.xml': '<container><rootfile full-path="OPS/Book%20%26%20100%25.opf"/></container>',
+    'OPS/Book & 100%.opf': '<package><metadata><dc:title>Escaped book</dc:title></metadata><manifest><item id="c" href="Text/part%20one&amp;two.xhtml" media-type="application/xhtml+xml"/><item id="nav" href="nav.xhtml" properties="nav" media-type="application/xhtml+xml"/></manifest><spine><itemref idref="c"/></spine></package>',
+    'OPS/Text/part one&two.xhtml': '<body><p>A valid chapter with escaped paths must remain readable.</p></body>',
+    'OPS/nav.xhtml': '<nav><a href="Text/part%20one&amp;two.xhtml#start">Reader &amp; chapter</a></nav>'
+  };
+  const bytes = zipSync(Object.fromEntries(Object.entries(files).map(([name, content]) => [name, strToU8(content)])));
+  const book = parseEpub(bytes);
+  assert.equal(book.chapters.length, 1);
+  assert.equal(book.chapters[0].label, 'Reader & chapter');
+  assert.equal(book.chapters[0].href, 'OPS/Text/part one&two.xhtml');
 });
 
 test('EPUB 忽略图片/字体的解压体积，只限制被读取的正文条目',()=>{
@@ -80,6 +108,13 @@ test('blocksFromTextItems() 按基线聚行、按行距切块', () => {
   assert.equal(blocks[0].text, 'First line wraps onto next.');
   assert.equal(blocks[1].text, 'Second paragraph.');
   assert.equal(blocks[0].page, 1);
+});
+
+test('blocksFromTextItems() s 结尾或开头的词仍按水平间距补空格', () => {
+  const item = (str, x, width = 20) => ({str, transform: [10, 0, 0, 10, x, 700], height: 10, width});
+  assert.equal(blocksFromTextItems([item('cats', 0), item('sleep', 40)])[0].text, 'cats sleep');
+  assert.equal(blocksFromTextItems([item('evi', 0, 15), item('dence', 15)])[0].text, 'evidence');
+  assert.equal(blocksFromTextItems([item('cats ', 0), item(' sleep', 40)])[0].text, 'cats sleep');
 });
 
 test('blocksFromTextItems() 保留 pdfjs 拆出的空格项，hasEOL 行尾不切段', () => {

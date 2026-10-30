@@ -2,6 +2,8 @@
 
 ## 构建与验证
 
+`verify:all` 拒绝未知参数、无效门禁名称/并发数，以及过滤后零项的组合；零项运行不会记为通过。
+
 | 命令 | 用途 |
 |---|---|
 | `npm run build` | Vite 开发构建 → `dist/extension/`（manifest 注入固定 key，供 chrome://extensions 加载） |
@@ -9,20 +11,25 @@
 | `node tools/package-release.mjs` | 发布打包：在 `build:release` 之后运行，按白名单生成 `dist/release/roamcat-<版本>-extension.zip` 与 `SHA256SUMS`（只打包、不上传） |
 | `npm run build:watch` | watch 模式持续构建 |
 | `npm run gen:i18n` | 由 `extension/i18n.js` 生成内容脚本专用的瘦身词典 `extension/i18n-content.js`（改了网页侧文案或网页侧脚本新用了别的命名空间后必须重跑；`i18n-content.test.mjs` 拦截漂移） |
-| `npm run verify` | 模块图静态门禁（R1–R12；R1–R11 只扫 `roamcat-0.0.1/extension` 与 `connector`，R12 字号档位另扫 `src/`） |
+| `npm run verify:all` | 一键跑全部门禁（`tools/run-gates.mjs`）：静态检查（单测/模块图/字典/死代码）失败即停 → 构建一次 → 浏览器门禁 → 生产构建门禁，打印汇总表，日志写 `preview/gates/logs/`、汇总写 `preview/gates/summary.json`；`-- --quick` 跳过站点与生产构建门禁且性能门禁不等休眠，`-- --only=video,livechat` / `-- --skip=sites`，`-- --jobs=2` 浏览器门禁两路并行，`-- --keep-going` 静态失败也继续 |
+| `npm run verify` | 模块图静态门禁（R1–R12，约 1 秒；R11 语法检查在单个子进程里用 vm 只编译不执行；R1–R11 只扫 `roamcat-0.0.1/extension` 与 `connector`，R12 字号档位另扫 `src/`） |
 | `npm run verify:sites` | 站点档案端到端：fixture 按真实 URL 路由进浏览器断言 inspect()（加 `--live` 复核真站） |
 | `npm run verify:service` | 本机常驻连接服务端到端：先断言扩展内置服务地址端口 = 47821，再在 127.0.0.1 空闲端口起带假后端的 `connector/service.mjs`（要求配对令牌；测试副本改这一处地址、缩短重试窗口，并把浏览器连接器宿主名换成不存在的名字——回退立刻报「未找到」，不拉起本机真实安装的连接器、不占用真实服务的 47821），浏览器加载 `dist/extension`，预置 `chrome.storage.session` 令牌缓存，断言缺令牌 / 错令牌回退浏览器连接器、正确令牌经 WebSocket 连上、服务停掉后回退 → `preview/connector-service.json`（先跑 `npm run build`） |
 | `npm test` | 单元测试：`tools/run-unit-tests.mjs` 列出 `tools/unit/*.test.mjs` 再交给 `node --test`（Node 20 不展开通配符，故不直接传 glob） |
 | `npm run verify:build` | 构建产物门禁：字节比对 + 浏览器实际加载 `dist/extension` 冒烟 |
+| `npm run verify:release` | 生产构建门禁：先 `build:release` 拷到临时目录、随即恢复开发构建，再断言 manifest 无开发 key 且版本一致、全部脚本可编译、压缩后的源层脚本保留 MPL 头，无头 ego 加载生产版：弹窗/设置页无错、普通网页只有轻量引导、按需注入后阅读引擎可开启 → `preview/gates/release.json` |
 | `npm run verify:ui` | 全界面 UI 门禁：浏览器加载 `dist/extension`，遍历 popup/options 全分区/welcome/reader 与页内挂件（词卡 HUD/任务条/解构卡/toast/选区条/伴读猫全状态），双主题截图 + 断言 → `preview/ui-audit/`（先跑 `npm run build`） |
 | `npm run verify:pet` | 伴读猫按钮门禁：真实点击/键盘操作全部悬浮按钮（2×2 快捷按钮/旋旋翻/缩放/贴边探头/气泡/摘要窗），断言状态与可及性 → `preview/pet-buttons/` |
-| `npm run verify:performance` | 性能回归：2000 段无语义根页面的缓存与增量失效、开放 shadow root、历史可见词统计、正文元素反复切换 class 不触发自动辅助重建（隐藏正文块仍重排）、15000 段阅读器分页、真实 EPUB worker 与后台 40 秒空闲回收 → `preview/performance/`（先构建；`-- --skip-idle` 只跳过休眠等待） |
+| `npm run verify:performance` | 性能回归：2000 段无语义根页面的缓存与增量失效、开放 shadow root、历史可见词统计、正文元素反复切换 class 不触发自动辅助重建（隐藏正文块仍重排）、长难句/公式开关经真实后台同步、15000 段阅读器分页、真实 EPUB worker 与后台 40 秒空闲回收 → `preview/performance/`（先构建；`-- --skip-idle` 只跳过休眠等待） |
+| `npm run verify:reader` | 阅读器行为门禁：翻译失败可见、保留译文并重试、持续失败停止而单条失败继续、换书后旧请求不再重试或写入新书、远程文件名与体积限制、真实 EPUB worker 的转义路径与异常实体兼容 → `preview/gates/reader.json`（先构建） |
 | `npm run verify:dictation` | 无字幕视频云端听写门禁：YouTube 地址 fixture 上注入 `dist/extension` 的页内脚本，用真实 `captureStream`/MediaRecorder 录播放器音轨（假听写响应），断言暂停提交、续录、手动停止丢弃在途结果、停止后按原时间轴回看、拖动自动停止、播完时最后一段在途则取消 YouTube 自动连播（没在听写时不干预） → `preview/audio-probe/`（先跑 `npm run build`；`--speech-fixture=<音频>` 换成真实语音） |
-| `npm run verify:options` | 设置页行为门禁：本地 HTTP 服务 `dist/extension` + 模拟 `chrome.*`，断言句子粒度保存/失败回滚、查词按键、「视频与直播」字幕样式保存/预览/失败回滚、阅读记录、宣言弹层、模型列表与「恢复默认阅读偏好」→ `preview/verification.json`（先跑 `npm run build`） |
+| `npm run verify:video` | 视频字幕界面门禁：仿 YouTube 观看页（绝对定位播放器外壳 + `#below`）注入页内脚本，断言直播 CC 关/开/有字幕时的提示与双语层、原文稿面板插在 `#below` 最前不压标题、直播说明与隐藏下载、普通视频无字幕提示；另用真实后台验证新视频页与普通状态刷新保留已保存字幕外观 → `preview/gates/video.json`（先跑 `npm run build`） |
+| `npm run verify:livechat` | Twitch 直播聊天翻译界面门禁：仿 Twitch 直播页注入 `dist/extension` 的 live-chat.js（后台为桩），断言「译」开关位置与状态、排队圆点（不另起一行）与译文、单词梗/中文跳过、出错提示与红点及恢复、STALE 不提示、限速提示、真实点击关闭并保存、伴读猫 keepOutRight 避让聊天栏 → `preview/gates/livechat.json`（先跑 `npm run build`） |
+| `npm run verify:options` | 设置页行为门禁（`tools/verify-options.mjs`）：本地 HTTP 服务 `dist/extension` + 模拟 `chrome.*`，断言句子粒度保存/失败回滚、查词按键、「视频与直播」字幕样式保存/预览/失败回滚、阅读记录、宣言弹层、模型列表与「恢复默认阅读偏好」→ `preview/verification.json`（以控制器写入 `window.optionsState` 为就绪，不用固定等待；先跑 `npm run build`） |
 | `npm run verify:audit` | 真后台端到端审计：浏览器加载 `dist/extension`（host 权限收窄为 127.0.0.1）+ 本地假模型接口，覆盖设置持久化、规则增删、词卡、解构、整页翻译、摘要、伴读猫等 30 项 → `preview/audit/`（先跑 `npm run build`） |
 | `npm run promo` | 宣传片流水线（`tools/promo/`）：提取品牌 SVG → 合成 chiptune WAV → 无头 ego lite 逐帧 `__seek(t)` 截图（1920×1080@30，可多 worker）→ ffmpeg 合成 `preview/promo/roamcat-intro.mp4`（需 `ffmpeg-static`，`--no-save` 安装；`--skip-frames` 复用已有帧） |
 
-浏览器门禁与截图脚本只用本机 **ego lite**，不依赖 Playwright：统一经 `tools/lib/ego.mjs` 以临时配置启动一个独立的无头 ego（自动找 `Program Files/Citro Labs/ego lite/Application/ego.exe`，`ROAMCAT_EGO` 可指定路径），经 Chrome DevTools Protocol 直接驱动（需 Node 22+，用内置 WebSocket），不碰日常 ego 的配置与数据；`ROAMCAT_HEADED=1` 开窗观察。每个测试页开在独立窗口里（扩展看到的 `tab.active` 恒为真）；全新配置首次加载扩展会自动开欢迎引导页，`openBrowser` 启动后先关掉它（引导页是单例，否则扩展可能关掉测试页）。ego 自己在全新配置上也会开首次引导（`chrome://onboarding/`，`--no-first-run` 管不住），其中会请求「设为默认浏览器」并弹出 Windows「默认应用」设置页；`openBrowser` 连上后把它停掉并导航到空白页（直接关掉会触发 ego 的退出流程）。构建会把源码指纹写进 `dist/.roamcat-build.json`（`build/source-stamp.mjs`），浏览器门禁启动前核对：源码在构建后改过、产物被手改过或 dist 是生产构建时直接报错要求先 `npm run build`；拷贝或经本地服务读取 dist 的门禁显式调用 `assertFreshDist()`。临时实验可设 `ROAMCAT_ALLOW_STALE_DIST=1` 跳过（只警告）。CI（`.github/workflows/ci.yml`）跑模块图、单测、字典、死代码检查，Node 22/24 上再做生产与开发构建；浏览器门禁只在本机跑。新脚本用 `openBrowser()`、`page.locator()` 等该模块接口，不要再引入 Playwright。
+浏览器门禁与截图脚本只用本机 **ego lite**，不依赖 Playwright：统一经 `tools/lib/ego.mjs` 以临时配置启动一个独立的无头 ego（自动找 `Program Files/Citro Labs/ego lite/Application/ego.exe`，`ROAMCAT_EGO` 可指定路径），经 Chrome DevTools Protocol 直接驱动（需 Node 22+，用内置 WebSocket），不碰日常 ego 的配置与数据；`ROAMCAT_HEADED=1` 开窗观察。每个测试页开在独立窗口里（扩展看到的 `tab.active` 恒为真）；全新配置首次加载扩展会自动开欢迎引导页，`openBrowser` 启动后先关掉它（引导页是单例，否则扩展可能关掉测试页）。ego 自己在全新配置上也会开首次引导（`chrome://onboarding/`，`--no-first-run` 管不住），其中会请求「设为默认浏览器」并弹出 Windows「默认应用」设置页；`openBrowser` 连上后把它停掉并导航到空白页（直接关掉会触发 ego 的退出流程）。构建会把源码指纹写进 `dist/.roamcat-build.json`（`build/source-stamp.mjs`），浏览器门禁启动前核对：源码在构建后改过、产物被手改过或 dist 是生产构建时直接报错要求先 `npm run build`；拷贝或经本地服务读取 dist 的门禁显式调用 `assertFreshDist()`。临时实验可设 `ROAMCAT_ALLOW_STALE_DIST=1` 跳过（只警告）；构建指纹只看 `package.json` 的版本、依赖与模块类型，改 npm scripts 不算过期。新门禁用 `tools/lib/gate-report.mjs` 的 `createGateReport()`（逐项 PASS/FAIL，结尾一行 `GATE <名字>: N 通过，M 失败`，报告写 `preview/gates/<名字>.json`），老门禁结尾补了 `printGateSummary()`，`verify:all` 靠这行收集结果。`openBrowser` 启动时清掉一小时前残留的 `roamcat-(ego|audit-ext|service-e2e|release)-*` 临时目录；Ctrl+C / 终止信号先关浏览器、删临时配置再退出。CI（`.github/workflows/ci.yml`）跑模块图、单测、字典、死代码检查，Node 22/24 上再做生产与开发构建；浏览器门禁只在本机跑。新脚本用 `openBrowser()`、`page.locator()` 等该模块接口，不要再引入 Playwright。
 
 ## 结构约定
 

@@ -27,6 +27,7 @@ import {startService, DEFAULT_SERVICE_PORT} from '../roamcat-0.0.1/connector/ser
 import {createPairingToken} from '../roamcat-0.0.1/connector/pairing.mjs';
 import {SERVICE_PAIRING_KEY} from '../roamcat-0.0.1/extension/subscription.js';
 import {EXT_ID as EXTENSION_ID, assertFreshDist, extUrl, openBrowser} from './lib/ego.mjs';
+import {printGateSummary} from './lib/gate-report.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -109,3 +110,4 @@ try {
 }
 console.log(`\n${report.checks.length - report.failures.length} 项通过，${report.failures.length} 项失败。`);
 process.exitCode = report.failures.length ? 1 : 0;
+printGateSummary('service', report.checks.length - report.failures.length, report.failures.length);

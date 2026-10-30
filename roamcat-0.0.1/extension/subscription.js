@@ -359,6 +359,13 @@ export async function loginSubscription(kind) { return connector(kind).login(); 
 export async function cancelSubscription(kind) { return connector(kind).cancel(); }
 export async function logoutSubscription(kind) { return connector(kind).logout(); }
 
+// 对延迟敏感的请求（直播聊天）用同系列不思考的 -low 档：所选 -high / -medium 在模型列表里有同名 -low 时换过去，
+// 否则原样返回。连接器的 dictationModel 用同一规则（那边不 import 扩展代码，各留一份）。
+export function lowTierModel(model, models = []) {
+  const id = String(model || '');
+  const low = id.replace(/-(?:high|medium)$/, '-low');
+  return low !== id && models.some(item => item?.id === low) ? low : id;
+}
 export async function listSubscriptionModels(refresh = false, kind) {
   const result = await connector(kind).send('models',{refresh:refresh === true});
   if (!Array.isArray(result?.models) || result.models.length > 256) throw new Error(M('订阅服务没有返回有效模型列表。','The subscription service did not return a valid model list.'));

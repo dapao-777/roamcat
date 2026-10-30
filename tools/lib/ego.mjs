@@ -116,6 +116,35 @@ function seedLocalState(profile) {
 }
 
 // extension：未打包扩展目录（默认 dist/extension），传 null 则不加载扩展。
+// 门禁被打断（Ctrl+C、崩溃、电脑重启）时临时配置与扩展副本来不及删，一个约 40 MB。启动时顺手清掉一小时前的残留：
+// 正在运行的门禁目录都比这新，并行跑的门禁不会互删。
+const TEMP_PREFIXES = /^roamcat-(ego|audit-ext|service-e2e|release)-/;
+function sweepStaleTemp(maxAgeMs = 60 * 60 * 1000) {
+  const now = Date.now();
+  let entries = [];
+  try { entries = fs.readdirSync(os.tmpdir(), {withFileTypes: true}); } catch { return; }
+  for (const entry of entries) {
+    if (!entry.isDirectory() || !TEMP_PREFIXES.test(entry.name)) continue;
+    const dir = path.join(os.tmpdir(), entry.name);
+    try { if (now - fs.statSync(dir).mtimeMs > maxAgeMs) fs.rmSync(dir, {recursive: true, force: true, maxRetries: 2}); } catch { /* 仍被占用就留到下次 */ }
+  }
+}
+// Ctrl+C / 终止信号：先关掉本进程开的浏览器并删掉临时配置，再按信号惯例退出（130 / 143）。
+const openBrowsers = new Set();
+for (const [signal, code] of [['SIGINT', 130], ['SIGTERM', 143]]) {
+  process.once(signal, () => {
+    for (const browser of openBrowsers) killTree(browser.proc.pid);
+    // 进程刚被结束时配置目录里的文件可能还被占用：同步等一会儿再删，最多约 3 秒。
+    const pause = new Int32Array(new SharedArrayBuffer(4));
+    for (const browser of openBrowsers) {
+      for (let attempt = 0; attempt < 10; attempt++) {
+        try { browser.removeProfile(); break; } catch { Atomics.wait(pause, 0, 0, 300); }
+      }
+    }
+    process.exit(code);
+  });
+}
+
 // dist/extension 必须是当前源码的开发构建原样：源码在构建后改过、产物被手改过、或是生产构建时，门禁结果不可信。
 // 直接加载 dist 的门禁由 openBrowser 自动核对；先拷贝 dist 再改的门禁、或用本地服务读 dist 的门禁自行调用。
 // 临时实验（例如故意改产物做对照）可设 ROAMCAT_ALLOW_STALE_DIST=1 跳过，只打印警告。
@@ -129,6 +158,7 @@ export function assertFreshDist() {
 export async function openBrowser({extension = DIST, args = []} = {}) {
   if (extension && !fs.existsSync(path.join(extension, 'manifest.json'))) throw new Error(`扩展目录不存在或缺 manifest.json：${extension}（先运行 npm run build）`);
   if (extension && path.resolve(extension) === DIST) assertFreshDist();
+  sweepStaleTemp();
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'roamcat-ego-'));
   seedLocalState(profile);
   const flags = ['--remote-debugging-port=0', `--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check',
@@ -167,6 +197,7 @@ class Browser {
     this.proc = proc;
     this.removeProfile = removeProfile;
     this.pages = [];
+    openBrowsers.add(this);
   }
   send(method, params) { return this.connection.send(method, params); }
   // ego 在全新配置上会自己打开首次引导窗口（chrome://onboarding/，--no-first-run、First Run 标记与 Local State 里的
@@ -234,6 +265,7 @@ class Browser {
     killTree(this.proc.pid);
     await sleep(300);
     try { this.removeProfile(); } catch {}
+    openBrowsers.delete(this);
   }
 }
 

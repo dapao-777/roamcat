@@ -11,7 +11,7 @@ body {
 
 .reader-toolbar {
   position: sticky; top: 0; z-index: 10;
-  display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3);
   padding: var(--space-2) var(--space-4);
   background: var(--toolbar-bg, var(--surface));
   backdrop-filter: saturate(1.1) blur(10px);
@@ -96,6 +96,7 @@ body {
 .reader-anchor { display: block; position: relative; top: -60px; visibility: hidden; }
 .reader-pager { display:flex; align-items:center; justify-content:space-between; gap:var(--space-3); padding:var(--space-3) 0; margin-block:var(--space-3); border-block:1px solid var(--line); font:var(--type-support)/var(--leading-control) var(--ui); }
 .reader-flow { min-width:0; scroll-margin-top:72px; }
+.reader-translation-error { flex-basis:100%; min-width:0; margin:0; overflow-wrap:anywhere; color:var(--danger, var(--accent)); font:var(--type-support)/1.5 var(--ui); }
 .reader-block { margin: 0 0 .35em; }
 .reader-role-h1, .reader-role-h2, .reader-role-h3 { font-weight: var(--weight-semibold, 600); line-height: 1.35; margin: 1.4em 0 .5em; }
 .reader-role-h1 { font-size: 1.5em; } .reader-role-h2 { font-size: 1.28em; } .reader-role-h3 { font-size: 1.12em; }

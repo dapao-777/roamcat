@@ -22,7 +22,7 @@ function linesFromItems(items) {
       const height = Math.max(...cells.map(cell => cell.height)) || 10;
       let text = '', right = null;
       for (const cell of cells) {
-        if (right !== null && cell.x - right > height * 0.2 && !/s$/u.test(text) && !/^s/u.test(cell.str)) text += ' ';
+        if (right !== null && cell.x - right > height * 0.2 && !/\s$/u.test(text) && !/^\s/u.test(cell.str)) text += ' ';
         text += cell.str;
         right = Math.max(right ?? cell.right, cell.right);
       }

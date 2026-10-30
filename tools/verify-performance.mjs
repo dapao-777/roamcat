@@ -12,6 +12,7 @@ import http from 'node:http';
 import assert from 'node:assert/strict';
 import {zipSync,strToU8} from 'fflate';
 import {openBrowser,extUrl,tabIdOf,sleep,previewPath,DIST,gateArgs} from './lib/ego.mjs';
+import {printGateSummary} from './lib/gate-report.mjs';
 
 const extensionDir=path.resolve(process.env.ROAMCAT_PERF_EXTENSION_DIR||DIST);
 const out=process.env.ROAMCAT_PERF_REPORT_DIR?path.resolve(process.env.ROAMCAT_PERF_REPORT_DIR):previewPath('performance');fs.mkdirSync(out,{recursive:true});
@@ -120,6 +121,31 @@ try{
     await request('STATE_PATCH',{patch:{assistanceMode:'on-demand'}});
     return {classToggles:12,rebuildsDuringToggles:churned-settled,rebuildsAfterHide:stats.rebuilds-churned};
   });
+  await check('长难句和公式开关经真实后台同步到网页，并可关闭后重新开启',async()=>{
+    await page.evaluate(()=>{
+      const fixture=document.createElement('div');fixture.id='assistance-preferences-fixture';
+      const complex=document.createElement('p');complex.textContent='Although the committee had reviewed the proposal which the board submitted last quarter, it decided that further evidence was required before any vote could proceed.';
+      const formula=document.createElement('p');formula.textContent='Careful readers compare the relation $x^2 + y^2 = z^2$ with the evidence in the article.';
+      fixture.append(complex,formula);document.querySelector('#feed').append(fixture);
+    });
+    const count=()=>page.evaluate(()=>({complex:document.querySelectorAll('#assistance-preferences-fixture .roamcat-complex').length,formula:document.querySelectorAll('#assistance-preferences-fixture .roamcat-formula').length}));
+    try{
+      await request('STATE_PATCH',{patch:{assistanceMode:'ambient',complexSentenceAssist:true,formulaAssist:true}});
+      const enabled=await control.evaluate(tabId=>chrome.tabs.sendMessage(tabId,{type:'SS_SET_ENABLED',enabled:true}),tabId);assert.ok(enabled.ok,enabled.error);
+      await page.waitForFunction(()=>document.querySelector('#assistance-preferences-fixture .roamcat-complex')&&document.querySelector('#assistance-preferences-fixture .roamcat-formula'));
+      const before=await count();
+      await request('STATE_PATCH',{patch:{complexSentenceAssist:false,formulaAssist:false}});
+      await page.waitForFunction(()=>!document.querySelector('#assistance-preferences-fixture :is(.roamcat-complex,.roamcat-formula)'));
+      assert.deepEqual(await count(),{complex:0,formula:0});
+      await request('STATE_PATCH',{patch:{complexSentenceAssist:true,formulaAssist:true}});
+      await page.waitForFunction(()=>document.querySelector('#assistance-preferences-fixture .roamcat-complex')&&document.querySelector('#assistance-preferences-fixture .roamcat-formula'));
+      return {before,restored:await count()};
+    }finally{
+      await control.evaluate(tabId=>chrome.tabs.sendMessage(tabId,{type:'SS_SET_ENABLED',enabled:false}),tabId);
+      await page.evaluate(()=>document.getElementById('assistance-preferences-fixture')?.remove());
+      await request('STATE_PATCH',{patch:{assistanceMode:'on-demand',complexSentenceAssist:true,formulaAssist:true}});
+    }
+  });
   const reader=await run.newPage();await reader.goto(extUrl('ui/reader.html'));await reader.waitForFunction(()=>Boolean(document.querySelector('roamcat-reader')?.finishLoad));
   await check('大文档 DOM 有界、分页和目录跳转保留译文',async()=>{
     const result=await reader.evaluate(async paragraph=>{
@@ -159,3 +185,4 @@ try{
 }catch(error){report.failures.push({name:'setup',error:error.stack});save();}
 finally{if(run)await run.close();await new Promise(resolve=>server.close(resolve));save();}
 if(report.failures.length){console.error(JSON.stringify(report.failures,null,2));process.exitCode=1;}
+printGateSummary('performance',report.checks.length,report.failures.length);

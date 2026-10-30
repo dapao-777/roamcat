@@ -14,6 +14,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {REPO, openBrowser, extUrl, noteScreenshots, previewPath, staticServer, tabIdOf} from './lib/ego.mjs';
+import {printGateSummary} from './lib/gate-report.mjs';
 
 const out = previewPath('ui-audit');
 // 每轮先清掉上次留下的截图：旧版本生成的文件（如 pet-*.png.png）会混在新截图里误导审查。
@@ -481,3 +482,4 @@ report.summary = {checks: report.checks.length, failures: report.failures.length
 fs.writeFileSync(path.join(out, 'ui-audit-report.json'), JSON.stringify(report, null, 2));
 console.log(JSON.stringify({summary: report.summary, failures: report.failures, warnings: report.warnings}, null, 2));
 if (report.failures.length) process.exitCode = 1;
+printGateSummary('ui', report.checks.length, report.failures.length);

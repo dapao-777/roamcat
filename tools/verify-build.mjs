@@ -16,6 +16,7 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 import {pathToFileURL} from 'node:url';
 import {REPO, openBrowser, DIST, EXT_ID, extUrl, noteScreenshots, previewPath} from './lib/ego.mjs';
+import {printGateSummary} from './lib/gate-report.mjs';
 
 const source=path.join(REPO,'roamcat-0.0.1','extension'),dist=DIST,out=previewPath();fs.mkdirSync(out,{recursive:true});
 const report={checks:[],failures:[],pageErrors:[],byteDrift:[]};
@@ -180,3 +181,4 @@ noteScreenshots(report);
 fs.writeFileSync(path.join(out,'build-verification.json'),JSON.stringify(report,null,2));
 console.log(`\n${report.checks.length} 项通过，${report.failures.length} 项失败。报告: preview/build-verification.json`);
 if(report.failures.length)process.exitCode=1;
+printGateSummary('build',report.checks.length,report.failures.length);

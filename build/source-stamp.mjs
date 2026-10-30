@@ -18,7 +18,9 @@ import {fileURLToPath} from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // 改了会影响构建产物的输入：扩展源码层、Vite 页面源码、构建脚本与配置。tools/ 只影响门禁本身，不在其中。
-const SOURCES = ['roamcat-0.0.1/extension', 'src', 'build', 'vite.config.mjs', 'vite.content-ui.config.mjs', 'package.json'];
+// package.json 只看版本、依赖与模块类型（改 npm scripts 不影响产物，不该逼着重新构建）。
+const SOURCES = ['roamcat-0.0.1/extension', 'src', 'build', 'vite.config.mjs', 'vite.content-ui.config.mjs'];
+const PACKAGE_FIELDS = ['version', 'type', 'engines', 'dependencies', 'devDependencies'];
 const OUTPUT = 'dist/extension';
 export const STAMP_FILE = path.join(ROOT, 'dist', '.roamcat-build.json');
 
@@ -34,10 +36,14 @@ function entries(roots) {
   return out.sort((a, b) => (a.file < b.file ? -1 : a.file > b.file ? 1 : 0));
 }
 const digest = list => crypto.createHash('sha256').update(list.map(item => `${item.file}|${item.size}|${item.mtime}`).join('\n')).digest('hex');
+function packageDigest() {
+  const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
+  return crypto.createHash('sha256').update(JSON.stringify(PACKAGE_FIELDS.map(field => pkg[field] ?? null))).digest('hex');
+}
 
 export function writeBuildStamp(mode) {
   fs.mkdirSync(path.dirname(STAMP_FILE), {recursive: true});
-  fs.writeFileSync(STAMP_FILE, JSON.stringify({mode, builtAt: Date.now(), sources: digest(entries(SOURCES)), output: digest(entries([OUTPUT]))}, null, 2) + '\n');
+  fs.writeFileSync(STAMP_FILE, JSON.stringify({mode, builtAt: Date.now(), sources: digest(entries(SOURCES)), package: packageDigest(), output: digest(entries([OUTPUT]))}, null, 2) + '\n');
 }
 
 export function checkBuildStamp() {
@@ -50,6 +56,7 @@ export function checkBuildStamp() {
     const changed = sources.filter(item => item.mtime > stamp.builtAt).slice(0, 3).map(item => item.file);
     return `dist/extension 不是最新构建：${changed.length ? changed.join('、') + ' 在构建后改过' : '源码有文件增删'}，先运行 npm run build。`;
   }
+  if (packageDigest() !== stamp.package) return 'dist/extension 不是最新构建：package.json 的版本或依赖在构建后改过，先运行 npm run build。';
   if (digest(entries([OUTPUT])) !== stamp.output) return 'dist/extension 在构建后被改动过，已不是构建产物原样，先运行 npm run build。';
   return null;
 }

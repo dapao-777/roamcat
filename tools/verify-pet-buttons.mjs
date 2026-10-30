@@ -13,6 +13,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {REPO, openBrowser, extUrl, noteScreenshots, previewPath, staticServer, tabIdOf} from './lib/ego.mjs';
+import {printGateSummary} from './lib/gate-report.mjs';
 
 const out = previewPath('pet-buttons');
 fs.mkdirSync(out, {recursive: true});
@@ -475,3 +476,4 @@ report.summary = {checks: report.checks.length, failures: report.failures.length
 fs.writeFileSync(path.join(out, 'pet-buttons-report.json'), JSON.stringify(report, null, 2));
 console.log(JSON.stringify({summary: report.summary, failures: report.failures, warnings: report.warnings}, null, 2));
 if (report.failures.length) process.exitCode = 1;
+printGateSummary('pet', report.checks.length, report.failures.length);

@@ -14,7 +14,7 @@ function* tags(xml) {
     const attrs = {};
     const attrRe = /([\w:.-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/gu;
     let attr;
-    while ((attr = attrRe.exec(match[2] || ''))) attrs[attr[1].toLowerCase()] = attr[2] ?? attr[3] ?? '';
+    while ((attr = attrRe.exec(match[2] || ''))) attrs[attr[1].toLowerCase()] = decodeEntities(attr[2] ?? attr[3] ?? '');
     yield {name: match[1].toLowerCase(), attrs, selfClose: match[3] === '/'};
   }
 }
@@ -30,10 +30,12 @@ function textBetween(xml, name) {
 
 const ENTITIES = {amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', '#x27': "'", '#39': "'", '#x22': '"', '#34': '"'};
 export function decodeEntities(text) {
-  return (text || '').replace(/&(#x?[0-9a-fA-F]+|\w+);/gu, (raw, key) => {
-    if (key.startsWith('#x') || key.startsWith('#X')) return String.fromCodePoint(parseInt(key.slice(2), 16));
-    if (key.startsWith('#')) return String.fromCodePoint(parseInt(key.slice(1), 10));
-    return ENTITIES[key] ?? raw;
+  return (text || '').replace(/&(#(?:[xX][0-9a-fA-F]+|[0-9]+)|\w+);/gu, (raw, key) => {
+    if (key.startsWith('#')) {
+      const hex = /^#x/iu.test(key), point = parseInt(key.slice(hex ? 2 : 1), hex ? 16 : 10);
+      return point > 0 && point <= 0x10ffff && !(point >= 0xd800 && point <= 0xdfff) ? String.fromCodePoint(point) : '\ufffd';
+    }
+    return Object.hasOwn(ENTITIES, key) ? ENTITIES[key] : raw;
   });
 }
 
@@ -60,7 +62,7 @@ export function blocksFromXhtml(xhtml) {
   }
   let buffer = '';
   const flush = () => {
-    const text = decodeEntities(buffer.replace(/<[^>]+>/gu, ' ')).replace(/\s+/gu, ' ').trim();
+    const text = decodeEntities(buffer.replace(/<[^>]+>/gu, '')).replace(/\s+/gu, ' ').trim();
     buffer = '';
     if (text.length >= 2) chunks.push({role, text});
     role = 'p';
@@ -87,12 +89,15 @@ export function blocksFromXhtml(xhtml) {
 const BLOCK_CLOSE = new Set(['p', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'dd', 'dt', 'figcaption', 'td', 'th', 'pre', 'address']);
 
 function resolvePath(base, href) {
-  const dir = base.includes('/') ? base.slice(0, base.lastIndexOf('/') + 1) : '';
-  const parts = (dir + href).split('/');
-  const out = [];
+  const path = href.split(/[?#]/u)[0];
+  // base 已经是 ZIP 内的真实路径；只解码新引用，避免把目录中的 %25 再解码一次。
+  const out = path.startsWith('/') || !base.includes('/') ? [] : base.slice(0, base.lastIndexOf('/')).split('/');
+  const parts = path.split('/');
   for (const part of parts) {
-    if (part === '..') out.pop();
-    else if (part !== '.') out.push(decodeURIComponent(part));
+    let decoded = part;
+    try { decoded = decodeURIComponent(part); } catch { /* 兼容文件名中未转义的百分号。 */ }
+    if (decoded === '..') out.pop();
+    else if (decoded && decoded !== '.') out.push(decoded);
   }
   return out.join('/');
 }
@@ -115,7 +120,7 @@ export function parseEpub(bytes, {maxEntryBytes=8*1024*1024,maxTextBytes=32*1024
   if (!container) throw new Error('不是有效的 EPUB：缺少 META-INF/container.xml。');
   const opfMatch = /<rootfile[^>]*full-path\s*=\s*"([^"]+)"/iu.exec(container) || /<rootfile[^>]*full-path\s*=\s*'([^']+)'/iu.exec(container);
   if (!opfMatch) throw new Error('不是有效的 EPUB：container.xml 中没有根文件。');
-  const opfPath = opfMatch[1];
+  const opfPath = resolvePath('', decodeEntities(opfMatch[1]));
   extract(new Set([opfPath]));
   const opf = read(opfPath);
   if (!opf) throw new Error('EPUB 根文件缺失：' + opfPath);
@@ -154,8 +159,8 @@ export function parseEpub(bytes, {maxEntryBytes=8*1024*1024,maxTextBytes=32*1024
       const linkRe = /<a[^>]*href\s*=\s*["']([^"'#]+)[^"']*["'][^>]*>([\s\S]*?)<\/a>/giu;
       let link;
       while ((link = linkRe.exec(nav))) {
-        const target = resolvePath(navItem.href, link[1]);
-        const label = decodeEntities(link[2].replace(/<[^>]+>/gu, ' ')).replace(/\s+/gu, ' ').trim();
+        const target = resolvePath(navItem.href, decodeEntities(link[1]));
+        const label = decodeEntities(link[2].replace(/<[^>]+>/gu, '')).replace(/\s+/gu, ' ').trim();
         if (label && !tocLabels.get(target)) tocLabels.set(target, label);
       }
     }

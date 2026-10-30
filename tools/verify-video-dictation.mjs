@@ -9,6 +9,7 @@
 import fs from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import {openBrowser, DIST, assertFreshDist, previewPath} from './lib/ego.mjs';
+import {printGateSummary} from './lib/gate-report.mjs';
 import {normalizeAudio} from '../roamcat-0.0.1/extension/audio-transcription.mjs';
 
 // 足够长的确定性 WAV，真实 MediaRecorder 编码，不替换媒体 API。
@@ -111,4 +112,5 @@ try {
   assert.deepEqual(errors,[]);
   console.log(JSON.stringify({checks,errors,clipBytes:Buffer.from(clip.base64,'base64').length},null,2));
   await fs.writeFile(previewPath('audio-probe','browser-report.json'),JSON.stringify({checks,errors},null,2));
-} finally {await run.close();}
+} catch (error) {console.error(error);process.exitCode=1;} finally {await run.close();}
+printGateSummary('dictation',checks.length,process.exitCode?1:0);

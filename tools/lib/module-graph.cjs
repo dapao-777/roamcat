@@ -15,7 +15,7 @@
  *   R6 extension 不得反向 import connector；
  *   R7 全部参检源文件必须以文件级长注释开头（含 @file；connector/host.mjs 允许首行 shebang，次行起为文件头）；
  *   R8 扩展页面无重复元素 ID；R9 扩展页面无内联脚本/事件属性（CSP）；R10 manifest 引用资源全部存在；
- *   R11 extension 下全部脚本通过 node --check 语法门禁（ESM 经 stdin 按 module 解析）；
+ *   R11 extension 下全部脚本通过语法门禁（单个子进程里 vm 只编译不执行：classic 用 vm.Script，ESM 用 vm.SourceTextModule）；
  *   R12 extension/ 与 src/ 的样式不得写死 32px 以下的 px 字号（须用 tokens.css 的 --fs-1…6）。
  * 模块边界：只读文件系统并在本进程动态 import 被测模块，不启动浏览器、不写文件、不依赖 npm 包；
  *   规则清单与 SPEC.md 第 12 节一一对应；新增或修改规则必须同步修订 SPEC。
@@ -346,16 +346,20 @@ async function verifyModuleGraph({root}) {
   // R11：extension 下脚本必须通过 node --check。manifest 以经典脚本加载的 content script 没有 import 路径；
   // background.js 等 import 不安全的 ESM 也不会被 R4/R5 的动态 import 解析，语法错误只能靠本门禁发现。
   // 无 package.json type:module 时按文件 --check 会把 ESM 当 CommonJS，故 ESM 经 stdin 以 --input-type=module 检查。
+  // 每个文件起一个 node --check 子进程要十几秒（Windows 上起进程慢）；改为起一个子进程，用 vm 逐个只编译不执行：
+  // classic 用 vm.Script（与浏览器按经典脚本加载一致，顶层 return 也会报错），ESM 用 vm.SourceTextModule。
   const {execFileSync} = require('node:child_process');
-  for (const node of nodes.values()) {
-    if (!node.file.absolute.startsWith(`${path.join(root, 'extension')}${path.sep}`)) continue;
-    try {
-      if (node.esm) execFileSync(process.execPath, ['--input-type=module', '--check'], {input: node.source, stdio: 'pipe'});
-      else execFileSync(process.execPath, ['--check', node.file.absolute], {stdio: 'pipe'});
-    } catch (error) {
-      fail('R11', `${node.esm ? 'ESM' : 'classic'} 脚本语法错误: ${node.file.relative}: ${String(error.stderr || error.message).split('\n').find(line => /Error/.test(line)) || '未知错误'}`);
-    }
-  }
+  const checker = "const vm=require('node:vm');let input='';process.stdin.on('data',chunk=>{input+=chunk;}).on('end',()=>{"
+    + "const out=JSON.parse(input).map(({file,esm,source})=>{try{if(esm)new vm.SourceTextModule(source,{identifier:file});else new vm.Script(source,{filename:file});return null;}"
+    + "catch(error){return String(error&&error.stack||error);}});process.stdout.write(JSON.stringify(out));});";
+  const targets = [...nodes.values()].filter(node => node.file.absolute.startsWith(`${path.join(root, 'extension')}${path.sep}`));
+  const results = JSON.parse(execFileSync(process.execPath, ['--experimental-vm-modules', '--no-warnings', '-e', checker], {
+    input: JSON.stringify(targets.map(node => ({file: node.file.relative, esm: node.esm, source: node.source}))),
+    maxBuffer: 64 * 1024 * 1024,
+  }).toString());
+  targets.forEach((node, index) => {
+    if (results[index] !== null) fail('R11', `${node.esm ? 'ESM' : 'classic'} 脚本语法错误: ${node.file.relative}: ${results[index].split('\n').find(line => /Error/.test(line)) || '未知错误'}`);
+  });
 
   // R12：字号档位门禁——样式与内联 CSS 不得写死 32px 以下的 px 字号，须用 tokens.css 的 --fs-1…6
   // （JS 内联可写 var(--fs-k, Npx) 兜底）；32px 及以上视为展示字放行。生成物与 tokens.css 本身不参检。

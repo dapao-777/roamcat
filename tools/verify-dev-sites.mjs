@@ -16,6 +16,7 @@ import path from 'node:path';
 import http from 'node:http';
 import assert from 'node:assert/strict';
 import {DIST, REPO, extUrl, gateArgs, openBrowser, previewPath, sleep} from './lib/ego.mjs';
+import {printGateSummary} from './lib/gate-report.mjs';
 
 const LIVE = gateArgs().includes('--live');
 const extensionDir = path.resolve(process.env.EXTENSION_DIR || DIST);
@@ -482,3 +483,4 @@ fs.mkdirSync(previewPath('sites'), {recursive: true});
 fs.writeFileSync(previewPath('sites', 'verify-dev-sites.json'), JSON.stringify(report, null, 2));
 if (report.failures.length) process.exitCode = 1;
 console.log(JSON.stringify({passed: report.checks.length, failures: report.failures}, null, 2));
+printGateSummary('sites', report.checks.length, report.failures.length);
