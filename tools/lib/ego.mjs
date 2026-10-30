@@ -104,10 +104,21 @@ const killTree = pid => {
   else try { process.kill(pid); } catch {}
 };
 
+// Chromium 系浏览器在没有缓存的配置上会用空密码以当前 Windows 账户试登一次（LogonUser，判断系统账户是否空密码），
+// 每个全新临时配置都会记一次登录失败；门禁连跑十来次就触发账户锁定策略，锁定期间正确的 PIN 和密码都登不进去。
+// 预先写好检查结果：os_password_last_changed 不早于实际改密时间时，浏览器沿用缓存的 os_password_blank，不再试登。
+// 时间是 base::Time 内部值（自 1601 年起的微秒数），超出 Number 精度，用 BigInt 算。
+function seedLocalState(profile) {
+  if (process.platform !== 'win32') return;
+  const now = (BigInt(Date.now()) + 11644473600000n) * 1000n;
+  fs.writeFileSync(path.join(profile, 'Local State'), JSON.stringify({password_manager: {os_password_blank: false, os_password_last_changed: String(now)}}));
+}
+
 // extension：未打包扩展目录（默认 dist/extension），传 null 则不加载扩展。
 export async function openBrowser({extension = DIST, args = []} = {}) {
   if (extension && !fs.existsSync(path.join(extension, 'manifest.json'))) throw new Error(`扩展目录不存在或缺 manifest.json：${extension}（先运行 npm run build）`);
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'roamcat-ego-'));
+  seedLocalState(profile);
   const flags = ['--remote-debugging-port=0', `--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check',
     '--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding',
     '--disable-features=CalculateNativeWinOcclusion', '--mute-audio', '--window-size=1440,1000'];
