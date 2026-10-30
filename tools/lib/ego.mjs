@@ -126,9 +126,9 @@ export async function openBrowser({extension = DIST, args = []} = {}) {
   const connection = await Connection.open(endpoint).catch(error => { killTree(proc.pid); removeProfile(); throw error; });
   const browser = new Browser(connection, proc, removeProfile);
   try {
-    const {targetInfos} = await connection.send('Target.getTargets');
-    const blank = targetInfos.find(info => info.type === 'page');
-    const page = blank ? await browser.attach(blank.targetId) : await browser.newPage();
+    // 先保留独立窗口，避免无扩展模式下关掉唯一的引导窗口后浏览器开始退出。
+    const page = await browser.newPage();
+    await browser.closeOnboarding();
     const extensionId = extension ? await browser.extensionId() : null;
     if (extensionId) await browser.closeWelcomeGuide(extensionId);
     return {browser, page, extensionId, newPage: options => browser.newPage(options), close: () => browser.close()};
@@ -146,6 +146,28 @@ class Browser {
     this.pages = [];
   }
   send(method, params) { return this.connection.send(method, params); }
+  // ego 在全新配置上会自己打开首次引导窗口（chrome://onboarding/，--no-first-run、First Run 标记与 Local State 里的
+  // first_run_finished 都挡不住）；引导里会请求「设为默认浏览器」，Windows 随即弹出「默认应用 → ego (lite)」设置页，
+  // 每跑一次门禁弹一次。连上调试端口后立刻停止引导并退回空白页。
+  async closeOnboarding(timeout = 5000) {
+    const deadline = Date.now() + timeout;
+    while (Date.now() < deadline) {
+      const {targetInfos} = await this.connection.send('Target.getTargets');
+      const onboarding = targetInfos.filter(info => info.url.startsWith('chrome://onboarding'));
+      if (onboarding.length) {
+        // 直接销毁引导 WebContents 会触发 ego 的首次引导退出流程；无扩展时也会使其他会话失效。
+        // 先停止引导页面并导航到空白页，阻止其请求系统默认应用，同时保留浏览器窗口生命周期。
+        for (const info of onboarding) {
+          const {sessionId}=await this.connection.send('Target.attachToTarget',{targetId:info.targetId,flatten:true});
+          try{await this.connection.send('Page.stopLoading',{},sessionId);await this.connection.send('Page.navigate',{url:'about:blank'},sessionId);}
+          finally{await this.connection.send('Target.detachFromTarget',{sessionId}).catch(()=>{});}
+        }
+        return true;
+      }
+      await sleep(100);
+    }
+    return false;
+  }
   async attach(targetId) {
     const {sessionId} = await this.connection.send('Target.attachToTarget', {targetId, flatten: true});
     const page = new Page(this, targetId, sessionId);
