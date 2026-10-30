@@ -33,8 +33,8 @@ export const sitesSection = html`
 <div class="opt-row-control"><label class="switch"><input id="sentence-groups-all-sites" type="checkbox"><span aria-hidden="true"></span><span class="sr-only">${t('sec.sites.allStruct')}</span></label></div>
 </div>
 <div class="opt-row" data-video-feature hidden>
-<div class="opt-row-text"><label for="automation-video-sites" class="opt-row-label">${t('sec.sites.video')}</label><p class="opt-row-desc">${t('sec.sites.videoDesc')}</p></div>
-<div class="opt-row-control"><label class="switch"><input id="automation-video-sites" type="checkbox"><span aria-hidden="true"></span><span class="sr-only">${t('sec.sites.video')}</span></label></div>
+<div class="opt-row-text"><span class="opt-row-label">${t('sec.sites.video')}</span><p class="opt-row-desc">${t('sec.sites.videoDesc')}</p></div>
+<div class="opt-row-control"><a class="text-link-button" href="#video">${t('sec.sites.toVideo')}</a></div>
 </div>
 </div>
 </div>

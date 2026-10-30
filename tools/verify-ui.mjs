@@ -1,7 +1,8 @@
 /**
  * @file tools/verify-ui.mjs
  * 文件职责：设置页行为门禁（npm run verify:options）——本地 HTTP 服务 dist/extension 并注入模拟 chrome.*，
- *   只断言控制器行为：句子粒度保存与失败回滚、查词按键、阅读记录、宣言弹层、模型列表、恢复默认阅读偏好、服务商思考等级。
+ *   只断言控制器行为：句子粒度保存与失败回滚、查词按键、视频与直播（字幕样式保存、预览与失败回滚）、阅读记录、宣言弹层、
+ *   模型列表、恢复默认阅读偏好、服务商思考等级。
  * 主要内容：在无头 ego lite（不加载扩展）里打开 http://127.0.0.1 上的 ui/options.html；模拟的 chrome.* 只存页面 localStorage，
  *   不碰扩展真实数据；页面向本地服务以外发起的请求记进报告。截图与多宽度溢出由 verify:ui 负责。
  * 模块边界：普通 Node 运行，先 npm run build；报告写 preview/verification.json。
@@ -28,6 +29,7 @@ function mockChrome(){
       case 'SUBSCRIPTION_STATUS':data={connected:false};break;
       case 'MODELS_LIST':data={models:[]};break;
       case 'API_MODELS_LIST':await new Promise(r=>setTimeout(r,window.qa.modelDelay||0));data={models:[{id:'fixture-model',name:'Fixture model'}]};break;
+      case 'VIDEO_SETTINGS_PATCH':{if(window.qa.failVideo)return {ok:false,error:'模拟视频设置保存失败'};const settings=read();settings.video={...settings.video,...message.patch};localStorage.setItem('qa-settings',JSON.stringify(settings));data={video:settings.video};break;}
       case 'SENTENCE_GROUPS_DENSITY_SET':if(window.qa.failDensity)return {ok:false,error:'模拟保存失败'};localStorage.setItem('qa-density',message.density);data={density:message.density};break;
       case 'HISTORY_GET':{const daily=Array.from({length:14},(_,i)=>({day:new Date(Date.now()-(13-i)*86400000).toISOString().slice(0,10),activeMs:(i%4===0?0:(i+3)*60000),terms:i*2,sentences:i%4}));data={config:{enabled:true,startedAt:Date.now()-14*86400000,origins:[]},events:[],rules:[],summaries:[],daily,metrics:{activeMs:7200000,words:8400,terms:48,queries:62,sentences:12}};break;}
     }
@@ -63,6 +65,22 @@ try{
   await page.reload();await page.waitForTimeout(400);assert.equal(await page.locator('#lookup-key').inputValue(),'F');
   await page.locator('#lookup-key').selectOption('D');await page.waitForTimeout(150);
   report.checks.push('Lookup hotkey saves and survives reload');
+  // 视频与直播：分段选择与开关经 VIDEO_SETTINGS_PATCH 保存，预览跟着变；保存失败时退回原值并提示。
+  const videoPick=(name,value)=>page.locator(`label:has(input[name="${name}"][value="${value}"])`).click();
+  const savedVideo=()=>page.evaluate(()=>JSON.parse(localStorage.getItem('qa-settings')).video||{});
+  await page.goto(base+'/ui/options.html#video');await page.waitForTimeout(400);
+  assert.equal(await page.locator('input[name="video-font-size"]:checked').inputValue(),'20');
+  await videoPick('video-translation-color','cyan');await page.waitForFunction(()=>JSON.parse(localStorage.getItem('qa-settings')).video?.translationColor==='cyan');
+  assert.equal(await page.locator('#video-caption-preview').evaluate(el=>el.dataset.color),'cyan');
+  await page.locator('label.switch:has(#video-blur)').click();await page.waitForFunction(()=>JSON.parse(localStorage.getItem('qa-settings')).video?.blur===true);
+  await page.reload();await page.waitForTimeout(400);
+  assert.equal(await page.locator('input[name="video-translation-color"]:checked').inputValue(),'cyan');assert.equal(await page.locator('#video-blur').isChecked(),true);
+  assert.equal(await page.locator('#video-caption-preview').evaluate(el=>el.dataset.blur),'true');
+  await page.evaluate(()=>{qa.failVideo=true;});await videoPick('video-font-size','28');await page.waitForTimeout(200);
+  assert.equal(await page.locator('input[name="video-font-size"]:checked').inputValue(),'20');assert.equal((await savedVideo()).fontSize,undefined);
+  assert.match(await page.locator('#global-error').textContent(),/模拟视频设置保存失败/);
+  await page.evaluate(()=>{qa.failVideo=false;});
+  report.checks.push('Video section saves caption style through VIDEO_SETTINGS_PATCH, updates the preview, survives reload, and rolls back on failure');
   await page.evaluate(s=>{location.hash='#'+s},'history');await page.locator('#history-view-stats-tab').click();await page.waitForTimeout(150);
   assert.equal(await page.locator('.history-bar').count()>0,true);
   await page.evaluate(s=>{location.hash='#'+s},'assistance');await page.locator('#sidebar-stamp-card').click();assert.equal(await page.locator('#stamp-manifesto-modal').evaluate(el=>el.open),true);

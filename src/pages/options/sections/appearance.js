@@ -3,7 +3,7 @@
  * 文件职责：设置页静态分区模板——最初从
  *   extension/ui/options.html 机械切片生成（切片脚本已移除）；id/控件契约与原页完全一致。
  * 主要内容：无绑定静态模板（动态内容由 options-controller.js 命令式填充），
- *   分区可见性由 options-app 统一驱动。
+ *   分区可见性由 options-app 统一驱动。视频字幕与 Twitch 聊天设置已移到「视频与直播」分区（sections/video.js）。
  * 模块边界：纯展示模板。
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -28,7 +28,6 @@ export const appearanceSection = html`
 <button id="appearance-tab-original" type="button" role="tab" data-appearance-tab="original" aria-controls="appearance-panel-original" aria-selected="false" tabindex="-1">${t('sec.ap.tabOriginal')}</button>
 <button id="appearance-tab-annotation" type="button" role="tab" data-appearance-tab="annotation" aria-controls="appearance-panel-annotation" aria-selected="false" tabindex="-1">${t('sec.ap.tabAnnotation')}</button>
 <button id="appearance-tab-translation" type="button" role="tab" data-appearance-tab="translation" aria-controls="appearance-panel-translation" aria-selected="false" tabindex="-1">${t('sec.ap.tabTranslation')}</button>
-<button id="appearance-tab-video" type="button" role="tab" data-appearance-tab="video" aria-controls="appearance-panel-video" aria-selected="false" tabindex="-1" data-video-feature hidden>${t('sec.ap.tabVideo')}</button>
 </div>
           
           <div class="reading-style-layout">
@@ -221,37 +220,6 @@ export const appearanceSection = html`
 </fieldset>
 </fieldset>
 </div>
-<div id="appearance-panel-video" role="tabpanel" aria-labelledby="appearance-tab-video" data-appearance-panel="video" hidden="">
-<label class="field">
-<span>${t('sec.ap.videoBilingual')}</span>
-<input id="video-bilingual" type="checkbox">
-</label>
-<p class="field-help">${t('sec.ap.videoBilingualDesc')}</p>
-<label class="field">
-<span>${t('sec.ap.liveChat')}</span>
-<input id="video-live-chat" type="checkbox">
-</label>
-<p class="field-help">${t('sec.ap.liveChatDesc')}</p>
-<div class="form-grid">
-<label class="field">
-<span>${t('sec.ap.fontSize')}</span>
-<select id="video-font-size">
-<option value="16">16 px</option>
-<option value="20">20 px</option>
-<option value="24">24 px</option>
-<option value="28">28 px</option>
-</select>
-</label>
-<label class="field">
-<span>${t('sec.ap.theme')}</span>
-<select id="video-theme">
-<option value="auto">${t('opt.themeAuto')}</option>
-<option value="light">${t('opt.themeLight')}</option>
-<option value="dark">${t('opt.themeDark')}</option>
-</select>
-</label>
-</div>
-</div>
 <div class="provider-actions">
 <button id="reset-reading-style" class="secondary-button" type="button">${t('sec.ap.reset')}</button>
 <span class="field-help">${t('sec.ap.resetNote')}</span>
@@ -276,10 +244,6 @@ export const appearanceSection = html`
             <iframe id="reading-style-preview" title="${t('sec.ap.iframeTitle')}" sandbox="allow-same-origin" hidden="">
 </iframe>
 <p class="field-help" id="reading-preview-note">${t('sec.ap.previewNote')}</p>
-          <section id="video-style-preview" hidden="" class="video-style-preview" aria-label="${t('sec.ap.videoPrev')}">
-<p lang="en">A little help can make a difficult sentence clear.</p>
-<small>${t('sec.ap.videoDemo')}</small>
-</section>
 </aside>
           </div>
         </div>

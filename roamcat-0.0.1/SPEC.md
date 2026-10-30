@@ -142,7 +142,7 @@
 - 四个扩展页均已迁移到 `src/`（Vite + Lit）：`build/extension-plugin.mjs` 的 `REPLACED_BY_BUILD` 清单使构建产物覆盖对应 `ui/` 文件；**不要直接改将由构建替代的源文件**。页内 UI（`src/content-ui`）同样经构建链产出 `content-ui.js`。
 - `ui/popup.html|js`（构建产物来自 `src/pages/popup/`）：本页开关、网站自动开启、阅读解构、本页双语翻译（立即开始）、服务告警、语言切换钮。
 - 设置页以 `options_ui`（`open_in_tab: true`）注册，全局只保留一个页签：`shared.js` 的 `focusOptionsPage`/`settleOptionsPages` 把设置页收回正在浏览的普通窗口（跳过无痕窗口），分区切换（改 hash）不搬页签；弹窗、阅读器、页内挂件都经 `OPEN_OPTIONS`（可带 `section`）打开。
-- `ui/options.html|js` + `options-nav.js`（构建产物来自 `src/pages/options/`：shell + 12 分区模板，`options-controller.js` 与 `@ext/ui/history.js` 动态加载填充动态内容）：12 个设置分区（assistance/appearance/sites/advanced/terms/personalization/history/privacy/service/diagnostics/shortcuts/guide）；顶栏含主题与语言循环钮。
+- `ui/options.html|js` + `options-nav.js`（构建产物来自 `src/pages/options/`：shell + 12 分区模板，`options-controller.js` 与 `@ext/ui/history.js` 动态加载填充动态内容）：12 个设置分区（assistance/appearance/sites/video/terms/personalization/history/privacy/service/diagnostics/shortcuts/guide，旧 #advanced 重定向到 sites），侧栏六个分组；「视频与直播」（video）集中 YouTube 播放器入口与双语字幕、字幕样式预览、云端听写说明与 Twitch 聊天翻译，字幕样式与播放器「字幕设置」菜单读写同一份 `settings.video`；顶栏含主题与语言循环钮。
 - `ui/welcome.html|js` + `welcome.css`（构建产物来自 `src/pages/welcome/`）：首次安装引导与交互式演示，顶栏含主题/语言循环钮。
 - `ui/reader.html|js`（构建产物来自 `src/pages/reader/`）：PDF/EPUB/粘贴文章的阅读器，`READER_TRANSLATE` 逐段双语对照，工具栏含语言切换钮。
 - `ui/provider-picker.js`：原生 select + Popover 自定义列表（Chrome 116+）。

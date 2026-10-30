@@ -748,3 +748,42 @@ body[data-group="reading"] .now-status { margin-bottom: var(--rc-space-4); }
 
 /* 品牌区：中文名/英文副名与 RoamCat 同一无衬线、同一灰，不再混衬线与字距 */
 .options-document .options-body .brand-title .brand-title-cn { font-family: var(--font-sans); font-size: 1em; font-weight: 400; letter-spacing: 0; color: var(--rc-ink-tertiary); }
+
+/* 视频与直播：仿播放画面的双语字幕预览。画面与字幕固定深色、译文三色与播放器字幕层（video-subtitles.js）一致，不随主题变；
+   字号由 optionsRenderVideo 写进 --vcp-size（16–28，与播放器设置同档）。 */
+.options-document .options-body .video-preview-row { flex-direction: column; align-items: stretch; gap: 8px; }
+.options-document .options-body .video-preview-row .video-preview-note { white-space: normal; }
+.video-caption-preview {
+  --vcp-size: var(--fs-5);
+  --vcp-tr: #ffffff;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-height: 150px;
+  padding: 24px 16px 18px;
+  box-sizing: border-box;
+  border-radius: 8px;
+  background: radial-gradient(120% 90% at 30% 20%, #3b4a5c 0%, #1c232d 55%, #0d1015 100%);
+  overflow: hidden;
+}
+.video-caption-preview[data-color="yellow"] { --vcp-tr: #ffe45c; }
+.video-caption-preview[data-color="cyan"] { --vcp-tr: #8be9fd; }
+.vcp-stack { display: flex; flex-direction: column; align-items: center; gap: 0.12em; max-width: 100%; font-size: var(--vcp-size); text-align: center; }
+.vcp-line { margin: 0; line-height: 1.36; overflow-wrap: anywhere; }
+.vcp-line > span { padding: 0.06em 0.36em; border-radius: 0.18em; background: rgba(0, 0, 0, 0.7); -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+.vcp-translation { order: 1; color: var(--vcp-tr); font-weight: 600; letter-spacing: 0.02em; }
+.vcp-original { order: 2; color: rgba(255, 255, 255, 0.9); font-size: 0.76em; font-weight: 500; }
+.vcp-original b { font-weight: inherit; }
+.video-caption-preview[data-first="false"] .vcp-translation { order: 3; }
+.video-caption-preview[data-display="original"] .vcp-translation,
+.video-caption-preview[data-display="translation"] .vcp-original { display: none; }
+.video-caption-preview[data-blur="true"] .vcp-translation span { filter: blur(0.32em); transition: filter 0.15s ease; }
+.video-caption-preview[data-blur="true"]:hover .vcp-translation span { filter: none; }
+.video-caption-preview[data-karaoke="true"] .vcp-original b { opacity: 0.55; }
+.video-caption-preview[data-karaoke="true"] .vcp-original b:is([data-said], [data-now]) { opacity: 1; }
+.video-caption-preview[data-karaoke="true"] .vcp-original b[data-now] { box-shadow: inset 0 -0.14em #ffd166; }
+.vcp-original b.vcp-hard { color: #ffd9a0; text-decoration: underline dotted #ffb454; text-decoration-thickness: 0.14em; text-underline-offset: 0.24em; opacity: 0.9; }
+.video-color-dot { display: inline-block; width: 10px; height: 10px; margin-right: 6px; border-radius: 50%; vertical-align: -1px; box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 35%, transparent); }
+.video-color-dot[data-color="white"] { background: #ffffff; }
+.video-color-dot[data-color="yellow"] { background: #ffe45c; }
+.video-color-dot[data-color="cyan"] { background: #8be9fd; }

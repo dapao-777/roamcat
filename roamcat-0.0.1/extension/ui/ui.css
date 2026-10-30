@@ -2702,8 +2702,6 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: var(--space-3); b
   border-color: var(--btn-primary-border);
   font-weight: 600;
 }
-.video-style-preview { padding: var(--space-5); border: 1px solid var(--line); border-radius: var(--radius-control); background: var(--paper); color: var(--ink); overflow-wrap: anywhere; }
-.video-style-preview p { margin-bottom: var(--space-4); }
 .service-editor > summary, .installation-note > summary { cursor: pointer; color: var(--accent); font-size: var(--type-control); }
 .service-editor > form { padding-top: var(--space-5); }
 .installation-note { margin-top: var(--space-3); }

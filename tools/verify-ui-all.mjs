@@ -20,7 +20,7 @@ const out = previewPath('ui-audit');
 if (fs.existsSync(out)) for (const name of fs.readdirSync(out)) if (/\.png$/i.test(name)) fs.rmSync(path.join(out, name), {force: true});
 fs.mkdirSync(out, {recursive: true});
 
-const OPTION_SECTIONS = ['assistance', 'appearance', 'sites', 'service', 'terms', 'personalization', 'history', 'privacy', 'shortcuts', 'guide', 'diagnostics'];
+const OPTION_SECTIONS = ['assistance', 'appearance', 'sites', 'video', 'service', 'terms', 'personalization', 'history', 'privacy', 'shortcuts', 'guide', 'diagnostics'];
 const THEMES = ['light', 'dark'];
 
 const report = {checks: [], failures: [], warnings: [], consoleErrors: {}, overflow: [], widgets: {}};
@@ -106,7 +106,7 @@ try {
       }
       await extPage.waitForTimeout(450);
       await extPage.locator('.main-panel').evaluate(el => el.scrollTo(0, 0)).catch(() => {});
-      // 五个分组：侧栏分组高亮；组内有多个分区时，对应标签也要高亮。
+      // 六个分组：侧栏分组高亮；组内有多个分区时，对应标签也要高亮。
       check(`options 分区激活[${section}]`, await extPage.evaluate(name => { const tab = document.querySelector(`[data-section="${name}"]`); return Boolean(document.querySelector('[data-group].active')) && (!tab || tab.classList.contains('active')); }, section));
       const filled = await extPage.evaluate(name => {
         const el = document.getElementById(name);

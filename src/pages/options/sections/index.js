@@ -14,6 +14,7 @@
 export {assistanceSection} from './assistance.js';
 export {appearanceSection} from './appearance.js';
 export {sitesSection} from './sites.js';
+export {videoSection} from './video.js';
 export {termsSection} from './terms.js';
 export {serviceSection} from './service.js';
 export {privacySection} from './privacy.js';

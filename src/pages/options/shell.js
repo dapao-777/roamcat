@@ -53,7 +53,7 @@ export const shellTop = html`
         </label>
         <p id="sidebar-search-empty" class="sidebar-search-empty" hidden>${t('opt.searchEmpty')}</p>
 
-        <!-- 五个分组：阅读 / 网站 / 模型服务 / 词汇与记录 / 更多；组内多个分区由页头的标签切换 -->
+        <!-- 六个分组：阅读 / 网站 / 视频与直播 / 模型服务 / 词汇与记录 / 更多；组内多个分区由页头的标签切换 -->
         <nav class="sidebar-nav-menu" aria-label="${t('opt.settingsNav')}" data-purpose="nav-menu">
           <div class="nav-group">
             <a href="#assistance" data-group="reading" class="cyber-nav-item" data-tooltip="${t('opt.group5.reading')}">
@@ -61,6 +61,9 @@ export const shellTop = html`
             </a>
             <a href="#sites" data-group="sites" class="cyber-nav-item" data-tooltip="${t('opt.group5.sites')}">
               <div class="nav-item-left"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="17" height="17" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"></path></svg></span><span class="nav-text">${t('opt.group5.sites')}</span></div>
+            </a>
+            <a href="#video" data-group="video" class="cyber-nav-item" data-tooltip="${t('opt.group5.video')}" data-video-feature hidden>
+              <div class="nav-item-left"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="17" height="17" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"></rect><path d="M10 9.5v5l4.5-2.5z"></path></svg></span><span class="nav-text">${t('opt.group5.video')}</span></div>
             </a>
             <a href="#service" data-group="service" class="cyber-nav-item" data-tooltip="${t('opt.group5.service')}">
               <div class="nav-item-left"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="17" height="17" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="14" rx="3"></rect><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"></path></svg></span><span class="nav-text">${t('opt.group5.service')}</span></div>

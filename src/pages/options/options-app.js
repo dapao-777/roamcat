@@ -1,8 +1,8 @@
 /**
  * @file src/pages/options/options-app.js
- * 文件职责：设置页 Lit 应用壳——五个分组、11 个分区的 hash 路由（组内用标签切换；旧 #advanced 重定向至 #sites）（含 view transitions）、
+ * 文件职责：设置页 Lit 应用壳——六个分组、12 个分区的 hash 路由（组内用标签切换；旧 #advanced 重定向至 #sites）（含 view transitions）、
  *   侧栏折叠（中等宽度自动收为图标栏）、主题切换、宣言弹层、密码可见性切换、选择卡高亮委托。
- * 主要内容：渲染 shell.js + 11 个静态分区模板（light DOM 保留全部 id 契约）；
+ * 主要内容：渲染 shell.js + 12 个静态分区模板（light DOM 保留全部 id 契约）；
  *   首帧渲染完成后动态加载 options-controller.js 与 history.js，二者沿用原
  *   imperative DOM 契约填充动态内容；optionsSectionEnter 负责分区进入钩子。
  * 模块边界：扩展页受信上下文；路由与外壳状态唯一来源为本组件。
@@ -16,31 +16,32 @@ import {LitElement, html} from 'lit';
 import {t} from '../../i18n-runtime.js';
 import {shellTop, mainToolbar, heroBlock, nowStatus, shellDialog} from './shell.js';
 import {
-  assistanceSection, appearanceSection, sitesSection,
+  assistanceSection, appearanceSection, sitesSection, videoSection,
   termsSection, personalizationSection, historySection, privacySection,
   serviceSection, diagnosticsSection, guideSection, shortcutsSection,
 } from './sections/index.js';
 
-const SECTIONS = ['assistance', 'appearance', 'sites', 'service', 'terms', 'personalization', 'history', 'privacy', 'shortcuts', 'guide', 'diagnostics'];
+const SECTIONS = ['assistance', 'appearance', 'sites', 'video', 'service', 'terms', 'personalization', 'history', 'privacy', 'shortcuts', 'guide', 'diagnostics'];
 // 已并入其他分区的旧锚点：hash → [分区, 分区内滚动目标]
 const SECTION_ALIASES = {advanced: ['sites', 'domain-detection']};
 const SECTION_TEMPLATES = {
-  assistance: assistanceSection, appearance: appearanceSection, sites: sitesSection,
+  assistance: assistanceSection, appearance: appearanceSection, sites: sitesSection, video: videoSection,
   terms: termsSection, personalization: personalizationSection,
   history: historySection, privacy: privacySection, service: serviceSection,
   diagnostics: diagnosticsSection, shortcuts: shortcutsSection, guide: guideSection,
 };
 const LABELS = {
-  assistance: 'opt.nav.assist', appearance: 'opt.nav.appearance', sites: 'opt.nav.sites',
+  assistance: 'opt.nav.assist', appearance: 'opt.nav.appearance', sites: 'opt.nav.sites', video: 'opt.nav.video',
   terms: 'opt.nav.terms', personalization: 'opt.nav.personalization', history: 'opt.nav.history',
   privacy: 'opt.nav.privacy', service: 'opt.nav.model', diagnostics: 'opt.nav.diagnostics',
   shortcuts: 'opt.nav.shortcuts', guide: 'opt.nav.guide',
 };
-// 侧栏只有五个分组；组内有几个分区时，页头下方用标签切换。hash 仍是分区名（#terms、#diagnostics …），
+// 侧栏只有六个分组；组内有几个分区时，页头下方用标签切换。hash 仍是分区名（#terms、#diagnostics …），
 // 弹窗、伴读猫和文档里的旧链接不用改。
 const GROUPS = [
   {id: 'reading', label: 'opt.group5.reading', desc: 'opt.group5.readingDesc', sections: ['assistance', 'appearance']},
   {id: 'sites', label: 'opt.group5.sites', desc: 'opt.group5.sitesDesc', sections: ['sites']},
+  {id: 'video', label: 'opt.group5.video', desc: 'opt.group5.videoDesc', sections: ['video']},
   {id: 'service', label: 'opt.group5.service', desc: 'opt.group5.serviceDesc', sections: ['service']},
   {id: 'vocab', label: 'opt.group5.vocab', desc: 'opt.group5.vocabDesc', sections: ['terms', 'personalization', 'history']},
   {id: 'more', label: 'opt.group5.more', desc: 'opt.group5.moreDesc', sections: ['privacy', 'shortcuts', 'guide', 'diagnostics']},
