@@ -26,12 +26,14 @@ if (!fs.existsSync(path.join(extensionDir, 'manifest.json'))) {
 const fixtureDir = path.join(REPO, 'tools', 'fixtures', 'sites');
 const fixture = slug => fs.readFileSync(path.join(fixtureDir, slug + '.html'), 'utf8');
 // 在目标 tab 的隔离世界里跑 content.js 的 inspect()（字面量 func，不依赖 eval）。
-const inspectTab = (extPage, tabId, limit = 5000, textLimit = 2000) =>
-  extPage.evaluate(({tabId, limit, textLimit}) => chrome.scripting.executeScript({
+const inspectTab = async (extPage, tabId, limit = 5000, textLimit = 2000) => {
+  await extPage.evaluate(tabId=>chrome.runtime.sendMessage({type:'PAGE_UI_INJECT',tabId}),tabId);
+  return extPage.evaluate(({tabId, limit, textLimit}) => chrome.scripting.executeScript({
     target: {tabId},
     func: args => globalThis.__ROAMCAT_CONTENT__?.inspect?.(args.limit, args.textLimit),
     args: [{limit, textLimit}]
   }), {tabId, limit, textLimit}).then(frames => frames?.[0]?.result);
+};
 // 在目标 tab 的隔离世界里按选择器列表逐个 querySelector 校验合法性。
 const checkSelectors = (extPage, tabId, selectors) =>
   extPage.evaluate(({tabId, selectors}) => chrome.scripting.executeScript({
@@ -39,11 +41,13 @@ const checkSelectors = (extPage, tabId, selectors) =>
     func: sels => sels.filter(sel => { try { document.createDocumentFragment().querySelector(sel); return false; } catch { return true; } }),
     args: [selectors]
   }), {tabId, selectors}).then(frames => frames?.[0]?.result);
-const readProfiles = (extPage, tabId) =>
-  extPage.evaluate(tabId => chrome.scripting.executeScript({
+const readProfiles = async (extPage, tabId) => {
+  await extPage.evaluate(tabId=>chrome.runtime.sendMessage({type:'PAGE_UI_INJECT',tabId}),tabId);
+  return extPage.evaluate(tabId => chrome.scripting.executeScript({
     target: {tabId},
     func: () => (globalThis.RoamCatSites?.PROFILES || []).flatMap(p => [...(p.root || []), ...(p.skip || []), ...(p.chrome || [])])
   }), tabId).then(frames => frames?.[0]?.result || []);
+};
 const BLOCKED_RE = /just a moment|verify you are (a )?human|are you a (human|robot)|captcha|access denied|unusual traffic|login\/\?reason/i;
 
 const cases = [

@@ -28,10 +28,25 @@ import {
   analyze,
   analyzeBatch,
   ensureLexicon,
+  createLexiconContext,
 } from '../../roamcat-0.0.1/extension/lexicon.js';
 
 // 词频表经 ensureLexicon 动态装载；顶层 await 先于全部用例完成。
 await ensureLexicon();
+
+test('请求内词库索引复用保持词形、领域隔离和已知词结果；新快照不沿用旧状态',()=>{
+  const words=[{id:'data:query',term:'query',domain:'data',kind:'word',helpCount:1,knownAt:0},{id:'general:cache',term:'cache',domain:'general',kind:'word',helpCount:1,knownAt:1}];
+  const context=createLexiconContext(words),sentence='The queries use a cache.';
+  assert.deepEqual(historyMatches(sentence,'data',words,context),historyMatches(sentence,'data',words));
+  const index=context.domains.get('data');
+  assert.equal(resolveCanonicalTerm('queries','data',words,context),'query');
+  assert.equal(context.domains.get('data'),index);
+  assert.equal(isKnownTerm('caches',words,context),isKnownTerm('caches',words));
+  assert.deepEqual(analyzeBatch([{sentence,domain:'data'}],{},words,context),analyzeBatch([{sentence,domain:'data'}],{},words));
+  words[0]={...words[0],term:'record',id:'data:record'};
+  assert.equal(resolveCanonicalTerm('queries','data',words,createLexiconContext(words)),'queries');
+  assert.equal(resolveCanonicalTerm('queries','general',words,createLexiconContext(words)),'queries');
+});
 
 test('词频 .txt 孪生文件与 .js 导出词序一致（SW fetch 路径的数据源）', async () => {
   const url = new URL('../../roamcat-0.0.1/extension/frequency/english-frequency.txt', import.meta.url);

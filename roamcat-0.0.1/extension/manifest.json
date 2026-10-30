@@ -13,13 +13,13 @@
   "content_scripts": [
     {
       "matches": ["http://*/*", "https://*/*"],
-      "js": ["design.js", "i18n-content.js", "reading-style.js", "content-ui.js", "pet-quotes.js", "complexity.js", "formula.js", "site-profiles.js", "content.js"],
+      "js": ["page-bootstrap.js"],
       "run_at": "document_idle",
       "all_frames": false
     },
     {
       "matches": ["https://www.twitch.tv/*"],
-      "js": ["live-chat.js"],
+      "js": ["design.js", "i18n-content.js", "live-chat.js"],
       "run_at": "document_idle",
       "all_frames": false
     }

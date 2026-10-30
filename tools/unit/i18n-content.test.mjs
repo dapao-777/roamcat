@@ -95,4 +95,5 @@ test('网页侧脚本引用的词典键都在瘦身词典里', () => {
     }
   }
   assert.ok(Object.keys(slim.zh).length < Object.keys(full.zh).length, '瘦身词典应只含网页侧命名空间');
+  for(const key of ['ui.transOpen','ui.iKnow','c.limit'])assert.equal(slim.zh[key],full.zh[key],`按需加载的阅读引擎仍需 ${key}`);
 });

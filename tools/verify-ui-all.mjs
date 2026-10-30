@@ -338,6 +338,7 @@ try {
   await execInTab(`() => window.__probe['known-feedback'].host.remove()`);
 
   // B5. 选区操作条：先启用阅读辅助（真实 SW 管线），再真实鼠标拖选触发（isTrusted 必需）
+  await extPage.evaluate(tabId=>chrome.runtime.sendMessage({type:'PAGE_UI_INJECT',tabId}),await tabIdOf(extPage,`${fixtureBase}/*`));
   await execInTab(`() => globalThis.__ROAMCAT_CONTENT__?.setManualEnabled?.(true) ?? Promise.resolve()`);
   await tab.waitForTimeout(1500);
   const assistState = await execInTab(`() => { const s = globalThis.__ROAMCAT_CONTENT__?.status?.(); return s ? {enabled: s.enabled, paused: s.paused} : null; }`);

@@ -13,6 +13,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 (() => {
+  if(globalThis.RoamCatI18n)return;
   const STORAGE_KEY = 'roamcat_ui_lang';
   const LOCAL_KEY = 'roamcat_ui_lang';
   const VALID = new Set(['auto', 'zh', 'en']);

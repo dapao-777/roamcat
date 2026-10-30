@@ -64,12 +64,12 @@ const DOMAIN_ASSETS = Object.freeze([
 ]);
 
 const EXCLUDED_DIRECTORIES = new Set(['local-inference', 'vendor', 'fonts', 'icons']);
-const CONTENT_SCRIPT_ORDER = Object.freeze(['design.js', 'i18n-content.js', 'reading-style.js', 'content-ui.js', 'pet-quotes.js', 'complexity.js', 'formula.js', 'site-profiles.js', 'content.js']);
-// 不经 manifest 静态声明、但始终以 classic 方式注入的页面脚本：伴读猫经
+const CONTENT_SCRIPT_ORDER = Object.freeze(['page-bootstrap.js']);
+// 网页侧按需加载、始终以 classic 方式执行的模块：伴读猫经
 // chrome.scripting 按 floatingPet.enabled 动态注册（pet-quotes.js 作为其语录库先行注入，
 // floating-pet-*.js 是拆出的辅助/样式/SVG/语录气泡/摘要窗，与 floating-pet.js 同批注入），
 // auto-start.js 按站点规则注册。
-const CLASSIC_DYNAMIC_SCRIPTS = Object.freeze(['pet-quotes.js', 'floating-pet-helpers.js', 'floating-pet-styles.js', 'floating-pet-svg.js', 'floating-pet-quote-bubble.js', 'floating-pet-summary.js', 'floating-pet.js', 'auto-start.js', 'youtube-captions-bridge.js']);
+const CLASSIC_DYNAMIC_SCRIPTS = Object.freeze(['design.js','i18n-content.js','reading-style.js','content-ui.js','complexity.js','formula.js','site-profiles.js','content.js','pet-quotes.js', 'floating-pet-helpers.js', 'floating-pet-styles.js', 'floating-pet-svg.js', 'floating-pet-quote-bubble.js', 'floating-pet-summary.js', 'floating-pet.js', 'auto-start.js', 'youtube-captions-bridge.js']);
 const ESM_PATTERN = /^[ \t]*(?:import|export)[\s({'"]/m;
 const IMPORT_PATTERNS = [
   /import\s+[\s\S]*?\s+from\s*['"]([^'"]+)['"]/g,
@@ -244,7 +244,7 @@ async function verifyModuleGraph({root}) {
   const unsafe = await classifyImportSafety(nodes);
   const byRelative = new Map(files.map(file => [file.relative, nodes.get(file.absolute)]));
 
-  // R1：manifest content script 三件套契约——顺序固定、文件存在、且必须是 classic script；
+  // R1：manifest 轻量引导契约——静态入口固定，按需加载的网页模块也必须是 classic script；
   // 动态注册的页面脚本（伴读猫、自动启动）同样禁止 ESM。
   const manifestPath = path.join(root, 'extension', 'manifest.json');
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));

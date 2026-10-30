@@ -224,8 +224,15 @@ function resolvedHistory(surface, domain, indexedScopes) {
   return null;
 }
 
-function indexedHistory(words, domain) {
-  return new Map([...historyRecords(words,domain)].map(([scope,records]) => [scope,{records,index:wordIndexes(records)}]));
+// 只在一次请求内复用；不把可变 words 数组缓存到模块全局，避免清理/改词后继续命中旧索引。
+export function createLexiconContext(words = []) {
+  return {words, domains:new Map(), known:null};
+}
+function indexedHistory(words, domain, context) {
+  if(context?.words===words&&context.domains.has(domain))return context.domains.get(domain);
+  const indexed=new Map([...historyRecords(words,domain)].map(([scope,records]) => [scope,{records,index:wordIndexes(records)}]));
+  if(context?.words===words)context.domains.set(domain,indexed);
+  return indexed;
 }
 // Word exclusions share inflections, never derived words or substrings.
 function knownTermKey(surface) {
@@ -236,8 +243,9 @@ function knownTermKey(surface) {
   return forms.length === 1 ? forms[0] : term;
 }
 
-export function isKnownTerm(surface, words = []) {
+export function isKnownTerm(surface, words = [], context) {
   const key = knownTermKey(surface);
+  if(context?.words===words){context.known??=new Set(words.filter(word=>Number(word?.knownAt)>0).map(word=>knownTermKey(word.term)));return Boolean(key)&&context.known.has(key);}
   return Boolean(key) && words.some(word => Number(word?.knownAt) > 0 && knownTermKey(word.term) === key);
 }
 
@@ -285,12 +293,12 @@ function vocabularySupport(rank, profile) {
   return (1-profile.weight)*baseline + profile.weight*personal;
 }
 
-export function resolveCanonicalTerm(surface, domain, words = []) {
+export function resolveCanonicalTerm(surface, domain, words = [], context) {
   const normalizedSurface = normalizedTerm(surface);
   if (!normalizedSurface) return '';
   const resolvedDomain = Object.hasOwn(DOMAINS,domain) && domain !== 'auto' ? domain : 'general';
   if (normalizedSurface.includes(' ')) return normalizedSurface;
-  return resolvedHistory(normalizedSurface,resolvedDomain,indexedHistory(words,resolvedDomain))?.canonicalTerm || normalizedSurface;
+  return resolvedHistory(normalizedSurface,resolvedDomain,indexedHistory(words,resolvedDomain,context))?.canonicalTerm || normalizedSurface;
 }
 
 function collectHistoryMatches(source, resolvedDomain, scopes) {
@@ -327,10 +335,10 @@ function collectHistoryMatches(source, resolvedDomain, scopes) {
   return matches.sort((a,b) => a.start-b.start || b.end-a.end || String(a.word.id).localeCompare(String(b.word.id)));
 }
 
-export function historyMatches(text, domain, words = []) {
+export function historyMatches(text, domain, words = [], context) {
   const source = typeof text === 'string' ? text : '';
   const resolvedDomain = Object.hasOwn(DOMAINS,domain) && domain !== 'auto' ? domain : 'general';
-  return collectHistoryMatches(source,resolvedDomain,indexedHistory(words,resolvedDomain));
+  return collectHistoryMatches(source,resolvedDomain,indexedHistory(words,resolvedDomain,context));
 }
 
 export function localReferenceFor(text, domain, settings = {}) {
@@ -361,7 +369,7 @@ export function englishTokenStats(text) {
 function analysisPreparation(settings, words, domain, now, shared = {}) {
   return {
     settings,domain,
-    history:indexedHistory(words,domain),
+    history:indexedHistory(words,domain,shared.context),
     known:shared.known || new Set(words.filter(word => Number(word?.knownAt) > 0).map(word => knownTermKey(word.term))),
     priorities:shared.priorities || new Set((settings.annotationPolicy?.priorityTerms || []).map(knownTermKey)),
     profile:vocabularyProfile(words,domain,now),
@@ -442,10 +450,11 @@ export function analyze(text, settings = {}, words = [], resolvedDomain) {
   return analyzePrepared(text,analysisPreparation(settings,words,domain,Date.now()));
 }
 
-export function analyzeBatch(items, settings = {}, words = []) {
+export function analyzeBatch(items, settings = {}, words = [], context = createLexiconContext(words)) {
   if (!Array.isArray(items)) return [];
   const now = Date.now();
   const shared = {
+    context,
     known:new Set(words.filter(word => Number(word?.knownAt) > 0).map(word => knownTermKey(word.term))),
     priorities:new Set((settings.annotationPolicy?.priorityTerms || []).map(knownTermKey)),
   };

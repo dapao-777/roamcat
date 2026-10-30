@@ -37,7 +37,7 @@ import {
 import {createMessageRouter} from './message-router.js';
 import {apiServiceOrigins,apiServiceReady,normalizeApiService,apiServiceKeys,apiKeyPoolPick,apiKeyPoolCool,getApiProvider} from './api-providers.mjs';
 import {listProviderModels,performProviderRequest,providerRequestTimeoutMs} from './api-transport.mjs';
-import { analyze, analyzeBatch, englishTokenStats, ensureLexicon, historyMatches, isKnownTerm, localReferenceFor, resolveCanonicalTerm } from './lexicon.js';
+import { analyze, analyzeBatch, createLexiconContext, englishTokenStats, ensureLexicon, historyMatches, isKnownTerm, localReferenceFor, resolveCanonicalTerm } from './lexicon.js';
 import { encounter, interact, migrateSupportWord, normalizeKnownAt, normalizeSenseLabel, readingEvidence } from './reading.js';
 import {
   historyModelSubscription,
@@ -137,30 +137,28 @@ const ready = (async () => {
   if (typeof chrome.storage.local?.setAccessLevel === 'function') {
     try { await chrome.storage.local.setAccessLevel({accessLevel:'TRUSTED_CONTEXTS'}); } catch {}
   }
-  const data = await chrome.storage.local.get(null);
+  const header = await chrome.storage.local.get(['wordSchemaVersion','productSchemaVersion','wordMaintenanceVersion',CLEANUP_KEY]);
+  const data = header;
   cleanupPending=Boolean(data[CLEANUP_KEY]);
   futureSchema = data.wordSchemaVersion > 5 || data.productSchemaVersion > 1;
   if (futureSchema) { dataProblem = M('不支持的数据版本，请更新扩展','Unsupported data version; please update the extension.'); return; }
   if (data.wordSchemaVersion === 5 && data.productSchemaVersion === 1) {
-    try {
-      await chrome.storage.local.set({
-        settings: normalizeSettings(data.settings),
-        words: (data.words || []).map(word => ({ ...word, knownAt: normalizeKnownAt(word.knownAt) }))
-      });
-      schemaReady = true;
-      void chrome.storage.local.remove(['glossCache', 'supportCache']).catch(() => {});
-    } catch {
-      dataProblem = M(
-        '本机数据迁移未完成，可导出或清理；当前仅提供无记忆帮助。',
-        'Local data migration is incomplete; export or clear it. Only memory-free help is available for now.'
-      );
+    // 当前 schema 的读取路径各自规范化字段；冷启动不重复重写整个词库。
+    if(data.wordMaintenanceVersion!==1){
+      try{const {words=[]}=await chrome.storage.local.get('words');
+        const repaired=words.map(word=>({...word,knownAt:normalizeKnownAt(word.knownAt)}));
+        await chrome.storage.local.set({wordMaintenanceVersion:1,...(repaired.some((word,index)=>word.knownAt!==words[index].knownAt)?{words:repaired}:{})});
+      }catch{dataProblem=M('本机数据修复未完成，请重试。','Local data maintenance is incomplete; please retry.');return;}
     }
+    schemaReady = true;
     return;
   }
+  Object.assign(data,await chrome.storage.local.get(['settings','words','supportDataGeneration','supportUsage','onDemandSuggestionShownAt','legacyReadingArchive']));
   const words = (data.words || []).map(word => migrateSupportWord(word,data.wordSchemaVersion || 1)).filter(Boolean);
   const update = {
     wordSchemaVersion: 5,
     productSchemaVersion: 1,
+    wordMaintenanceVersion: 1,
     words,
     settings: normalizeSettings(data.settings),
     supportDataGeneration: Number.isInteger(data.supportDataGeneration) ? data.supportDataGeneration : 0,
@@ -447,7 +445,7 @@ function mutate(operation,notify=true,includeWords=true){
 function publicSupport(word,senseKey,state){const effective=readingHistory.effective(word,senseKey);return {wordId:word.id,senseKey,stage:effective.origin==='manual'||canRemember(state)?effective.stage:'hint',locked:effective.locked,revision:word.revision};}
 function freshWord(term,scope,kind){return {id:wordId(term,scope),term,domain:scope,kind,revision:0,helpCount:0,requestedAt:0,knownAt:0,lastSeen:0,hintPreference:null,senses:[]};}
 function analysisSettings(state){return {...state.settings,annotationPolicy:readingHistory.policy()?.annotation};}
-function withoutKnownTerms(result,words){return {...result,terms:(result.terms||[]).filter(term=>!isKnownTerm(term.term||term.text||term.occurrences?.[0]?.text,words))};}
+function withoutKnownTerms(result,words){const context=createLexiconContext(words);return {...result,terms:(result.terms||[]).filter(term=>!isKnownTerm(term.term||term.text||term.occurrences?.[0]?.text,words,context))};}
 function suggestedStage(word,senseKey,state){if(word)return publicSupport(word,senseKey,state);const depth=readingHistory.policy()?.annotation?.depth;return {wordId:null,senseKey,stage:['hint','mark'].includes(depth)?depth:'hint',locked:false,revision:0};}
 async function saveRecord(state, updated) {
   const index = state.words.findIndex(word => word.id === updated.id);
@@ -1100,6 +1098,8 @@ async function supportBatch(message,sender){
     generation = providerGeneration,
     base = normalizeSupportItems(message.items),
     history = canRemember(state) ? state.words : [],
+    lexicon = createLexiconContext(history),
+    knownLexicon = history===state.words?lexicon:createLexiconContext(state.words),
     readerByDomain = new Map(),
     requestPolicy = JSON.stringify(readingHistory.policy()),
     usedIds = new Set(base.map(item => item.id)),
@@ -1119,22 +1119,22 @@ async function supportBatch(message,sender){
       throw staleWork();
     return latest;
   };
-  const nominations=analyzeBatch(base,analysisSettings(state),history);
+  const nominations=analyzeBatch(base,analysisSettings(state),history,lexicon);
   const enriched=base.map((item,index)=>{
     const nominated=nominations[index].terms;
     if(!readerByDomain.has(item.domain))readerByDomain.set(item.domain,readingEvidence(history,item.domain));
-    return {...item,reader:readerByDomain.get(item.domain),candidates:item.candidates.filter(candidate=>!isKnownTerm(candidate.text,state.words)).map(candidate=>{
-      const canonical=resolveCanonicalTerm(candidate.text,item.domain,history),id=wordId(canonical,item.domain),word=history.find(value=>value.id===id),nomination=nominated.find(term=>term.occurrences.some(value=>value.text===candidate.text));
+    return {...item,reader:readerByDomain.get(item.domain),candidates:item.candidates.filter(candidate=>!isKnownTerm(candidate.text,state.words,knownLexicon)).map(candidate=>{
+      const canonical=resolveCanonicalTerm(candidate.text,item.domain,history,lexicon),id=wordId(canonical,item.domain),word=history.find(value=>value.id===id),nomination=nominated.find(term=>term.occurrences.some(value=>value.text===candidate.text));
       return {text:candidate.text,wordId:id,evidence:nomination?.reason==='history'?'requested':nomination?.reason||'frequency',...(word?.senses?.length?{knownSenses:word.senses.map(s=>s.label).slice(0,8)}:{})};
     })};
   });
   let focusSequence=0;
   for(const item of enriched){
-    const matches=historyMatches(item.sentence,item.domain,history).filter(match=>match.requested&&!isKnownTerm(match.text,state.words));
+    const matches=historyMatches(item.sentence,item.domain,history,lexicon).filter(match=>match.requested&&!isKnownTerm(match.text,state.words,knownLexicon));
     if(!matches.length){tasks.push(item);owners.set(item.id,item.id);continue;}
     for(const match of matches){
       let id;do{id='focus.'+(++focusSequence);}while(usedIds.has(id));usedIds.add(id);
-      const canonical=resolveCanonicalTerm(match.text,item.domain,history),scoped=history.find(value=>value.id===wordId(canonical,item.domain));
+      const canonical=resolveCanonicalTerm(match.text,item.domain,history,lexicon),scoped=history.find(value=>value.id===wordId(canonical,item.domain));
       tasks.push({...item,id,candidates:[{text:match.text,wordId:wordId(canonical,item.domain),evidence:'requested',...(match.sameDomain&&scoped?.senses?.length?{knownSenses:scoped.senses.map(s=>s.label).slice(0,8)}:{})}],focus:{start:match.start,end:match.end}});owners.set(id,item.id);
     }
   }
@@ -2793,6 +2793,8 @@ function patchAutomation(patch) {
 }
 
 // 伴读猫拆成多个 classic 脚本，同批按序执行；floating-pet.js 必须最后（它从 RoamCatPetParts 取用前面几份）。
+const PAGE_CORE_FILES=['design.js','i18n-content.js','content-ui.js','pet-quotes.js'];
+const READING_FILES=['reading-style.js','complexity.js','formula.js','site-profiles.js','content.js'];
 const PET_FILES=['floating-pet-helpers.js','floating-pet-styles.js','floating-pet-svg.js','floating-pet-quote-bubble.js','floating-pet-summary.js','floating-pet.js'];
 async function reconcileAutoScript(settings) {
   const autoCandidates = registrationMatches(settings.automation);
@@ -2812,19 +2814,20 @@ async function reconcileAutoScript(settings) {
   const videoMatches = VIDEO_SUPPORT_ENABLED && settings.automation.videoSites ? VIDEO_HOSTS.filter(pattern => allowed.has(pattern)) : [];
   // 字幕桥必须早于播放器脚本包住 fetch，否则播放器会握住原来的 fetch，签名地址的正文就截不到。
   if (videoMatches.length) wanted.push({id:CAPTION_SCRIPT_ID,matches:videoMatches,js:['youtube-captions-bridge.js'],world:'MAIN',runAt:'document_start',allFrames:false,persistAcrossSessions:true});
-  // 渲染层/语录库/design token 已由 manifest 静态 content_scripts 注入到同一批网页；
-  // 这里只注册伴读猫自身的 PET_FILES，静态脚本晚到时由 floating-pet.js 自行等待依赖就绪，避免重复解析执行。
-  if (petMatches.length) wanted.push({id:PET_SCRIPT_ID,matches:petMatches,js:[...PET_FILES],runAt:'document_idle',allFrames:false,persistAcrossSessions:true});
+  // 默认网页只有轻量引导；伴读猫启用时连同自身依赖注册，阅读引擎仍按需加载。
+  if (petMatches.length) wanted.push({id:PET_SCRIPT_ID,matches:petMatches,js:[...PAGE_CORE_FILES,...PET_FILES],runAt:'document_idle',allFrames:false,persistAcrossSessions:true});
   if (wanted.length) await chrome.scripting.registerContentScripts(wanted);
 }
 
 const VIDEO_UI_FILES=['vendor/youtube-caption-json3.js','video-dictation.js','video-subtitles.js'];
-async function injectPageUI(tabId, includeVideo = false, petWanted) {
+async function injectPageUI(tabId, includeVideo = false, petWanted, readingWanted = true) {
   if (petWanted === undefined) petWanted = (await load(false)).settings.floatingPet?.enabled !== false;
   const probe = await chrome.scripting.executeScript({
     target:{tabId,frameIds:[0]},
     func:() => ({
       contentAlive: Boolean(globalThis.__ROAMCAT_CONTENT__?.isAlive?.()),
+      coreAlive: Boolean(globalThis.RoamCatContentUI&&globalThis.RoamCatI18n&&globalThis.RoamCatDesign&&globalThis.RoamCatPetQuotes),
+      bootstrapAlive: Boolean(globalThis.__ROAMCAT_BOOTSTRAP__?.alive?.()),
       petAlive: Boolean(globalThis.RoamCatPet?.isMounted?.()),
       videoAlive: Boolean(globalThis.RoamCatVideoSubtitles),
       liveChatAlive: Boolean(globalThis.RoamCatLiveChat),
@@ -2836,10 +2839,10 @@ async function injectPageUI(tabId, includeVideo = false, petWanted) {
   const filesToInject = [];
   // 伴读猫和阅读脚本必须分开判断：猫已挂上不能当成内容脚本已就绪；伴读猫未启用时不注入。
   // 文案运行时须先于渲染层：补注入的标签页没有 manifest 静态脚本，缺它界面只剩键名。
-  if (!status?.contentAlive) filesToInject.push('design.js','i18n-content.js','reading-style.js','content-ui.js');
-  if (petWanted && !status?.petAlive) filesToInject.push('pet-quotes.js',...PET_FILES);
-  // 与 manifest 九件套同序：长难句与公式保护模块缺了不会报错，只会让高亮变空、公式被送去翻译。
-  if (!status?.contentAlive) filesToInject.push('complexity.js','formula.js','site-profiles.js','content.js');
+  if (!status?.bootstrapAlive) filesToInject.push('page-bootstrap.js');
+  if(!status?.coreAlive&&(readingWanted||petWanted||includeVideo))filesToInject.push(...PAGE_CORE_FILES);
+  if (petWanted && !status?.petAlive) filesToInject.push(...PET_FILES);
+  if (readingWanted && !status?.contentAlive) filesToInject.push(...READING_FILES);
   if (includeVideo && VIDEO_SUPPORT_ENABLED && !status?.videoAlive) {
     filesToInject.push(...VIDEO_UI_FILES);
   }
@@ -2857,7 +2860,7 @@ async function activateTab(tab, options = {}) {
   if (!Number.isInteger(tabId) || !expectedOrigin) return;
   const generation = tabActivationGeneration.get(tabId) || 0;
   const sameDocument = options.sameDocument === true;
-  const [{settings},paused,current] = await Promise.all([load(),tabPaused(tabId),chrome.tabs.get(tabId)]);
+  const [{settings},paused,current] = await Promise.all([load(false),tabPaused(tabId),chrome.tabs.get(tabId)]);
   if ((tabActivationGeneration.get(tabId) || 0) !== generation || pageOrigin(current?.url || '') !== expectedOrigin) return;
   if (!paused) await carryManualSentenceGroups(current, sameDocument);
   const status = await automationResult(settings,current,paused,true);
@@ -2867,13 +2870,13 @@ async function activateTab(tab, options = {}) {
   const video = status.videoAvailable;
   // 伴读猫常驻所有普通网页：只要设置未关闭伴读猫，伴读猫始终保持可用
   const petWanted = settings.floatingPet?.enabled !== false;
-  if (reading || video || petWanted) await injectPageUI(tabId, video, petWanted);
+  if (reading || video || petWanted) await injectPageUI(tabId, video, petWanted,reading||video||sentenceGroups);
   const latest = await chrome.tabs.get(tabId).catch(() => null);
   if ((tabActivationGeneration.get(tabId) || 0) !== generation || pageOrigin(latest?.url || '') !== expectedOrigin) return;
   const autoStart={type:'SS_AUTO_START',origin:expectedOrigin,reading,video,sentenceGroups,paused:status.paused,assistanceMode:settings.assistanceMode,sameDocument};
   let started=await chrome.tabs.sendMessage(tabId,autoStart,{frameId:0}).catch(() => null);
   if (!started && (reading || sentenceGroups || petWanted)) {
-    await injectPageUI(tabId, video, petWanted);
+    await injectPageUI(tabId, video, petWanted,reading||video||sentenceGroups);
     started=await chrome.tabs.sendMessage(tabId,autoStart,{frameId:0}).catch(() => null);
   }
 }

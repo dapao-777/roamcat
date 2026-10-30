@@ -20,7 +20,8 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 function createChromeMock() {
-  const areas = {local: new Map(), session: new Map()};
+  const areas = {local: new Map([['wordSchemaVersion',5],['productSchemaVersion',1],['wordMaintenanceVersion',1],['words',[]]]), session: new Map()};
+  const storageReads=[],storageWrites=[];
   const openedOptions = {count: 0};
   const registeredScripts = [];
   const listeners = {};
@@ -49,8 +50,8 @@ function createChromeMock() {
   const write = (map, value) => { for (const [key, item] of Object.entries(value || {})) map.set(key, structuredClone(item)); };
   const drop = (map, keys) => { for (const key of Array.isArray(keys) ? keys : [keys]) map.delete(key); };
   const storageArea = map => ({
-    get: async keys => read(map, keys),
-    set: async value => write(map, value),
+    get: async keys => {if(map===areas.local)storageReads.push(keys);return read(map, keys);},
+    set: async value => {if(map===areas.local)storageWrites.push(Object.keys(value));return write(map, value);},
     remove: async keys => drop(map, keys),
     getBytesInUse: async () => 0,
     QUOTA_BYTES: 10 * 1024 * 1024,
@@ -95,7 +96,7 @@ function createChromeMock() {
       update: async () => {},
     },
   };
-  return {chrome, listeners, openedOptions, registeredScripts, createdTabs, tabUrls, injections};
+  return {chrome, listeners, openedOptions, registeredScripts, createdTabs, tabUrls, injections,storageReads,storageWrites};
 }
 
 const trustedPopup = chrome => ({id: chrome.runtime.id, url: chrome.runtime.getURL('ui/popup.html'), tab: {id: 1, url: 'https://example.com/'}});
@@ -105,7 +106,7 @@ test('迁移后的 background.js 在 mock 浏览器中构造注册表并按信�
   const warnings = [];
   const originalError = console.error;
   console.error = (...args) => warnings.push(args.join(' '));
-  const {chrome, listeners, registeredScripts, createdTabs, tabUrls, injections} = createChromeMock();
+  const {chrome, listeners, registeredScripts, createdTabs, tabUrls, injections,storageReads,storageWrites} = createChromeMock();
   globalThis.chrome = chrome;
   try {
     await import('../../roamcat-0.0.1/extension/background.js');
@@ -121,6 +122,11 @@ test('迁移后的 background.js 在 mock 浏览器中构造注册表并按信�
 
   const send = (message, sender) => new Promise(resolve => {
     listeners.message(message, sender, response => resolve(response));
+  });
+  await t.test('当前 schema 冷启动的轻量状态查询不全量读取或重写词库',async()=>{
+    const result=await send({type:'STATE_GET'},trustedPopup(chrome));assert.equal(result.ok,true,result.error);
+    assert.ok(!storageReads.some(keys=>keys==null||keys==='words'||Array.isArray(keys)&&keys.includes('words')));
+    assert.ok(!storageWrites.some(keys=>keys.includes('words')));
   });
 
   await t.test('受信扩展页读取默认状态', async () => {
@@ -238,14 +244,14 @@ test('迁移后的 background.js 在 mock 浏览器中构造注册表并按信�
       const fresh = await ensure({contentAlive: false, petAlive: false, videoAlive: false, liveChatAlive: false, host: 'www.twitch.tv'});
       assert.ok(fresh.includes('live-chat.js'));
       assert.ok(fresh.indexOf('i18n-content.js') < fresh.indexOf('live-chat.js'));
-      assert.deepEqual(await ensure({contentAlive: true, petAlive: true, videoAlive: false, liveChatAlive: true, host: 'www.twitch.tv'}), []);
+      assert.deepEqual(await ensure({contentAlive: true, coreAlive:true,bootstrapAlive:true,petAlive: true, videoAlive: false, liveChatAlive: true, host: 'www.twitch.tv'}), []);
       assert.ok(!(await ensure({contentAlive: false, petAlive: true, videoAlive: false, liveChatAlive: false, host: 'example.com'})).includes('live-chat.js'));
     } finally {
       injections.probe = null;
     }
   });
 
-  await t.test('补注入阅读脚本与 manifest 九件套同集同序', async () => {
+  await t.test('轻量静态引导与按需阅读引擎保持依赖顺序', async () => {
     const manifest = JSON.parse(readFileSync(new URL('../../roamcat-0.0.1/extension/manifest.json', import.meta.url), 'utf8'));
     const statics = manifest.content_scripts[0].js;
     injections.probe = {contentAlive: false, petAlive: false, videoAlive: false, liveChatAlive: false, host: 'example.com'};
@@ -255,12 +261,15 @@ test('迁移后的 background.js 在 mock 浏览器中构造注册表并按信�
       assert.equal(response.ok, true, response.error);
       // 漏掉 complexity.js / formula.js 不会报错，只会让长难句高亮变空、公式被送去翻译。
       assert.deepEqual(injections.files.flat().filter(file => statics.includes(file)), statics);
+      const files=injections.files.flat();
+      for(const file of ['reading-style.js','complexity.js','formula.js','site-profiles.js'])assert.ok(files.indexOf(file)>files.indexOf('i18n-content.js')&&files.indexOf(file)<files.indexOf('content.js'));
+      assert.deepEqual(statics,['page-bootstrap.js']);
     } finally {
       injections.probe = null;
     }
   });
 
-  await t.test('伴读猫动态注册只注入 floating-pet*.js，依赖由静态 content_scripts 提供', async () => {
+  await t.test('伴读猫动态注册自带依赖，默认不注入阅读引擎', async () => {
     // 导入期 init 会触发 reconcileAutomation → reconcileAutoScript；轮询等待注册落地。
     let pet;
     for (let i = 0; i < 50 && !pet; i++) {
@@ -268,12 +277,12 @@ test('迁移后的 background.js 在 mock 浏览器中构造注册表并按信�
       if (!pet) await new Promise(resolve => setTimeout(resolve, 20));
     }
     assert.ok(pet, 'floatingPet 默认开启且全网放行时必须注册 ss-floating-pet');
-    // 重复注册 design/pet-quotes/content-ui 会让每个网页把它们解析执行两遍。
-    assert.deepEqual(pet.js, ['floating-pet-helpers.js', 'floating-pet-styles.js', 'floating-pet-svg.js', 'floating-pet-quote-bubble.js', 'floating-pet-summary.js', 'floating-pet.js']);
+    assert.deepEqual(pet.js, ['design.js','i18n-content.js','content-ui.js','pet-quotes.js','floating-pet-helpers.js', 'floating-pet-styles.js', 'floating-pet-svg.js', 'floating-pet-quote-bubble.js', 'floating-pet-summary.js', 'floating-pet.js']);
+    assert.ok(!pet.js.includes('content.js'));
     const manifest = JSON.parse(readFileSync(new URL('../../roamcat-0.0.1/extension/manifest.json', import.meta.url), 'utf8'));
     const statics = manifest.content_scripts.flatMap(item => item.js);
     for (const dep of ['design.js', 'i18n-content.js', 'pet-quotes.js', 'content-ui.js']) {
-      assert.ok(statics.includes(dep), `静态 content_scripts 缺少伴读猫依赖 ${dep}`);
+      assert.ok(pet.js.includes(dep), `伴读猫注册缺少依赖 ${dep}`);
     }
     for (const pattern of pet.matches) {
       assert.ok(manifest.content_scripts.some(item => item.matches.includes(pattern)), `${pattern} 不在静态注入范围内`);

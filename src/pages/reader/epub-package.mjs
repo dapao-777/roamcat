@@ -1,6 +1,6 @@
 /** @file EPUB 解包：ZIP → container/OPF → spine XHTML → 阅读块；纯函数供阅读器与单测共用。 */
 
-import {unzipSync, strFromU8} from 'fflate';
+import {unzipSync} from 'fflate';
 
 const TEXT_DECODER = new TextDecoder();
 
@@ -98,17 +98,25 @@ function resolvePath(base, href) {
 }
 
 // bytes → {title, creator, chapters:[{label, href, blocks}]}；只取 spine 的 XHTML 内容文档。
-export function parseEpub(bytes) {
-  const files = unzipSync(bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes));
+export function parseEpub(bytes, {maxEntryBytes=8*1024*1024,maxTextBytes=32*1024*1024} = {}) {
+  const source=bytes instanceof Uint8Array?bytes:new Uint8Array(bytes),files={};let expanded=0;
+  // 只展开 container / OPF / nav / spine 文本；图片字体既不解压也不占正文预算。
+  const extract=names=>Object.assign(files,unzipSync(source,{filter:file=>{
+    if(!names.has(file.name)||Object.hasOwn(files,file.name))return false;
+    if(file.originalSize>maxEntryBytes||expanded+file.originalSize>maxTextBytes)throw new Error('EPUB 正文解压后过大。');
+    expanded+=file.originalSize;return true;
+  }}));
   const read = path => {
     const file = files[path];
     return file ? TEXT_DECODER.decode(file) : null;
   };
+  extract(new Set(['META-INF/container.xml']));
   const container = read('META-INF/container.xml');
   if (!container) throw new Error('不是有效的 EPUB：缺少 META-INF/container.xml。');
   const opfMatch = /<rootfile[^>]*full-path\s*=\s*"([^"]+)"/iu.exec(container) || /<rootfile[^>]*full-path\s*=\s*'([^']+)'/iu.exec(container);
   if (!opfMatch) throw new Error('不是有效的 EPUB：container.xml 中没有根文件。');
   const opfPath = opfMatch[1];
+  extract(new Set([opfPath]));
   const opf = read(opfPath);
   if (!opf) throw new Error('EPUB 根文件缺失：' + opfPath);
 
@@ -131,6 +139,8 @@ export function parseEpub(bytes) {
 
   const tocLabels = new Map();
   const navItem = [...manifest.values()].find(item => item.properties.includes('nav'));
+  const textItems=spine.filter(item=>/xhtml|html|xml/iu.test(item.mediaType)||/\.x?html?$/iu.test(item.href));
+  extract(new Set([...textItems.map(item=>item.href),...(navItem?[navItem.href]:[])]));
   if (navItem) {
     const nav = read(navItem.href);
     if (nav) {

@@ -16,6 +16,7 @@
 | `npm run verify:build` | 构建产物门禁：字节比对 + 浏览器实际加载 `dist/extension` 冒烟 |
 | `npm run verify:ui` | 全界面 UI 门禁：浏览器加载 `dist/extension`，遍历 popup/options 全分区/welcome/reader 与页内挂件（词卡 HUD/任务条/解构卡/toast/选区条/伴读猫全状态），双主题截图 + 断言 → `preview/ui-audit/`（先跑 `npm run build`） |
 | `npm run verify:pet` | 伴读猫按钮门禁：真实点击/键盘操作全部悬浮按钮（2×2 快捷按钮/旋旋翻/缩放/贴边探头/气泡/摘要窗），断言状态与可及性 → `preview/pet-buttons/` |
+| `npm run verify:performance` | 性能回归：2000 段无语义根页面的缓存与增量失效、开放 shadow root、历史可见词统计、正文元素反复切换 class 不触发自动辅助重建（隐藏正文块仍重排）、15000 段阅读器分页、真实 EPUB worker 与后台 40 秒空闲回收 → `preview/performance/`（先构建；`-- --skip-idle` 只跳过休眠等待） |
 | `npm run verify:dictation` | 无字幕视频云端听写门禁：YouTube 地址 fixture 上注入 `dist/extension` 的页内脚本，用真实 `captureStream`/MediaRecorder 录播放器音轨（假听写响应），断言暂停提交、续录、手动停止丢弃在途结果、停止后按原时间轴回看、拖动自动停止、播完时最后一段在途则取消 YouTube 自动连播（没在听写时不干预） → `preview/audio-probe/`（先跑 `npm run build`；`--speech-fixture=<音频>` 换成真实语音） |
 | `npm run verify:options` | 设置页行为门禁：本地 HTTP 服务 `dist/extension` + 模拟 `chrome.*`，断言句子粒度保存/失败回滚、查词按键、「视频与直播」字幕样式保存/预览/失败回滚、阅读记录、宣言弹层、模型列表与「恢复默认阅读偏好」→ `preview/verification.json`（先跑 `npm run build`） |
 | `npm run verify:audit` | 真后台端到端审计：浏览器加载 `dist/extension`（host 权限收窄为 127.0.0.1）+ 本地假模型接口，覆盖设置持久化、规则增删、词卡、解构、整页翻译、摘要、伴读猫等 30 项 → `preview/audit/`（先跑 `npm run build`） |
@@ -27,11 +28,13 @@
 
 - `roamcat-0.0.1/extension/`：扩展源码层（manifest、background、content scripts、领域模块、`ui/` 共享模块、icons/fonts/_locales/local-inference）。生成物不手改：`content-ui.js`（改 `src/content-ui/index.js` 后重跑构建）、`design.js`（`gen:tokens`）、`i18n-content.js`（`gen:i18n`）。
 - `roamcat-0.0.1/connector/`：本机订阅连接器（`service.mjs` 常驻服务、`install.mjs` 安装器、各 CLI 客户端）。
-- `src/`：Vite 项目（Lit 页面应用与共享组件），`src/content-ui/` 为页内 UI lit-html 渲染层（`vite.content-ui.config.mjs` → `extension/content-ui.js` IIFE，manifest 于 content.js 前加载，暴露 `globalThis.RoamCatContentUI`），`@ext` 别名指向扩展源目录。
+- `src/`：Vite 项目（Lit 页面应用与共享组件），`src/content-ui/` 为页内 UI lit-html 渲染层（`vite.content-ui.config.mjs` → `extension/content-ui.js` IIFE，由 background 于 content.js 前按需注入，暴露 `globalThis.RoamCatContentUI`），`@ext` 别名指向扩展源目录。
 - `build/`：构建期脚本与 `extension-key.json`（dev 构建的 manifest key 与扩展 ID，公钥可提交，无私钥）。
 - `dist/extension/`：构建产物 = 源层拷贝 − `REPLACED_BY_BUILD`（`build/extension-plugin.mjs` 中维护，页面迁移完成后当前为空）+ Vite 页面产物 + 变换后的 manifest。
 - `docs/`：GitHub Pages 落地页源（`main` + `/docs` → `dapao-777.github.io/roamcat`）——`index.html`/`zh.html` 双语静态页 + `llms.txt`/`sitemap.xml`/`robots.txt`/`.nojekyll`；OG 图 `docs/assets/og-cover.png` 由 `node tools/capture-social.mjs` 生成（同步产出 `.github/assets/social-preview.png`，需在仓库 Settings → Social preview 手动上传）。
 - `preview/`：验证报告与截图（不入库）。
+- 普通网页静态只加载 `page-bootstrap.js`；伴读猫启用时动态加载 UI 依赖与宠物脚本，阅读/翻译/摘要等实际操作再经 `ENSURE_PAGE_UI` 或 `PAGE_UI_INJECT` 加载阅读引擎。新增网页侧模块要同时维护 `background.js` 注入顺序、`build/gen-i18n-content.mjs` 动态文案扫描清单与模块图门禁。生产构建还会压缩源层 classic `.js`，开发构建仍字节拷贝。
+- 阅读器按 80 个正文块分页，目录跳转会切到对应分页；翻译结果按块 ID 保留。EPUB 在独立 worker 中只解压 container/OPF/nav/spine 文本（单文件 8 MiB、合计 32 MiB 上限），换书/关页会取消旧解析。
 
 ## 注意
 

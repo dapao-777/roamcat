@@ -61,6 +61,14 @@ test('parseEpub() 拒绝非 EPUB 数据', () => {
   assert.throws(() => parseEpub(zipSync({'x.txt': strToU8('hi')})));
 });
 
+test('EPUB 忽略图片/字体的解压体积，只限制被读取的正文条目',()=>{
+  const image=new Uint8Array(2*1024*1024);
+  const book=parseEpub(epubBytes({'OEBPS/unused.png':image}),{maxEntryBytes:2048,maxTextBytes:4096});
+  assert.equal(book.chapters.length,2);
+  assert.throws(()=>parseEpub(epubBytes({'OEBPS/ch1.xhtml':'<body><p>'+'large '.repeat(1000)+'</p></body>'}),{maxEntryBytes:2048}),/解压后过大/);
+  assert.throws(()=>parseEpub(epubBytes(),{maxTextBytes:500}),/解压后过大/);
+});
+
 test('blocksFromTextItems() 按基线聚行、按行距切块', () => {
   const item = (str, x, y, hasEOL = false) => ({str, transform: [10, 0, 0, 10, x, y], width: str.length * 5, height: 10, hasEOL});
   const items = [

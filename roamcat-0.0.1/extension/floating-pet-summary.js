@@ -19,6 +19,7 @@
 
   parts.installSummary = (proto, shared) => parts.defineMethods(proto, {
     async extractArticle() {
+      await this.ensurePageContent();
       if (typeof window.__ROAMCAT_CONTENT__?.getArticleSummarySource === 'function') {
         try {
           const res = await window.__ROAMCAT_CONTENT__.getArticleSummarySource();

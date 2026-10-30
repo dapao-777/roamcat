@@ -12,7 +12,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
  */
-import {cpSync, readFileSync, writeFileSync} from 'node:fs';
+import {cpSync, readFileSync, readdirSync, writeFileSync} from 'node:fs';
+import {minify} from 'vite';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {transformManifest} from './manifest.mjs';
@@ -39,7 +40,7 @@ export function roamcatExtension({mode}) {
     configResolved(config) {
       outDir = path.resolve(config.root, config.build.outDir);
     },
-    closeBundle() {
+    async closeBundle() {
       cpSync(EXTENSION_SOURCE, outDir, {
         recursive: true,
         filter(source) {
@@ -50,6 +51,16 @@ export function roamcatExtension({mode}) {
           return true;
         },
       });
+      // 源层 classic 脚本也走生产压缩；开发版仍逐字节拷贝，保留门禁与调试行号。
+      if(mode==='production'){
+        for(const name of readdirSync(EXTENSION_SOURCE).filter(name=>name.endsWith('.js'))){
+          const code=readFileSync(path.join(EXTENSION_SOURCE,name),'utf8');
+          if(/^[ \t]*(?:import|export)[\s({'"]/m.test(code))continue;
+          const result=await minify(name,code,{module:false});
+          if(result.errors.length)throw new Error(`classic 压缩失败 ${name}: ${result.errors.join('; ')}`);
+          writeFileSync(path.join(outDir,name),'/*! MPL-2.0; RoamCat https://github.com/dapao-777/roamcat */\n'+result.code);
+        }
+      }
       const manifest = JSON.parse(readFileSync(path.join(EXTENSION_SOURCE, 'manifest.json'), 'utf8'));
       const key = mode === 'production' ? undefined : JSON.parse(readFileSync(KEY_FILE, 'utf8')).key;
       const output = transformManifest(manifest, {dev: mode !== 'production', key});

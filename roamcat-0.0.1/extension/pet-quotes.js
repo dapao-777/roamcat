@@ -15,6 +15,7 @@
  */
 (() => {
   'use strict';
+  if(globalThis.RoamCatPetQuotes)return;
 
   const list = [
     // —— 先秦诸子 ——
