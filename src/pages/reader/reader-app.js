@@ -14,7 +14,7 @@
 import {LitElement, html} from 'lit';
 import {request} from '@ext/shared.js';
 import {loadEpub} from './epub-loader.js';
-import {translationBatches} from './pdf-blocks.mjs';
+import {joinTranslationParts, translationBatches} from './pdf-blocks.mjs';
 import {heroArt} from '../../components/hero-art.js';
 import {icon} from '../../components/icons.js';
 import '../../components/rc-switch.js';
@@ -214,7 +214,7 @@ export class RoamcatReader extends LitElement {
               this._translationParts.set(item.id, item.translation);
               const parts = groups.get(blockId);
               if (parts.every(id => this._translationParts.has(id))) {
-                this.translations.set(blockId, parts.map(id => this._translationParts.get(id).trim()).join(' '));
+                this.translations.set(blockId, joinTranslationParts(parts.map(id => this._translationParts.get(id))));
                 for (const id of parts) this._translationParts.delete(id);
               }
             }

@@ -4,7 +4,8 @@
  *   与 pdf-blocks.mjs 的文本行重组、翻译批次契约。
  * 主要内容：合成最小 EPUB（fflate zipSync）断言 title/creator/chapters/blocks
  *   与实体解码、标题角色；合成 pdfjs textContent items 断言行聚类与段落切分；
- *   translationBatches 满足 normalizeEmergencyItems 契约（1–4 项、≤12000 字符）。
+ *   translationBatches 满足 normalizeEmergencyItems 契约（1–4 项、≤12000 字符）；
+ *   joinTranslationParts 拼回分片译文时中文不夹空格。
  * 模块边界：node:test，纯 ESM；不启动浏览器、不加载 pdfjs。
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -19,7 +20,7 @@ import {fileURLToPath, pathToFileURL} from 'node:url';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const {parseEpub, blocksFromXhtml, decodeEntities} = await import(pathToFileURL(path.join(repoRoot, 'src/pages/reader/epub-package.mjs')).href);
-const {blocksFromTextItems, translationBatches} = await import(pathToFileURL(path.join(repoRoot, 'src/pages/reader/pdf-blocks.mjs')).href);
+const {blocksFromTextItems, translationBatches, joinTranslationParts} = await import(pathToFileURL(path.join(repoRoot, 'src/pages/reader/pdf-blocks.mjs')).href);
 const {normalizeEmergencyItems} = await import(pathToFileURL(path.join(repoRoot, 'roamcat-0.0.1/extension/gloss.mjs')).href);
 
 function epubBytes(overrides = {}) {
@@ -179,4 +180,12 @@ test('translationBatches() 超长单词/代理对和短尾片不丢字、不拆 
   }
   const tail = translationBatches([{id: 'tail', role: 'p', text: 'Useful evidence ' + 'x'.repeat(3984) + 'z'}]).flat();
   assert.equal(tail.at(-1).text, 'z');
+});
+
+test('joinTranslationParts() 中文分片直接相接，西文分片之间留一个空格', () => {
+  assert.equal(joinTranslationParts(['委员会审阅了提案。', ' 随后决定推迟表决。']), '委员会审阅了提案。随后决定推迟表决。');
+  assert.equal(joinTranslationParts(['证据不足，', '需要补充 DNA 样本']), '证据不足，需要补充 DNA 样本');
+  assert.equal(joinTranslationParts(['研究使用 GPT', '模型', '𠀀字']), '研究使用 GPT模型𠀀字');
+  assert.equal(joinTranslationParts(['long_part1 ', ' long_part2']), 'long_part1 long_part2');
+  assert.equal(joinTranslationParts(['唯一一段']), '唯一一段');
 });

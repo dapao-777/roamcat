@@ -137,3 +137,10 @@ export function translationBatches(blocks, maxChars = 4000) {
   if (batch.length) batches.push(batch);
   return batches;
 }
+
+// 分片译文按原段落顺序拼回：任一侧是汉字或全角标点时直接相接，两侧都是西文时用一个空格隔开。
+const CJK_END = /[\p{Script=Han}\u3000-\u303f\uff00-\uffef]$/u, CJK_START = /^[\p{Script=Han}\u3000-\u303f\uff00-\uffef]/u;
+export function joinTranslationParts(parts) {
+  return parts.map(part => part.trim()).filter(Boolean)
+    .reduce((text, part) => !text ? part : text + (CJK_END.test(text) || CJK_START.test(part) ? '' : ' ') + part, '');
+}
