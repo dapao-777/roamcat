@@ -98,7 +98,11 @@ function renderConfig() {
   els.historyRecordContent.hidden=firstUse;
   els.historyStatsContent.hidden=firstUse;
   const statsTab=byId('history-view-stats-tab');statsTab.hidden=firstUse;
-  if(firstUse&&statsTab.getAttribute('aria-selected')==='true')activateSectionTab(byId('history-view-records-tab'));
+  // 还没有任何记录时只剩「设置记录范围」一件事：收起「记录 / 统计 / 设置」子标签，把设置直接铺在说明下面，少一层导航。
+  const tablist=document.querySelector('#history .section-tabs'),settingsTab=byId('history-view-settings-tab');
+  tablist.hidden=firstUse;
+  if(firstUse){if(settingsTab.getAttribute('aria-selected')==='true'||statsTab.getAttribute('aria-selected')==='true')activateSectionTab(byId('history-view-records-tab'));byId('history-view-settings').hidden=false;}
+  else if(settingsTab.getAttribute('aria-selected')!=='true')byId('history-view-settings').hidden=true;
   byId('history-period-toolbar').hidden=firstUse||byId('history-view-settings-tab').getAttribute('aria-selected')==='true';
 }
 function renderKnownWords(){

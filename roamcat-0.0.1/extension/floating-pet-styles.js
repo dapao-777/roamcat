@@ -658,7 +658,8 @@
         position: absolute;
         top: -32px;
         left: 50%;
-        transform: translateX(-50%);
+        /* --zoom-shift-x 由 fitZoomControls() 写入：猫贴视口左右边时把胶囊收进视口。 */
+        transform: translateX(calc(-50% + var(--zoom-shift-x, 0px)));
         display: inline-flex;
         align-items: center;
         gap: 2px;

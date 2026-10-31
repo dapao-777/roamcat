@@ -413,6 +413,17 @@ try {
   for (let i = 0; i < 3; i++) { await tab.locator('#zoom-out').click(); await tab.waitForTimeout(150); }
   st = await petState();
   check('缩放回 100%', st?.zoom === '100%', `zoom=${st?.zoom}`);
+  // 缩放胶囊比猫宽：把猫贴到视口最右边，胶囊也必须完整留在视口内（fitZoomControls 收位）。
+  const edge = await petCall(`() => {
+    const host = document.querySelector('#roamcat-pet-host');
+    host.style.left = (innerWidth - host.offsetWidth - 2) + 'px'; host.style.right = 'auto';
+    host.pet.fitSpeechBubble();
+    return new Promise(resolve => setTimeout(() => {
+      const r = host.pet.shadowQuery('#roamcat-zoom-controls').getBoundingClientRect(), h = host.getBoundingClientRect();
+      resolve({left: Math.round(r.left), right: Math.round(r.right), hostRight: Math.round(h.right), vw: innerWidth});
+    }, 400));
+  }`);
+  check('猫贴右边时缩放胶囊不出界', edge && edge.hostRight >= edge.vw - 4 && edge.left >= 0 && edge.right <= edge.vw, JSON.stringify(edge));
 
   // ---------- 15. 气泡 × 关闭（忙碌态 → 成功微反馈） ----------
   // 鼠标先移出挂件区域再直达关闭钮，避免路过卫星按钮触发其 pointerleave 清掉忙碌气泡

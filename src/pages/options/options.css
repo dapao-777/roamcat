@@ -65,25 +65,44 @@ body[data-group="reading"] .now-status {
 .options-body.sidebar-collapsed .sidebar-brand-left {
   display: none;
 }
+/* 窄屏（≤760px）：侧栏改成顶部一行横向导航（品牌图标 + 带文字的分组，可横向滚动），主区占满剩余高度并自行滚动。
+ * 窄屏布局只在这里定义；ui.css / refinement.css 不再写窄屏侧栏规则，避免三处互相覆盖。 */
 @media (max-width: 760px) {
-  .options-body { flex-direction: column; height: 100vh; overflow: hidden; }
-  .sidebar,
-  .sidebar-collapsed .sidebar {
+  .options-document .options-body { flex-direction: column; height: 100vh; overflow: hidden; }
+  .options-document .options-body .sidebar,
+  .options-document .options-body.sidebar-collapsed .sidebar {
+    position: static;
+    flex: none;
     width: 100%;
     min-width: 0;
     max-width: none;
     height: auto;
-    max-height: 42vh;
-    position: relative;
+    max-height: none;
+    padding: 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--rc-line);
   }
-  .sidebar-collapse-btn { top: 16px; right: 12px; }
-  .sidebar-collapsed .nav-text { display: inline !important; }
-  .options-body.sidebar-collapsed .sidebar-brand-left { display: flex; }
-  .main-panel,
-  .options-body .main-panel {
+  .options-document .options-body .sidebar-top-section,
+  .options-document .options-body.sidebar-collapsed .sidebar-top-section {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--rc-space-3);
+    padding: var(--rc-space-2) var(--rc-space-4);
+  }
+  .options-document .options-body .sidebar :is(.sidebar-collapse-btn, .brand-info-wrap, .sidebar-search, .sidebar-search-empty, .nav-group-header) { display: none; }
+  .options-document .options-body .sidebar-brand-lockup,
+  .options-document .options-body .sidebar-brand-left { display: flex; flex: none; gap: 0; padding: 0; border: 0; }
+  /* 横向滚动条隐藏后，用右缘渐隐提示后面还有分组。 */
+  .options-document .options-body .sidebar-nav-menu { flex: 1 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+  .options-document .options-body .sidebar-nav-menu .nav-group { flex-direction: row; flex-wrap: nowrap; gap: 2px; }
+  .options-document .options-body .sidebar .cyber-nav-item { flex: none; justify-content: flex-start; padding: 6px 10px; }
+  .options-document .options-body .sidebar .nav-text { display: inline !important; white-space: nowrap; }
+  .options-document .options-body .main-panel {
+    flex: 1 1 auto;
     height: auto;
     max-height: none;
     min-height: 0;
+    overflow-y: auto;
   }
 }
 
@@ -292,7 +311,7 @@ dialog.stamp-manifesto-dialog:not([open]) {
 .now-status .now-status-pet strong.stamp-pet-status { display: inline-flex; align-items: center; gap: 5px; margin: 0; color: var(--color-text-muted); font-family: var(--font-sans); }
 .now-status .now-status-pet strong.stamp-pet-status.is-on { color: var(--rc-status-steady); }
 
-@media (max-width: 720px) {
+@media (max-width: 760px) {
   .opt-row { flex-wrap: wrap; gap: 12px; padding: 14px 16px; }
   .opt-row-text { flex: 1 1 240px; }
   .opt-row-control .swiss-select-wrap { min-width: 160px; }
@@ -327,7 +346,7 @@ dialog.stamp-manifesto-dialog:not([open]) {
 .options-document .options-body #term-form .primary-action { height: 38px; }
 .options-document .options-body #terms .term-list:not(:empty) { margin-top: 16px; }
 .options-document .options-body #term-empty:not([hidden]) { margin: 12px 0 0; padding: 0; text-align: left; }
-@media (max-width: 720px) {
+@media (max-width: 760px) {
   .options-document .options-body #term-form.inline-form { grid-template-columns: 1fr 1fr; }
 }
 
@@ -460,18 +479,15 @@ dialog.stamp-manifesto-dialog:not([open]) {
 .opt-row { min-height: 60px; padding: 12px 18px; gap: var(--rc-space-6); box-sizing: border-box; }
 .opt-row + .opt-row { border-top-color: var(--rc-line-soft); }
 .opt-row-label { font-size: var(--fs-3); font-weight: 500; color: var(--rc-ink); }
-/* 说明只占一行；悬停或聚焦这一行时展开全文，不丢信息 */
+/* 说明始终完整显示、自然换行：不再单行截断后悬停展开（鼠标划过时整列跳动，触屏也展开不了）。 */
 .opt-row-desc {
   margin-top: 2px;
   max-width: none;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
   font-size: var(--fs-2);
   line-height: 1.5;
   color: var(--rc-ink-tertiary);
 }
-.opt-row:is(:hover, :focus-within) .opt-row-desc { white-space: normal; overflow: visible; }
 
 /* 选择卡 → 分段按钮：插画与选项说明收起，只留选项名 */
 .options-document .options-body .opt-row-stack { flex-direction: row; align-items: center; gap: var(--rc-space-6); }
@@ -506,10 +522,11 @@ dialog.stamp-manifesto-dialog:not([open]) {
 .options-document .options-body .opt-row .choice-card-item.is-selected .choice-card-title { color: var(--rc-ink); }
 .options-document .options-body .opt-row .choice-card-item:has(input:focus-visible) { outline: var(--rc-focus-ring); outline-offset: 1px; }
 
-@media (max-width: 720px) {
+@media (max-width: 760px) {
   .options-document .options-body .opt-row-stack { flex-wrap: wrap; }
   .options-document .options-body .opt-row .choice-card-grid { flex-wrap: wrap; }
-  .options-document .options-body .compact-hero-banner { flex-wrap: wrap; }
+  /* 页头竖排时必须拉伸：横排用的 align-items:flex-end 在竖排下会把标题推到右边。 */
+  .options-document .options-body .compact-hero-banner { flex-direction: column; align-items: stretch; gap: var(--rc-space-3); }
 }
 
 /* 显示与解构：拆解粒度、下划线样式也收成分段按钮；下划线选项直接用对应线型画在名字下面 */
@@ -654,10 +671,10 @@ body[data-group="reading"] .now-status { margin-bottom: var(--rc-space-4); }
 .options-document .options-body .main-canvas-content { padding-top: var(--rc-space-2); }
 .options-document .options-body .compact-hero-banner { padding-top: 0; margin-bottom: var(--rc-space-5); }
 
-/* 行内下拉框只用两档宽度：长选项 220px、短选项 112px，左边缘也能对齐 */
-.options-document .options-body .opt-row-control > .swiss-select-wrap { width: 220px; min-width: 0; }
-.options-document .options-body .opt-row-control > .swiss-select-wrap.opt-select-narrow { width: 112px; }
-.options-document .options-body .opt-row-control > .swiss-select-wrap .swiss-select { width: 100%; }
+/* 行内下拉框两档起步宽度：长选项 220px、短选项 112px；选项文字更长（如英文界面）时按内容加宽，最多 360px，不截断。 */
+.options-document .options-body .opt-row-control > .swiss-select-wrap { width: auto; min-width: 220px; max-width: min(360px, 60vw); }
+.options-document .options-body .opt-row-control > .swiss-select-wrap.opt-select-narrow { min-width: 112px; }
+.options-document .options-body .opt-row-control > .swiss-select-wrap .swiss-select { width: auto; min-width: 100%; max-width: 100%; text-overflow: ellipsis; }
 
 /* 显示与解构：粒度与线型改成「左边名字、右边分段按钮」的行；说明只留一句 */
 .options-document .options-body #appearance .sentence-structure-editor > fieldset {

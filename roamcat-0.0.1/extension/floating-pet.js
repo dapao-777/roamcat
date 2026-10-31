@@ -775,8 +775,21 @@
       this.fitSpeechBubble();
     }
 
+    // 缩放胶囊居中在猫上方且比猫宽：猫贴着视口左右边时水平收进 8px 边距，避免被裁掉。
+    // 用 offsetWidth 而非 getBoundingClientRect：展开动画的 scale 会让后者偏小。
+    fitZoomControls() {
+      const zoom = this.zoomControls, anchor = zoom?.offsetParent;
+      if (!zoom || !anchor) return;
+      const box = anchor.getBoundingClientRect(), half = zoom.offsetWidth / 2, center = box.left + box.width / 2, margin = 8;
+      let shift = 0;
+      if (center - half < margin) shift = margin - (center - half);
+      else if (center + half > window.innerWidth - margin) shift = window.innerWidth - margin - (center + half);
+      zoom.style.setProperty('--zoom-shift-x', `${Math.round(shift)}px`);
+    }
+
     // 语音气泡视口自适配：水平收进 8px 边距、尾巴始终指向猫、贴顶翻转到猫下方。
     fitSpeechBubble() {
+      this.fitZoomControls();
       const bubble = this.shadowQuery('#cat-speech');
       if (!bubble || !hostEl) return;
       const hostRect = hostEl.getBoundingClientRect();

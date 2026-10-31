@@ -43,12 +43,13 @@ body {
 .rc-button:active { transform: translateY(2px); box-shadow: var(--key-press, var(--press, none)); }
 .rc-button:focus-visible { outline: var(--focus-ring); outline-offset: var(--focus-offset); }
 .rc-button:disabled { color: var(--on-action-disabled); background-color: var(--action-disabled); background-image: none; box-shadow: none; transform: none; cursor: default; }
+/* 主按钮与设置页 .primary-action 同色（--action 墨色）；强调色只用于状态提示，不再给主按钮单独上色。 */
 .rc-button.rc-primary {
-  background-color: var(--accent); background-image: var(--lacquer, none);
-  border-color: var(--accent); color: var(--on-action);
+  background-color: var(--action); background-image: var(--lacquer, none);
+  border-color: var(--action); color: var(--on-action);
   box-shadow: var(--lacquer-skirt, var(--lacquer-inset, var(--key-skirt, none)));
 }
-.rc-button.rc-primary:hover { border-color: var(--accent); background-color: var(--accent-hover); box-shadow: var(--lacquer-skirt, var(--lacquer-inset, var(--key-skirt-hover, none))); }
+.rc-button.rc-primary:hover { border-color: var(--action-hover); background-color: var(--action-hover); box-shadow: var(--lacquer-skirt, var(--lacquer-inset, var(--key-skirt-hover, none))); }
 .rc-button.rc-primary:active { box-shadow: var(--lacquer-press, var(--press, none)); }
 .rc-button.rc-primary:disabled { background-color: var(--action-disabled); border-color: transparent; box-shadow: none; color: var(--on-action-disabled); }
 

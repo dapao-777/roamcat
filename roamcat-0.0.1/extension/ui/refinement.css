@@ -5,7 +5,7 @@
 /* RoamCat: paper, ink, and quiet pixel details. Shared by the three surfaces. */
 :root {
   --font-sans: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  --font-serif: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', 'SimSun', Georgia, serif;
+  --font-serif: var(--rc-serif, Georgia, 'Noto Serif SC', 'Songti SC', 'SimSun', serif);
 }
 body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
 button, input, select, textarea { font-family: var(--font-sans); }
@@ -125,7 +125,7 @@ button, input, select, textarea { font-family: var(--font-sans); }
 .welcome-body .welcome-hero-title { font-weight: 600; }
 .welcome-body .welcome-hero-desc { line-height: 1.9; }
 .options-body :is(.swiss-cards-grid-2,.choice-card-grid) > * { min-width: 0; }
-@media (max-width:1100px) {
+@media (max-width: 1100px) {
   .options-body .toolbar-engine-badge { display: none; }
   .options-body .toolbar-left { min-width: 0; }
   .options-body .toolbar-sync-state { display: none; }
@@ -136,28 +136,19 @@ button, input, select, textarea { font-family: var(--font-sans); }
   .options-body .hero-title { font-size: var(--fs-6); }
   .options-body .sec-subheading { display: none; }
 }
-@media (max-width:800px) {
+@media (max-width: 760px) {
   .options-body .main-panel { padding: 0; }
   .options-body { --opt-pad: 20px; }
   .options-body .settings-toolbar { padding-top: 12px; padding-bottom: 12px; min-height: 60px; height: auto; }
   .options-body .toolbar-left { display: none; }
   .options-body .toolbar-right { margin-left: auto; }
-  .options-body .compact-hero-banner { flex-direction: column; align-items: stretch; }
   .options-body .reading-readout { box-sizing: border-box; width: 100%; }
   .readout-main { margin: 10px 0; }
   .options-body .choice-card-grid.two-col,.options-body .swiss-cards-grid-2 { grid-template-columns: 1fr; }
   .options-body .hero-stage-chip { display: none; }
   .options-body .swiss-card { padding: 18px; }
 }
-@media (max-width:600px) {
-  .options-body .sidebar { width: 60px; min-width: 60px; max-width: 60px; box-sizing: border-box; padding: 0; }
-  .options-body .sidebar-top-section { padding: 16px 8px; gap: 20px; }
-  .options-body .sidebar :is(.brand-info-wrap,.sidebar-header-actions,.sidebar-search,.sidebar-search-empty,.sidebar-collapse-btn,.nav-group-header,.nav-text,.cyber-nav-badge,.nav-active-pill-dot,.sidebar-user-card-wrap,.now-status) { display: none; }
-  .options-body .sidebar nav { display: flex; flex-direction: column; overflow: visible; gap: 18px; }
-  .options-body .sidebar nav svg { display: block; }
-  .options-body .sidebar nav a { flex: initial; border-radius: 4px; padding: 12px; }
-  .options-body .sidebar-brand-lockup { padding: 0; justify-content: center; }
-  .options-body .cyber-nav-item { justify-content: center; padding: 12px 8px; }
+@media (max-width: 560px) {
   .options-body { --opt-pad: 12px; }
   .options-body .main-canvas-content { padding: 20px var(--opt-pad) 36px; }
   .options-body .settings-toolbar { padding-top: 10px; padding-bottom: 10px; gap: 8px; flex-wrap: wrap; height: auto; }
@@ -295,7 +286,7 @@ button, input, select, textarea { font-family: var(--font-sans); }
   flex-shrink: 0;
 }
 .options-body .pet-quote-controls .swiss-select { min-width: 96px; }
-@media (max-width:600px) {
+@media (max-width: 560px) {
   .options-body .sec-label-row { flex-wrap: wrap; }
   .options-body .pet-footer-row { flex-wrap: wrap; }
 }
@@ -506,12 +497,12 @@ button, input, select, textarea { font-family: var(--font-sans); }
   grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   gap: 14px;
 }
-@media (max-width: 960px) {
+@media (max-width: 900px) {
   .options-body .recognition-choices {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
-@media (max-width: 580px) {
+@media (max-width: 560px) {
   .options-body .recognition-choices {
     grid-template-columns: 1fr !important;
   }

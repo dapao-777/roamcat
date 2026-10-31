@@ -581,7 +581,13 @@ export class Page {
     try {
       if (omitBackground) await this.transparentBackground(true);
       const params = {format: 'png'};
-      if (clip) Object.assign(params, {clip: {...clip, scale: 1}, captureBeyondViewport: true});
+      if (clip) {
+        // 裁剪框在当前视口内时不扩展视口：captureBeyondViewport 会给页面触发一次 resize，
+        // 监听 resize 的挂件（如选区操作条）会在截图前自行关闭，截到的就只剩底下的网页。
+        const {cssLayoutViewport: view} = await this.send('Page.getLayoutMetrics');
+        const inside = clip.x >= view.pageX && clip.y >= view.pageY && clip.x + clip.width <= view.pageX + view.clientWidth && clip.y + clip.height <= view.pageY + view.clientHeight;
+        Object.assign(params, {clip: {...clip, scale: 1}, captureBeyondViewport: !inside});
+      }
       else if (fullPage) {
         const {cssContentSize} = await this.send('Page.getLayoutMetrics');
         Object.assign(params, {clip: {x: 0, y: 0, width: Math.ceil(cssContentSize.width), height: Math.ceil(cssContentSize.height), scale: 1}, captureBeyondViewport: true});

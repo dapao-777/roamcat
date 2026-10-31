@@ -18,7 +18,9 @@
   /* —— 字体与排版 —— */
   /* 界面一律无衬线；宋体只给阅读内容（例句、预览、阅读器正文）用 --rc-serif。 */
   --rc-sans: "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
-  --rc-serif: "Noto Serif SC", "Source Han Serif SC", "STSong", "SimSun", "Songti SC", Georgia, "Times New Roman", serif;
+  /* 西文字体必须排在中文宋体前面：中文字体里的 ’ “ ” 是全角字形，排在前面会让英文出现「day’ s」式空隙。
+   * 中文字符 Georgia 没有，会自动回落到后面的宋体。 */
+  --rc-serif: Georgia, "Times New Roman", "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", "SimSun", serif;
   --rc-ui: "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
   --rc-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   --rc-display: "Silkscreen", "JetBrains Mono", "Courier New", monospace;

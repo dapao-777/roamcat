@@ -50,6 +50,9 @@
 - 新源文件须带 `/** @file … */` 中文文件头 + MPL-2.0 尾注（见 `tools/lib/module-graph.cjs` 样例）。
 - 主题色唯一来源是 `src/styles/tokens.css` 的 `design-tokens:{light,dark}` 段（`npm run gen:tokens` 生成 `extension/design.js` 供内容脚本；页面经同名别名解析）。**ui.css/welcome.css 等页面样式不得再覆写 `--choice-*`/`--badge-*`/`--nav-active-*` 等主题 token**——曾因此产生页面/挂件双调色板漂移。改色只改 tokens.css；伴读猫 `--pet-*` 深色变量在 `floating-pet-styles.js` 内联（两处：`:host[data-theme]` 与 `@media` 兜底），需同步改。
 - 字号只用 `--fs-1…6`（12/13/14/16/20/28，`npm run verify` 的 R12 拦截写死的 px 字号；内容脚本/Shadow DOM 内联写 `var(--fs-k, Npx)` 兜底）。层级只用 `--elev-0/1/2`：页面卡片 0 档（只靠 1px 边框），浮在网页或页面之上的词卡/菜单/挂件 2 档；旧拟物 token（`--face`/`--cast`/`--key-skirt`/`--lacquer` 等）保留名字但已压平，不要再给它们写回渐变或凸起阴影。
+- 响应式断点只用 `max-width` 四档：1100 / 900 / 760 / 560（ui.css、refinement.css、options.css、welcome.css、reader.css 已统一）；设置页侧栏在 761–1100px 自动收成图标栏（`options-app.js` 与 `build/gen-design-tokens.mjs` 两处同步），≤760px 的窄屏外壳（顶部横向导航 + 主区自滚）只写在 `src/pages/options/options.css`，其他样式文件不要再写窄屏侧栏规则。`verify:ui` 在 1440/1100/800/600/480 断言页头与内容左对齐、主区可视高度 ≥70%、窄屏导航带文字。
+- 衬线字体栈 `--rc-serif` 必须西文字体在前、中文宋体在后（中文字体的 ’ “ ” 是全角字形，排前面会让英文出现「day’ s」空隙）；`refinement.css` 的 `--font-serif` 只引用它，不另写字体列表。
+- 阅读解构成分颜色统一经 `RoamCatDesign.structureColor(role, theme)`（`build/gen-design-tokens.mjs` 生成）按文字所在底色取：解构卡传卡片宿主的 `data-theme`（创建时按 `pageTheme()` 设定），网页内高亮传正文明暗；不要再按网页正文给卡片里的标签取色。
 - dev 构建的扩展 ID 固定为 `build/extension-key.json` 中的 `id`（当前 `afpeggkplomdjjiemgajjgcajieincng`）；改加载目录不影响 ID。连接器订阅服务若绑定旧路径 ID，需重装连接器。
 - CSP `script-src 'self'`：产物 HTML 禁止内联脚本与 `on*=` 属性。
 - 订阅连接：扩展优先连本机常驻服务（`roamcat-0.0.1/connector/service.mjs`，`ws://127.0.0.1:47821`，握手校验 Host、扩展 Origin 与配对令牌：令牌由安装器写进服务目录的 `pairing-token`，扩展经 NativeMessaging 宿主的 `pairingToken` 请求取得，放在 `Sec-WebSocket-Protocol` 里，见 SPEC 8.4），连不上才用 NativeMessaging；`roamcat-0.0.1/connector/install.mjs` 默认一并装服务与登录自启（`--no-service` 跳过）。在 Claude 的 Bash/PowerShell 沙箱里装的连接器只存在于沙箱视图，要装到用户真实环境须在终端面板里运行。

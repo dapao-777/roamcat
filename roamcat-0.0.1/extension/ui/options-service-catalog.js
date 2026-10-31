@@ -376,6 +376,8 @@ class ServiceCatalogController {
     if (this.docLink) {
       if (item.website) {
         this.docLink.href = item.website;
+        // 订阅通道不需要 API Key，外链只叫「官方说明」，避免和「免 API Key」自相矛盾。
+        this.docLink.querySelector('span').textContent = item.category === 'subscription' ? M('官方说明','Official docs') : M('获取密钥 / 官方说明','Get key / official docs');
         this.docLink.hidden = false;
       } else {
         this.docLink.hidden = true;

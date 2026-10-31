@@ -188,7 +188,7 @@ try {
   // 响应式：options 主面板在 4 档宽度下不得横向溢出
   await setTheme(extPage, 'light');
   await extPage.goto(extUrl('ui/options.html#assistance'));
-  for (const width of [1440, 1100, 800, 480]) {
+  for (const width of [1440, 1100, 800, 600, 480]) {
     await extPage.setViewportSize({width, height: 1000});
     await extPage.waitForTimeout(350);
     await extPage.locator('.main-panel').evaluate(el => el.scrollTo(0, 0)).catch(() => {});
@@ -199,6 +199,17 @@ try {
         .map(el => ({cls: String(el.className).slice(0, 60), w: el.clientWidth, sw: el.scrollWidth})));
     if (overflow.length) report.overflow.push({width, overflow});
     check(`options 无横向溢出[${width}px]`, overflow.length === 0, JSON.stringify(overflow).slice(0, 200));
+    // 只查横向溢出发现不了标题错位和侧栏挤占：页头标题必须和下方内容左对齐，主区可视高度不低于视口 70%，
+    // 窄屏（≤760）顶部导航要带文字。
+    const shell = await extPage.evaluate(() => {
+      const left = sel => Math.round([...document.querySelectorAll(sel)].find(el => el.getBoundingClientRect().width)?.getBoundingClientRect().left ?? -1);
+      const main = document.querySelector('.main-panel').getBoundingClientRect();
+      const nav = document.querySelector('[data-group="reading"] .nav-text');
+      return {title: left('.hero-title'), body: left('.main-canvas-content .settings-section:not([hidden]) .opt-group, .main-canvas-content .settings-section:not([hidden]) .swiss-card, .now-status'), mainShare: main.height / innerHeight, navText: nav ? getComputedStyle(nav).display !== 'none' && nav.getBoundingClientRect().width > 0 : false};
+    });
+    check(`options 页头与内容左对齐[${width}px]`, shell.title >= 0 && Math.abs(shell.title - shell.body) <= 4, JSON.stringify(shell));
+    check(`options 主区可视高度 ≥70%[${width}px]`, shell.mainShare >= 0.7, JSON.stringify(shell));
+    if (width <= 760) check(`options 窄屏导航带文字[${width}px]`, shell.navText, JSON.stringify(shell));
   }
   await extPage.setViewportSize({width: 1440, height: 1000});
 
@@ -304,27 +315,39 @@ try {
   // B3. 解构详情卡（真实 structureRoles/structureColors）
   await execInTab(`() => {
     const {host, shadow} = ${WIDGET_HOST('sentence-detail', `position:fixed;z-index:2147483646;width:min(340px,calc(100vw - 32px));left:24px;top:24px`)};
+    // 与 content.js 一致：卡片带自己的 data-theme，成分颜色按卡片明暗取（深色卡最容易出现深字压深底）。
+    host.setAttribute('data-theme', 'dark');
     const refs = globalThis.RoamCatContentUI.sentenceDetail(shadow, {brandIconUrl: ${JSON.stringify(iconUrl)}, onClose: () => {}});
     const sentence = 'The city wakes before its people.';
     const groups = [
-      {parent: -1, role: 'clause', start: 0, end: 31},
+      {parent: -1, role: 'clause', start: 0, end: 32},
       {parent: 0, role: 'subject', start: 0, end: 8},
       {parent: 0, role: 'predicate', start: 9, end: 14},
-      {parent: 0, role: 'adverbial', start: 15, end: 31},
-      {parent: 3, role: 'object', start: 22, end: 31}
+      {parent: 0, role: 'adverbial', start: 15, end: 32},
+      {parent: 3, role: 'object', start: 22, end: 32}
     ];
     const D = globalThis.RoamCatDesign;
     globalThis.RoamCatContentUI.renderStructureTree(refs.tree, {
       groups, sentence,
       // 与 content.js 一致经 i18n 翻译角色名，门禁截图才能发现解构卡的文案回归。
       roleLabel: role => globalThis.RoamCatI18n.t((D.structureRoles[role] || ['?', 'neutral'])[0]),
-      roleColor: role => (D.structureColors[(D.structureRoles[role] || [0, 'neutral'])[1]] || ['#666'])[0]
+      roleColor: role => D.structureColor(role, host.getAttribute('data-theme'))
     });
     return true;
   }`);
   await tab.waitForTimeout(250);
   const treeItems = await execInTab(`() => window.__probe['sentence-detail'].shadow.querySelectorAll('li').length`);
   check('解构详情卡树渲染', treeItems >= 5, `li=${treeItems}`);
+  // 成分标签文字与卡片底色对比度 ≥4.5:1（标签底色只叠了 12% 的成分色，按卡片底色算）。
+  const chipContrast = await execInTab(`() => {
+    const shadow = window.__probe['sentence-detail'].shadow;
+    const rgb = value => (value.match(/[\\d.]+/g) || []).slice(0, 3).map(Number);
+    const lum = ([r, g, b]) => { const f = c => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
+    const card = [...shadow.querySelectorAll('*')].map(el => getComputedStyle(el).backgroundColor).find(color => !/rgba\\(0, 0, 0, 0\\)|transparent/.test(color));
+    const bg = lum(rgb(card || 'rgb(0,0,0)'));
+    return [...shadow.querySelectorAll('.role')].map(chip => { const fg = lum(rgb(getComputedStyle(chip).color)); const [hi, lo] = fg > bg ? [fg, bg] : [bg, fg]; return {text: chip.textContent, ratio: Math.round((hi + 0.05) / (lo + 0.05) * 10) / 10}; });
+  }`);
+  check('解构卡成分标签对比度 ≥4.5', chipContrast.length >= 5 && chipContrast.every(item => item.ratio >= 4.5), JSON.stringify(chipContrast));
   await shotLocator(tab.locator('[data-roamcat-ui="sentence-detail"]'), 'widget-sentence-detail');
   await execInTab(`() => window.__probe['sentence-detail'].host.remove()`);
 
@@ -432,6 +455,21 @@ try {
     nav: document.querySelector('[data-group="reading"] .nav-text')?.textContent?.trim() || '',
   }));
   check('options 英文档生效', enOpts.attr === 'en' && enOpts.nav === 'Reading', JSON.stringify(enOpts));
+  // 英文选项比中文长：行内下拉框必须按内容加宽，不能把当前选项截掉。
+  const clippedSelects = await extPage.evaluate(() => {
+    const probe = document.createElement('span');
+    probe.style.cssText = 'position:absolute;visibility:hidden;white-space:pre';
+    document.body.append(probe);
+    const out = [...document.querySelectorAll('.opt-row-control .swiss-select')].filter(el => el.getBoundingClientRect().width).flatMap(el => {
+      const cs = getComputedStyle(el); probe.style.font = cs.font;
+      probe.textContent = el.selectedOptions[0]?.textContent || '';
+      const room = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      return probe.getBoundingClientRect().width > room + 1 ? [{id: el.id, text: probe.textContent, room: Math.round(room)}] : [];
+    });
+    probe.remove();
+    return out;
+  });
+  check('options 英文下拉框不截断当前选项', clippedSelects.length === 0, JSON.stringify(clippedSelects).slice(0, 200));
   await shot(extPage, 'options-en');
 
   // 连接器错误串在 SW 侧生成并缓存——触发一次状态刷新让它按当前语言重生成

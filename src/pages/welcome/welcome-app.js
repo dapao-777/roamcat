@@ -20,10 +20,10 @@ import {icon} from '../../components/icons.js';
 import {t} from '../../i18n-runtime.js';
 
 const SANDBOX_WORDS = {
-  compare: {word: 'compare', pos: 'v.', phonetic: '/kəmˈpeər/', def: () => t('wel.v.compare.def'), context: () => t('wel.v.compare.context'), rubyHint: () => t('wel.v.compare.hint')},
-  conclusion: {word: 'conclusion', pos: 'n.', phonetic: '/kənˈkluːʒn/', def: () => t('wel.v.conclusion.def'), context: () => t('wel.v.conclusion.context'), rubyHint: () => t('wel.v.conclusion.hint')},
-  latency: {word: 'latency', pos: t('wel.v.latency.pos'), phonetic: '/ˈleɪtnsi/', def: () => t('wel.v.latency.def'), context: () => t('wel.v.latency.context'), rubyHint: () => t('wel.v.latency.hint')},
-  congestion: {word: 'congestion', pos: 'n.', phonetic: '/kənˈdʒestʃən/', def: () => t('wel.v.congestion.def'), context: () => t('wel.v.congestion.context'), rubyHint: () => t('wel.v.congestion.hint')},
+  compare: {word: 'compare', pos: 'v.', def: () => t('wel.v.compare.def'), context: () => t('wel.v.compare.context'), rubyHint: () => t('wel.v.compare.hint')},
+  conclusion: {word: 'conclusion', pos: 'n.', def: () => t('wel.v.conclusion.def'), context: () => t('wel.v.conclusion.context'), rubyHint: () => t('wel.v.conclusion.hint')},
+  latency: {word: 'latency', pos: t('wel.v.latency.pos'), def: () => t('wel.v.latency.def'), context: () => t('wel.v.latency.context'), rubyHint: () => t('wel.v.latency.hint')},
+  congestion: {word: 'congestion', pos: 'n.', def: () => t('wel.v.congestion.def'), context: () => t('wel.v.congestion.context'), rubyHint: () => t('wel.v.congestion.hint')},
 };
 
 const SAVED_BUTTON_TEXT = () => t('wel.savedBtn');
@@ -119,16 +119,6 @@ class RoamcatWelcome extends LitElement {
     this.requestUpdate();
   }
 
-  #speakWord() {
-    const word = SANDBOX_WORDS[this.#selectedWord]?.word || 'latency';
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(word);
-      utterance.lang = 'en-US';
-      window.speechSynthesis.speak(utterance);
-    }
-  }
-
   #setLookupKey(key) {
     if (!key || typeof key !== 'string') return;
     this.#key = key.toUpperCase().slice(0, 1);
@@ -171,7 +161,8 @@ class RoamcatWelcome extends LitElement {
       this.#toastMessage = t('wel.toast',{key:this.#key,mode:this.#assistanceMode==='ambient'?t('wel.modeAmbient'):t('wel.modeQuiet')});
       this.#toastVisible = true;
       this.#saveButtonText = SAVED_BUTTON_TEXT();
-      setTimeout(() => { this.#saving = false; this.requestUpdate(); }, 1200);
+      // 保存成功后稍停让用户看到「已保存」，再关闭引导：底部只有「保存并关闭」与「跳过」两个出口，不再需要第三个按钮。
+      setTimeout(() => { this.#saving = false; this.requestUpdate(); this.#closeWelcome(); }, 1200);
     } catch (error) {
       console.error('保存失败:', error);
       this.#saveButtonText = t('wel.saveFail');
@@ -348,22 +339,13 @@ class RoamcatWelcome extends LitElement {
           <p class="sandbox-paragraph" id="sandbox-text">${this.#renderSandboxParagraph()}</p>
 
           <div class="sandbox-hud-card" id="sandbox-hud" ?hidden=${hudHidden}>
+            <!-- 与真实解释卡片同构：词头、加粗的「词性 + 释义」、灰色语境句，再是操作按钮。不展示真实卡片没有的音标或发音。 -->
             <div class="hud-card-header">
-              <div class="hud-term-group">
-                <span class="hud-term" id="hud-term-text">${word.word}</span>
-                <span class="hud-phonetic" id="hud-phonetic-text">${word.phonetic}</span>
-                <button type="button" class="hud-audio-btn" id="hud-audio-btn" title=${t('wel.speak')} aria-label=${t('wel.speak')} @click=${() => this.#speakWord()}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-                </button>
-              </div>
-              <span class="hud-tag" id="hud-pos-text">${word.pos}</span>
+              <span class="hud-term" id="hud-term-text" lang="en">${word.word}</span>
             </div>
             <div class="hud-card-body">
-              <p class="hud-definition" id="hud-def-text">${word.def()}</p>
-              <div class="hud-context-box">
-                <span class="hud-context-label">${t('wel.ctxLabel')}</span>
-                <span class="hud-context-content" id="hud-context-text">${word.context()}</span>
-              </div>
+              <p class="hud-definition" id="hud-def-text"><span class="hud-pos">${word.pos}</span> ${word.def()}</p>
+              <p class="hud-context" id="hud-context-text">${word.context()}</p>
             </div>
             <div class="hud-card-footer">
               <div class="hud-actions-left">
@@ -534,10 +516,6 @@ class RoamcatWelcome extends LitElement {
             <span id="save-btn-text">${this.#saveButtonText || t('wel.launchBtn')}</span>
           </button>
           <button type="button" id="finish-welcome-btn" class="launch-secondary-btn" @click=${() => this.#closeWelcome()}>${t('wel.finish')}</button>
-          <a href="options.html" class="launch-secondary-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/></svg>
-            <span>${t('wel.console')}</span>
-          </a>
         </div>
 
         <div id="save-status-toast" class="launch-toast" ?hidden=${!this.#toastVisible} role="status" aria-live="polite">

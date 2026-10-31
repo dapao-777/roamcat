@@ -102,8 +102,10 @@ ${dark}
     return css;
   };
   const structureRoles = Object.freeze({clause:Object.freeze(['design.role.clause','neutral']),subject:Object.freeze(['design.role.subject','subject']),predicate:Object.freeze(['design.role.predicate','predicate']),object:Object.freeze(['design.role.object','object']),predicative:Object.freeze(['design.role.predicative','object']),complement:Object.freeze(['design.role.complement','object']),adverbial:Object.freeze(['design.role.adverbial','adverbial']),attributive:Object.freeze(['design.role.attributive','attributive'])});
-  const structureColors = Object.freeze({subject:Object.freeze(['#1d4ed8','#38bdf8']),predicate:Object.freeze(['#d97706','#fbbf24']),object:Object.freeze(['#0f766e','#2dd4bf']),attributive:Object.freeze(['#7c3aed','#a78bfa']),adverbial:Object.freeze(['#64748b','#94a3b8']),neutral:Object.freeze(['#94a3b8','#64748b'])});
-  globalThis.RoamCatDesign = Object.freeze({cssFor,structureRoles,structureColors});
+  const structureColors = Object.freeze({subject:Object.freeze(['#1d4ed8','#38bdf8']),predicate:Object.freeze(['#d97706','#fbbf24']),object:Object.freeze(['#0f766e','#2dd4bf']),attributive:Object.freeze(['#7c3aed','#a78bfa']),adverbial:Object.freeze(['#64748b','#94a3b8']),neutral:Object.freeze(['#57534e','#d6d3d1'])});
+  // 成分颜色按文字所在的底色选：浅底取深色、深底取浅色。解构卡传自己的 data-theme，网页内高亮传正文明暗。
+  const structureColor = (role, theme) => { const pair = structureColors[structureRoles[role]?.[1]]; return pair ? pair[theme === 'dark' ? 1 : 0] : '#64748b'; };
+  globalThis.RoamCatDesign = Object.freeze({cssFor,structureRoles,structureColors,structureColor});
 
   // Only extension-owned HTML opts into page-root tokens. Script injection into a
   // website has no currentScript and must never apply this theme to the website.
@@ -113,7 +115,7 @@ ${dark}
       if (savedTheme === 'dark' || savedTheme === 'light') {
         document.documentElement.setAttribute('data-theme', savedTheme);
       }
-      if (localStorage.getItem('roamcat_sidebar_collapsed') === 'true' || matchMedia('(min-width: 761px) and (max-width: 1023px)').matches) {
+      if (localStorage.getItem('roamcat_sidebar_collapsed') === 'true' || matchMedia('(min-width: 761px) and (max-width: 1100px)').matches) {
         document.documentElement.classList.add('sidebar-collapsed');
       }
     } catch {}

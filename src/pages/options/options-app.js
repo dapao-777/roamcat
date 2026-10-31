@@ -68,8 +68,8 @@ class RoamcatOptions extends LitElement {
   #section = '';
   #controller = null;
   #collapsed = localStorage.getItem('roamcat_sidebar_collapsed') === 'true';
-  // 中等宽度（761–1023px）自动收成图标栏；此时手动展开只在本次窄屏内有效，不改写保存的偏好。
-  #narrowQuery = matchMedia('(min-width: 761px) and (max-width: 1023px)');
+  // 中等宽度（761–1100px）自动收成图标栏；此时手动展开只在本次窄屏内有效，不改写保存的偏好。
+  #narrowQuery = matchMedia('(min-width: 761px) and (max-width: 1100px)');
   #narrowExpanded = false;
   #onNarrowChange = () => { this.#narrowExpanded = false; this.#applyCollapsed(); };
   #theme = localStorage.getItem('roamcat_ui_theme') || 'auto';
