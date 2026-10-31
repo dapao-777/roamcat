@@ -24,6 +24,62 @@ const designCss = (selector, theme) => {
 
 const q = root => selector => root.querySelector(selector);
 
+// ---------- 网页明暗判断（页内卡片与伴读猫共用；伴读猫关掉时页内卡片也按网页本身的明暗显示） ----------
+const colorOf = value => {
+  if (!value || value === 'transparent') return null;
+  const [r, g, b, a] = (value.match(/[0-9.]+/g) || []).map(Number);
+  return b === undefined || (a !== undefined && a < 0.1) ? null : {r, g, b};
+};
+const lightness = ({r, g, b}) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
+const backgroundOf = el => {
+  for (let node = el; node instanceof Element; node = node.parentElement) {
+    try { const bg = colorOf(getComputedStyle(node).backgroundColor); if (bg) return bg; } catch { /* 跨文档节点读不到样式时继续往上找。 */ }
+  }
+  return null;
+};
+const byBackground = bg => (bg ? (lightness(bg) < 110 ? 'dark' : lightness(bg) > 145 ? 'light' : null) : null);
+const DARK_CLASSES = new Set(['dark', 'theme-dark', 'vscode-dark', 'dark-mode', 'bp-dark', 'night-mode', 'monaco-dark', 'tw-dark']);
+
+// 只看网页自身：html/body 的主题属性与类名（Tailwind、GitHub、VitePress 等）、color-scheme、根背景、主内容容器背景、
+// 正文文字颜色；都判断不出返回 null。伴读猫在此之前叠加「伴读猫显示模式」，之后再取样猫所在位置的底色。
+export function pageThemeHint() {
+  const html = document.documentElement, body = document.body;
+  for (const el of [html, body]) {
+    for (const name of ['data-theme', 'data-color-mode', 'theme', 'data-mode']) {
+      const value = String(el?.getAttribute(name) || '').toLowerCase();
+      if (value.includes('dark')) return 'dark';
+      if (value.includes('light')) return 'light';
+    }
+  }
+  const classes = `${html?.className || ''} ${body?.className || ''}`.toLowerCase().replace(/[^a-z0-9-]+/g, ' ').split(' ');
+  if (classes.some(name => DARK_CLASSES.has(name))) return 'dark';
+  try {
+    const schemes = [html, body].filter(Boolean).map(el => getComputedStyle(el).colorScheme);
+    if (schemes.includes('dark')) return 'dark';
+    if (schemes.includes('light')) return 'light';
+  } catch { /* 读不到样式时交给后面的取样。 */ }
+  const root = byBackground((body && backgroundOf(body)) || (html && backgroundOf(html)));
+  if (root) return root;
+  const main = document.querySelector('#__next, #root, #app, main, [role="main"], article, .app-container, .terminal, pre, code');
+  const container = main && byBackground(backgroundOf(main));
+  if (container) return container;
+  let bright = 0, dark = 0, seen = 0;
+  for (const el of document.querySelectorAll('p, h1, h2, h3, li, article, main, code, pre')) {
+    if (!el.textContent?.trim()) continue;
+    const color = colorOf(getComputedStyle(el).color);
+    if (!color) continue;
+    if (lightness(color) > 165) bright++; else if (lightness(color) < 90) dark++;
+    if (++seen >= 15) break;
+  }
+  if (seen >= 2 && bright !== dark) return bright > dark ? 'dark' : 'light';
+  return null;
+}
+
+// 页内卡片的主题：网页本身的明暗优先，判断不出才跟随系统设置。
+export function pageTheme() {
+  return pageThemeHint() || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+}
+
 // ---------- 共享品牌元素（返回真实 Element，供 content.js 残留命令式站点使用） ----------
 
 export function brandIcon(url) {

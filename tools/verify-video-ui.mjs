@@ -35,6 +35,13 @@ const PAGE = ({live}) => `<!doctype html><title>Video UI fixture</title><style>
     <div class="ytp-caption-window-container"></div></div></ytd-player>
 </div></div></div></div><div id="below"><h1 id="title">Fixture title</h1><p>Channel row</p></div></div></ytd-watch-flexy>`;
 
+// 播放器里没有 YouTube 控制栏、<video> 用原生控件，且包在绝对定位、裁剪溢出的外壳里（YouTube 上视频只认 .html5-video-player
+// 里的，这条路径很少走到）：控件行和原文稿要排到外壳后面，不能被外壳盖住或裁掉。
+const NATIVE_PAGE = `<!doctype html><title>Native controls fixture</title><style>
+  body{margin:0;font:14px sans-serif} #shell{position:relative;width:960px;height:540px;margin:16px}
+  #layer{position:absolute;inset:0;overflow:hidden} video{display:block;width:100%;height:100%;background:#000} #after{margin:16px}
+</style><div id="shell"><div id="layer" class="html5-video-player"><video controls></video></div></div><h1 id="after">After the player</h1>`;
+
 assertFreshDist();
 const gate = createGateReport('video');
 const run = await openBrowser({extension: null});
@@ -46,6 +53,7 @@ try {
   await page.intercept(['https://www.youtube.com/*'], async request => {
     const pathname = new URL(request.url).pathname;
     if (pathname.startsWith('/fixture/')) return {headers: {'content-type': 'text/javascript; charset=utf-8'}, body: await fs.readFile(`${DIST}/${pathname.slice(9)}`)};
+    if (new URL(request.url).searchParams.get('v') === 'nativefixture') return {headers: {'content-type': 'text/html; charset=utf-8'}, body: NATIVE_PAGE};
     return {headers: {'content-type': 'text/html; charset=utf-8'}, body: PAGE({live})};
   });
   const mount = async () => {
@@ -114,6 +122,26 @@ try {
     assert.ok(!vod.text.includes('直播'), vod.text);
     assert.equal(vod.retry, 1);
     return vod.text;
+  });
+  await page.evaluate(() => RoamCatVideoSubtitles.unmount());
+
+  await page.goto('https://www.youtube.com/watch?v=nativefixture');
+  await mount();
+  await gate.check('原生控件视频在绝对定位外壳里：控件行与原文稿排在外壳后面', async () => {
+    await page.waitForFunction(() => document.querySelector('[data-roamcat-ui="video-subtitles-row"]') && find('button.transcript').length, undefined, {timeout: 15000})
+      .catch(async error => { throw new Error(error.message + ' ' + JSON.stringify(await page.evaluate(() => ({hosts: [...document.querySelectorAll('[data-roamcat-ui]')].map(el => el.getAttribute('data-roamcat-ui') + '@' + el.parentElement?.id), buttons: find('button').map(b => b.className), controls: document.querySelector('video')?.controls})))); });
+    await page.evaluate(() => find('button.transcript')[0].click());
+    await page.waitForFunction(() => document.querySelector('[data-roamcat-ui="video-transcript"]')?.getBoundingClientRect().height > 40, undefined, {timeout: 15000});
+    const layout = await page.evaluate(() => {
+      const shell = document.getElementById('shell'), row = document.querySelector('[data-roamcat-ui="video-subtitles-row"]'), panel = document.querySelector('[data-roamcat-ui="video-transcript"]');
+      const box = el => { const r = el.getBoundingClientRect(); return {top: Math.round(r.top), bottom: Math.round(r.bottom), height: Math.round(r.height)}; };
+      return {rowInShell: shell.contains(row), panelInShell: shell.contains(panel), shell: box(shell), row: box(row), panel: box(panel)};
+    });
+    assert.equal(layout.rowInShell, false, JSON.stringify(layout));
+    assert.equal(layout.panelInShell, false, JSON.stringify(layout));
+    assert.ok(layout.row.height > 0 && layout.row.top >= layout.shell.bottom - 1, JSON.stringify(layout));
+    assert.ok(layout.panel.top >= layout.row.bottom - 1, JSON.stringify(layout));
+    return layout;
   });
   await page.evaluate(() => RoamCatVideoSubtitles.unmount());
   await gate.check('页面无脚本错误', async () => assert.deepEqual(errors, []));

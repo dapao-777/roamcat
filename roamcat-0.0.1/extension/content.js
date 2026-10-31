@@ -174,7 +174,8 @@ const LIMIT_ERROR = T('c.limit');
     });
   }
   // 品牌图标跟随网页明暗：亮色网页用奶白版 logo，深色网页用砚底版（与伴读猫的明暗判定一致）。
-  function pageTheme(){return globalThis.RoamCatPet?.detectPageTheme?globalThis.RoamCatPet.detectPageTheme():(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}
+  // 页内卡片的明暗：伴读猫在时用它的判断（含「伴读猫显示模式」偏好），否则按网页本身的明暗，判断不出才跟随系统。
+  function pageTheme(){return globalThis.RoamCatPet?.detectPageTheme?.()||contentUI.pageTheme?.()||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}
   function brandIcon(){return runtime.getURL(pageTheme()==='light'?'icons/roamcat-light.svg':'icons/roamcat.svg');}
   const contentUI=globalThis.RoamCatContentUI;
   function createBrandLabel(context=''){return contentUI.brandLabel(brandIcon(),context);}
@@ -185,8 +186,7 @@ const LIMIT_ERROR = T('c.limit');
   function createPageStatus(){
     const host=document.createElement('div');host.setAttribute(OWN,'task-status');
     host.style.cssText='position:fixed;top:max(16px,env(safe-area-inset-top));right:max(16px,env(safe-area-inset-right));z-index:2147483647;max-width:calc(100vw - 32px);pointer-events:none';
-    const currentTheme = globalThis.RoamCatPet?.detectPageTheme ? globalThis.RoamCatPet.detectPageTheme() : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    host.setAttribute('data-theme', currentTheme);
+    host.setAttribute('data-theme', pageTheme());
     const shadow=host.attachShadow({mode:'closed'});
     const root=contentUI.taskStatus(shadow,{brandIconUrl:brandIcon(),onClose:()=>{for(const [key,entry]of pageStatus.lines)pageStatus.dismissed.set(key,entry.error?entry.text:true);renderPageStatus();}});
     const {panel,detail,more,collapse}=root;
@@ -1037,7 +1037,7 @@ const LIMIT_ERROR = T('c.limit');
   }
   function showKnownFeedback(wordId,term){
     const previous=document.querySelector('['+OWN+'="known-feedback"]');previous?.remove();
-    const host=document.createElement('div');host.setAttribute(OWN,'known-feedback');host.style.cssText='position:fixed;left:50%;bottom:max(20px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:2147483647;max-width:calc(100vw - 24px)';
+    const host=document.createElement('div');host.setAttribute(OWN,'known-feedback');host.setAttribute('data-theme',pageTheme());host.style.cssText='position:fixed;left:50%;bottom:max(20px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:2147483647;max-width:calc(100vw - 24px)';
     const shadow=host.attachShadow({mode:'closed'});
     const { message, undo } = contentUI.knownFeedback(shadow, {
       brandIconUrl: brandIcon(),
@@ -1620,7 +1620,7 @@ const LIMIT_ERROR = T('c.limit');
     view.sentenceLine.textContent=compact;view.sentenceLine.hidden=false;
   }
   function renderHelpCard(target,error='') {
-    closeCard();const host=document.createElement('div');host.setAttribute(OWN,'card');host.style.cssText='position:fixed;z-index:2147483647;width:min(360px,calc(100vw - 24px));';
+    closeCard();const host=document.createElement('div');host.setAttribute(OWN,'card');host.setAttribute('data-theme',pageTheme());host.style.cssText='position:fixed;z-index:2147483647;width:min(360px,calc(100vw - 24px));';
     state.assistRequestId='';
     if(target.sourceKey)host.style.setProperty('--type-body',(state.settings.video?.fontSize || 20)+'px');
     const shadow=host.attachShadow({mode:'closed'});
@@ -3626,8 +3626,7 @@ const LIMIT_ERROR = T('c.limit');
       host.id='roamcat-reload-toast';
       host.setAttribute('data-roamcat-reload-toast','');
       host.style.cssText='position:fixed;right:16px;bottom:16px;z-index:2147483647;max-width:calc(100vw - 32px)';
-      const currentTheme=globalThis.RoamCatPet?.detectPageTheme?globalThis.RoamCatPet.detectPageTheme():(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
-      host.setAttribute('data-theme',currentTheme);
+      host.setAttribute('data-theme',pageTheme());
       const shadow=host.attachShadow({mode:'closed'}),style=document.createElement('style');
       style.textContent =
         designCss(':host') +

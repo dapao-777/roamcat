@@ -65,7 +65,7 @@ body[data-group="reading"] .now-status {
 .options-body.sidebar-collapsed .sidebar-brand-left {
   display: none;
 }
-/* 窄屏（≤760px）：侧栏改成顶部一行横向导航（品牌图标 + 带文字的分组，可横向滚动），主区占满剩余高度并自行滚动。
+/* 窄屏（≤760px）：侧栏改成顶部横向导航（品牌图标 + 带文字的分组，放不下就折行，不藏在横向滚动里），主区占满剩余高度并自行滚动。
  * 窄屏布局只在这里定义；ui.css / refinement.css 不再写窄屏侧栏规则，避免三处互相覆盖。 */
 @media (max-width: 760px) {
   .options-document .options-body { flex-direction: column; height: 100vh; overflow: hidden; }
@@ -85,16 +85,15 @@ body[data-group="reading"] .now-status {
   .options-document .options-body .sidebar-top-section,
   .options-document .options-body.sidebar-collapsed .sidebar-top-section {
     flex-direction: row;
-    align-items: center;
+    align-items: flex-start;
     gap: var(--rc-space-3);
     padding: var(--rc-space-2) var(--rc-space-4);
   }
   .options-document .options-body .sidebar :is(.sidebar-collapse-btn, .brand-info-wrap, .sidebar-search, .sidebar-search-empty, .nav-group-header) { display: none; }
   .options-document .options-body .sidebar-brand-lockup,
   .options-document .options-body .sidebar-brand-left { display: flex; flex: none; gap: 0; padding: 0; border: 0; }
-  /* 横向滚动条隐藏后，用右缘渐隐提示后面还有分组。 */
-  .options-document .options-body .sidebar-nav-menu { flex: 1 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
-  .options-document .options-body .sidebar-nav-menu .nav-group { flex-direction: row; flex-wrap: nowrap; gap: 2px; }
+  .options-document .options-body .sidebar-nav-menu { flex: 1 1 auto; min-width: 0; }
+  .options-document .options-body .sidebar-nav-menu .nav-group { flex-direction: row; flex-wrap: wrap; gap: 2px; }
   .options-document .options-body .sidebar .cyber-nav-item { flex: none; justify-content: flex-start; padding: 6px 10px; }
   .options-document .options-body .sidebar .nav-text { display: inline !important; white-space: nowrap; }
   .options-document .options-body .main-panel {

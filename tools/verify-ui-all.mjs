@@ -48,12 +48,24 @@ const tinyPdf = (text) => {
   body += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
   return Buffer.from(body);
 };
+// 动作之后不用固定时长：按状态轮询，等到要断言或要截图的状态出现（或超时）再继续。
+// settled：有限次的动画与过渡都跑完（无限循环的加载动画不算），再等两帧让画面落定（后台页 rAF 可能停摆，最多等 0.5 秒）。
+const until = async (page, probe, ok, timeout = 4000) => {
+  const deadline = Date.now() + timeout;
+  let value = await probe();
+  while (!ok(value) && Date.now() < deadline) { await page.waitForTimeout(100); value = await probe(); }
+  return value;
+};
+const settled = async page => {
+  await until(page, () => page.evaluate(() => document.getAnimations().filter(a => a.playState === 'running' && a.effect?.getTiming?.().iterations !== Infinity).length).catch(() => 0), n => n === 0, 3000);
+  await page.evaluate(() => new Promise(resolve => { requestAnimationFrame(() => requestAnimationFrame(resolve)); setTimeout(resolve, 500); })).catch(() => {});
+};
 const shot = async (page, name, {fullPage = false, minBytes = 40000} = {}) => {
   const file = path.join(out, name + '.png');
   if (!(await page.screenshot({path: file, fullPage}))) return;
   // 合成器竞态白屏自检：整页近乎纯色的 PNG 极小，等待重截一次
   if (fs.existsSync(file) && fs.statSync(file).size < minBytes) {
-    await page.waitForTimeout(800);
+    await settled(page);
     if (!(await page.screenshot({path: file, fullPage}))) return;
     if (fs.statSync(file).size < minBytes) {
       // 压平后的弹窗和阅读器空态 PNG 会低于体积阈值，但页面上仍有正文；只有几乎没有可见文字才算白屏。
@@ -105,7 +117,8 @@ try {
       if (section !== OPTION_SECTIONS[0]) {
         await extPage.evaluate(s=>{location.hash='#'+s},`${section}`);
       }
-      await extPage.waitForTimeout(450);
+      await until(extPage, () => extPage.evaluate(id => { const el = document.getElementById(id); return Boolean(el && !el.hidden && el.offsetHeight); }, section), Boolean);
+      await settled(extPage);
       await extPage.locator('.main-panel').evaluate(el => el.scrollTo(0, 0)).catch(() => {});
       // 六个分组：侧栏分组高亮；组内有多个分区时，对应标签也要高亮。
       check(`options 分区激活[${section}]`, await extPage.evaluate(name => { const tab = document.querySelector(`[data-section="${name}"]`); return Boolean(document.querySelector('[data-group].active')) && (!tab || tab.classList.contains('active')); }, section));
@@ -124,13 +137,12 @@ try {
     await welcome.setViewportSize({width: 1440, height: 1000}, 1);
     watchPage(welcome, 'welcome');
     await welcome.goto(extUrl('ui/welcome.html'));
-    await welcome.waitForTimeout(500);
-    const welcomeLen = await welcome.evaluate(() => document.querySelector('roamcat-welcome')?.innerHTML.length || 0);
+    const welcomeLen = await until(welcome, () => welcome.evaluate(() => document.querySelector('roamcat-welcome')?.innerHTML.length || 0), n => n > 500);
     check(`welcome 渲染[${theme}]`, welcomeLen > 500, `innerHTML=${welcomeLen}`);
     check(`welcome 沙盒就绪[${theme}]`, await welcome.locator('.sandbox-browser-mockup').isVisible().catch(() => false));
     // 步骤卡片用 scroll-timeline 入场，回顶即复位——整页截图前直接禁用入场动画
     await welcome.addStyleTag({content: '.welcome-step-card { animation: none !important; opacity: 1 !important; transform: none !important; }'});
-    await welcome.waitForTimeout(300);
+    await settled(welcome);
     await shot(welcome, `welcome-${theme}`, {fullPage: true});
     await welcome.close();
 
@@ -139,7 +151,7 @@ try {
     await reader.setViewportSize({width: 1440, height: 1000}, 1);
     watchPage(reader, 'reader');
     await reader.goto(extUrl('ui/reader.html'));
-    await reader.waitForTimeout(400);
+    await until(reader, () => reader.locator('.reader-status-card').isVisible().catch(() => false), Boolean);
     check(`reader 空态[${theme}]`, await reader.locator('.reader-status-card').isVisible());
     await shot(reader, `reader-empty-${theme}`);
     // 真实走一遍 pdfjs：曾因 pdfjs 6 去掉 doc.destroy()，解析完最后一页才报错、整份 PDF 打不开。
@@ -163,7 +175,8 @@ try {
         ['b5', '我们很少注意日常物件的语法：电梯暂停时的逗号，未写完信件的省略号。']
       ]);
     });
-    await reader.waitForTimeout(300);
+    await until(reader, () => reader.locator('.reader-translation').count(), n => n === 3);
+    await settled(reader);
     check(`reader 文档渲染[${theme}]`, await reader.locator('.reader-block').count() === 5);
     check(`reader 双语译文[${theme}]`, await reader.locator('.reader-translation').count() === 3);
     await shot(reader, `reader-doc-${theme}`);
@@ -174,11 +187,11 @@ try {
     watchPage(popup, 'popup');
     await popup.setViewportSize({width: 420, height: 720}, 1);
     await popup.goto(extUrl('ui/popup.html'));
-    await popup.waitForTimeout(450);
-    const popupState = await popup.evaluate(() => {
+    const popupState = await until(popup, () => popup.evaluate(() => {
       const el = document.querySelector('roamcat-popup');
       return {len: el?.innerHTML.length || 0, buttons: el?.querySelectorAll('button').length || 0};
-    });
+    }), v => v.len > 500 && v.buttons >= 2);
+    await settled(popup);
     check(`popup 渲染[${theme}]`, popupState.len > 500 && popupState.buttons >= 2, JSON.stringify(popupState));
     await shot(popup, `popup-${theme}`);
     await popup.close();
@@ -188,9 +201,9 @@ try {
   // 响应式：options 主面板在 4 档宽度下不得横向溢出
   await setTheme(extPage, 'light');
   await extPage.goto(extUrl('ui/options.html#assistance'));
-  for (const width of [1440, 1100, 800, 600, 480]) {
+  for (const width of [1440, 1100, 800, 600, 480, 375]) {
     await extPage.setViewportSize({width, height: 1000});
-    await extPage.waitForTimeout(350);
+    await settled(extPage);
     await extPage.locator('.main-panel').evaluate(el => el.scrollTo(0, 0)).catch(() => {});
     await shot(extPage, `options-width-${width}`);
     const overflow = await extPage.evaluate(() =>
@@ -205,11 +218,12 @@ try {
       const left = sel => Math.round([...document.querySelectorAll(sel)].find(el => el.getBoundingClientRect().width)?.getBoundingClientRect().left ?? -1);
       const main = document.querySelector('.main-panel').getBoundingClientRect();
       const nav = document.querySelector('[data-group="reading"] .nav-text');
-      return {title: left('.hero-title'), body: left('.main-canvas-content .settings-section:not([hidden]) .opt-group, .main-canvas-content .settings-section:not([hidden]) .swiss-card, .now-status'), mainShare: main.height / innerHeight, navText: nav ? getComputedStyle(nav).display !== 'none' && nav.getBoundingClientRect().width > 0 : false};
+      const items = [...document.querySelectorAll('.sidebar .cyber-nav-item:not([hidden])')].map(el => el.getBoundingClientRect());
+      return {title: left('.hero-title'), body: left('.main-canvas-content .settings-section:not([hidden]) .opt-group, .main-canvas-content .settings-section:not([hidden]) .swiss-card, .now-status'), mainShare: main.height / innerHeight, navText: nav ? getComputedStyle(nav).display !== 'none' && nav.getBoundingClientRect().width > 0 : false, navClipped: items.filter(r => !r.width || r.right > innerWidth + 1 || r.left < -1).length};
     });
     check(`options 页头与内容左对齐[${width}px]`, shell.title >= 0 && Math.abs(shell.title - shell.body) <= 4, JSON.stringify(shell));
     check(`options 主区可视高度 ≥70%[${width}px]`, shell.mainShare >= 0.7, JSON.stringify(shell));
-    if (width <= 760) check(`options 窄屏导航带文字[${width}px]`, shell.navText, JSON.stringify(shell));
+    if (width <= 760) check(`options 窄屏导航带文字且全部分组可见[${width}px]`, shell.navText && shell.navClipped === 0, JSON.stringify(shell));
   }
   await extPage.setViewportSize({width: 1440, height: 1000});
 
@@ -218,7 +232,6 @@ try {
   await tab.setViewportSize({width: 1440, height: 1000}, 1);
   watchPage(tab, 'page');
   await tab.goto(`${fixtureBase}/sites/devto-article.html`);
-  await tab.waitForTimeout(900);
   await tab.locator('#roamcat-pet-host').waitFor({state: 'attached', timeout: 10000})
     .catch(() => report.failures.push('伴读猫宿主未注入页面'));
   await tab.bringToFront();
@@ -267,7 +280,7 @@ try {
       window.__probe.cardRefs = refs;
       return true;
     }`);
-    await tab.waitForTimeout(250);
+    await settled(tab);
     const cardRect = await execInTab(`() => { const r = window.__probe.card.host.getBoundingClientRect(); return {w: Math.round(r.width), h: Math.round(r.height)}; }`);
     check(`词卡 HUD 尺寸正常[${theme}]`, cardRect.w > 240 && cardRect.h > 80, JSON.stringify(cardRect));
     await shotLocator(tab.locator('[data-roamcat-ui="card"]'), `widget-wordcard-${theme}`);
@@ -278,14 +291,14 @@ try {
     window.__probe.cardRefs.answer.textContent = '城市比它的居民更早醒来。货车在路边排气，街灯交出了琥珀色的守望。';
     return true;
   }`);
-  await tab.waitForTimeout(200);
+  await settled(tab);
   await shotLocator(tab.locator('[data-roamcat-ui="card"]'), 'widget-wordcard-passage');
   await execInTab(`() => {
     const {host, shadow} = ${WIDGET_HOST('card', `position:fixed;z-index:2147483647;width:min(360px,calc(100vw - 24px));left:24px;top:24px`)};
     window.__probe.cardRefs = globalThis.RoamCatContentUI.wordCard(shadow, {brandIconUrl: ${JSON.stringify(iconUrl)}, kind: 'word', sourceText: 'unobtainium', error: '本地模型服务暂时不可用，请稍后重试。', handlers: {retry() {}, repair() {}}});
     return true;
   }`);
-  await tab.waitForTimeout(200);
+  await settled(tab);
   await shotLocator(tab.locator('[data-roamcat-ui="card"]'), 'widget-wordcard-error');
   await execInTab(`() => window.__probe.card.host.remove()`);
 
@@ -300,17 +313,28 @@ try {
     window.__probe.status = refs;
     return true;
   }`);
-  await tab.waitForTimeout(250);
+  await settled(tab);
   await shotLocator(tab.locator('[data-roamcat-ui="task-status"]'), 'widget-taskstatus-busy');
   await execInTab(`() => { window.__probe.status.more.click(); return true; }`);
-  await tab.waitForTimeout(200);
-  const detailVisible = await execInTab(`() => !window.__probe.status.detail.hidden && window.__probe.status.more.getAttribute('aria-expanded') === 'true'`);
+  const detailVisible = await until(tab, () => execInTab(`() => !window.__probe.status.detail.hidden && window.__probe.status.more.getAttribute('aria-expanded') === 'true'`), Boolean);
+  await settled(tab);
   check('任务状态条详情展开', Boolean(detailVisible));
   await shotLocator(tab.locator('[data-roamcat-ui="task-status"]'), 'widget-taskstatus-detail');
   await execInTab(`() => { const s = window.__probe.status; s.indicator.dataset.busy = 'false'; s.indicator.dataset.error = 'true'; s.panel.dataset.error = 'true'; s.label.textContent = '阅读辅助遇到问题'; s.collapse(); return true; }`);
-  await tab.waitForTimeout(200);
+  await settled(tab);
   await shotLocator(tab.locator('[data-roamcat-ui="task-status"]'), 'widget-taskstatus-error');
   await execInTab(`() => window.__probe['task-status'].host.remove()`);
+
+  // 网页明暗判断在 content-ui 里（伴读猫关掉时页内卡片也靠它）：浅色 fixture 判成 light，显式 data-theme=dark 判成 dark。
+  const themeHint = await execInTab(`() => {
+    const UI = globalThis.RoamCatContentUI, root = document.documentElement, before = root.getAttribute('data-theme');
+    const plain = UI.pageThemeHint();
+    root.setAttribute('data-theme', 'dark');
+    const forced = UI.pageTheme();
+    if (before === null) root.removeAttribute('data-theme'); else root.setAttribute('data-theme', before);
+    return {plain, forced};
+  }`);
+  check('网页明暗判断：浅色页 light、data-theme=dark 判 dark', themeHint?.plain === 'light' && themeHint?.forced === 'dark', JSON.stringify(themeHint));
 
   // B3. 解构详情卡（真实 structureRoles/structureColors）
   await execInTab(`() => {
@@ -335,7 +359,7 @@ try {
     });
     return true;
   }`);
-  await tab.waitForTimeout(250);
+  await settled(tab);
   const treeItems = await execInTab(`() => window.__probe['sentence-detail'].shadow.querySelectorAll('li').length`);
   check('解构详情卡树渲染', treeItems >= 5, `li=${treeItems}`);
   // 成分标签文字与卡片底色对比度 ≥4.5:1（标签底色只叠了 12% 的成分色，按卡片底色算）。
@@ -357,15 +381,14 @@ try {
     globalThis.RoamCatContentUI.knownFeedback(shadow, {brandIconUrl: ${JSON.stringify(iconUrl)}, term: 'serendipity', onUndo: () => {}});
     return true;
   }`);
-  await tab.waitForTimeout(250);
+  await settled(tab);
   await shotLocator(tab.locator('[data-roamcat-ui="known-feedback"]'), 'widget-known-feedback');
   await execInTab(`() => window.__probe['known-feedback'].host.remove()`);
 
   // B5. 选区操作条：先启用阅读辅助（真实 SW 管线），再真实鼠标拖选触发（isTrusted 必需）
   await extPage.evaluate(tabId=>chrome.runtime.sendMessage({type:'PAGE_UI_INJECT',tabId}),await tabIdOf(extPage,`${fixtureBase}/*`));
   await execInTab(`() => globalThis.__ROAMCAT_CONTENT__?.setManualEnabled?.(true) ?? Promise.resolve()`);
-  await tab.waitForTimeout(1500);
-  const assistState = await execInTab(`() => { const s = globalThis.__ROAMCAT_CONTENT__?.status?.(); return s ? {enabled: s.enabled, paused: s.paused} : null; }`);
+  const assistState = await until(tab, () => execInTab(`() => { const s = globalThis.__ROAMCAT_CONTENT__?.status?.(); return s ? {enabled: s.enabled, paused: s.paused} : null; }`), v => Boolean(v?.enabled), 8000);
   check('阅读辅助已启用', Boolean(assistState?.enabled), JSON.stringify(assistState));
   await tab.evaluate(() => { window.scrollTo(0, 200); });
   await tab.bringToFront();
@@ -375,9 +398,9 @@ try {
     await tab.mouse.down();
     await tab.mouse.move(Math.min(paraBox.x + paraBox.width - 4, paraBox.x + 320), paraBox.y + paraBox.height / 2, {steps: 10});
     await tab.mouse.up();
-    await tab.waitForTimeout(500);
-    const barVisible = await tab.locator('[data-roamcat-ui="passage-action"]').isVisible().catch(() => false);
+    const barVisible = await until(tab, () => tab.locator('[data-roamcat-ui="passage-action"]').isVisible().catch(() => false), Boolean, 3000);
     if (barVisible) {
+      await settled(tab);
       check('选区操作条出现', true);
       await shotLocator(tab.locator('[data-roamcat-ui="passage-action"]'), 'widget-selection-bar');
       await execInTab(`() => { document.querySelector('[data-roamcat-ui="passage-action"]')?.remove(); getSelection()?.removeAllRanges(); return true; }`);
@@ -391,29 +414,32 @@ try {
   }`);
 
   await execInTab(`() => globalThis.RoamCatPet.openQuickDock()`);
-  await tab.waitForTimeout(650);
-  const dockOpen = await execInTab(`() => document.querySelector('#roamcat-pet-host').shadowRoot.querySelector('.roamcat-pet-widget').classList.contains('dock-open')`);
+  const dockOpen = await until(tab, () => execInTab(`() => document.querySelector('#roamcat-pet-host').shadowRoot.querySelector('.roamcat-pet-widget').classList.contains('dock-open')`), Boolean);
+  await settled(tab);
   check('伴读猫快捷坞展开', Boolean(dockOpen));
   await shot(tab, 'pet-dock-open');
 
   await execInTab(`() => { globalThis.RoamCatPet.closeQuickDock(); globalThis.RoamCatPet.dock('right'); }`);
-  await tab.waitForTimeout(500);
-  const docked = await execInTab(`() => document.querySelector('#roamcat-pet-host').shadowRoot.querySelector('.roamcat-pet-widget').classList.contains('docked')`);
+  const docked = await until(tab, () => execInTab(`() => document.querySelector('#roamcat-pet-host').shadowRoot.querySelector('.roamcat-pet-widget').classList.contains('docked')`), Boolean);
+  await settled(tab);
   check('伴读猫贴边折叠', Boolean(docked));
   await shot(tab, 'pet-docked');
   await execInTab(`() => globalThis.RoamCatPet.undock()`);
-  await tab.waitForTimeout(400);
+  await until(tab, () => execInTab(`() => !document.querySelector('#roamcat-pet-host').shadowRoot.querySelector('.roamcat-pet-widget').classList.contains('docked')`), Boolean);
+  await settled(tab);
 
   const LONG_SPEECH = '这是一段足够长的伴读猫提示文本，用来验证语音气泡在贴边时仍能完整留在视口之内，并且小尾巴始终指向猫身喵~';
   await execInTab(`() => globalThis.RoamCatPet.speakStatus(${JSON.stringify(LONG_SPEECH)}, {duration: 60000})`);
-  await tab.waitForTimeout(400);
+  await until(tab, () => execInTab(`() => document.querySelector('#roamcat-pet-host').shadowRoot.querySelector('#cat-speech').classList.contains('speaking')`), Boolean);
+  await settled(tab);
   check('伴读猫气泡在视口内', Boolean(await bubbleInside()));
   await shot(tab, 'pet-bubble');
   await execInTab(`() => globalThis.RoamCatPet.clearStatusSpeech()`);
-  await tab.waitForTimeout(300);
+  await until(tab, () => execInTab(`() => !document.querySelector('#roamcat-pet-host').shadowRoot.querySelector('#cat-speech').classList.contains('speaking')`), Boolean);
 
   await execInTab(`() => globalThis.RoamCatPet.speakQuote()`);
-  await tab.waitForTimeout(400);
+  await until(tab, () => execInTab(`() => document.querySelector('#roamcat-pet-host').shadowRoot.querySelector('#cat-speech').classList.contains('quote')`), Boolean);
+  await settled(tab);
   const quoteOk = await execInTab(`() => { const b = document.querySelector('#roamcat-pet-host').shadowRoot.querySelector('#cat-speech'); return b.classList.contains('quote') && Boolean(b.querySelector('.quote-zh')?.textContent); }`);
   check('伴读猫哲学语录气泡', Boolean(quoteOk));
   check('语录气泡在视口内', Boolean(await bubbleInside()));
@@ -431,17 +457,19 @@ try {
     });
     return true;
   }`);
-  await tab.waitForTimeout(500);
+  await until(tab, () => execInTab(`() => Boolean(document.querySelector('#roamcat-pet-host').shadowRoot.querySelector('.roamcat-summary-window.open'))`), Boolean);
+  await settled(tab);
   await shot(tab, 'pet-summary-light');
   await tab.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
-  await tab.waitForTimeout(400);
+  await until(tab, () => execInTab(`() => document.querySelector('#roamcat-pet-host').getAttribute('data-theme')`), v => v === 'dark');
+  await settled(tab);
   await shot(tab, 'pet-summary-dark');
   await execInTab(`() => globalThis.RoamCatContentUI.renderPetSummaryLoading(document.querySelector('#roamcat-pet-host').shadowRoot.querySelector('#summary-content'))`);
-  await tab.waitForTimeout(300);
+  await settled(tab);
   await shot(tab, 'pet-summary-loading');
   await execInTab(`() => { globalThis.RoamCatContentUI.renderPetSummaryError(document.querySelector('#roamcat-pet-host').shadowRoot.querySelector('#summary-content'), {message: '模型服务暂时不可用，请稍后重试。'}); globalThis.RoamCatPet.closeSummary(); }`);
   await tab.evaluate(() => document.documentElement.removeAttribute('data-theme'));
-  await tab.waitForTimeout(300);
+  await settled(tab);
 
   // ========== D. 英文档：语言切换链路（options / popup / content script） ==========
   await extPage.evaluate(() => {
@@ -449,11 +477,11 @@ try {
     return chrome.storage.local.set({roamcat_ui_lang: 'en'});
   });
   await extPage.reload();
-  await extPage.waitForTimeout(700);
-  const enOpts = await extPage.evaluate(() => ({
+  const enOpts = await until(extPage, () => extPage.evaluate(() => ({
     attr: document.documentElement.getAttribute('data-ui-lang'),
     nav: document.querySelector('[data-group="reading"] .nav-text')?.textContent?.trim() || '',
-  }));
+  })), v => v.attr === 'en' && v.nav === 'Reading');
+  await settled(extPage);
   check('options 英文档生效', enOpts.attr === 'en' && enOpts.nav === 'Reading', JSON.stringify(enOpts));
   // 英文选项比中文长：行内下拉框必须按内容加宽，不能把当前选项截掉。
   const clippedSelects = await extPage.evaluate(() => {
@@ -474,15 +502,14 @@ try {
 
   // 连接器错误串在 SW 侧生成并缓存——触发一次状态刷新让它按当前语言重生成
   await extPage.evaluate(() => chrome.runtime.sendMessage({type: 'SUBSCRIPTION_STATUS'}).catch(() => null));
-  await extPage.waitForTimeout(300);
 
   const popupEn = await run.newPage();
   watchPage(popupEn, 'popup-en');
   await popupEn.setViewportSize({width: 420, height: 720}, 1);
   await popupEn.goto(extUrl('ui/popup.html'));
-  await popupEn.waitForTimeout(450);
-  const popupEnAttr = await popupEn.evaluate(() => document.documentElement.getAttribute('data-ui-lang'));
-  const popupEnText = await popupEn.locator('roamcat-popup').innerText().catch(() => '');
+  const popupEnAttr = await until(popupEn, () => popupEn.evaluate(() => document.documentElement.getAttribute('data-ui-lang')), v => v === 'en');
+  const popupEnText = await until(popupEn, () => popupEn.locator('roamcat-popup').innerText().catch(() => ''), text => text.length > 20 && !/[一-鿿]/.test(text));
+  await settled(popupEn);
   const popupCjk = popupEnText.match(/[一-鿿]+/g);
   check('popup 英文档生效', popupEnAttr === 'en' && popupEnText.length > 20 && !popupCjk, `attr=${popupEnAttr} cjk=${JSON.stringify(popupCjk)}`);
   await shot(popupEn, 'popup-en');
@@ -492,12 +519,12 @@ try {
   await tab.bringToFront();
   await tab.reload();
   await tab.locator('#roamcat-pet-host').waitFor({state: 'attached', timeout: 10000});
-  await tab.waitForTimeout(900);
-  const enPet = await execInTab(`() => {
+  const enPet = await until(tab, () => execInTab(`() => {
     const I = globalThis.RoamCatI18n;
     const speech = document.querySelector('#roamcat-pet-host')?.shadowRoot?.querySelector('#speech-text')?.textContent || '';
     return {lang: I?.lang(), hover: I?.t('fp.hover.sum'), speech};
-  }`);
+  }`), v => v?.lang === 'en' && Boolean(v.speech) && !/[一-鿿]/.test(v.speech), 6000);
+  await settled(tab);
   check('content script 英文档生效', enPet?.lang === 'en' && enPet.hover === 'Distill the whole article — just feed me, meow~' && !/[一-鿿]/.test(enPet.speech), JSON.stringify(enPet));
   await shot(tab, 'pet-en');
 

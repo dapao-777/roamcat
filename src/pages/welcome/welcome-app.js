@@ -119,6 +119,16 @@ class RoamcatWelcome extends LitElement {
     this.requestUpdate();
   }
 
+  #speakWord() {
+    const word = SANDBOX_WORDS[this.#selectedWord]?.word || 'latency';
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(word);
+      utterance.lang = 'en-US';
+      window.speechSynthesis.speak(utterance);
+    }
+  }
+
   #setLookupKey(key) {
     if (!key || typeof key !== 'string') return;
     this.#key = key.toUpperCase().slice(0, 1);
@@ -339,9 +349,14 @@ class RoamcatWelcome extends LitElement {
           <p class="sandbox-paragraph" id="sandbox-text">${this.#renderSandboxParagraph()}</p>
 
           <div class="sandbox-hud-card" id="sandbox-hud" ?hidden=${hudHidden}>
-            <!-- 与真实解释卡片同构：词头、加粗的「词性 + 释义」、灰色语境句，再是操作按钮。不展示真实卡片没有的音标或发音。 -->
+            <!-- 与真实解释卡片同构：词头旁是朗读按钮，下面是加粗的「词性 + 释义」、灰色语境句，再是操作按钮。真实卡片不显示音标。 -->
             <div class="hud-card-header">
-              <span class="hud-term" id="hud-term-text" lang="en">${word.word}</span>
+              <div class="hud-term-group">
+                <span class="hud-term" id="hud-term-text" lang="en">${word.word}</span>
+                <button type="button" class="hud-audio-btn" id="hud-audio-btn" title=${t('c.speakWord')} aria-label=${t('c.speakWord')} @click=${() => this.#speakWord()}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                </button>
+              </div>
             </div>
             <div class="hud-card-body">
               <p class="hud-definition" id="hud-def-text"><span class="hud-pos">${word.pos}</span> ${word.def()}</p>

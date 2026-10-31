@@ -54,7 +54,7 @@
   let detectedDomain = 'general';
 
   // 纯函数、样式与 SVG 拆在 floating-pet-*.js，与本文件同批注入且先于本文件执行。
-  const {domainName, petShortcutBlocked, parseRgba, getLuminance, getElementBg, hasKeepOut, keepOutRight, getPetStyles, renderPeekingCatSvg, renderCatSvg} = globalThis.RoamCatPetParts;
+  const {domainName, petShortcutBlocked, getLuminance, getElementBg, hasKeepOut, keepOutRight, getPetStyles, renderPeekingCatSvg, renderCatSvg} = globalThis.RoamCatPetParts;
 
   function detectPageTheme() {
     try {
@@ -62,83 +62,10 @@
       const userPref = currentSettings?.floatingPet?.themeMode;
       if (userPref === 'dark' || userPref === 'light') return userPref;
 
-      const html = document.documentElement;
-      const body = document.body;
-
-      // 2. High-confidence explicit theme attributes on html / body
-      const attrChecks = [
-        html?.getAttribute('data-theme'),
-        html?.getAttribute('data-color-mode'),
-        html?.getAttribute('theme'),
-        html?.getAttribute('data-mode'),
-        body?.getAttribute('data-theme'),
-        body?.getAttribute('data-color-mode'),
-        body?.getAttribute('theme'),
-        body?.getAttribute('data-mode')
-      ];
-      for (const val of attrChecks) {
-        if (typeof val === 'string') {
-          const v = val.toLowerCase();
-          if (v.includes('dark')) return 'dark';
-          if (v.includes('light')) return 'light';
-        }
-      }
-
-      // 3. ClassList indicators (Tailwind, Next.js, Shadcn, VS Code, GitHub, Bootstrap, Terminal, VitePress)
-      const classStr = `${html?.className || ''} ${body?.className || ''}`.toLowerCase();
-      if (/(^|\s)(dark|theme-dark|vscode-dark|dark-mode|bp-dark|night-mode|monaco-dark|tw-dark)(\s|$)/.test(classStr)) {
-        return 'dark';
-      }
-
-      // 4. CSS color-scheme declaration on root / body
-      try {
-        const htmlCs = html ? window.getComputedStyle(html).colorScheme : '';
-        const bodyCs = body ? window.getComputedStyle(body).colorScheme : '';
-        if (htmlCs === 'dark' || bodyCs === 'dark') return 'dark';
-        if (htmlCs === 'light' || bodyCs === 'light') return 'light';
-      } catch {}
-
-      // 5. Direct root background inspection (documentElement & body)
-      const rootBg = (body && getElementBg(body)) || (html && getElementBg(html));
-      if (rootBg) {
-        const lum = getLuminance(rootBg.r, rootBg.g, rootBg.b);
-        if (lum < 110) return 'dark';
-        if (lum > 145) return 'light';
-      }
-
-      // 6. Check common SPA content containers (#root, #__next, main, article, pre, code)
-      const mainContainer = document.querySelector('#__next, #root, #app, main, [role="main"], article, .app-container, .terminal, pre, code');
-      if (mainContainer) {
-        const bg = getElementBg(mainContainer);
-        if (bg) {
-          const lum = getLuminance(bg.r, bg.g, bg.b);
-          if (lum < 110) return 'dark';
-          if (lum > 145) return 'light';
-        }
-      }
-
-      // 7. Text color contrast check across page content (bright/white text proves dark mode)
-      const textSamples = document.querySelectorAll('p, h1, h2, h3, li, article, main, code, pre');
-      let brightTextCount = 0;
-      let darkTextCount = 0;
-      let inspected = 0;
-      for (const el of textSamples) {
-        if (!el.textContent?.trim()) continue;
-        try {
-          const c = parseRgba(window.getComputedStyle(el).color);
-          if (c) {
-            const lum = getLuminance(c.r, c.g, c.b);
-            if (lum > 165) brightTextCount++;
-            else if (lum < 90) darkTextCount++;
-            inspected++;
-            if (inspected >= 15) break;
-          }
-        } catch {}
-      }
-      if (inspected >= 2) {
-        if (brightTextCount > darkTextCount) return 'dark';
-        if (darkTextCount > brightTextCount) return 'light';
-      }
+      // 2–7. 网页自身的明暗（主题属性、类名、color-scheme、根与主容器背景、正文文字颜色）：与页内卡片共用
+      // content-ui 的 pageThemeHint()，判断不出时再看猫所在位置的底色。
+      const pageHint = globalThis.RoamCatContentUI?.pageThemeHint?.();
+      if (pageHint) return pageHint;
 
       // 8. Sample background color underneath the pet's actual screen position
       if (window.innerWidth && window.innerHeight) {

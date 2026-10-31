@@ -39,17 +39,23 @@ try {
     if (msg.type() === 'error') report.consoleErrors.push(msg.text().slice(0, 240));
   });
   await tab.goto(`${fixtureBase}/sites/devto-article.html`);
-  await tab.waitForTimeout(900);
   await tab.locator('#roamcat-pet-host').waitFor({state: 'attached', timeout: 10000})
     .catch(() => report.failures.push('伴读猫宿主未注入页面'));
   await tab.bringToFront();
-  await tab.waitForTimeout(600);
 
   const widget = tab.locator('.roamcat-pet-widget');
   const avatar = tab.locator('.roamcat-avatar-wrap');
   const bubble = tab.locator('#cat-speech');
   const speechText = tab.locator('#cat-speech .speech-text');
   const shot = async name => tab.screenshot({path: path.join(out, name + '.png')});
+  // ego 里测试页在后台时约 1 帧/秒：动作之后一律按状态轮询，等到下面要断言的状态出现（或超时）再断言，
+  // 不用固定时长。只有断言「不会发生」的少数地方保留观察窗口。
+  const until = async (probe, ok, timeout = 3000) => {
+    const deadline = Date.now() + timeout;
+    let value = await probe();
+    while (!ok(value) && Date.now() < deadline) { await tab.waitForTimeout(150); value = await probe(); }
+    return value;
+  };
 
   // 伴读猫实例挂在隔离世界的宿主上：用 chrome.scripting 进入隔离世界读取/调用。
   const petCall = async (expr) => {
@@ -73,7 +79,14 @@ try {
     } : null;
   }`);
 
-  const initial = await petState();
+  const isOpen = s => Boolean(s?.cls.includes('dock-open')) && s.expanded === 'true' && s.inert === false;
+  const isClosed = s => Boolean(s) && !s.cls.includes('dock-open') && s.expanded === 'false' && s.inert === true;
+  const isDocked = s => Boolean(s?.cls.includes('docked'));
+  const awake = s => Boolean(s) && !s.cls.includes('docked');
+  const waitPet = (ok, timeout) => until(petState, ok, timeout);
+  const summaryOpen = () => tab.locator('.roamcat-summary-window.open').count();
+  const summaryLoading = () => tab.locator('#summary-content .summary-loading').count();
+  const initial = await waitPet(Boolean, 8000);
   check('伴读猫就绪', Boolean(initial), JSON.stringify(initial));
 
   // ---------- 1. 初始态 ----------
@@ -84,13 +97,6 @@ try {
   // ---------- 2. 悬停预览：鼠标悬停猫身，卫星按钮即可交互 ----------
   const avatarBox = await avatar.boundingBox();
   check('猫头可定位', Boolean(avatarBox), JSON.stringify(avatarBox));
-  // ego 里测试页在后台时约 1 帧/秒：悬停、过渡动画都要按状态轮询等待，不能只等固定时长。
-  const until = async (probe, ok, timeout = 3000) => {
-    const deadline = Date.now() + timeout;
-    let value = await probe();
-    while (!ok(value) && Date.now() < deadline) { await tab.waitForTimeout(150); value = await probe(); }
-    return value;
-  };
   const quickStyle = sel => tab.locator(sel).evaluate(el => { const s = getComputedStyle(el); return {opacity: s.opacity, pe: s.pointerEvents}; });
   await tab.mouse.move(avatarBox.x + avatarBox.width / 2, avatarBox.y + avatarBox.height / 2);
   const hoverReveal = await until(() => quickStyle('#quick-reading'), s => s.pe === 'auto' && Number(s.opacity) > 0.9);
@@ -100,8 +106,7 @@ try {
   await avatar.click();
   const reacted = await avatar.evaluate(el => el.classList.contains('action-jelly')).catch(() => false)
     || await tab.locator('.cat-particle').count() > 0;
-  await tab.waitForTimeout(400);
-  let st = await petState();
+  let st = await waitPet(isOpen);
   check('点击猫头展开快捷坞', st?.cls.includes('dock-open') && st.expanded === 'true' && st.inert === false,
     JSON.stringify({cls: st?.cls, expanded: st?.expanded, inert: st?.inert}));
   check('点击有果冻/粒子反馈', reacted);
@@ -139,28 +144,24 @@ try {
 
   // ---------- 5. 再点猫头收坞 ----------
   await avatar.click();
-  await tab.waitForTimeout(400);
-  st = await petState();
+  st = await waitPet(isClosed);
   check('再点猫头收起快捷坞', st && !st.cls.includes('dock-open') && st.expanded === 'false' && st.inert === true,
     JSON.stringify({cls: st?.cls, expanded: st?.expanded}));
 
   // ---------- 6. 键盘开合：Enter 开坞，Esc 关坞 ----------
   await avatar.focus();
   await tab.keyboard.press('Enter');
-  await tab.waitForTimeout(350);
-  st = await petState();
+  st = await waitPet(isOpen);
   check('Enter 键展开快捷坞', st?.cls.includes('dock-open'), `cls=${st?.cls}`);
   await tab.keyboard.press('Escape');
-  await tab.waitForTimeout(350);
-  st = await petState();
+  st = await waitPet(isClosed);
   check('Esc 收起快捷坞', st && !st.cls.includes('dock-open'), `cls=${st?.cls}`);
 
   // ---------- 7. 点击页面空白处关坞 ----------
   await avatar.click();
-  await tab.waitForTimeout(350);
+  await waitPet(isOpen);
   await tab.mouse.click(30, 30);
-  await tab.waitForTimeout(350);
-  st = await petState();
+  st = await waitPet(isClosed);
   check('点击页外收起快捷坞', st && !st.cls.includes('dock-open'), `cls=${st?.cls}`);
 
   // ---------- 8. 快捷坞收起时按钮退出 Tab 序（可及性） ----------
@@ -172,7 +173,7 @@ try {
   check('收起态卫星按钮退出 Tab 序', stillTabbable.length === 0, JSON.stringify(stillTabbable));
   // 展开后回到 Tab 序
   await avatar.click();
-  await tab.waitForTimeout(350);
+  await waitPet(isOpen);
   const focusableWhenOpen = await petCall(`() => {
     const btns = [...document.querySelector('#roamcat-pet-host').shadowRoot.querySelector('.roamcat-quick-dock').children];
     return btns.map(b => ({id: b.id || b.className, tabIndex: b.tabIndex}));
@@ -180,7 +181,7 @@ try {
   const untabbableWhenOpen = (focusableWhenOpen || []).filter(b => b.tabIndex < 0);
   check('展开态卫星按钮回到 Tab 序', untabbableWhenOpen.length === 0, JSON.stringify(untabbableWhenOpen));
   await avatar.click();
-  await tab.waitForTimeout(300);
+  await waitPet(isClosed);
 
   // ---------- 9. 阅读辅助开关（快捷坞保持展开，方向自适应） ----------
   // setManualEnabled 要等 rebuild() 全量完成才回写按钮态：轮询 is-active 而非定时盲采
@@ -189,7 +190,7 @@ try {
       ?.querySelector('#quick-reading')?.classList.contains('is-active') === a,
     active, {timeout: 15000}).then(() => true).catch(() => false);
   await avatar.click();
-  await tab.waitForTimeout(350);
+  await waitPet(isOpen);
   const beforeReading = await tab.locator('#quick-reading').evaluate(el => el.classList.contains('is-active'));
   await tab.locator('#quick-reading').click();
   const landed1 = await waitReadingBtn(!beforeReading);
@@ -235,14 +236,14 @@ try {
   await shot('flip-error');
   // 等待错误气泡自动收回或手动关闭
   await tab.locator('#speech-close-btn').click().catch(() => {});
-  await tab.waitForTimeout(300);
+  await waitPet(s => s && !s.speechCls.includes('speaking'), 2000);
 
   // ---------- 11. 精华摘要：开窗 → 加载 →（无服务）错误 → 重试 → 关闭 ----------
   await avatar.click();
-  await tab.waitForTimeout(350);
+  await waitPet(isOpen);
   await tab.locator('#quick-summary').click();
-  await tab.waitForTimeout(500);
-  st = await petState();
+  await until(summaryOpen, n => n === 1);
+  st = await waitPet(s => s && !s.cls.includes('dock-open'));
   check('提炼收起快捷坞并开窗', st && !st.cls.includes('dock-open')
     && await tab.locator('.roamcat-summary-window.open').count() === 1,
     `dock=${st?.cls} open=${await tab.locator('.roamcat-summary-window.open').count()}`);
@@ -261,7 +262,7 @@ try {
   check('错误态渲染重试按钮', await retryBtn.count() === 1);
   if (await retryBtn.count()) {
     await retryBtn.click();
-    await tab.waitForTimeout(400);
+    await until(summaryLoading, n => n === 1, 1500);
     check('重试回到加载态', await tab.locator('#summary-content .summary-loading').count() === 1
       || await tab.locator('#summary-content .summary-error').count() === 1);
     await tab.locator('#summary-content .summary-error').waitFor({state: 'attached', timeout: 12000}).catch(() => {});
@@ -269,40 +270,38 @@ try {
 
   // 页脚「重新提炼」在错误态可点 → 重新请求
   await tab.locator('#summary-footer-refresh').click();
-  await tab.waitForTimeout(400);
+  await until(summaryLoading, n => n === 1, 1500);
   await tab.locator('#summary-content .summary-error').waitFor({state: 'attached', timeout: 12000}).catch(() => {});
   check('页脚重新提炼可再请求', true);
 
   // 错误态下点「复制摘要」应给出提示气泡而非静默无效
   await tab.locator('#summary-copy-btn').click();
-  await tab.waitForTimeout(300);
-  st = await petState();
+  st = await waitPet(s => /还没有可复制的摘要/.test(s?.speech || ''));
   check('无摘要时复制按钮给提示反馈', /还没有可复制的摘要/.test(st?.speech || ''), `speech=${st?.speech}`);
 
   // 头部刷新按钮 → 再请求；Esc 关闭窗口
   await tab.locator('#summary-header-refresh').click();
-  await tab.waitForTimeout(400);
+  await until(summaryLoading, n => n === 1, 1500);
   await tab.locator('#summary-content .summary-error').waitFor({state: 'attached', timeout: 12000}).catch(() => {});
   check('头部刷新可再请求', true);
   await tab.keyboard.press('Escape');
-  await tab.waitForTimeout(350);
+  await until(summaryOpen, n => n === 0);
   check('Esc 关闭摘要窗', await tab.locator('.roamcat-summary-window.open').count() === 0);
 
   // Alt+Shift+M 重开 → ×关闭
   await tab.keyboard.press('Alt+Shift+M');
-  await tab.waitForTimeout(600);
+  await until(summaryOpen, n => n === 1);
   check('Alt+Shift+M 重开摘要窗', await tab.locator('.roamcat-summary-window.open').count() === 1);
   await tab.locator('#summary-content .summary-error').waitFor({state: 'attached', timeout: 12000}).catch(() => {});
   await tab.locator('#summary-close').click();
-  await tab.waitForTimeout(350);
+  await until(summaryOpen, n => n === 0);
   check('×按钮关闭摘要窗', await tab.locator('.roamcat-summary-window.open').count() === 0);
 
   // ---------- 12. 贴边折叠与唤醒 ----------
   await avatar.dblclick();
-  await tab.waitForTimeout(600);
-  st = await petState();
+  st = await waitPet(isDocked);
   check('双击猫头贴边折叠', st?.cls.includes('docked'), `cls=${st?.cls}`);
-  const hostRect = await tab.locator('#roamcat-pet-host').boundingBox();
+  const hostRect = await until(() => tab.locator('#roamcat-pet-host').boundingBox(), b => b && Math.abs(b.x + b.width - 1440) < 90);
   check('贴边后吸附右缘', Boolean(hostRect) && Math.abs(hostRect.x + hostRect.width - 1440) < 90,
     `right=${hostRect ? Math.round(hostRect.x + hostRect.width) : 'n/a'}`);
   await shot('docked');
@@ -315,12 +314,13 @@ try {
   check('贴边标签可及性（role+tabindex）', edgeTabInfo?.role === 'button' && edgeTabInfo.tabIndex >= 0,
     JSON.stringify(edgeTabInfo));
   // 探头猫贴住屏幕边：挂件右缘落在视口右缘（不再整体平移出屏裁掉爪子）
-  const peekBox = await widget.boundingBox();
+  const peekBox = await until(() => widget.boundingBox(), b => b && Math.abs(b.x + b.width - 1440) <= 1);
   check('贴边探头贴住右缘', Boolean(peekBox) && Math.abs(peekBox.x + peekBox.width - 1440) <= 1,
     `right=${peekBox ? Math.round(peekBox.x + peekBox.width) : 'n/a'}`);
   // 贴边态悬停只探头，不弹快捷按钮方阵
   const pb = await avatar.boundingBox();
   await tab.mouse.move(pb.x + pb.width / 2, pb.y + pb.height / 2);
+  // 观察窗口：这里断言的是贴边悬停「不会」弹出按钮，只能给悬停留出生效时间再看。
   await tab.waitForTimeout(450);
   const dockedHover = await tab.locator('#quick-reading').evaluate(el => {
     const s = getComputedStyle(el);
@@ -330,49 +330,41 @@ try {
   await shot('docked-hover');
   // 贴边标签仅作键盘入口：平时透明且不占命中区
   await tab.mouse.move(30, 30);
-  await tab.waitForTimeout(400);
-  const tabIdle = await tab.locator('#roamcat-edge-tab').evaluate(el => ({opacity: getComputedStyle(el).opacity, pe: getComputedStyle(el).pointerEvents}));
+  const tabIdle = await until(() => tab.locator('#roamcat-edge-tab').evaluate(el => ({opacity: getComputedStyle(el).opacity, pe: getComputedStyle(el).pointerEvents})), v => Number(v.opacity) === 0 && v.pe === 'none');
   check('贴边标签平时隐藏', Number(tabIdle.opacity) === 0 && tabIdle.pe === 'none', JSON.stringify(tabIdle));
   // 标签自身 @click 接线验证
   await tab.locator('#roamcat-edge-tab').dispatchEvent('click');
-  await tab.waitForTimeout(500);
-  st = await petState();
+  st = await waitPet(awake);
   check('贴边标签点击唤醒', st && !st.cls.includes('docked'), `cls=${st?.cls}`);
 
   // 再贴边 → 键盘聚焦标签 Enter 唤醒（新加 @keydown 路径）
   await avatar.dblclick();
-  await tab.waitForTimeout(600);
-  st = await petState();
+  st = await waitPet(isDocked);
   check('双击再贴边', st?.cls.includes('docked'), `cls=${st?.cls}`);
   // 从猫头 Shift+Tab 回到标签：键盘导航才会命中 :focus-visible
   await avatar.focus();
   await tab.keyboard.press('Shift+Tab');
-  await tab.waitForTimeout(250);
-  const tabFocused = await tab.locator('#roamcat-edge-tab').evaluate(el => ({opacity: Number(getComputedStyle(el).opacity), fv: el.matches(':focus-visible')}));
+  const tabFocused = await until(() => tab.locator('#roamcat-edge-tab').evaluate(el => ({opacity: Number(getComputedStyle(el).opacity), fv: el.matches(':focus-visible')})), v => v.fv && v.opacity > 0.9);
   check('贴边标签键盘聚焦可见', tabFocused.fv && tabFocused.opacity > 0.9, JSON.stringify(tabFocused));
   await shot('docked-tab-focus');
   await tab.keyboard.press('Enter');
-  await tab.waitForTimeout(500);
-  st = await petState();
+  st = await waitPet(awake);
   check('键盘 Enter 唤醒贴边标签', st && !st.cls.includes('docked'), `cls=${st?.cls}`);
 
   // 双击猫头贴边 → 单击唤醒
   await avatar.dblclick();
-  await tab.waitForTimeout(600);
-  st = await petState();
+  st = await waitPet(isDocked);
   check('双击猫头贴边', st?.cls.includes('docked'), `cls=${st?.cls}`);
   await avatar.click();
-  await tab.waitForTimeout(500);
-  st = await petState();
+  st = await waitPet(awake);
   check('贴边态单击唤醒', st && !st.cls.includes('docked'), `cls=${st?.cls}`);
 
   // 贴边态猫头 Enter 与单击一致：直接唤醒
   await avatar.dblclick();
-  await tab.waitForTimeout(600);
+  await waitPet(isDocked);
   await avatar.focus();
   await tab.keyboard.press('Enter');
-  await tab.waitForTimeout(500);
-  st = await petState();
+  st = await waitPet(awake);
   check('贴边态猫头 Enter 唤醒', st && !st.cls.includes('docked'), `cls=${st?.cls}`);
 
   // ---------- 13. 拖拽位移并抑制误触 ----------
@@ -382,15 +374,14 @@ try {
   await tab.mouse.down();
   await tab.mouse.move(ax - 60, ay - 40, {steps: 5});
   await tab.mouse.up();
-  await tab.waitForTimeout(400);
-  const after = await tab.locator('#roamcat-pet-host').boundingBox();
+  const after = await until(() => tab.locator('#roamcat-pet-host').boundingBox(), b => b && Math.abs(b.x - before.x) > 30);
   st = await petState();
   check('拖拽移动伴读猫', Boolean(after) && Math.abs(after.x - before.x) > 30, `x ${before.x}→${after?.x}`);
   check('拖拽不触发快捷坞', st && !st.cls.includes('dock-open'), `cls=${st?.cls}`);
 
   // ---------- 14. 缩放按钮 ----------
   await avatar.click();
-  await tab.waitForTimeout(350);
+  await waitPet(isOpen);
   const zoomSeq = [
     ['#zoom-out', '80%', true, false],   // 下限：- 禁用
     ['#zoom-in', '100%', false, false],
@@ -400,8 +391,7 @@ try {
   ];
   for (const [sel, label, outDisabled, inDisabled] of zoomSeq) {
     await tab.locator(sel).click();
-    await tab.waitForTimeout(250);
-    st = await petState();
+    st = await waitPet(s => s?.zoom === label);
     check(`缩放 ${sel} → ${label}`, st?.zoom === label
       && await tab.locator('#zoom-out').evaluate(el => el.disabled) === outDisabled
       && await tab.locator('#zoom-in').evaluate(el => el.disabled) === inDisabled,
@@ -410,27 +400,28 @@ try {
   check('缩放写入 --pet-scale', st?.scale === '1.6', `scale=${st?.scale}`);
   await shot('zoom-160');
   // 复位 100%（1.6→1.4→1.2→1.0 三步）
-  for (let i = 0; i < 3; i++) { await tab.locator('#zoom-out').click(); await tab.waitForTimeout(150); }
+  for (const label of ['140%', '120%', '100%']) { await tab.locator('#zoom-out').click(); await waitPet(s => s?.zoom === label); }
   st = await petState();
   check('缩放回 100%', st?.zoom === '100%', `zoom=${st?.zoom}`);
   // 缩放胶囊比猫宽：把猫贴到视口最右边，胶囊也必须完整留在视口内（fitZoomControls 收位）。
-  const edge = await petCall(`() => {
+  await petCall(`() => {
     const host = document.querySelector('#roamcat-pet-host');
     host.style.left = (innerWidth - host.offsetWidth - 2) + 'px'; host.style.right = 'auto';
     host.pet.fitSpeechBubble();
-    return new Promise(resolve => setTimeout(() => {
-      const r = host.pet.shadowQuery('#roamcat-zoom-controls').getBoundingClientRect(), h = host.getBoundingClientRect();
-      resolve({left: Math.round(r.left), right: Math.round(r.right), hostRight: Math.round(h.right), vw: innerWidth});
-    }, 400));
+    return true;
   }`);
+  const edge = await until(() => petCall(`() => {
+    const host = document.querySelector('#roamcat-pet-host');
+    const r = host.pet.shadowQuery('#roamcat-zoom-controls').getBoundingClientRect(), h = host.getBoundingClientRect();
+    return {left: Math.round(r.left), right: Math.round(r.right), hostRight: Math.round(h.right), vw: innerWidth};
+  }`), e => e && e.left >= 0 && e.right <= e.vw);
   check('猫贴右边时缩放胶囊不出界', edge && edge.hostRight >= edge.vw - 4 && edge.left >= 0 && edge.right <= edge.vw, JSON.stringify(edge));
 
   // ---------- 15. 气泡 × 关闭（忙碌态 → 成功微反馈） ----------
   // 鼠标先移出挂件区域再直达关闭钮，避免路过卫星按钮触发其 pointerleave 清掉忙碌气泡
   await tab.mouse.move(760, 60);
   await petCall(`() => { document.querySelector('#roamcat-pet-host').pet.speakStatus('正在解构正文 喵~', {busy: true}); return true; }`);
-  await tab.waitForTimeout(300);
-  st = await petState();
+  st = await waitPet(s => s?.speechCls.includes('speaking') && s.speechCls.includes('is-busy'));
   check('忙碌气泡显示', st?.speechCls.includes('speaking') && st.speechCls.includes('is-busy'), st?.speechCls);
   // 悬停播报会清空进行中的状态气泡 —— 单独验证这一行为
   const hoverClobber = await petCall(`() => new Promise(resolve => {
@@ -448,28 +439,24 @@ try {
     JSON.stringify(hoverClobber));
   // 恢复忙碌气泡再测 ×
   await petCall(`() => { document.querySelector('#roamcat-pet-host').pet.speakStatus('正在解构正文 喵~', {busy: true}); return true; }`);
-  await tab.waitForTimeout(200);
+  await waitPet(s => s?.speechCls.includes('is-busy'));
   const closeBox = await tab.locator('#speech-close-btn').boundingBox();
   if (closeBox) await tab.mouse.click(closeBox.x + closeBox.width / 2, closeBox.y + closeBox.height / 2);
-  await tab.waitForTimeout(250);
-  st = await petState();
+  st = await waitPet(s => s?.speech === '准备好啦 喵~');
   check('×关闭忙碌气泡并给成功反馈', st?.speech === '准备好啦 喵~', `speech=${st?.speech}`);
-  await tab.waitForTimeout(2000);
-  st = await petState();
+  st = await waitPet(s => s && !s.speechCls.includes('speaking') && s.speech === '漫游伴读 喵~', 5000);
   check('成功反馈后气泡自动收回', st && !st.speechCls.includes('speaking') && st.speech === '漫游伴读 喵~',
     `speech=${st?.speech} cls=${st?.speechCls}`);
 
   // ---------- 16. options 按钮打开/聚焦设置页 ----------
   // 设置页已打开时只聚焦，不另开窗口。extPage 本身就是 options.html。
   await avatar.click();
-  await tab.waitForTimeout(350);
+  await waitPet(isOpen);
   await tab.locator('#quick-options').click();
-  await tab.waitForTimeout(1200);
-  const optionsVisible = await extPage.evaluate(() => document.visibilityState).catch(() => 'unknown');
+  const optionsVisible = await until(() => extPage.evaluate(() => document.visibilityState).catch(() => 'unknown'), v => v === 'visible', 4000);
   check('设置按钮拉起 options 页', optionsVisible === 'visible', `visibility=${optionsVisible}`);
   await tab.bringToFront();
-  await tab.waitForTimeout(300);
-  st = await petState();
+  st = await waitPet(s => s && !s.cls.includes('dock-open'));
   check('点设置后快捷坞已收起', st && !st.cls.includes('dock-open'), `cls=${st?.cls}`);
 
   await tab.pump();

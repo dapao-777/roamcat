@@ -704,9 +704,34 @@ button.welcome-options-link {
   margin-bottom: 10px;
 }
 
+.hud-term-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .hud-term {
   font: 600 var(--fs-5)/1.25 var(--font-serif, Georgia, serif);
   color: var(--color-text-primary, #ffffff);
+}
+
+.hud-audio-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-text-secondary, #94a3b8);
+  cursor: pointer;
+  padding: 0;
+}
+
+.hud-audio-btn:hover {
+  color: var(--color-text-primary, #ffffff);
+  background: var(--color-card-inset, rgba(255, 255, 255, 0.06));
 }
 
 .hud-card-body {

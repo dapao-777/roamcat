@@ -610,14 +610,19 @@
           if (controlHost.parentElement !== custom) custom.append(controlHost);
         } else if (video.controls) {
           delete controlHost.dataset.youtube;
-          let row = video.nextElementSibling?.matches?.(`[${HOST_ATTRIBUTE}="video-subtitles-row"]`) ? video.nextElementSibling : null;
+          const anchor = rowAnchor();
+          let row = anchor.nextElementSibling?.matches?.(`[${HOST_ATTRIBUTE}="video-subtitles-row"]`) ? anchor.nextElementSibling : null;
           if (!row) {
             row = document.createElement('div');
             row.setAttribute(HOST_ATTRIBUTE, 'video-subtitles-row');
             row.style.cssText = 'box-sizing:border-box;display:flex;align-items:center;justify-content:flex-end;gap:8px;width:100%;padding:8px 0;position:relative;z-index:1;';
-            video.insertAdjacentElement('afterend', row);
+            anchor.insertAdjacentElement('afterend', row);
           }
-          if (controlHost.parentElement !== row) row.append(controlHost);
+          const previous = controlHost.parentElement;
+          if (previous !== row) {
+            row.append(controlHost);
+            if (previous?.matches?.(`[${HOST_ATTRIBUTE}="video-subtitles-row"]`) && !previous.childElementCount) previous.remove();
+          }
         } else controlHost.remove();
       }
       const row = controlHost.parentElement?.matches?.(`[${HOST_ATTRIBUTE}="video-subtitles-row"]`) ? controlHost.parentElement : null;
@@ -628,6 +633,25 @@
       else if (slot.after.parentElement && transcriptHost.previousElementSibling !== slot.after) slot.after.insertAdjacentElement('afterend', transcriptHost);
       if (overlayActive()) placeOverlay();
       placeTheater();
+    }
+
+    // 原生控件的 <video> 常包在绝对定位或裁剪溢出的播放器外壳里：控件行若直接插在 video 后面，会被外壳盖住或裁掉，
+    // 原文稿跟着它也看不见。往上找插入点：绝对定位的一层不占文档流，排到它的定位容器（外壳）后面；
+    // 父容器裁剪溢出，就排到父容器后面；直到落在正常文档流、不裁剪的位置。
+    function rowAnchor() {
+      let anchor = video;
+      for (;;) {
+        if (/^(absolute|fixed)$/.test(getComputedStyle(anchor).position)) {
+          const box = anchor.offsetParent;
+          if (!box || box === document.body || box === document.documentElement) break;
+          anchor = box;
+          continue;
+        }
+        const parent = anchor.parentElement;
+        if (!parent || parent === document.body || parent === document.documentElement || !/hidden|clip/.test(getComputedStyle(parent).overflowY)) break;
+        anchor = parent;
+      }
+      return anchor;
     }
 
     function restoreHtmlTrack() {
@@ -1053,10 +1077,10 @@
       return cc.getAttribute('aria-pressed') === 'true' ? 'live-waiting' : 'live-off';
     }
     // 原文稿面板和提示条按当前读取状态说明情况：[提示条文案, 样式, 标题行短文案]。直播没有可回看的原文稿，单独说明，
-    // 标题行只放短标签，免得长说明把标题行挤成两行。
+    // 标题行只放短标签，免得长说明把标题行挤成两行。读取中只在标题行写「正在读取字幕…」，提示条不再重复一遍。
     function sourceStateMessage(state = captionState) {
       if (state !== 'loading' && state !== 'ready' && isLiveStream()) return [T('vid.liveTranscript'), 'info', T('vid.liveShort')];
-      const messages = {none:[T('vid.noCaptions'),'warning'],loading:[T('vid.loadingCaptions'),''],ready:[T('vid.loadingCaptions'),''],unavailable:[T('vid.timelineUnavailable'),'error'],'bridge-unavailable':[T('vid.componentNotReady'),'error']};
+      const messages = {none:[T('vid.noCaptions'),'warning'],loading:['','',T('vid.loadingCaptions')],ready:['','',T('vid.loadingCaptions')],unavailable:[T('vid.timelineUnavailable'),'error'],'bridge-unavailable':[T('vid.componentNotReady'),'error']};
       return messages[state] || messages.unavailable;
     }
     // 没有字幕可用时的提示只停留几秒，不长期压在画面上；同一种状态关掉后不再反复弹。

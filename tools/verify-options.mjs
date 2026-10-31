@@ -86,7 +86,9 @@ try{
   assert.match(await page.locator('#global-error').textContent(),/模拟视频设置保存失败/);
   await page.evaluate(()=>{qa.failVideo=false;});
   report.checks.push('Video section saves caption style through VIDEO_SETTINGS_PATCH, updates the preview, survives reload, and rolls back on failure');
-  await page.evaluate(s=>{location.hash='#'+s},'history');await page.locator('#history-view-stats-tab').click();await until(()=>document.querySelectorAll('.history-bar').length>0);
+  await page.evaluate(s=>{location.hash='#'+s},'history');await until(()=>document.querySelectorAll('.history-bar').length>0);
+  // 阅读记录不再分子标签：统计、记录、记录设置同页可见。
+  assert.equal(await page.evaluate(()=>['history-view-stats','history-view-records','history-view-settings'].every(id=>!document.getElementById(id).hidden)&&!document.querySelector('#history .section-tabs')),true);
   assert.equal(await page.locator('.history-bar').count()>0,true);
   await page.evaluate(s=>{location.hash='#'+s},'assistance');await page.locator('#sidebar-stamp-card').click();assert.equal(await page.locator('#stamp-manifesto-modal').evaluate(el=>el.open),true);
   await page.locator('#stamp-modal-close').click();assert.equal(await page.locator('#stamp-manifesto-modal').evaluate(el=>el.open),false);

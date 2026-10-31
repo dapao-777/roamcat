@@ -20,7 +20,7 @@ const els = Object.fromEntries([
 ].map(id => [id.replace(/-([a-z])/g,(_match,c)=>c.toUpperCase()),byId(id)]));
 els.historyProblem=byId('history-problem');
 els.historyMore=byId('history-more');els.historyRangeNote=byId('history-range-note');
-Object.assign(els,{historyFirstUse:byId('history-first-use'),historyRecordContent:byId('history-record-content'),historyStatsContent:byId('history-stats-content')});
+Object.assign(els,{historyFirstUse:byId('history-first-use')});
 Object.assign(els,{knownWordList:byId('known-word-list'),knownWordEmpty:byId('known-word-empty'),knownWordResult:byId('known-word-result')});
 
 const HISTORY_PAGE_SIZE=300;
@@ -94,16 +94,9 @@ function renderConfig() {
   const snapshot=historyState.snapshot||{};
   const hasData=['events','rules','summaries','daily'].some(key=>snapshot[key]?.length);
   const firstUse=config.enabled!==true&&!snapshot.startedAt&&!config.startedAt&&!hasData;
+  // 统计、记录、记录设置在同一页依次排列；还没有任何记录时只留说明与记录设置。
   els.historyFirstUse.hidden=!firstUse;
-  els.historyRecordContent.hidden=firstUse;
-  els.historyStatsContent.hidden=firstUse;
-  const statsTab=byId('history-view-stats-tab');statsTab.hidden=firstUse;
-  // 还没有任何记录时只剩「设置记录范围」一件事：收起「记录 / 统计 / 设置」子标签，把设置直接铺在说明下面，少一层导航。
-  const tablist=document.querySelector('#history .section-tabs'),settingsTab=byId('history-view-settings-tab');
-  tablist.hidden=firstUse;
-  if(firstUse){if(settingsTab.getAttribute('aria-selected')==='true'||statsTab.getAttribute('aria-selected')==='true')activateSectionTab(byId('history-view-records-tab'));byId('history-view-settings').hidden=false;}
-  else if(settingsTab.getAttribute('aria-selected')!=='true')byId('history-view-settings').hidden=true;
-  byId('history-period-toolbar').hidden=firstUse||byId('history-view-settings-tab').getAttribute('aria-selected')==='true';
+  for(const id of ['history-view-stats','history-view-records','history-period-toolbar'])byId(id).hidden=firstUse;
 }
 function renderKnownWords(){
   const words=Array.isArray(historyState.snapshot?.knownWords)?historyState.snapshot.knownWords:[];els.knownWordList.replaceChildren();
@@ -310,7 +303,6 @@ function activateTab(button) {
 function activateSectionTab(button,{focus=false}={}) {
   const group=button.dataset.sectionTab,tabs=[...document.querySelectorAll('[data-section-tab="'+group+'"]')];
   for(const tab of tabs){const active=tab===button;tab.setAttribute('aria-selected',String(active));tab.tabIndex=active?0:-1;byId(tab.dataset.target).hidden=!active;}
-  if(group==='history')byId('history-period-toolbar').hidden=!els.historyFirstUse.hidden||button.dataset.target==='history-view-settings';
   if(focus)button.focus();
 }
 function visibleSection() { return location.hash.slice(1); }

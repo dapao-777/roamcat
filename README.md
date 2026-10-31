@@ -276,7 +276,7 @@ The full engineering spec is in [`SPEC.md`](roamcat-0.0.1/SPEC.md) (Chinese).
 | `npm test` | Unit tests (`node --test` via `tools/run-unit-tests.mjs`; prints the current count) |
 | `npm run verify` | Module-graph gates R1–R12: load contract, no cycles, layering, file headers, manifest resources, font-size scale |
 | `npm run verify:build` | Build-artifact gates: byte comparison + real browser load smoke test |
-| `npm run verify:ui` | 98-check UI sweep: every page and widget, light + dark, zh + en, screenshots → `preview/ui-audit/` |
+| `npm run verify:ui` | 103-check UI sweep: every page and widget, light + dark, zh + en, screenshots → `preview/ui-audit/` |
 | `npm run verify:pet` | 69-check companion-cat sweep: every floating button clicked for real |
 | `npm run verify:sites` | Site-profile end-to-end checks against real-URL fixtures (`--live` rechecks real sites) |
 | `npm run verify:options` | Settings-page behaviour checks (saving, rollback on failure, reset, model list) |

@@ -275,7 +275,7 @@ node roamcat-0.0.1/connector/install.mjs --extension-id afpeggkplomdjjiemgajjgca
 | `npm test` | 单元测试（经 `tools/run-unit-tests.mjs` 调用 `node --test`，数量以运行结果为准） |
 | `npm run verify` | 模块图门禁 R1–R11：加载契约、无环、分层方向、文件头、manifest 资源 |
 | `npm run verify:build` | 构建产物门禁：字节比对 + 浏览器实际加载冒烟 |
-| `npm run verify:ui` | 98 项全界面门禁：页面与挂件遍历、明暗主题、中英文断言，截图 → `preview/ui-audit/` |
+| `npm run verify:ui` | 103 项全界面门禁：页面与挂件遍历、明暗主题、中英文断言，截图 → `preview/ui-audit/` |
 | `npm run verify:pet` | 69 项伴读猫门禁：真实点击全部悬浮按钮 |
 | `npm run verify:sites` | 站点档案端到端检查：fixture 按真实 URL 路由（`--live` 复核真站） |
 | `npm run verify:options` | 设置页行为门禁：保存、失败回滚、重置、模型列表等 |

@@ -3,7 +3,7 @@
  * 文件职责：伴读猫的无状态辅助函数（classic script，禁 ESM 语法）——领域名称、快捷键抢键判断、
  *   阅读量估算与页面背景色取样，以及把拆分文件里的原型方法装回 RoamCatPetWidget 的 defineMethods。
  * 主要内容：globalThis.RoamCatPetParts 上的 domainName、petShortcutBlocked、calculateReadingMeta、hasKeepOut、keepOutRight（避让站点固定侧栏）、
- *   parseRgba、getLuminance、getElementBg、defineMethods。
+ *   getLuminance、getElementBg（伴读猫所在位置的底色取样；网页整体明暗由 content-ui 的 pageThemeHint 判断）、defineMethods。
  * 模块边界：不持有伴读猫状态、不挂 DOM；须与其余 floating-pet-*.js 同批注入且排在 floating-pet.js 之前；
  *   必须保持非 ESM（module-graph R1 强制）。
  *
@@ -103,5 +103,5 @@
     }
   }
 
-  Object.assign(parts, {domainName, petShortcutBlocked, calculateReadingMeta, parseRgba, getLuminance, getElementBg, hasKeepOut, keepOutRight, defineMethods});
+  Object.assign(parts, {domainName, petShortcutBlocked, calculateReadingMeta, getLuminance, getElementBg, hasKeepOut, keepOutRight, defineMethods});
 })();
