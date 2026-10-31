@@ -1,6 +1,6 @@
 {
   "name": "roamcat",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "private": true,
   "description": "RoamCat · 随心阅 — Chrome/Edge MV3 双模式英文阅读扩展：本页双语翻译（主模式）+ 阅读辅助（副模式），本地优先。",
   "scripts": {
