@@ -62,18 +62,18 @@
     const currentVideoId = videoIdFromLocation();
     const capturedVideoId = url.searchParams.get('v') || currentVideoId;
     if (!currentVideoId || capturedVideoId !== currentVideoId) return;
-    url.searchParams.delete('tlang');
-    capturedTrack = {videoId: currentVideoId, url: url.href, languageCode: url.searchParams.get('lang') || '', kind: url.searchParams.get('kind') || ''};
+    capturedTrack = {videoId: currentVideoId, url: url.href, languageCode: url.searchParams.get('lang') || '', kind: url.searchParams.get('kind') || '', targetLanguage: url.searchParams.get('tlang') || ''};
   }
   function rememberCaption(rawUrl, text) {
     const raw = typeof rawUrl === 'string' ? rawUrl : rawUrl?.url || '';
     if (!raw.includes('timedtext')) return;
     noteTimedtext(raw);
-    const safeUrl = safeCaptionUrl(rawUrl);
+    const safeUrl = safeCaptionUrl(raw);
     if (!safeUrl || !capturedTrack || typeof text !== 'string') return;
     const noted = new URL(safeUrl);
-    noted.searchParams.delete('tlang');
     if (capturedTrack.url !== noted.href) return;
+    // 自动翻译的正文属于派生语言，不能因删除 tlang 就冒充原语言，也不覆盖已有原文。
+    if (capturedTrack.targetLanguage) return;
     const body = text.length > 1500000 ? '' : text;
     if (!body || body.trimStart().startsWith('<') || !/"events"|wireMagic/.test(body)) return;
     cachedCaption = {videoId: capturedTrack.videoId, languageCode: capturedTrack.languageCode, kind: capturedTrack.kind, text: body};
@@ -82,7 +82,8 @@
     if (!cachedCaption || cachedCaption.videoId !== videoIdFromLocation() || !cachedCaption.text) return '';
     const wanted = stringValue(track?.languageCode, 32).toLowerCase();
     const got = stringValue(cachedCaption.languageCode, 32).toLowerCase();
-    if (wanted && got && got !== wanted && !got.startsWith(wanted.slice(0, 2)) && !wanted.startsWith(got.slice(0, 2))) return '';
+    if (wanted && got !== wanted) return '';
+    if (stringValue(track?.kind) !== cachedCaption.kind) return '';
     return cachedCaption.text;
   }
   function bodyFromXhr(xhr) {
@@ -108,13 +109,18 @@
   function trackIdentity(track) {
     return `${stringValue(track?.vssId || track?.vss_id)}\u0000${stringValue(track?.languageCode || track?.language_code)}\u0000${stringValue(track?.kind)}`;
   }
+  function selectedTrackValue(player) {
+    try { return player?.getOption?.('captions', 'track') || null; } catch { return null; }
+  }
+  function translationLanguage(track) {
+    return stringValue(track?.translationLanguage?.languageCode || track?.translationLanguage?.language_code, 32);
+  }
   function readSelectedTrack(player, tracks) {
-    let selected = null;
-    try { selected = player.getOption?.('captions', 'track') || null; } catch { selected = null; }
+    const selected = selectedTrackValue(player);
     const identity = trackIdentity(selected);
     return tracks.find(track => trackIdentity(track) === identity)
       || tracks.find(track => stringValue(selected?.vss_id || selected?.vssId) && stringValue(track?.vssId) === stringValue(selected?.vss_id || selected?.vssId))
-      || tracks.find(track => stringValue(selected?.languageCode || selected?.language_code) && stringValue(track?.languageCode) === stringValue(selected?.languageCode || selected?.language_code))
+      || tracks.find(track => stringValue(selected?.languageCode || selected?.language_code) && stringValue(track?.languageCode) === stringValue(selected?.languageCode || selected?.language_code) && stringValue(track?.kind) === stringValue(selected?.kind))
       || null;
   }
   function captionsVisible(player, selectedTrack) {
@@ -151,10 +157,10 @@
     return fallback(manual) || fallback(asr);
   }
   function playerTrackValue(track) {
-    return {languageCode: stringValue(track?.languageCode, 32), kind: stringValue(track?.kind, 32), vss_id: stringValue(track?.vssId || track?.vss_id, 128)};
+    return {languageCode: stringValue(track?.languageCode || track?.language_code, 32), kind: stringValue(track?.kind, 32), vss_id: stringValue(track?.vssId || track?.vss_id, 128), translationLanguage: track?.translationLanguage ? {...track.translationLanguage} : undefined};
   }
   function capturedUrlFor(videoId, track) {
-    if (!capturedTrack || capturedTrack.videoId !== videoId) return '';
+    if (!capturedTrack || capturedTrack.videoId !== videoId || capturedTrack.targetLanguage) return '';
     if (track?.languageCode && capturedTrack.languageCode && track.languageCode !== capturedTrack.languageCode) return '';
     const expectedKind = track?.kind === 'asr' ? 'asr' : '';
     return capturedTrack.kind === expectedKind ? capturedTrack.url : '';
@@ -177,6 +183,7 @@
       track: chosen && baseUrl ? {
         key: stringValue(chosen.vssId || chosen.languageCode || chosen.kind, 128),
         languageCode: stringValue(chosen.languageCode, 32),
+        kind: stringValue(chosen.kind, 32),
         label: stringValue(displayText(chosen.name), 128),
         baseUrl,
       } : null,
@@ -193,7 +200,7 @@
   }
   function sameSelectedTrack(player, expected) {
     const selected = readSelectedTrack(player, responseTracks(player));
-    return Boolean(selected && trackIdentity(selected) === trackIdentity(expected));
+    return Boolean(selected && trackIdentity(selected) === trackIdentity(expected) && translationLanguage(selectedTrackValue(player)) === translationLanguage(expected));
   }
   function sleep(milliseconds) { return new Promise(resolve => setTimeout(resolve, milliseconds)); }
 
@@ -201,7 +208,7 @@
     const state = preparedState;
     preparedState = null;
     if (!state?.player?.isConnected || videoIdFromLocation() !== state.videoId) return;
-    if (state.switchedTrack && sameSelectedTrack(state.player, state.englishTrack) && state.previousTrack) setTrack(state.player, state.previousTrack);
+    if (state.switchedTrack && sameSelectedTrack(state.player, state.englishTrack) && state.previousTrackValue) setTrack(state.player, state.previousTrackValue);
     if (state.toggledVisibility && captionsVisible(state.player, readSelectedTrack(state.player, responseTracks(state.player)))) clickCaptionButton(state.player);
   }
   async function prepareCaptions(language) {
@@ -213,10 +220,15 @@
     restoreCaptions();
     const tracks = responseTracks(player);
     const previousTrack = readSelectedTrack(player, tracks);
+    const selectedValue = selectedTrackValue(player);
+    const previousTrackValue = playerTrackValue(selectedValue || previousTrack);
+    // 优先保留播放器的明确选择；仅在字段缺失时用同源请求补足，不撤销用户刚关闭的自动翻译。
+    const capturedTranslation = capturedTrack?.videoId === videoId && previousTrack && capturedTrack.languageCode === previousTrack.languageCode && capturedTrack.kind === (previousTrack.kind || '') ? capturedTrack.targetLanguage : '';
+    if (selectedValue && !Object.hasOwn(selectedValue, 'translationLanguage') && capturedTranslation) previousTrackValue.translationLanguage = {languageCode: capturedTranslation};
     const englishTrack = chooseTrack(tracks, language === '*' ? videoLanguage(player) : language);
     if (!englishTrack) return false;
     const wasVisible = captionsVisible(player, previousTrack);
-    const switchedTrack = !previousTrack || trackIdentity(previousTrack) !== trackIdentity(englishTrack);
+    const switchedTrack = !previousTrack || trackIdentity(previousTrack) !== trackIdentity(englishTrack) || Boolean(translationLanguage(previousTrackValue));
     if (switchedTrack && !setTrack(player, englishTrack)) return false;
     let selected = !switchedTrack || sameSelectedTrack(player, englishTrack);
     for (let elapsed = 0; !selected && elapsed < 1500; elapsed += 150) {
@@ -225,12 +237,12 @@
       selected = sameSelectedTrack(player, englishTrack);
     }
     if (!selected) {
-      if (previousTrack && sameSelectedTrack(player, englishTrack)) setTrack(player, previousTrack);
+      if (previousTrack && sameSelectedTrack(player, englishTrack)) setTrack(player, previousTrackValue);
       return false;
     }
     let toggledVisibility = false;
     if (!wasVisible) toggledVisibility = clickCaptionButton(player);
-    preparedState = {player, videoId, previousTrack, englishTrack, switchedTrack, toggledVisibility};
+    preparedState = {player, videoId, previousTrackValue: previousTrack ? previousTrackValue : null, englishTrack, switchedTrack, toggledVisibility};
     return true;
   }
   async function readCaption() {

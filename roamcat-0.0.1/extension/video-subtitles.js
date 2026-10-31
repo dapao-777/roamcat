@@ -331,6 +331,9 @@
 
     let currentCallbacks = callbacks;
     let settings = normalizedSettings(callbacks.settings);
+    let confirmedSettings = settings;
+    const settingsChanges = [];
+    let settingsSaveQueue = Promise.resolve();
     let renderedTheme;
     let video = null;
     let source = null;
@@ -1289,7 +1292,8 @@
         const result = await currentCallbacks.onTranslate(payload);
         const elapsed = performance.now() - started;
         observedTranslateMs = observedTranslateMs ? observedTranslateMs * 0.6 + elapsed * 0.4 : elapsed;
-        if (destroyed || generation !== sourceGeneration || !settings.bilingual) return;
+        // 关闭双语只停止新任务；同一字幕源的在途结果仍可缓存，重开时不能留下永久 pending。
+        if (destroyed || generation !== sourceGeneration) return;
         const byId = new Map((result?.items || []).map(item => [item.id, item.translation]));
         for (const item of remote) {
           const key = groupKey(item.group);
@@ -1298,7 +1302,7 @@
         }
         hideTranslateFailure();
       } catch (error) {
-        if (generation !== sourceGeneration) return;
+        if (destroyed || generation !== sourceGeneration) return;
         for (const item of remote) translations.set(groupKey(item.group), failed(groupKey(item.group)));
         showTranslateFailure(error);
       }
@@ -1321,7 +1325,12 @@
       const group = [groups[landing], groups[current]].find(item => item && needsTranslation(groupKey(item)));
       if (!group) return;
       const generation = sourceGeneration;
-      priorityRequest = translateGroups([group], generation).finally(() => { priorityRequest = null; });
+      const request = {};
+      priorityRequest = request;
+      void (async () => {
+        try { await translateGroups([group], generation); } catch { /* 失败状态由批次处理。 */ }
+        finally { if (priorityRequest === request) priorityRequest = null; }
+      })();
     }
     // 预取窗口按时间算：从当前句起往后 30 秒内（往返慢时放宽到四个往返）、还没译的句子，每批至多 5 句。
     // 播放中、译文回来前就会播完的句子跳过，名额留给译文到时还在屏幕上的句子。
@@ -1360,22 +1369,26 @@
       if (!settings.bilingual || source?.cues?.length) return;
       const text = readDomCaption();
       if (!text || text === domCaptionText) return;
+      const generation = sourceGeneration, url = location.href;
+      const current = () => !destroyed && generation === sourceGeneration && url === location.href && !source?.cues?.length;
       domCaptionText = text;
       clearTimeout(domCaptionTimer);
       domCaptionTimer = setTimeout(() => {
         const key = `live:${text}`;
+        if (!current()) return;
         if (translations.has(key) || !settings.bilingual) { renderOverlay(); return; }
         const local = localCaption(text);
         if (local) { translations.set(key, {status: 'ok', text: local}); renderOverlay(); return; }
         void enqueueTranslate(async () => {
-          if (translations.has(key) || !settings.bilingual) return;
+          if (!current() || translations.has(key) || !settings.bilingual) return;
           translations.set(key, {status: 'pending', text: ''});
           renderOverlay();
           try {
             const result = await currentCallbacks.onTranslate?.([{id: 'c1', text: text.slice(0, 4000)}]);
+            if (!current()) return;
             const translation = result?.items?.find(item => item.id === 'c1')?.translation;
             translations.set(key, acceptableTranslation(text, translation) ? {status: 'ok', text: translation.trim()} : {status: 'error', text: ''});
-          } catch { translations.set(key, {status: 'error', text: ''}); }
+          } catch { if (!current()) return; translations.set(key, {status: 'error', text: ''}); }
           renderOverlay();
         });
       }, 650);
@@ -1388,6 +1401,8 @@
       refreshSkips = 0;
       bridgeFailed = false;
       unavailableCaptionUrl = '';
+      sourceGeneration += 1;
+      resetTranslationWork();
       translations.clear();
       captionState = 'loading';
       domCaptionText = '';
@@ -1413,13 +1428,21 @@
         try { void assist.video.play(); } catch { /* Autoplay policy may reject safe restoration. */ }
       }
     }
+    function resetTranslationWork() {
+      // 新源不等待旧源的在途请求；旧队列项执行前会核对代次，不再向模型发送。
+      translateQueue = Promise.resolve();
+      prefetchInFlight = 0;
+      priorityRequest = null;
+      clearTimeout(domCaptionTimer);
+      domCaptionTimer = null;
+    }
     function installSource(next) {
       const signature = sourceSignature(next);
       if (source?.signature === signature) return false;
       const sameTrack = source?.key === next.key;
       if (!sameTrack) {
         sourceGeneration += 1;
-        prefetchInFlight = 0;
+        resetTranslationWork();
         closeActiveAssist();
         translations.clear();
         domCaptionText = '';
@@ -1439,7 +1462,7 @@
     }
     function clearSource() {
       sourceGeneration += 1;
-      prefetchInFlight = 0;
+      resetTranslationWork();
       closeActiveAssist();
       source = null;
       renderedCount = 0;
@@ -1709,24 +1732,43 @@
       if (transcriptOpen) { renderTranscript(true); void refreshSource(); transcriptFollowPausedUntil = 0; requestAnimationFrame(() => followActiveCue(true)); }
     }
 
-    // 所有视频设置都走这里：先在本页生效，再存到扩展；保存失败就退回原值并提示。
-    async function setVideoSettings(patch) {
-      if (patch.bilingual === false) stopDictation();
-      const previous = settings;
-      settings = normalizedSettings({...settings, ...patch});
+    function renderPendingSettings() {
+      settings = normalizedSettings(Object.assign({}, confirmedSettings, ...settingsChanges.map(change => change.patch)));
       applySettingsToUi();
-      if (patch.bilingual === true) void refreshSource();
-      if (typeof currentCallbacks.onSettingsChange !== 'function') { showNotice(T('vid.pageOnlySettings'), 'warning'); return; }
-      try {
-        const result = await currentCallbacks.onSettingsChange(patch);
-        settings = normalizedSettings(result?.video);
-        applySettingsToUi();
-      } catch {
-        settings = previous;
-        applySettingsToUi();
-        showNotice(T('vid.saveFailRevert'), 'error');
-        showOverlayHint(T('vid.saveFailRevert'));
+    }
+    // 本页先预览所有未完成修改；保存按点击顺序执行，失败只移除自己的修改。
+    function setVideoSettings(patch) {
+      if (patch.bilingual === false) stopDictation();
+      const owner = currentCallbacks;
+      if (typeof owner.onSettingsChange !== 'function') {
+        confirmedSettings = normalizedSettings({...confirmedSettings, ...patch});
+        renderPendingSettings();
+        if (patch.bilingual === true) void refreshSource();
+        showNotice(T('vid.pageOnlySettings'), 'warning');
+        return Promise.resolve();
       }
+      const change = {patch}, previous = settingsSaveQueue;
+      settingsChanges.push(change);
+      renderPendingSettings();
+      if (patch.bilingual === true) void refreshSource();
+      const save = (async () => {
+        try {
+          await previous;
+          // 已经由用户提交的设置继续保存；卸载后只停止界面更新，不丢掉排队的偏好。
+          const result = await owner.onSettingsChange(patch);
+          if (!destroyed) confirmedSettings = normalizedSettings(result?.video);
+        } catch {
+          if (!destroyed) {
+            showNotice(T('vid.saveFailRevert'), 'error');
+            showOverlayHint(T('vid.saveFailRevert'));
+          }
+        } finally {
+          settingsChanges.splice(settingsChanges.indexOf(change), 1);
+          if (!destroyed) renderPendingSettings();
+        }
+      })();
+      settingsSaveQueue = save;
+      return save;
     }
     function setBilingual(next) { return setVideoSettings({bilingual: next === true}); }
     function setMenuOpen(next) {
@@ -1898,10 +1940,10 @@
       setCallbacks(nextCallbacks) {
         if (typeof nextCallbacks?.onAssist !== 'function') throw new TypeError('onAssist callback is required');
         currentCallbacks = nextCallbacks;
-        if (nextCallbacks.settings) { settings = normalizedSettings(nextCallbacks.settings); applySettingsToUi(); }
+        if (nextCallbacks.settings) { confirmedSettings = normalizedSettings(nextCallbacks.settings); renderPendingSettings(); }
       },
       unmount() {
-        destroyed = true; sessionGeneration += 1; clearInterval(refreshTimer);
+        destroyed = true; sessionGeneration += 1; sourceGeneration += 1; resetTranslationWork(); clearInterval(refreshTimer);
         if (frameId !== null) cancelAnimationFrame(frameId);
         observer.disconnect(); bridgeCleanup?.(); captionAbort?.abort(); closeActiveAssist(); restoreNativeState(); detachVideo();
         document.removeEventListener('fullscreenchange', onFullscreenChange);
@@ -1913,6 +1955,7 @@
         stopPlayLoop();
         clearTimeout(emptyTimer);
         clearTimeout(hintTimer);
+        clearTimeout(noticeTimer);
         clearTimeout(domCaptionTimer);
         setNativeCaptionHidden(false);
         overlayHost.remove();

@@ -1,6 +1,6 @@
 # Chrome Web Store Listing — RoamCat · 随心阅
 
-> Last Updated: 2026-10-30（修复阅读器超长段落漏翻，重试可补齐未完成部分；权限与数据发送范围不变。视频双语字幕只发送播放点附近的字幕文本；无字幕的 YouTube 视频可手动开启云端听写，音轨分段经本机 Google 订阅连接器发给 Gemini；Twitch 直播聊天翻译默认关闭，开启后只发送新到的公开聊天消息文本）
+> Last Updated: 2026-10-30（修复 YouTube 字幕开关接续、原文缓存、换片队列和设置保存，并完善阅读器超长段落翻译；权限与数据发送范围不变。视频双语字幕只发送播放点附近的字幕文本；无字幕的 YouTube 视频可手动开启云端听写，音轨分段经本机 Google 订阅连接器发给 Gemini；Twitch 直播聊天翻译默认关闭，开启后只发送新到的公开聊天消息文本）
 > 本文是上架 Chrome Web Store / Microsoft Edge Add-ons 的单一事实源：商店文案、权限理由、隐私披露、版本历史。
 > 提交前请逐项核对文末「提交前检查单」。本文不随 Release ZIP 发布（放在仓库根目录，打包白名单之外）。
 
@@ -29,6 +29,7 @@ RoamCat · 随心阅
 • 生词渐退——对反复求助的用法自动从「短注」渐退到「仅标记」再到「暂缓」，熟悉的内容不再打扰
 • 文章摘要——一键提炼整篇文章的核心结论、主要论点与关键术语；复制时保留原文章标题与链接
 • 伴读猫——可拖拽的桌面小伙伴，随时访问常用功能
+• YouTube 双语字幕——有字幕的视频可显示原文与中文译文，关闭再开启可接续已有译文；字幕外观可调整，换视频后跟随新内容
 • 内置阅读器——打开 PDF / EPUB，长文档分页阅读，目录可直接跳转；「翻译全文」逐段生成中文对照，超长段落也能完整翻译，失败后重试可补齐未完成部分，翻页后译文仍保留
 • 中英双语界面——设置、弹窗、引导页、阅读器与页内挂件统一切换，可跟随浏览器语言
 
@@ -67,6 +68,7 @@ Features
 • Gradual fade-out for words you keep looking up, so familiar content stops interrupting
 • One-tap article digest with key takeaways and terms
 • A draggable desktop companion for quick access
+• YouTube bilingual captions: original text with Chinese translations, reusable translations when toggling captions, adjustable styling and a fresh start for each video
 • Built-in reader for PDF / EPUB / pasted articles, with paragraph-by-paragraph bilingual translation
 • Fully bilingual interface (Chinese / English) across every page and in-page widget
 
@@ -205,7 +207,7 @@ https://github.com/dapao-777/roamcat
 
 | Version | Date | Changes | Status |
 |---------|------|---------|--------|
-| Unreleased | 2026-10-30 | 改善长文章、阅读历史和大词库的响应；长文档分页，目录跳转后保留译文；修复超长段落漏翻，重试可补齐未完成部分。现有权限与隐私披露范围不变。 | Draft |
+| Unreleased | 2026-10-30 | 改善长文章、阅读历史和大词库的响应；长文档分页，目录跳转后保留译文；修复超长段落漏翻、YouTube 双语开关后漏译、原生自动翻译替换原文、换视频后翻旧字幕及外观保存回退。现有权限与隐私披露范围不变。 | Draft |
 | 0.0.1（修订） | 2026-09-22 | 修复切换文章或模型后显示旧摘要的问题；新文章可立即重新总结，复制摘要保留原文标题和链接。 | Draft |
 | 0.0.1 | 2026-09-21 | 首个 prerelease：保留原文的稀疏阅读辅助（词义短注 / 局部中文说明）、查词卡片与顶部词注、句子阅读解构、本页双语翻译（按阅读位置推进、失败段可重试）、内置本地领域识别、生词渐退、文章摘要、伴读猫；模型服务支持自备 API 与 ChatGPT / Grok / Google 订阅连接器。 | Draft |
 

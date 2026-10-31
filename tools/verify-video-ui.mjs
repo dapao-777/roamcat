@@ -5,6 +5,7 @@
  * 主要内容：直播（ytp-live）CC 关时提示打开 CC 且无「重新读取字幕」；CC 开、句间空档不弹提示；直播字幕出现时双语层显示原文与译文；
  *   原文稿面板插在 #below 最前、底边不压标题，标题行写「直播 · 实时字幕」、提示条说明没有可回看的原文稿、下载按钮隐藏；
  *   普通视频读不到字幕时提示不带「直播」字样且有「重新读取字幕」。截图写 preview/video-ui/。
+ *   video-regressions.mjs 补充关闭重开、原生自动翻译/轨道身份、换片队列、设置排队/回滚/卸载保存的异步回归。
  * 模块边界：字幕布局用 chrome.* 与翻译桩，偏好恢复另加载真实扩展后台；不连模型，页面经请求拦截下发，不访问真实 YouTube。先 npm run build。
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -15,6 +16,7 @@ import fs from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import {openBrowser, DIST, assertFreshDist, previewPath, extUrl, tabIdOf} from './lib/ego.mjs';
 import {createGateReport} from './lib/gate-report.mjs';
+import {verifyVideoRegressions} from './lib/video-regressions.mjs';
 
 // 20 秒静音 WAV：真实媒体元素可播放，不依赖网络视频。
 const wav = Buffer.alloc(44 + 16000 * 2 * 20);
@@ -166,4 +168,5 @@ await gate.check('真实后台：视频页初始化及普通状态刷新保留�
   }
 });
 
+await verifyVideoRegressions(gate);
 gate.finish({errors});
