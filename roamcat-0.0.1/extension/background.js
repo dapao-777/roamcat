@@ -238,6 +238,7 @@ const emergencyKey=tabId=>'emergencySession:'+tabId;
 let emergencyWrites=Promise.resolve();
 function changeEmergency(operation){const work=emergencyWrites.then(operation);emergencyWrites=work.catch(()=>{});return work;}
 const POPUP_INTENT_KEY='bilingualPopupIntent';
+const readerOriginalKey=tabId=>'readerOriginalOnce:'+tabId;
 let popupIntentWrites=Promise.resolve();
 function changePopupIntent(operation){const work=popupIntentWrites.then(operation);popupIntentWrites=work.catch(()=>{});return work;}
 function setPopupIntent(intent){return changePopupIntent(()=>chrome.storage.session.set({[POPUP_INTENT_KEY]:intent}));}
@@ -3227,12 +3228,14 @@ const messageHandlers = [
   {
     type: 'STATE_PATCH',
     handle: async (message, { sender, trusted }) => {
-      const before = await load(false),
-        patch = validatePatch(message.patch, before.settings),
-        effects = settingsPatchEffects(before.settings, patch);
+      let before, patch, effects;
       const result = await mutate(
         state => {
-          state.settings = { ...state.settings, ...patch };
+          // 校验、嵌套补全与引用检查必须使用排队后的最新设置，和写入属于同一事务。
+          before = {settings: state.settings};
+          patch = validatePatch(message.patch, state.settings);
+          effects = settingsPatchEffects(state.settings, patch);
+          state.settings = effects.nextSettings;
           if (effects.rememberChanged) state.supportDataGeneration++;
           if (
             effects.providerChanged ||
@@ -3317,6 +3320,25 @@ const messageHandlers = [
   { type: 'VIDEO_AUDIO_TRANSCRIBE', handle: (message, { sender }) => videoAudioTranscribe(message, sender) },
   { type: 'LIVE_CHAT_TRANSLATE', handle: (message, { sender }) => liveChatTranslate(message, sender) },
   { type: 'READER_TRANSLATE', handle: (message, { sender, trusted }) => readerTranslate(message, sender, trusted) },
+  {
+    type: 'READER_OPEN_ORIGINAL',
+    handle: async (message, {sender, trusted}) => {
+      const readerUrl = chrome.runtime.getURL('ui/reader.html');
+      const fromReader = sender.url === readerUrl || sender.url?.startsWith(readerUrl + '?') || sender.url?.startsWith(readerUrl + '#');
+      if (!trusted || !Number.isInteger(sender.tab?.id) || (sender.frameId !== undefined && sender.frameId !== 0)
+        || !fromReader)
+        throw new Error(M('仅阅读器页面可以打开原始文档。','Only the reader page can open the original document.'));
+      let url;
+      try { url = new URL(message.url); } catch { throw new Error(M('文档地址无效。','Invalid document URL.')); }
+      if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password)
+        throw new Error(M('文档地址必须是 HTTP 或 HTTPS 地址，且不能包含账号信息。','The document URL must use HTTP or HTTPS and contain no account credentials.'));
+      const key = readerOriginalKey(sender.tab.id);
+      await chrome.storage.session.set({[key]:{url:url.href, at:Date.now()}});
+      try { await chrome.tabs.update(sender.tab.id, {url:url.href}); }
+      catch (error) { await chrome.storage.session.remove(key); throw error; }
+      return {opened:true};
+    }
+  },
   { type: 'EMERGENCY_TRANSLATE', handle: (message, { sender, trusted }) => emergencyTranslate(message, sender) },
   {
     type: 'EMERGENCY_CANCEL_REQUEST',
@@ -3500,16 +3522,22 @@ chrome.webNavigation.onBeforeNavigate.addListener(details => {
     const url = new URL(details.url);
     if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
     if (!/\.pdf$/iu.test(url.pathname)) return;
-    void chrome.storage.local.get('settings').then(data => {
+    void (async () => {
+      const key = readerOriginalKey(details.tabId);
+      const [data, session] = await Promise.all([chrome.storage.local.get('settings'), chrome.storage.session.get(key)]);
+      const bypass = session[key], age = Date.now() - bypass?.at;
+      if (bypass) await chrome.storage.session.remove(key);
+      // 读者主动返回原站时只放行这次、这个标签页、这个地址，不能形成永久的接管例外。
+      if (bypass?.url === url.href && age >= 0 && age < 30000) return;
       if (normalizeSettings(data.settings).pdfReader === false) return;
-      void chrome.tabs.update(details.tabId, {url: chrome.runtime.getURL('ui/reader.html') + '?src=' + encodeURIComponent(details.url)}).catch(() => {});
-    });
+      await chrome.tabs.update(details.tabId, {url: chrome.runtime.getURL('ui/reader.html') + '?src=' + encodeURIComponent(details.url)});
+    })().catch(() => {});
   } catch {}
 });
 chrome.tabs.onRemoved.addListener(tabId => {
   void pruneBackgroundQueue();
   void clearPopupIntent(tabId);
-  void forgetEmergency(tabId);injectedEmergencyPages.delete(tabId);sentenceModeGeneration.delete(tabId);void chrome.storage.session.remove([sentenceModeKey(tabId),readingIntentKey(tabId)]);
+  void forgetEmergency(tabId);injectedEmergencyPages.delete(tabId);sentenceModeGeneration.delete(tabId);void chrome.storage.session.remove([sentenceModeKey(tabId),readingIntentKey(tabId),readerOriginalKey(tabId)]);
   tabActivationGeneration.delete(tabId);
   tabSeenArticle.delete(tabId);
   liveChatRate.forget(tabId);

@@ -119,7 +119,7 @@
 | `activation.js` / `auto-start.js` | 自动开启策略、动态注册 content script、SPA 导航检测；`pageOrigin`/`sitePattern`/`validateAutomation`/`validateVideo`/`registrationMatches` 为纯函数（已纳入领域层 lint 与单测） | `registrationMatches()` 是权限/注册的唯一事实源 |
 | `shared.js` | `DEFAULT_SETTINGS`、`normalizeSettings`、`wordId`、`request()` | 旧配置键不得通过 spread 复活 |
 | `message-router.js` | 类型化消息路由器：注册表构造、重复类型即失败、`parse`+`handle` 两段派发 | 泛型实现，不认识任何具体消息；未知类型抛「未知请求。」 |
-| `message-protocol.js` | 消息协议唯一事实源：`MESSAGE_TYPES`（78 种）、`CONTENT_ALLOWED_TYPES`、纯载荷解析器与自 `background.js` 下沉的 `validatePatch`（设置补丁校验）、`settingsPatchEffects`（STATE_PATCH 副作用计划）、`parseAssistRequest`/`parsePassageRequestRef`（请求身份）、`onDemandSuggestionDecision`（按需建议判定）、`text`/`domain`/`customDetectionService` | 只依赖 `shared.js`、`domain-routing.js`、`api-providers.mjs`、`gloss.mjs` 等领域/协议模块；新增类型必须同步注册表与第 5 节 |
+| `message-protocol.js` | 消息协议唯一事实源：`MESSAGE_TYPES`（79 种）、`CONTENT_ALLOWED_TYPES`、纯载荷解析器与自 `background.js` 下沉的 `validatePatch`（设置补丁校验）、`settingsPatchEffects`（STATE_PATCH 副作用计划）、`parseAssistRequest`/`parsePassageRequestRef`（请求身份）、`onDemandSuggestionDecision`（按需建议判定）、`text`/`domain`/`customDetectionService` | 只依赖 `shared.js`、`domain-routing.js`、`api-providers.mjs`、`gloss.mjs` 等领域/协议模块；新增类型必须同步注册表与第 5 节 |
 | `api-providers.mjs` / `api-transport.mjs` | 33 家服务商目录、8 种协议适配、结构化输出能力探测、模型列表、各协议 usage 抽取（`onUsage` 回调） | HTTPS only（本机回环除外）；同源重定向禁止；密钥不进内容脚本 |
 | `thinking-levels.mjs` | 按「服务商 + 模型」声明思考档位（官方档位名、默认档、请求参数），供设置页与请求层共用 | 只收录官方文档写明的模型；未收录模型返回 null，请求沿用关闭思考参数 |
 | `rate-window.mjs` | 按键计数的滑动时间窗限额 `createRateWindow({limit,windowMs})`（`take`/`forget`） | 纯函数领域模块；计数只在内存，SW 重启归零——只作防失控上限，不承担正确性 |
@@ -179,7 +179,7 @@
 - 内容脚本仅可用白名单（`contentAllowed`，37 种，以 `CONTENT_ALLOWED_TYPES` 为准）：状态读取、分析、支持批次、解构、求助、翻译、历史信号、诊断回执、伴读猫位置等。
 - 数据变更类消息进入 `activeDataRequests` 集合，供清理时排空（`clearReadingData`）。
 
-### 5.2 消息分组（78 种，与 `MESSAGE_TYPES` 顺序一致）
+### 5.2 消息分组（79 种，与 `MESSAGE_TYPES` 顺序一致）
 | 分组 | 类型 |
 |---|---|
 | 状态与设置（8） | `STATE_GET` `STATE_PATCH` `AUTOMATION_GET` `AUTOMATION_PATCH` `PAGE_ACTIVITY_SET` `VIDEO_SETTINGS_PATCH` `FLOATING_PET_POSITION_SET` `OPEN_OPTIONS` |
@@ -187,9 +187,13 @@
 | 领域识别（4） | `RESOLVE_DOMAIN` `PAGE_DOMAIN_GET` `PAGE_DOMAIN_SET` `DOMAIN_TEST` |
 | 阅读辅助（12） | `ANALYZE` `SUPPORT_BATCH` `ASSIST` `ASSIST_PREVIEW` `ASSIST_COMMIT` `PREPARED_SUPPORT` `PREPARED_ASSIST` `ENCOUNTER` `INTERACT` `READING_ACTIVITY` `WORD_PREFERENCE_SET` `ON_DEMAND_SUGGESTION` |
 | 阅读解构（5） | `SENTENCE_GROUPS_GET` `SENTENCE_GROUPS_SET` `SENTENCE_GROUPS_DENSITY_SET` `SENTENCE_GROUPS_LINE_STYLE_SET` `SENTENCE_GROUPS_BATCH` |
-| 翻译（10） | `EMERGENCY_BEGIN` `EMERGENCY_TRANSLATE` `EMERGENCY_CANCEL_REQUEST` `EMERGENCY_END` `PASSAGE_TRANSLATE` `VIDEO_CUE_TRANSLATE` `VIDEO_AUDIO_TRANSCRIBE` `LIVE_CHAT_TRANSLATE` `PAGE_SUMMARY` `READER_TRANSLATE` |
+| 翻译与阅读器（11） | `EMERGENCY_BEGIN` `EMERGENCY_TRANSLATE` `EMERGENCY_CANCEL_REQUEST` `EMERGENCY_END` `PASSAGE_TRANSLATE` `VIDEO_CUE_TRANSLATE` `VIDEO_AUDIO_TRANSCRIBE` `LIVE_CHAT_TRANSLATE` `PAGE_SUMMARY` `READER_TRANSLATE` `READER_OPEN_ORIGINAL` |
 | 历史与个性化（17） | `HISTORY_GET` `HISTORY_CONFIG` `HISTORY_BEGIN` `HISTORY_TICK` `HISTORY_COMMIT` `HISTORY_ANNOTATION` `HISTORY_DELETE` `HISTORY_SUMMARY_EDIT` `HISTORY_CLEAR` `HISTORY_EXPORT` `HISTORY_RULE_SET` `PERSONALIZATION_GET` `PERSONALIZATION_ANALYZE` `PERSONALIZATION_APPLY` `PERSONALIZATION_DISMISS` `PERSONALIZATION_ROLLBACK` `PERSONALIZATION_RESET` |
 | 数据与诊断（15） | `READING_DATA_EXPORT` `MEMORY_CLEAR` `DIAGNOSTICS_GET` `DIAGNOSTICS_EXPORT` `DIAGNOSTICS_SET` `DIAGNOSTICS_CLEAR` `DIAGNOSTICS_RENDER` `USAGE_STATS_GET` `USAGE_STATS_CLEAR` `POPUP_INTENT_TAKE` `PAGE_UI_INJECT` `ENSURE_PAGE_UI` `AUTO_BOOTSTRAP_CHECK` `YOUTUBE_CAPTIONS_BRIDGE` `YOUTUBE_CAPTION_FETCH` |
+
+- `STATE_PATCH` 的校验、嵌套配置补全、服务引用检查与副作用计划均在 `mutate` 串行写入队列内按最新状态计算，避免并发请求覆盖字段或留下悬空服务引用。
+- 远程文档默认匿名下载；只有读者点击「使用网站登录状态重试」才带网站登录态，带凭据请求拒绝重定向。`READER_OPEN_ORIGINAL` 仅允许阅读器主框架发起，按标签页和完整 HTTP(S) 地址登记 30 秒内的一次性接管旁路，导航消耗后即恢复自动接管；关闭标签页清理旁路。文档地址不得含账号信息。
+- PDF 主包与解析 worker 同用 PDF.js legacy 构建，补齐 Chrome 125 缺失的内建 API；EPUB 解析按命名空间 URI 及 local name 识别 container、OPF、DC 和 XHTML 元素。
 
 ### 5.3 页面 → 后台 的旁路消息（`tabs.sendMessage`）
 `SS_STATUS` `SS_SET_ENABLED` `SS_REFRESH` `SS_AUTO_START` `SS_CONTEXT_HELP` `SS_SET_SENTENCE_GROUPS` `SS_SET_SENTENCE_DENSITY` `SS_SET_SENTENCE_LINE_STYLE` `SS_EMERGENCY_START/STOP/RETRY/END` `SS_HELP_LANGUAGE` `SS_READING_STYLE` `SS_VIDEO_SETTINGS` `SS_TRANSLATION_PROGRESS` `SS_LIVE_CHAT_PROGRESS` `SS_ASSIST_PROGRESS` `SS_WORD_PREFERENCE`。
@@ -378,7 +382,7 @@
 | 静态检查 | `node tools/verify-module-graph.cjs`（12 条规则：加载契约、import 解析、无环、连接器闭包纯净、分层方向、无反向依赖、文件头注释、无重复 ID、无内联脚本、manifest 资源存在、extension 脚本语法（单个子进程里 vm 只编译不执行：classic 用 `vm.Script`、ESM 用 `vm.SourceTextModule`）、字号档位）；`node tools/verify-deadcode.cjs`（未使用导出/导入，报告型） | 模块依赖方向、页面契约、语法与死代码 |
 | 真实扩展回归 | `npm run verify:audit`（`tools/audit-extension.mjs`：无头 ego lite 经 `tools/lib/ego.mjs` 自写 CDP 驱动，加载 host 权限收窄为 127.0.0.1 的扩展副本，本地 fixture 文章 + 模拟模型服务） | 截至 2026-09-22：完整回归 29 项 + 摘要补充回归 22 项（去重 30 场景）：设置持久化、12 分区明暗/窄窗、术语/规则、API 模型列表、内容脚本开关、真实按键查词卡片、语言切换、已认识词撤销、历史导出清理、句子结构、整页翻译显示与清除、本地模型零请求分类、个性化空态、摘要防重与切换文章/模型过期、伴读猫拖拽持久化、欢迎页 |
 | 专项回归 | `npm run verify:options`（`tools/verify-options.mjs`，设置页控制器行为）、`npm run verify:sites`（`tools/verify-dev-sites.mjs`，站点档案）、`npm run verify:service`（`tools/verify-connector-service.mjs`，常驻服务与配对令牌）、`npm run verify:video`（`tools/verify-video-ui.mjs` 与 `tools/lib/video-regressions.mjs`，原文稿/直播状态、原生字幕身份、换片队列与设置保存竞态）、`npm run verify:livechat`（`tools/verify-live-chat.mjs`，Twitch 聊天开关/排队/提示/伴读猫避让）、`npm run verify:release`（`tools/verify-release.mjs`，生产构建静态检查与冒烟）、`npm run verify:dictation`（`tools/verify-video-dictation.mjs`，无字幕视频云端听写的采集/续录/停止/回看/播完取消连播） | 设置页保存/回滚/思考等级、各站点阅读块与翻译单元分区、常驻服务握手与回退 |
-| 全界面门禁 | `npm run verify:ui`（`tools/verify-ui-all.mjs`，103 项断言；每轮先清理旧截图；动作后按状态轮询，不用固定等待） | options 全 12 分区明暗/窄窗（六档宽度下页头对齐、主区高度、窄屏导航文字且分组全部可见）、网页明暗判断、welcome/reader/popup、页内挂件（词卡/任务条/解构卡及标签对比度/toast/选区条/伴读猫）、中英文档断言（含英文下拉框不截断）、横向溢出、控制台错误 |
+| 全界面门禁 | `npm run verify:ui`（`tools/verify-ui-all.mjs`，121 项断言；每轮先清理旧截图；动作后按状态轮询，不用固定等待） | options 全 12 分区明暗/窄窗（六档宽度下页头对齐、主区高度、窄屏导航文字且分组全部可见）、快捷键页清单说明宽度与对齐、标签栏无滚动条、网页明暗判断、welcome/reader/popup、页内挂件（词卡/任务条/解构卡及标签对比度/toast/选区条/伴读猫）、中英文档断言（含英文下拉框不截断）、横向溢出、控制台错误 |
 | 伴读猫门禁 | `npm run verify:pet`（`tools/verify-pet-buttons.mjs`，69 项断言） | 快捷坞/旋旋翻/缩放/贴边/气泡/摘要窗全部按钮的真实点击与键盘操作、文案键解析 |
 | 连接器行为 | 临时脚本（假 spawn） | Grok 重试门控（AUTH/429 不重试、格式错误重试、过长不重试） |
 

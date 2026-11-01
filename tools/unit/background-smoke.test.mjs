@@ -218,12 +218,65 @@ test('迁移后的 background.js 在 mock 浏览器中构造注册表并按信�
     assert.match(wrongPage.error, /仅设置页可以读取 API 模型列表。/u);
   });
 
+  await t.test('并发设置补丁在写入队列内补全嵌套字段，不覆盖前一项修改', async () => {
+    const before = (await send({type:'STATE_GET'}, trustedPopup(chrome))).data.settings;
+    try {
+      await send({type:'STATE_PATCH',patch:{floatingPet:{scale:1,themeMode:'auto'}}}, trustedPopup(chrome));
+      const results = await Promise.all([
+        send({type:'STATE_PATCH',patch:{floatingPet:{scale:1.4}}}, trustedPopup(chrome)),
+        send({type:'STATE_PATCH',patch:{floatingPet:{themeMode:'dark'}}}, trustedPopup(chrome)),
+      ]);
+      assert.ok(results.every(result => result.ok), JSON.stringify(results));
+      const state = (await send({type:'STATE_GET'}, trustedPopup(chrome))).data.settings;
+      assert.equal(state.floatingPet.scale, 1.4);
+      assert.equal(state.floatingPet.themeMode, 'dark');
+    } finally {
+      await send({type:'STATE_PATCH',patch:{floatingPet:before.floatingPet}}, trustedPopup(chrome));
+    }
+  });
+
+  await t.test('删除服务与切换服务并发时拒绝悬空引用，后续保存仍能继续', async () => {
+    const before = (await send({type:'STATE_GET'}, trustedPopup(chrome))).data.settings;
+    const a = {id:'race-a',name:'A',providerId:'openai-compatible',baseUrl:'https://api.example.com/v1',model:'fixture',apiKey:'fake-key'};
+    const b = {...a,id:'race-b',name:'B'};
+    try {
+      assert.equal((await send({type:'STATE_PATCH',patch:{apiServices:[a,b],activeApiServiceId:a.id}}, trustedPopup(chrome))).ok, true);
+      const results = await Promise.all([
+        send({type:'STATE_PATCH',patch:{apiServices:[a]}}, trustedPopup(chrome)),
+        send({type:'STATE_PATCH',patch:{activeApiServiceId:b.id}}, trustedPopup(chrome)),
+      ]);
+      assert.equal(results[0].ok, true);
+      assert.equal(results[1].ok, false);
+      assert.match(results[1].error, /当前 API 服务必须引用已保存的服务/u);
+      const state = (await send({type:'STATE_GET'}, trustedPopup(chrome))).data.settings;
+      assert.equal(state.activeApiServiceId, a.id);
+      assert.deepEqual(state.apiServices.map(service => service.id), [a.id]);
+      assert.equal((await send({type:'STATE_PATCH',patch:{lookupKey:'F'}}, trustedPopup(chrome))).ok, true);
+    } finally {
+      await send({type:'STATE_PATCH',patch:{apiServices:before.apiServices,activeApiServiceId:before.activeApiServiceId,lookupKey:before.lookupKey}}, trustedPopup(chrome));
+    }
+  });
+
   await t.test('OPEN_OPTIONS 在正在浏览的窗口里只开一个设置页', async () => {
     const opened = await send({type: 'OPEN_OPTIONS', section: 'service'}, trustedPopup(chrome));
     assert.equal(opened.ok, true, opened.error);
     assert.equal(createdTabs.length, 1);
     assert.equal(createdTabs[0].windowId, 3);
     assert.match(createdTabs[0].url, /\/ui\/options\.html#service$/u);
+  });
+
+  await t.test('原文档旁路只允许阅读器主框架，不接受脚本或带账号的地址', async () => {
+    const reader = {...trustedPopup(chrome),url:chrome.runtime.getURL('ui/reader.html?src=fixture'),frameId:0};
+    for (const sender of [contentPage(chrome),trustedPopup(chrome),{...reader,frameId:1}]) {
+      assert.equal((await send({type:'READER_OPEN_ORIGINAL',url:'https://example.com/private.pdf'}, sender)).ok, false);
+    }
+    for (const url of ['javascript:alert(1)','file:///private.pdf','https://user:secret@example.com/private.pdf']) {
+      assert.equal((await send({type:'READER_OPEN_ORIGINAL',url}, reader)).ok, false);
+    }
+    assert.equal((await send({type:'READER_OPEN_ORIGINAL',url:'https://example.com/private.pdf'}, reader)).ok, true);
+    const bypass = (await chrome.storage.session.get('readerOriginalOnce:1'))['readerOriginalOnce:1'];
+    assert.equal(bypass.url, 'https://example.com/private.pdf');
+    assert.ok(bypass.at <= Date.now());
   });
 
   await t.test('LIVE_CHAT_TRANSLATE 只限 Twitch、开关打开，API 通道按标签页每分钟限 12 次', async () => {

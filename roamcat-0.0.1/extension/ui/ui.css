@@ -2784,7 +2784,9 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: var(--space-3); b
    .shortcut-lab 左侧迷你键盘（data-combos 标注每个键参与的组合）+ 右侧清单
    （data-combo 标注条目）：悬停/聚焦条目时由 :has() 点亮对应键位，纯 CSS。
    ========================================================================== */
-.shortcut-lab-card { display: grid; gap: var(--space-4); border-top: 3px solid var(--teal); }
+/* 按卡片自身宽度排版（容器查询），不看视口：侧栏展开/收起时同一视口下可用宽度差 200px，
+   按视口判断会让右侧清单挤到只剩一个字宽、说明文字竖排。 */
+.shortcut-lab-card { display: grid; gap: var(--space-4); border-top: 3px solid var(--teal); container: shortcut-lab / inline-size; }
 .shortcut-lab-card > .guide-eyebrow { color: var(--teal); }
 .shortcut-map-desc { margin: 0; color: var(--muted); font-size: var(--type-support); }
 .shortcut-lab { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-5); align-items: start; }
@@ -2838,9 +2840,10 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: var(--space-3); b
 }
 
 /* 组合清单 */
-.combo-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+/* 各行共用一套列宽（subgrid）：按键长短不一时，说明文字仍对齐成一列。 */
+.combo-list { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px 12px; margin: 0; padding: 0; list-style: none; container: combo-list / inline-size; }
 .combo-item {
-  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px;
+  display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: center; gap: 12px;
   padding: 10px 12px;
   background: var(--color-card-bg); border: 1px solid var(--color-border-card);
   border-radius: var(--radius-md, 8px);
@@ -2878,12 +2881,15 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: var(--space-3); b
 .lookup-flow-arrow { color: var(--color-brand-green); font-weight: 700; }
 .lookup-flow-result { color: var(--color-brand-green); font-weight: 600; }
 
-@media (max-width: 1100px) {
+/* 键盘约 560px、清单一行至少约 440px：卡片放不下两者并排就上下排。 */
+@container shortcut-lab (max-width: 1020px) {
   .shortcut-lab { grid-template-columns: minmax(0, 1fr); }
 }
-@media (max-width: 560px) {
+/* 清单窄于一行三列所需宽度：按键与范围标签占第一行，说明文字独占第二行。 */
+@container combo-list (max-width: 440px) {
   .combo-item { grid-template-columns: minmax(0, 1fr) auto; }
-  .combo-item .combo-keycaps { grid-column: 1 / -1; min-width: 0; }
+  .combo-item .combo-keycaps { min-width: 0; }
+  .combo-item .combo-info { grid-column: 1 / -1; grid-row: 2; }
 }
 
 /* ==========================================================================

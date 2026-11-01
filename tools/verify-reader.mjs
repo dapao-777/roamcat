@@ -7,12 +7,27 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 import assert from 'node:assert/strict';
+import http from 'node:http';
 import {zipSync, strToU8} from 'fflate';
 import {openBrowser, extUrl, previewPath} from './lib/ego.mjs';
 import {createGateReport} from './lib/gate-report.mjs';
 
 const gate = createGateReport('reader');
 const errors = [];
+function pdfFixture() {
+  const stream='BT /F1 12 Tf 50 750 Td (Readers compare reliable English evidence.) Tj ET';
+  const objects=['<< /Type /Catalog /Pages 2 0 R >>','<< /Type /Pages /Count 1 /Kids [4 0 R] >>','<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>','<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 5 0 R >>',`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`];
+  let value='%PDF-1.4\n';const offsets=[];
+  for(const [i,object] of objects.entries()){offsets.push(value.length);value+=`${i+1} 0 obj\n${object}\nendobj\n`;}
+  const start=value.length;value+=`xref\n0 ${objects.length+1}\n0000000000 65535 f \n`+offsets.map(offset=>String(offset).padStart(10,'0')+' 00000 n \n').join('')+`trailer\n<< /Size ${objects.length+1} /Root 1 0 R >>\nstartxref\n${start}\n%%EOF`;
+  return [...Buffer.from(value)];
+}
+const missingModernBuiltins = `
+  for (const type of [Map, WeakMap]) for (const key of ['getOrInsert', 'getOrInsertComputed']) delete type.prototype[key];
+  delete Promise.try; delete URL.parse;
+  for (const key of ['fromBase64', 'fromHex']) delete Uint8Array[key];
+  for (const key of ['toBase64', 'toHex', 'setFromBase64', 'setFromHex']) delete Uint8Array.prototype[key];
+`;
 const epub = (text = 'Careful readers compare evidence from reliable sources.') => [...zipSync({
   'META-INF/container.xml': strToU8('<container><rootfile full-path="OPS/Book%20%26%20100%25.opf"/></container>'),
   'OPS/Book & 100%.opf': strToU8('<package><metadata><dc:title>Reader fixture</dc:title></metadata><manifest><item id="c" href="Text/part%20one&amp;two.xhtml" media-type="application/xhtml+xml"/><item id="nav" href="nav.xhtml" properties="nav" media-type="application/xhtml+xml"/></manifest><spine><itemref idref="c"/></spine></package>'),
@@ -35,6 +50,29 @@ try {
         app.finishLoad(title, 'epub', [], [0, 1, 2].map(i => ({id: 'r' + i, role: 'p', text: 'Careful readers compare evidence from reliable sources ' + i})));
       }
     };
+  });
+  await gate.check('缺少 Chrome 125 之后的内建 API 时，PDF 主包与真实 worker 仍能提取正文', async () => {
+    const compat=await run.newPage();
+    compat.on('pageerror',error=>errors.push(error.message));
+    try {
+      await compat.addInitScript(missingModernBuiltins);
+      await compat.goto(extUrl('ui/reader.html'));
+      await compat.waitForFunction(()=>Boolean(document.querySelector('roamcat-reader')?.openData));
+      await compat.send('Target.setAutoAttach',{autoAttach:true,waitForDebuggerOnStart:true,flatten:true});
+      const attached=compat.waitForEvent('Target.attachedToTarget',10000);
+      const opening=compat.evaluate(async bytes=>{
+        const app=document.querySelector('roamcat-reader');await app.openData(Uint8Array.from(bytes),'compat.pdf');
+        return {view:app.view,blocks:app.blocks.map(block=>block.text)};
+      },pdfFixture());
+      const {sessionId,targetInfo}=await attached;
+      assert.equal(targetInfo.type,'worker');
+      try { await run.browser.connection.send('Runtime.evaluate',{expression:missingModernBuiltins},sessionId); }
+      finally { await run.browser.connection.send('Runtime.runIfWaitingForDebugger',{},sessionId); }
+      const result=await opening;
+      assert.equal(result.view,'ready');
+      assert.deepEqual(result.blocks,['Readers compare reliable English evidence.']);
+      return {blocks:result.blocks.length};
+    } finally { await compat.close(); }
   });
   await gate.check('翻译失败可见，已生成译文保留', async () => {
     const result = await page.evaluate(async () => {
@@ -272,6 +310,71 @@ try {
       return app.blocks[0].text;
     }, epub('Readers can still read this paragraph &#x110000; and this one &#xD800;.'));
     assert.ok(result.includes('paragraph � and this one �.'));
+  });
+  await gate.check('真实 EPUB worker 接受带前缀的包结构、元数据和导航', async () => {
+    const bytes=[...zipSync({
+      'META-INF/container.xml':strToU8('<c:container xmlns:c="urn:oasis:names:tc:opendocument:xmlns:container"><c:rootfile full-path="book.opf"/></c:container>'),
+      'book.opf':strToU8('<o:package xmlns:o="http://www.idpf.org/2007/opf" xmlns:d="http://purl.org/dc/elements/1.1/"><o:metadata><d:title>Prefixed reader</d:title></o:metadata><o:manifest><o:item id="c" href="chapter.xhtml" media-type="application/xhtml+xml"/><o:item id="n" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/></o:manifest><o:spine><o:itemref idref="c"/></o:spine></o:package>'),
+      'chapter.xhtml':strToU8('<h:body xmlns:h="http://www.w3.org/1999/xhtml"><h:p>Prefixed content remains readable.</h:p></h:body>'),
+      'nav.xhtml':strToU8('<h:nav xmlns:h="http://www.w3.org/1999/xhtml"><h:a href="chapter.xhtml">Prefixed chapter</h:a></h:nav>'),
+    })];
+    const result=await page.evaluate(async bytes=>{const app=readerFixture.app;await app.openData(Uint8Array.from(bytes),'prefixed.epub');return {title:app.title,label:app.sidebar[0]?.label,text:app.blocks[0]?.text};},bytes);
+    assert.deepEqual(result,{title:'Prefixed reader',label:'Prefixed chapter',text:'Prefixed content remains readable.'});
+  });
+  await gate.check('登录保护 PDF 匿名失败后可主动使用登录态重试，原站查看只绕过一次接管', async () => {
+    const requests=[],pdf=Buffer.from(pdfFixture());
+    const server=http.createServer((request,response)=>{
+      if(request.url==='/login'){response.writeHead(200,{'content-type':'text/html','set-cookie':'reader_login=1; Path=/; SameSite=Lax'}).end('<title>Reader login fixture</title>Signed in');return;}
+      if(request.url==='/redirect.pdf'){response.writeHead(302,{location:'/private.pdf'}).end();return;}
+      if(request.url==='/private.pdf'){
+        const cookie=request.headers.cookie?.includes('reader_login=1')===true;requests.push(cookie);
+        if(cookie)response.writeHead(200,{'content-type':'application/pdf'}).end(pdf);
+        else response.writeHead(401).end('Login required');
+        return;
+      }
+      response.writeHead(204).end();
+    });
+    await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+    const base=`http://127.0.0.1:${server.address().port}`,url=base+'/private.pdf';
+    const login=await run.newPage(),original=await run.newPage();
+    try {
+      await login.goto(base+'/login');
+      await page.evaluate(async url=>{await readerFixture.app.openRemote(url);await readerFixture.app.updateComplete;},url);
+      assert.equal(requests.at(-1),false);
+      assert.equal(await page.locator('[data-reader-action="retry-login"]').isVisible(),true);
+      await page.setViewportSize({width:375,height:850});
+      const previousLang=await page.evaluate(async()=>{
+        const previous=RoamCatI18n.pref();await RoamCatI18n.setPref('en');readerFixture.app.requestUpdate();await readerFixture.app.updateComplete;
+        await Promise.all(document.getAnimations().map(animation=>animation.finished.catch(()=>{})));
+        return previous;
+      });
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'英文登录恢复操作在窄屏上不应溢出');
+      await page.screenshot({path:previewPath('gates','reader-login-error-en.png')});
+      await page.evaluate(async pref=>{await RoamCatI18n.setPref(pref);readerFixture.app.requestUpdate();await readerFixture.app.updateComplete;},previousLang);
+      await page.setViewportSize({width:1440,height:1000});
+      await page.locator('[data-reader-action="retry-login"]').click();
+      await page.waitForFunction(()=>readerFixture.app.view==='ready'&&!readerFixture.app.parsing);
+      assert.equal(requests.at(-1),true);
+      assert.equal(await page.evaluate(()=>readerFixture.app.blocks[0].text),'Readers compare reliable English evidence.');
+      const beforeRedirect=requests.length;
+      await page.evaluate(async url=>readerFixture.app.openRemote(url,{withCredentials:true}),base+'/redirect.pdf');
+      assert.equal(await page.evaluate(()=>readerFixture.app.view),'error');
+      assert.equal(requests.length,beforeRedirect,'带登录态的读取不能跟随重定向');
+      await original.goto(extUrl('ui/reader.html'));
+      await original.waitForFunction(()=>Boolean(document.querySelector('roamcat-reader')?.openRemote));
+      const tabId=await original.evaluate(async url=>{await document.querySelector('roamcat-reader').openRemote(url);return (await chrome.tabs.getCurrent()).id;},url);
+      await original.locator('[data-reader-action="open-original"]').click();
+      await page.waitForFunction(async({tabId,url})=>{
+        const [tab,stored]=await Promise.all([chrome.tabs.get(tabId),chrome.storage.session.get('readerOriginalOnce:'+tabId)]);
+        return tab.url===url&&tab.status==='complete'&&!stored['readerOriginalOnce:'+tabId];
+      },{tabId,url});
+      assert.equal(requests.at(-1),true);
+      await original.goto('about:blank');
+      await page.evaluate(({tabId,url})=>chrome.tabs.update(tabId,{url}),{tabId,url});
+      await original.waitForFunction(()=>location.pathname==='/ui/reader.html'&&document.querySelector('roamcat-reader')?.view==='error');
+      assert.equal(requests.at(-1),false,'重新导航应恢复正常接管和匿名下载');
+      return {requests};
+    } finally { await login.close();await original.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve)); }
   });
   await gate.check('阅读器没有未捕获脚本错误', async () => assert.deepEqual(errors, []));
 } catch (error) {

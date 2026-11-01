@@ -77,6 +77,21 @@ test('parseEpub() 拒绝非 EPUB 数据', () => {
   assert.throws(() => parseEpub(zipSync({'x.txt': strToU8('hi')})));
 });
 
+test('EPUB 按命名空间 URI 识别 container/OPF/DC/nav/XHTML，排除同名外来标签', () => {
+  const bytes = epubBytes({
+    'META-INF/container.xml': '<c:container xmlns:c="urn:oasis:names:tc:opendocument:xmlns:container" xmlns:x="urn:other"><c:rootfiles><x:rootfile full-path="wrong.opf"/><c:rootfile full-path="OEBPS/content.opf"/></c:rootfiles></c:container>',
+    'OEBPS/content.opf': '<o:package xmlns:o="http://www.idpf.org/2007/opf" xmlns:d="http://purl.org/dc/elements/1.1/" xmlns:x="urn:other"><o:metadata><x:title>Wrong</x:title><d:title>Prefixed Book</d:title><d:creator>A Writer</d:creator></o:metadata><o:manifest><o:item xmlns:o="urn:other" id="wrong" href="wrong.xhtml"/><o:item id="c1" href="ch1.xhtml" media-type="application/xhtml+xml"/><o:item id="nav" href="nav.xhtml" properties="nav"/></o:manifest><o:spine><x:itemref idref="wrong"/><o:itemref idref="c1"/></o:spine></o:package>',
+    'OEBPS/ch1.xhtml': '<h:html xmlns:h="http://www.w3.org/1999/xhtml"><h:head><h:title>Ignore head</h:title></h:head><h:body><h:h1>Chapter One</h:h1><h:p>Read<h:em>ing</h:em> is helpful.</h:p></h:body></h:html>',
+    'OEBPS/nav.xhtml': '<h:html xmlns:h="http://www.w3.org/1999/xhtml"><h:body><h:nav><h:a href="ch1.xhtml#start">A <h:span>named</h:span> chapter</h:a></h:nav></h:body></h:html>',
+  });
+  const book = parseEpub(bytes);
+  assert.equal(book.title, 'Prefixed Book');
+  assert.equal(book.creator, 'A Writer');
+  assert.equal(book.chapters.length, 1);
+  assert.equal(book.chapters[0].label, 'A named chapter');
+  assert.deepEqual(book.chapters[0].blocks, [{role:'h1',text:'Chapter One'},{role:'p',text:'Reading is helpful.'}]);
+});
+
 test('parseEpub() 解码根文件、正文与导航链接中的 XML 实体和 URL 转义', () => {
   const files = {
     'META-INF/container.xml': '<container><rootfile full-path="OPS/Book%20%26%20100%25.opf"/></container>',

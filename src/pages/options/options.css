@@ -449,7 +449,8 @@ dialog.stamp-manifesto-dialog:not([open]) {
 .options-document .options-body[data-group="sites"] .hero-actions { display: flex; }
 
 /* 组内标签 */
-.group-tabs { display: flex; gap: var(--rc-space-1); margin-top: calc(-1 * var(--rc-space-2)); border-bottom: 1px solid var(--rc-line); overflow-x: auto; }
+/* 不做滚动容器：标签的 -1px 下边距会让滚动容器竖向溢出 1px，Windows 上冒出一条竖滚动条；放不下就折行。 */
+.group-tabs { display: flex; flex-wrap: wrap; gap: var(--rc-space-1); margin-top: calc(-1 * var(--rc-space-2)); border-bottom: 1px solid var(--rc-line); }
 .group-tabs:not(:has(.group-tab:not([hidden]))) { display: none; }
 .group-tab {
   flex: none;

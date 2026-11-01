@@ -21,7 +21,7 @@ function mockChrome(){
   const events=[];window.qa={events,failDensity:false};
   const listeners=[];
   const local={get:async(keys,callback)=>{const data={sentenceGroupsDensity:localStorage.getItem('qa-density')||'medium',sentenceGroupsLineStyle:'solid'};callback?.(data);return data;},set:async()=>{}};
-  window.chrome={storage:{local,onChanged:{addListener:fn=>listeners.push(fn)}},permissions:{contains:async()=>true,getAll:async()=>({origins:[]})},runtime:{id:'roamcat-ui-test',getURL:p=>location.origin+'/'+p,onMessage:{addListener(){}},sendMessage:async message=>{
+  window.chrome={storage:{local,onChanged:{addListener:fn=>listeners.push(fn)}},permissions:{contains:async()=>true,remove:async()=>true,getAll:async()=>({origins:[]})},runtime:{id:'roamcat-ui-test',getURL:p=>location.origin+'/'+p,onMessage:{addListener(){}},sendMessage:async message=>{
     events.push(message);let data={};
     switch(message.type){
       case 'STATE_GET':data={settings:read(),subscription:{connected:false}};break;
@@ -116,6 +116,25 @@ try{
   await model.fill('glm-4.7-flash');assert.deepEqual(await levelValues(),['none','on']);assert.equal(await effort.inputValue(),'none');
   await model.fill('glm-5.3');assert.equal(await effort.inputValue(),'max');
   report.checks.push('Thinking level lists only the official levels of the selected model, follows model and channel changes, and falls back to the model default');
+  await page.evaluate(()=>{
+    const settings=JSON.parse(localStorage.getItem('qa-settings'));
+    settings.domainDetection={mode:'jev',useTranslationApi:false,api:{baseUrl:'https://api.example.com/v1',apiKey:''},jevModel:'fixture-model',jevBaseUrl:'https://first.example/v1',jevApiKey:'old-origin-fake-key'};
+    localStorage.setItem('qa-settings',JSON.stringify(settings));
+  });
+  await page.goto(base+'/ui/options.html#sites');await page.reload();await ready();
+  await page.locator('#detection-jev-url').fill('https://second.example/v1');
+  await page.locator('#save-recognition').click();
+  await until(()=>document.querySelector('#global-error').textContent.length>0);
+  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('qa-settings')).domainDetection.jevBaseUrl),'https://first.example/v1');
+  assert.equal(await page.evaluate(()=>qa.events.some(event=>event.type==='STATE_PATCH'&&event.patch.domainDetection?.jevBaseUrl==='https://second.example/v1')),false);
+  await page.locator('#detection-jev-key').fill('new-origin-fake-key');
+  await page.locator('#save-recognition').click();
+  await until(()=>window.optionsState.settings.domainDetection.jevBaseUrl==='https://second.example/v1');
+  assert.equal(await page.evaluate(()=>window.optionsState.settings.domainDetection.jevApiKey),'new-origin-fake-key');
+  await page.locator('#detection-jev-url').fill('https://second.example/v2');await page.locator('#save-recognition').click();
+  await until(()=>window.optionsState.settings.domainDetection.jevBaseUrl==='https://second.example/v2');
+  assert.equal(await page.evaluate(()=>window.optionsState.settings.domainDetection.jevApiKey),'new-origin-fake-key');
+  report.checks.push('Changing a Jev endpoint origin requires a new key; changing only its path preserves the saved key');
   await page.pump();
   assert.deepEqual(report.errors,[],'页面脚本错误');
   fs.mkdirSync(previewPath(),{recursive:true});fs.writeFileSync(previewPath('verification.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));

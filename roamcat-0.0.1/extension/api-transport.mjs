@@ -181,9 +181,10 @@ function tokenUsage(value){
   const billed=src.billed_units||src.tokens;
   const input=num(src.input_tokens??src.prompt_tokens??src.promptTokenCount??src.inputTokens??src.prompt_eval_count??billed?.input_tokens);
   const output=num(src.output_tokens??src.completion_tokens??src.candidatesTokenCount??src.outputTokens??src.eval_count??billed?.output_tokens);
-  if(input==null&&output==null)return null;
-  const cached=(num(src.cache_creation_input_tokens)||0)+(num(src.cache_read_input_tokens)||0);
-  return {inputTokens:(input??0)+cached,outputTokens:output??0};
+  const cacheCreation=num(src.cache_creation_input_tokens),cacheRead=num(src.cache_read_input_tokens);
+  if(input==null&&output==null&&cacheCreation==null&&cacheRead==null)return null;
+  // 流事件可以只更新一侧；缺失和真实的 0 必须区分，否则输出增量会抹掉输入计数。
+  return {inputTokens:input==null&&cacheCreation==null&&cacheRead==null?null:(input??0)+(cacheCreation??0)+(cacheRead??0),outputTokens:output};
 }
 function createUsageSink(onUsage){
   const state={inputTokens:null,outputTokens:null};

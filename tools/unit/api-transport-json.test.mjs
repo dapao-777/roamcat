@@ -40,3 +40,25 @@ test('整段就是 JSON 对象时两种模式都接受', async () => {
   const body = '{"items":[]}';
   assert.deepEqual(await withReply(body, () => performProviderRequest(service, {items: []}, 'Translate.', {type: 'object'})), {items: []});
 });
+
+test('Anthropic 流式用量只更新输出量时保留输入量与缓存计数，真实的零值仍生效', async () => {
+  const original = globalThis.fetch;
+  const usage = [];
+  const events = [
+    ['message_start', {message:{usage:{input_tokens:100,cache_creation_input_tokens:20,cache_read_input_tokens:3,output_tokens:1}}}],
+    ['content_block_delta', {delta:{type:'text_delta',text:'{"items":[]}'}}],
+    ['message_delta', {delta:{stop_reason:'end_turn'},usage:{output_tokens:7}}],
+    ['message_delta', {delta:{stop_reason:'end_turn'},usage:{output_tokens:0}}],
+    ['message_stop', {}],
+  ];
+  globalThis.fetch = async () => new Response(events.map(([event,data]) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`).join(''), {headers:{'content-type':'text/event-stream'}});
+  try {
+    const value = await performProviderRequest({...service,providerId:'anthropic',baseUrl:'https://api.example.com/v1',model:'claude-sonnet-4-6',apiKey:'fake-key'}, {}, 'Reply.', {type:'object'}, {onContent() {},onUsage:value => usage.push(value)});
+    assert.deepEqual(value, {items:[]});
+    assert.deepEqual(usage, [
+      {inputTokens:123,outputTokens:1},
+      {inputTokens:123,outputTokens:7},
+      {inputTokens:123,outputTokens:0},
+    ]);
+  } finally { globalThis.fetch = original; }
+});

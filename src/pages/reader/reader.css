@@ -71,6 +71,8 @@ body {
 .reader-hint { margin: var(--space-4) 0 0 !important; font-size: var(--type-support, 13px); color: var(--muted) !important; }
 .reader-error p { color: var(--danger, var(--accent)); }
 .reader-error .rc-button { margin-top: var(--space-2); }
+.reader-error-actions { display:flex; flex-direction:column; align-items:center; gap:var(--space-2); }
+.reader-error-actions .rc-button { max-width:100%; white-space:normal; line-height:var(--leading-control); padding-block:var(--space-2); }
 
 .reader-body { flex: 1; display: flex; min-height: 0; }
 .reader-sidebar {

@@ -225,6 +225,26 @@ try {
     check(`options 主区可视高度 ≥70%[${width}px]`, shell.mainShare >= 0.7, JSON.stringify(shell));
     if (width <= 760) check(`options 窄屏导航带文字且全部分组可见[${width}px]`, shell.navText && shell.navClipped === 0, JSON.stringify(shell));
   }
+  // 快捷键页：键盘 + 清单按卡片宽度排版（容器查询）。侧栏展开时可用宽度最窄，清单说明不得被挤成一字一行；
+  // 标签栏不得因溢出冒出滚动条。
+  await extPage.goto(extUrl('ui/options.html#shortcuts'));
+  for (const width of [1440, 1280, 1150, 1000, 800, 480]) {
+    await extPage.setViewportSize({width, height: 1000});
+    await until(extPage, () => extPage.evaluate(() => Boolean(document.querySelector('#shortcuts:not([hidden]) .combo-info')?.offsetWidth)), Boolean);
+    await settled(extPage);
+    const lab = await extPage.evaluate(() => {
+      const infos = [...document.querySelectorAll('#shortcuts .combo-info')].map(el => Math.round(el.getBoundingClientRect().width));
+      const lefts = [...document.querySelectorAll('#shortcuts .combo-info')].map(el => Math.round(el.getBoundingClientRect().left));
+      const tabs = document.querySelector('.group-tabs');
+      // 只有可滚动的容器溢出才会画出滚动条（overflow: visible 时 1px 的负下边距只是正常压线）。
+      const scrollable = tabs && /auto|scroll/.test(getComputedStyle(tabs).overflowY + getComputedStyle(tabs).overflowX);
+      return {minInfo: Math.min(...infos), infoLeftSpread: Math.max(...lefts) - Math.min(...lefts), tabsScrollbar: Boolean(scrollable && (tabs.scrollHeight > tabs.clientHeight || tabs.scrollWidth > tabs.clientWidth))};
+    });
+    if (width === 1150) await shot(extPage, 'options-shortcuts-1150');
+    check(`快捷键清单说明不被挤窄[${width}px]`, lab.minInfo >= 160, JSON.stringify(lab));
+    check(`设置页标签栏不出现滚动条[${width}px]`, !lab.tabsScrollbar, JSON.stringify(lab));
+    check(`快捷键清单说明左对齐[${width}px]`, lab.infoLeftSpread <= 1, JSON.stringify(lab));
+  }
   await extPage.setViewportSize({width: 1440, height: 1000});
 
   // ========== B. 页内挂件：fixture 文章页上真实 content script 环境 ==========

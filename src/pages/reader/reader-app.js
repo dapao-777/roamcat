@@ -28,6 +28,7 @@ export class RoamcatReader extends LitElement {
   static properties = {
     view: {state: true},
     error: {state: true},
+    remoteUrl: {state: true},
     title: {state: true},
     kind: {state: true},
     sidebar: {state: true},
@@ -44,6 +45,7 @@ export class RoamcatReader extends LitElement {
     super();
     this.view = 'empty';
     this.error = '';
+    this.remoteUrl = '';
     this.title = '';
     this.kind = '';
     this.sidebar = [];
@@ -62,12 +64,17 @@ export class RoamcatReader extends LitElement {
     if (src) void this.openRemote(src);
   }
 
-  async openRemote(url) {
+  async openRemote(url, {withCredentials = false} = {}) {
     const opening=this.beginOpen();
     this.view = 'loading';
     this.progress = t('rd.downloading');
     try {
-      const response = await fetch(url, {credentials: 'omit',signal:opening.signal});
+      const parsed = new URL(url);
+      if (!['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password) throw new Error(t('rd.unsupported'));
+      url = parsed.href;
+      this.remoteUrl = url;
+      // 默认匿名下载；读者明确选择后才使用原站登录态，带凭据时不跟随重定向。
+      const response = await fetch(url, {credentials: withCredentials ? 'include' : 'omit',redirect: withCredentials ? 'error' : 'follow',signal:opening.signal});
       if (!response.ok) throw new Error(t('rd.dlFail',{status:response.status}));
       if(Number(response.headers.get('Content-Length'))>MAX_FILE_BYTES){await response.body?.cancel();throw new Error(t('rd.tooLarge'));}
       const chunks=[];let size=0;const stream=response.body?.getReader();
@@ -105,7 +112,7 @@ export class RoamcatReader extends LitElement {
     }
   }
 
-  beginOpen(){this._loadController?.abort();this._loadController=new AbortController();this._translationParts.clear();this.translating=false;this.parsing=true;this.pageIndex=0;this.error='';return {id:++this._openId,signal:this._loadController.signal};}
+  beginOpen(){this._loadController?.abort();this._loadController=new AbortController();this._translationParts.clear();this.translating=false;this.parsing=true;this.pageIndex=0;this.error='';this.remoteUrl='';return {id:++this._openId,signal:this._loadController.signal};}
   disconnectedCallback(){this._loadController?.abort();this._openId++;super.disconnectedCallback();}
   async openData(data, name,opening=this.beginOpen()) {
     this.blocks = [];
@@ -253,6 +260,11 @@ export class RoamcatReader extends LitElement {
     this.querySelector('#reader-file')?.click();
   }
 
+  async openOriginal() {
+    try { await request('READER_OPEN_ORIGINAL', {url: this.remoteUrl}); }
+    catch (error) { this.error = t('rd.remoteFail', {err: error?.message || error}); }
+  }
+
   #langName() {
     const pref = globalThis.RoamCatI18n?.pref?.() || 'auto';
     return t(`common.lang${pref === 'auto' ? 'Auto' : pref === 'zh' ? 'Zh' : 'En'}`);
@@ -297,8 +309,15 @@ export class RoamcatReader extends LitElement {
         ${this.view === 'error' ? html`
           <main class="reader-main">
             <div class="reader-status-card reader-error">
-              <p>${this.error}</p>
-              <button class="rc-button rc-primary" @click=${this.openFilePicker}>${t('rd.repick')}</button>
+              <p role="alert">${this.error}</p>
+              <div class="reader-error-actions">
+                ${this.remoteUrl ? html`
+                  <button class="rc-button rc-primary" data-reader-action="retry-login" @click=${() => this.openRemote(this.remoteUrl, {withCredentials:true})}>${t('rd.retryLogin')}</button>
+                  <button class="rc-button" data-reader-action="open-original" @click=${this.openOriginal}>${t('rd.openOriginal')}</button>
+                ` : ''}
+                <button class="rc-button" @click=${this.openFilePicker}>${t('rd.repick')}</button>
+              </div>
+              ${this.remoteUrl ? html`<p class="reader-hint">${t('rd.loginHint')}</p>` : ''}
             </div>
           </main>` : ''}
         ${this.view === 'ready' ? this.renderDoc() : ''}

@@ -1,7 +1,8 @@
 /** @file PDF 载入器：pdfjs 取每页 textContent → 阅读块；仅在阅读器页使用（worker 走打包资源）。 */
 
-import * as pdfjs from 'pdfjs-dist';
-import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+// legacy 主包与 worker 都包含内建 API 兼容层，覆盖 manifest 声明的 Chrome 125。
+import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
+import workerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
 import {blocksFromTextItems} from './pdf-blocks.mjs';
 import {t} from '../../i18n-runtime.js';
 
