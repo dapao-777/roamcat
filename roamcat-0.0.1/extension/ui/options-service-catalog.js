@@ -240,6 +240,8 @@ class ServiceCatalogController {
           statusCol.append(el('span', 'service-badge is-configured', M('已配置','Configured')));
         }
         itemBtn.append(iconBox, copy, statusCol);
+        // 卡片里描述最多显示两行：悬停时给出完整名称与说明（纯文本属性，自填服务名不会被当作标记解析）。
+        itemBtn.title = item.desc ? `${item.name}\n${item.desc}` : item.name;
 
         itemBtn.addEventListener('click', () => {
           this.selectService(item.id);

@@ -11,3 +11,11 @@
  */
 export const i18n = () => globalThis.RoamCatI18n;
 export const t = (key, vars) => globalThis.RoamCatI18n?.t(key, vars) ?? key;
+
+// 界面语言变化（含在别的扩展页切换后经 storage 同步过来）时回调；返回取消订阅函数。
+// 渲染时才取文案的页面传「重新渲染」，把文案固化进模块级模板的页面（设置页外壳）只能整页重载。
+export function onUiLangChange(callback) {
+  const handler = () => callback();
+  window.addEventListener('roamcat:ui-lang', handler);
+  return () => window.removeEventListener('roamcat:ui-lang', handler);
+}

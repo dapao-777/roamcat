@@ -129,11 +129,10 @@ roamcat-popup { display: contents; }
 .popup-body .status-chip { border: 0; background: var(--rc-surface-subtle); color: var(--rc-ink-tertiary); font-family: var(--font-sans); font-size: var(--fs-1); letter-spacing: 0; }
 .popup-body .status-chip.active { background: var(--rc-green-soft); color: var(--rc-green); }
 .popup-body .activation-heading h2 { font-size: var(--fs-4); font-weight: 600; }
-/* 动态状态只占一行 */
+/* 动态状态完整换行：这些说明解释「为什么不能用、开启后会怎样」，截成一行会把关键的后半句藏掉。 */
 .popup-body :is(#page-note, #emergency-status, #sentence-groups-note, #site-auto-note, #service-current-note) {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
+  white-space: normal;
   margin: 2px 0 0;
   font-size: var(--fs-2);
   color: var(--rc-ink-tertiary);
@@ -163,21 +162,14 @@ roamcat-popup { display: contents; }
 .popup-body .popup-alert-icon { color: var(--rc-danger); background: none; border: 0; box-shadow: none; }
 .popup-body .popup-alert-info b { color: var(--rc-ink); font-size: var(--fs-3); font-weight: 600; }
 .popup-body .popup-alert-info p {
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  overflow-wrap: anywhere;
   color: var(--rc-ink-tertiary);
   font-size: var(--fs-1);
 }
 .popup-body .popup-alert-link { color: var(--rc-ink); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 .popup-body .popup-alert-link:where(:enabled):hover { color: var(--rc-danger); }
-.popup-body #page-note {
-  display: -webkit-box;
-  white-space: normal;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-}
 .popup-body .popup-footer { position: sticky; bottom: 0; z-index: 2; background: var(--rc-canvas); }
+/* 底栏上沿向上渐隐：下面还有内容时看得出能继续滚动，不会像被截掉一半。 */
+.popup-body .popup-footer::before { content: ""; position: absolute; left: 0; right: 0; bottom: 100%; height: 18px; background: linear-gradient(to bottom, transparent, var(--rc-canvas)); pointer-events: none; }
 .popup-body :is(.popup-emergency-btn, .popup-service-btn) { border-radius: 8px; border-color: var(--rc-line-mid); color: var(--rc-ink); }
 .popup-body .popup-master-btn { border-radius: 8px; }

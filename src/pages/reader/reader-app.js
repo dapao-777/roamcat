@@ -18,7 +18,7 @@ import {joinTranslationParts, translationBatches} from './pdf-blocks.mjs';
 import {heroArt} from '../../components/hero-art.js';
 import {icon} from '../../components/icons.js';
 import '../../components/rc-switch.js';
-import {t} from '../../i18n-runtime.js';
+import {t, onUiLangChange} from '../../i18n-runtime.js';
 
 const ENGLISH_RE = /[A-Za-z]/u;
 const PAGE_BLOCKS=80,MAX_FILE_BYTES=64*1024*1024;
@@ -29,6 +29,7 @@ export class RoamcatReader extends LitElement {
     view: {state: true},
     error: {state: true},
     remoteUrl: {state: true},
+    remoteStatus: {state: true},
     title: {state: true},
     kind: {state: true},
     sidebar: {state: true},
@@ -46,6 +47,7 @@ export class RoamcatReader extends LitElement {
     this.view = 'empty';
     this.error = '';
     this.remoteUrl = '';
+    this.remoteStatus = null;
     this.title = '';
     this.kind = '';
     this.sidebar = [];
@@ -75,6 +77,7 @@ export class RoamcatReader extends LitElement {
       this.remoteUrl = url;
       // 默认匿名下载；读者明确选择后才使用原站登录态，带凭据时不跟随重定向。
       const response = await fetch(url, {credentials: withCredentials ? 'include' : 'omit',redirect: withCredentials ? 'error' : 'follow',signal:opening.signal});
+      this.remoteStatus = response.status;
       if (!response.ok) throw new Error(t('rd.dlFail',{status:response.status}));
       if(Number(response.headers.get('Content-Length'))>MAX_FILE_BYTES){await response.body?.cancel();throw new Error(t('rd.tooLarge'));}
       const chunks=[];let size=0;const stream=response.body?.getReader();
@@ -86,6 +89,7 @@ export class RoamcatReader extends LitElement {
       if(opening.id!==this._openId)return;await this.openData(data, name,opening);
     } catch (error) {
       if(opening.id!==this._openId||error?.name==='AbortError')return;
+      if (this.remoteStatus === null) this.remoteStatus = 0;
       this.error = t('rd.remoteFail',{err:error?.message || error});
       this.view = 'error';
       this.parsing=false;
@@ -112,8 +116,10 @@ export class RoamcatReader extends LitElement {
     }
   }
 
-  beginOpen(){this._loadController?.abort();this._loadController=new AbortController();this._translationParts.clear();this.translating=false;this.parsing=true;this.pageIndex=0;this.error='';this.remoteUrl='';return {id:++this._openId,signal:this._loadController.signal};}
-  disconnectedCallback(){this._loadController?.abort();this._openId++;super.disconnectedCallback();}
+  beginOpen(){this._loadController?.abort();this._loadController=new AbortController();this._translationParts.clear();this.translating=false;this.parsing=true;this.pageIndex=0;this.error='';this.remoteUrl='';this.remoteStatus=null;return {id:++this._openId,signal:this._loadController.signal};}
+  // 在别的扩展页切换语言：按新语言重渲染，不重载，已打开的文档与译文保留。
+  connectedCallback(){super.connectedCallback();this._offLang=onUiLangChange(()=>this.requestUpdate());}
+  disconnectedCallback(){this._loadController?.abort();this._openId++;this._offLang?.();super.disconnectedCallback();}
   async openData(data, name,opening=this.beginOpen()) {
     this.blocks = [];
     this.translations = new Map();
@@ -284,6 +290,9 @@ export class RoamcatReader extends LitElement {
   }
 
   render() {
+    // 只有权限错误（401/403）、拿不到状态码的网络错误，或下载成功却解析失败（常见于被重定向到登录页）才可能和登录有关；
+    // 404、5xx 这类错误提示链接可能失效，不引导去用登录状态重试。
+    const loginLikely = Boolean(this.remoteUrl) && !(this.remoteStatus >= 400 && ![401, 403].includes(this.remoteStatus));
     return html`
       <div class="reader-shell">
         <header class="reader-toolbar">
@@ -311,13 +320,11 @@ export class RoamcatReader extends LitElement {
             <div class="reader-status-card reader-error">
               <p role="alert">${this.error}</p>
               <div class="reader-error-actions">
-                ${this.remoteUrl ? html`
-                  <button class="rc-button rc-primary" data-reader-action="retry-login" @click=${() => this.openRemote(this.remoteUrl, {withCredentials:true})}>${t('rd.retryLogin')}</button>
-                  <button class="rc-button" data-reader-action="open-original" @click=${this.openOriginal}>${t('rd.openOriginal')}</button>
-                ` : ''}
+                ${loginLikely ? html`<button class="rc-button rc-primary" data-reader-action="retry-login" @click=${() => this.openRemote(this.remoteUrl, {withCredentials:true})}>${t('rd.retryLogin')}</button>` : ''}
+                ${this.remoteUrl ? html`<button class=${loginLikely ? 'rc-button' : 'rc-button rc-primary'} data-reader-action="open-original" @click=${this.openOriginal}>${t('rd.openOriginal')}</button>` : ''}
                 <button class="rc-button" @click=${this.openFilePicker}>${t('rd.repick')}</button>
               </div>
-              ${this.remoteUrl ? html`<p class="reader-hint">${t('rd.loginHint')}</p>` : ''}
+              ${this.remoteUrl ? html`<p class="reader-hint">${loginLikely ? t('rd.loginHint') : t('rd.httpHint')}</p>` : ''}
             </div>
           </main>` : ''}
         ${this.view === 'ready' ? this.renderDoc() : ''}

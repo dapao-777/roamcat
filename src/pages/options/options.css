@@ -596,7 +596,9 @@ body[data-group="reading"] .now-status { margin-bottom: var(--rc-space-4); }
 .options-document .options-body #service .service-item:hover { border-color: var(--rc-line-mid); background: var(--rc-surface); }
 .options-document .options-body #service .service-item.is-selected { border-color: var(--rc-ink); box-shadow: 0 0 0 1px var(--rc-ink); background: var(--rc-surface); }
 .options-document .options-body #service .service-copy { min-width: 0; }
-.options-document .options-body #service :is(.service-name, .service-desc) { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+/* 名称完整换行（英文名比中文长，单行会截掉「Subscription」）；描述最多两行，完整内容在卡片的悬停提示里。 */
+.options-document .options-body #service .service-name { display: block; overflow-wrap: anywhere; }
+.options-document .options-body #service .service-desc { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
 @media (max-width: 900px) { .options-document .options-body #service .directory-items { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .options-document .options-body #service .directory-items { grid-template-columns: minmax(0, 1fr); } }
 

@@ -17,7 +17,7 @@ import {classMap} from 'lit/directives/class-map.js';
 import {request, closeWelcomeGuide} from '@ext/shared.js';
 import {heroArt} from '../../components/hero-art.js';
 import {icon} from '../../components/icons.js';
-import {t} from '../../i18n-runtime.js';
+import {t, onUiLangChange} from '../../i18n-runtime.js';
 
 const SANDBOX_WORDS = {
   compare: {word: 'compare', pos: 'v.', def: () => t('wel.v.compare.def'), context: () => t('wel.v.compare.context'), rubyHint: () => t('wel.v.compare.hint')},
@@ -53,6 +53,7 @@ class RoamcatWelcome extends LitElement {
   #toastMessage = '';
   #keyPulse = false;
   #pulseTimer = 0;
+  #offLang = null;
 
   #onKeydown = event => {
     if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
@@ -66,12 +67,15 @@ class RoamcatWelcome extends LitElement {
     this.#theme = localStorage.getItem('roamcat_ui_theme') || 'auto';
     this.#applyTheme(this.#theme);
     document.title = t('rd.welcomeTitle');
+    // 在别的扩展页切换语言：按新语言重渲染，不重载，保留尚未保存的偏好选择。
+    this.#offLang = onUiLangChange(() => { document.title = t('rd.welcomeTitle'); this.requestUpdate(); });
     window.addEventListener('keydown', this.#onKeydown);
     void this.#loadInitialSettings();
   }
 
   disconnectedCallback() {
     window.removeEventListener('keydown', this.#onKeydown);
+    this.#offLang?.();
     clearTimeout(this.#pulseTimer);
     super.disconnectedCallback();
   }
@@ -340,7 +344,7 @@ class RoamcatWelcome extends LitElement {
           </div>
           <div class="browser-url-input">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            <span>https://developer.mozilla.org/en-US/docs/Web/Performance/Fundamentals</span>
+            <span title="https://developer.mozilla.org/en-US/docs/Web/Performance/Fundamentals">https://developer.mozilla.org/en-US/docs/Web/Performance/Fundamentals</span>
           </div>
           <div class="browser-status-pill">${t('wel.englishBody')}</div>
         </div>

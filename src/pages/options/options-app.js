@@ -13,7 +13,7 @@
 
  */
 import {LitElement, html} from 'lit';
-import {t} from '../../i18n-runtime.js';
+import {t, onUiLangChange} from '../../i18n-runtime.js';
 import {shellTop, mainToolbar, heroBlock, nowStatus, shellDialog} from './shell.js';
 import {
   assistanceSection, appearanceSection, sitesSection, videoSection,
@@ -70,6 +70,7 @@ class RoamcatOptions extends LitElement {
   #collapsed = localStorage.getItem('roamcat_sidebar_collapsed') === 'true';
   // 中等宽度（761–1100px）自动收成图标栏；此时手动展开只在本次窄屏内有效，不改写保存的偏好。
   #narrowQuery = matchMedia('(min-width: 761px) and (max-width: 1100px)');
+  #offLang = null;
   #narrowExpanded = false;
   #onNarrowChange = () => { this.#narrowExpanded = false; this.#applyCollapsed(); };
   #theme = localStorage.getItem('roamcat_ui_theme') || 'auto';
@@ -177,6 +178,8 @@ class RoamcatOptions extends LitElement {
     document.addEventListener('keydown', this.#onKeydown);
     document.addEventListener('input', this.#onInput);
     document.addEventListener('change', this.#onChange);
+    // 外壳与各分区模板在模块加载时就取好了文案，别的扩展页切换语言后只能整页重载，否则会中英混杂。
+    this.#offLang = onUiLangChange(() => location.reload());
     const kbd = document.querySelector('.sidebar-search-kbd');
     if (kbd) kbd.textContent = /Mac|iPhone|iPad/u.test(navigator.platform || navigator.userAgent) ? '⌘K' : 'Ctrl+K';
   }
@@ -188,6 +191,7 @@ class RoamcatOptions extends LitElement {
     document.removeEventListener('keydown', this.#onKeydown);
     document.removeEventListener('input', this.#onInput);
     document.removeEventListener('change', this.#onChange);
+    this.#offLang?.();
     super.disconnectedCallback();
   }
 

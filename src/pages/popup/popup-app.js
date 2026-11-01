@@ -18,7 +18,7 @@ import {request} from '@ext/shared.js';
 import {CATALOG_TEMPLATES} from '@ext/ui/options-service-catalog.js';
 import {icon} from '../../components/icons.js';
 import '../../components/rc-switch.js';
-import {t} from '../../i18n-runtime.js';
+import {t, onUiLangChange} from '../../i18n-runtime.js';
 
 const EMERGENCY_PHASES = new Set(['off', 'translating', 'waiting', 'complete', 'partial', 'stopped', 'error']);
 
@@ -55,6 +55,7 @@ class RoamcatPopup extends LitElement {
   #emergencyResult = {text: '', error: false};
   #suggestionVisible = false;
   #watchTimer = 0;
+  #offLang = null;
   #onStorageChanged = (changes, area) => {
     if (area !== 'local' || !changes.settings) return;
     void request('STATE_GET').then(state => { this.#state = state; this.requestUpdate(); }).catch(() => {});
@@ -86,6 +87,7 @@ class RoamcatPopup extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     document.title = t('pop.brandTitle');
+    this.#offLang = onUiLangChange(() => { document.title = t('pop.brandTitle'); this.requestUpdate(); });
     chrome.storage.onChanged.addListener(this.#onStorageChanged);
     document.addEventListener('pointerdown', this.#onMenuDismiss);
     document.addEventListener('keydown', this.#onMenuDismiss);
@@ -94,6 +96,7 @@ class RoamcatPopup extends LitElement {
 
   disconnectedCallback() {
     chrome.storage.onChanged.removeListener?.(this.#onStorageChanged);
+    this.#offLang?.();
     document.removeEventListener('pointerdown', this.#onMenuDismiss);
     document.removeEventListener('keydown', this.#onMenuDismiss);
     clearTimeout(this.#watchTimer);

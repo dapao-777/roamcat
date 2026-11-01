@@ -167,6 +167,9 @@ button.welcome-options-link {
 .welcome-container {
   position: relative;
   z-index: 1;
+  /* 宽度固定跟随视口（上限 1080px），不按内容收缩：否则任何一段不换行的内容都会把整页撑出横向滚动。 */
+  width: 100%;
+  box-sizing: border-box;
   max-width: 1080px;
   margin: 0 auto;
   padding: 36px 28px 80px 28px;
@@ -566,7 +569,10 @@ button.welcome-options-link {
 .browser-dots span:nth-child(3) { background: var(--color-amber); }
 
 .browser-url-input {
-  flex: 1;
+  /* 初始宽度 0、由弹性布局分配剩余空间：整条网址既不撑宽这一行，也不把最小内容宽度上报给外层卡片。 */
+  flex: 1 1 0;
+  width: 0;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1394,3 +1400,22 @@ button.welcome-options-link {
 .hero-art-caption,
 .config-num { font-family: var(--font-sans, sans-serif); letter-spacing: normal; }
 .welcome-hero-desc { line-height: 1.75; }
+
+.browser-url-input > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.welcome-footer { flex-wrap: wrap; gap: 8px 16px; }
+.footer-right { flex-wrap: wrap; }
+.footer-link { white-space: nowrap; }
+
+/* 窄窗口（分屏、小屏笔记本）：顶栏主题 / 语言 / 设置只留图标（文字在悬停提示里），收窄边距与像素大标题，避免横向滚动。 */
+@media (max-width: 560px) {
+  .welcome-header-inner { padding: 0 16px; gap: 8px; }
+  .welcome-header-actions { gap: 6px; }
+  #theme-toggle-label, #lang-toggle-label, .welcome-options-link > span, .brand-version-pill { display: none; }
+  /* 三个形态切换放不下一行时整颗折行，不把文字压成竖排 */
+  .sandbox-mode-selector { flex-wrap: wrap; max-width: 100%; }
+  .sandbox-mode-btn { flex: 1 1 auto; justify-content: center; white-space: nowrap; padding: 0 10px; }
+  .welcome-container { padding: 20px 16px 56px; gap: 20px; }
+  .welcome-hero-card { padding: 24px 18px; }
+  .hero-title-pixel { font-size: 32px; }
+  .welcome-footer { padding: 16px; }
+}

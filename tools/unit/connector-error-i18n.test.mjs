@@ -42,6 +42,16 @@ test('英文档：不含中文，保留类别细节，按通道区分文案', ()
   i18n.setPref('zh');
 });
 
+test('扩展生成的连接器断开错误带代码，切换语言后按当前语言显示', () => {
+  i18n.setPref('zh');
+  const zh = '未找到或未授权本地 ChatGPT 连接器，请按设置页“模型服务”里的步骤安装。（host_missing; Specified native messaging host not found.）';
+  assert.equal(localizeConnectorError(zh, 'chatgpt'), zh);
+  i18n.setPref('en');
+  assert.equal(localizeConnectorError(zh, 'chatgpt'), 'No authorized local ChatGPT connector found. Install it following the steps under Settings → Model service. (host_missing; Specified native messaging host not found.)');
+  assert.match(localizeConnectorError('本地 Google 连接器没能启动或已断开。（host_exited）', 'antigravity'), /^The local Google connector did not start or disconnected\. Make sure Node\.js and Antigravity are available/);
+  i18n.setPref('zh');
+});
+
 test('未分类或未知类别原样返回', () => {
   i18n.setPref('en');
   assert.equal(localizeConnectorError('请先连接 ChatGPT 订阅。', 'chatgpt'), '请先连接 ChatGPT 订阅。');

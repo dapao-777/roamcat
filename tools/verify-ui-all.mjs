@@ -60,6 +60,25 @@ const settled = async page => {
   await until(page, () => page.evaluate(() => document.getAnimations().filter(a => a.playState === 'running' && a.effect?.getTiming?.().iterations !== Infinity).length).catch(() => 0), n => n === 0, 3000);
   await page.evaluate(() => new Promise(resolve => { requestAnimationFrame(() => requestAnimationFrame(resolve)); setTimeout(resolve, 500); })).catch(() => {});
 };
+// 版式体检（只看可见元素）：一字一行的竖排挤压、单行省略且没有悬停提示的截断文字、右边缘超出视口的元素。
+// .sr-only（仅读屏可见）与按设计可横向滚动的键盘图不算。
+const layoutLint = (page, rootSelector = 'body') => page.evaluate(rootSelector => {
+  const out = {squeezed: [], truncated: [], offscreen: []};
+  const label = el => `${el.id ? '#' + el.id : ''}.${String(el.className || el.tagName).trim().split(/\s+/)[0]} «${(el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 20)}»`;
+  for (const el of document.querySelector(rootSelector)?.querySelectorAll('*') || []) {
+    if (el.closest('.sr-only, [hidden], .kbd-map')) continue;
+    const cs = getComputedStyle(el), r = el.getBoundingClientRect();
+    if (!r.width || !r.height || cs.visibility === 'hidden' || Number(cs.opacity) < 0.05) continue;
+    const own = [...el.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent.trim()).join('');
+    const size = parseFloat(cs.fontSize) || 14;
+    if (own.length >= 4 && r.width < size * 2.2 && r.height > size * 3.2) out.squeezed.push(label(el));
+    if (own.length >= 2 && cs.whiteSpace.includes('nowrap') && cs.textOverflow === 'ellipsis' && el.scrollWidth > el.clientWidth + 1 && !el.closest('[title]')) out.truncated.push(label(el));
+    if (r.right > innerWidth + 1) out.offscreen.push(label(el));
+  }
+  for (const key of Object.keys(out)) out[key] = [...new Set(out[key])].slice(0, 6);
+  return out;
+}, rootSelector);
+const lintClean = lint => !lint.squeezed.length && !lint.truncated.length && !lint.offscreen.length;
 const shot = async (page, name, {fullPage = false, minBytes = 40000} = {}) => {
   const file = path.join(out, name + '.png');
   if (!(await page.screenshot({path: file, fullPage}))) return;
@@ -144,6 +163,17 @@ try {
     await welcome.addStyleTag({content: '.welcome-step-card { animation: none !important; opacity: 1 !important; transform: none !important; }'});
     await settled(welcome);
     await shot(welcome, `welcome-${theme}`, {fullPage: true});
+    if (theme === 'light') {
+      // 引导页窄窗口（分屏、小屏笔记本）：顶栏不挤成竖排，整页不出现横向滚动。
+      for (const width of [480, 375]) {
+        await welcome.setViewportSize({width, height: 900}, 1);
+        await settled(welcome);
+        const lint = await layoutLint(welcome);
+        const scroll = await welcome.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+        check(`welcome 窄窗口版式体检[${width}px]`, lintClean(lint) && scroll <= 0, JSON.stringify({scroll, ...lint}).slice(0, 300));
+        if (width === 480) await shot(welcome, 'welcome-480', {minBytes: 1});
+      }
+    }
     await welcome.close();
 
     // reader：空态 + 注入文档的 ready 态
@@ -265,6 +295,21 @@ try {
   }
   await extPage.setViewportSize({width: 1440, height: 1000});
 
+  // 版式体检：设置页全部分区在三档宽度（含侧栏展开时内容区最窄的 1150）下没有竖排挤压、无提示截断或溢出视口。
+  for (const width of [1440, 1150, 480]) {
+    await extPage.setViewportSize({width, height: 1000});
+    const dirty = [];
+    for (const section of OPTION_SECTIONS) {
+      await extPage.evaluate(s => { location.hash = '#' + s; }, section);
+      await until(extPage, () => extPage.evaluate(id => { const el = document.getElementById(id); return Boolean(el && !el.hidden && el.offsetHeight); }, section), Boolean);
+      await settled(extPage);
+      const lint = await layoutLint(extPage, '.options-body');
+      if (!lintClean(lint)) dirty.push({section, ...lint});
+    }
+    check(`options 全部分区版式体检[${width}px]`, dirty.length === 0, JSON.stringify(dirty).slice(0, 300));
+  }
+  await extPage.setViewportSize({width: 1440, height: 1000});
+
   // ========== B. 页内挂件：fixture 文章页上真实 content script 环境 ==========
   const tab = await run.newPage();
   await tab.setViewportSize({width: 1440, height: 1000}, 1);
@@ -282,6 +327,25 @@ try {
   };
   const petHostReady = await execInTab(`() => Boolean(document.querySelector('#roamcat-pet-host') && globalThis.RoamCatContentUI)`);
   check('content script 与 RoamCatContentUI 就绪', Boolean(petHostReady));
+
+  // 弹窗主状态：在网页所在窗口里开一个后台标签页加载 popup.html，它取到的活动标签页就是这张网页（与点工具栏图标时一致）。
+  const popupTabId = await extPage.evaluate(async base => {
+    const [page] = await chrome.tabs.query({url: base + '/*'});
+    return (await chrome.tabs.create({windowId: page.windowId, url: chrome.runtime.getURL('ui/popup.html'), active: false})).id;
+  }, fixtureBase);
+  const popupTarget = await until(extPage, async () => (await run.browser.connection.send('Target.getTargets')).targetInfos.find(info => info.url.endsWith('/ui/popup.html')), Boolean);
+  if (popupTarget) {
+    const pagePopup = await run.browser.attach(popupTarget.targetId);
+    await pagePopup.setViewportSize({width: 380, height: 640}, 1);
+    // 先显示占位「当前标签页」，取到网页信息后换成主机名：等到主机名出现再断言。
+    const popupHost = await until(pagePopup, () => pagePopup.evaluate(() => document.querySelector('#site-hostname')?.textContent?.trim() || ''), host => host.includes('127.0.0.1'), 8000);
+    await settled(pagePopup);
+    const popupLint = await layoutLint(pagePopup, 'roamcat-popup');
+    check('popup 在普通网页上显示本页开关', popupHost.includes('127.0.0.1'), popupHost);
+    check('popup 普通网页状态版式体检（说明不截断）', lintClean(popupLint), JSON.stringify(popupLint));
+    await shot(pagePopup, 'popup-page', {minBytes: 1});
+  } else check('popup 在普通网页上显示本页开关', false, 'popup target not found');
+  await extPage.evaluate(id => chrome.tabs.remove(id), popupTabId).catch(() => {});
 
   const WIDGET_HOST = (own, css) => `(() => {
     window.__probe = window.__probe || {};
@@ -510,17 +574,22 @@ try {
   await settled(tab);
 
   // ========== D. 英文档：语言切换链路（options / popup / content script） ==========
-  await extPage.evaluate(() => {
-    localStorage.setItem('roamcat_ui_lang', 'en');
-    return chrome.storage.local.set({roamcat_ui_lang: 'en'});
-  });
-  await extPage.reload();
+  // 在另一个扩展页（阅读器）里切换语言：开着的设置页要自己整页换成英文（不能中英混杂），阅读器就地重渲染。
+  const langReader = await run.newPage();
+  await langReader.goto(extUrl('ui/reader.html'));
+  await until(langReader, () => langReader.evaluate(() => Boolean(document.querySelector('roamcat-reader')?.shadowRoot || document.querySelector('roamcat-reader'))), Boolean);
+  await langReader.evaluate(() => globalThis.RoamCatI18n.setPref('en'));
+  const readerEn = await until(langReader, () => langReader.evaluate(() => document.querySelector('roamcat-reader')?.innerText || ''), text => text.length > 20 && !/[一-鿿]/.test(text));
+  check('阅读器就地切换到英文', readerEn.length > 20 && !/[一-鿿]/.test(readerEn), readerEn.slice(0, 120));
+  await langReader.close();
+  await extPage.bringToFront();
   const enOpts = await until(extPage, () => extPage.evaluate(() => ({
     attr: document.documentElement.getAttribute('data-ui-lang'),
     nav: document.querySelector('[data-group="reading"] .nav-text')?.textContent?.trim() || '',
-  })), v => v.attr === 'en' && v.nav === 'Reading');
+    han: (document.querySelector('.options-body')?.innerText.match(/[一-鿿]{2,}/g) || []).filter(word => !['随心阅'].includes(word)).slice(0, 5),
+  })).catch(() => ({attr: '', nav: '', han: ['loading']})), v => v.attr === 'en' && v.nav === 'Reading' && !v.han.length, 8000);
   await settled(extPage);
-  check('options 英文档生效', enOpts.attr === 'en' && enOpts.nav === 'Reading', JSON.stringify(enOpts));
+  check('options 英文档生效（别的页面切换后自动整页换语言，不中英混杂）', enOpts.attr === 'en' && enOpts.nav === 'Reading' && !enOpts.han.length, JSON.stringify(enOpts));
   // 英文选项比中文长：行内下拉框必须按内容加宽，不能把当前选项截掉。
   const clippedSelects = await extPage.evaluate(() => {
     const probe = document.createElement('span');

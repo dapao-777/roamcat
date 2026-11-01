@@ -321,6 +321,24 @@ try {
     const result=await page.evaluate(async bytes=>{const app=readerFixture.app;await app.openData(Uint8Array.from(bytes),'prefixed.epub');return {title:app.title,label:app.sidebar[0]?.label,text:app.blocks[0]?.text};},bytes);
     assert.deepEqual(result,{title:'Prefixed reader',label:'Prefixed chapter',text:'Prefixed content remains readable.'});
   });
+  await gate.check('远程文档 404：不引导登录重试，主按钮改为在浏览器中查看原文档', async () => {
+    const server=http.createServer((request,response)=>response.writeHead(404).end('Not found'));
+    await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+    try {
+      await page.evaluate(async url=>{await readerFixture.app.openRemote(url);await readerFixture.app.updateComplete;},`http://127.0.0.1:${server.address().port}/gone.pdf`);
+      const state=await page.evaluate(()=>({
+        view:readerFixture.app.view,
+        retry:Boolean(document.querySelector('[data-reader-action="retry-login"]')),
+        originalPrimary:document.querySelector('[data-reader-action="open-original"]')?.classList.contains('rc-primary'),
+        hint:document.querySelector('.reader-error .reader-hint')?.textContent||'',
+      }));
+      assert.equal(state.view,'error');
+      assert.equal(state.retry,false,'404 不应出现「使用网站登录状态重试」');
+      assert.equal(state.originalPrimary,true);
+      assert.equal(state.hint,await page.evaluate(()=>RoamCatI18n.t('rd.httpHint')));
+      return state;
+    } finally { await new Promise(resolve=>server.close(resolve)); }
+  });
   await gate.check('登录保护 PDF 匿名失败后可主动使用登录态重试，原站查看只绕过一次接管', async () => {
     const requests=[],pdf=Buffer.from(pdfFixture());
     const server=http.createServer((request,response)=>{
