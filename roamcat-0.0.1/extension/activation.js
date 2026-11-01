@@ -1,7 +1,8 @@
 /**
  * @file extension/activation.js
  * 文件职责：自动开启策略与权限事实源——站点规则匹配、SPA导航检测、动态content-script注册与视频/自动化纯函数校验。
- * 主要内容：AUTO_SCRIPT_ID/ALL_HOSTS/pageOrigin/sitePattern/validateAutomation/validateVideo/registrationMatches；registrationMatches是权限与注册的唯一事实源。
+ * 主要内容：AUTO_SCRIPT_ID/ALL_HOSTS/pageOrigin/sitePattern/validateAutomation/validateVideo/registrationMatches；registrationMatches是权限与注册的唯一事实源；
+ *   isManagedContentScript/contentScriptsInSync供后台对账判断动态注册的内容脚本是否已与期望一致。
  * 模块边界：领域层纯函数，可单测；禁浏览器依赖（R5）；被background.js与auto-start.js引用。
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -13,7 +14,7 @@
 const M=(zh,en)=>globalThis.RoamCatI18n?.lang?.()==='en'?en:zh;
 export const AUTO_SCRIPT_ID = 'ss-auto-start';
 // 伴读猫改按需注入：仅在 floatingPet.enabled 时经 chrome.scripting 动态注册，
-// 未启用伴读猫的用户不再为每个网页付出 3884 行脚本的解析成本。
+// 未启用伴读猫的用户不再为每个网页付出约 6000 行脚本（伴读猫及其依赖）的解析成本。
 export const PET_SCRIPT_ID = 'ss-floating-pet';
 export const CAPTION_SCRIPT_ID = 'ss-youtube-captions';
 export const ALL_HOSTS = ['http://*/*','https://*/*'];
@@ -142,4 +143,32 @@ export function registrationMatches(automation) {
 
 export function requiredPermissionOrigins(automation) {
   return registrationMatches(automation);
+}
+
+/** 本扩展动态注册的内容脚本 id（含早期版本按站点逐条注册的 ss-auto-start-*）；对账只动这些，不碰别的来源注册的。 */
+export function isManagedContentScript(id) {
+  return id === AUTO_SCRIPT_ID || id === PET_SCRIPT_ID || id === CAPTION_SCRIPT_ID || String(id).startsWith('ss-auto-start-');
+}
+
+/**
+ * 已注册的内容脚本是否与期望清单一致：id、匹配范围（不计顺序）、脚本顺序、注入时机、world、allFrames、持久化都要相同，
+ * 缺省值按 chrome.scripting 的默认（document_idle、ISOLATED、不含子框架、持久）折算。一致就不必反注册再注册——
+ * 先反注册会留下一段没有脚本的空窗，每次唤醒都这样做也是白费的写入。
+ */
+export function contentScriptsInSync(registered, wanted) {
+  if (registered.length !== wanted.length) return false;
+  const byId = new Map(registered.map(item => [item.id, item]));
+  if (byId.size !== registered.length) return false;
+  const sorted = value => JSON.stringify([...(value || [])].sort());
+  return wanted.every(item => {
+    const current = byId.get(item.id);
+    return Boolean(current)
+      && sorted(current.matches) === sorted(item.matches)
+      && JSON.stringify(current.js || []) === JSON.stringify(item.js || [])
+      && !current.css?.length && !current.excludeMatches?.length
+      && (current.runAt || 'document_idle') === (item.runAt || 'document_idle')
+      && (current.world || 'ISOLATED') === (item.world || 'ISOLATED')
+      && Boolean(current.allFrames) === Boolean(item.allFrames)
+      && (current.persistAcrossSessions !== false) === (item.persistAcrossSessions !== false);
+  });
 }

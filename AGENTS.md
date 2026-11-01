@@ -1,6 +1,6 @@
 # RoamCat 工程笔记
 
-完整项目的构建与验证要求 Node.js 22.13+（Node 24 已验证）；随发布包单独安装的本机连接器可用 Node 20.11+。CI 在 Node 22.13.0 与 24 上均跑静态检查、单测及生产/开发构建。
+完整项目的构建与验证要求 Node.js 22.13+（Node 24 已验证）；随发布包单独安装的本机连接器可用 Node.js 20+（安装器只校验主版本 ≥ 20）。CI 在 Node 22.13.0 与 24 上均跑静态检查、单测及生产/开发构建。
 
 ## 构建与验证
 
@@ -17,6 +17,7 @@
 | `npm run verify` | 模块图静态门禁（R1–R12，约 1 秒；R11 语法检查在单个子进程里用 vm 只编译不执行；R1–R11 只扫 `roamcat-0.0.1/extension` 与 `connector`，R12 字号档位另扫 `src/`） |
 | `npm run verify:sites` | 站点档案端到端：fixture 按真实 URL 路由进浏览器断言 inspect()（加 `--live` 复核真站） |
 | `npm run verify:service` | 本机常驻连接服务端到端：先断言扩展内置服务地址端口 = 47821，再在 127.0.0.1 空闲端口起带假后端的 `connector/service.mjs`（要求配对令牌；测试副本改这一处地址、缩短重试窗口，并把浏览器连接器宿主名换成不存在的名字——回退立刻报「未找到」，不拉起本机真实安装的连接器、不占用真实服务的 47821），浏览器加载 `dist/extension`，预置 `chrome.storage.session` 令牌缓存，断言缺令牌 / 错令牌回退浏览器连接器、正确令牌经 WebSocket 连上、服务停掉后回退 → `preview/connector-service.json`（先跑 `npm run build`） |
+| `npm run verify:grok-lockdown` | Grok 连接器锁定门禁（`tools/verify-grok-lockdown.mjs`）：本机真实 Grok CLI + 连接器真实命令行与环境，后端换成 127.0.0.1 假 xAI 接口，断言请求里没有 tools、仍带 json_schema、用户主目录里的金丝雀技能不进提示词，并用改动前的命令行做对照组 → `preview/gates/`（需本机装 Grok CLI，找不到时跳过；不耗订阅额度；不并入 `verify:all`，Grok CLI 升级后重跑） |
 | `npm test` | 单元测试：`tools/run-unit-tests.mjs` 列出 `tools/unit/*.test.mjs` 再交给 `node --test`（Node 20 不展开通配符，故不直接传 glob） |
 | `npm run verify:build` | 构建产物门禁：字节比对 + 浏览器实际加载 `dist/extension` 冒烟 |
 | `npm run verify:release` | 生产构建门禁：先 `build:release` 拷到临时目录、随即恢复开发构建，再断言 manifest 无开发 key 且版本一致、全部脚本可编译、压缩后的源层脚本保留 MPL 头，无头 ego 加载生产版：弹窗/设置页无错、普通网页只有轻量引导、按需注入后阅读引擎可开启 → `preview/gates/release.json` |
@@ -40,7 +41,7 @@
 - `src/`：Vite 项目（Lit 页面应用与共享组件），`src/content-ui/` 为页内 UI lit-html 渲染层（`vite.content-ui.config.mjs` → `extension/content-ui.js` IIFE，由 background 于 content.js 前按需注入，暴露 `globalThis.RoamCatContentUI`），`@ext` 别名指向扩展源目录。
 - `build/`：构建期脚本与 `extension-key.json`（dev 构建的 manifest key 与扩展 ID，公钥可提交，无私钥）。
 - `dist/extension/`：构建产物 = 源层拷贝 − `REPLACED_BY_BUILD`（`build/extension-plugin.mjs` 中维护，页面迁移完成后当前为空）+ Vite 页面产物 + 变换后的 manifest。
-- `docs/`：GitHub Pages 落地页源（`main` + `/docs` → `dapao-777.github.io/roamcat`）——`index.html`/`zh.html` 双语静态页 + `llms.txt`/`sitemap.xml`/`robots.txt`/`.nojekyll`；OG 图 `docs/assets/og-cover.png` 由 `node tools/capture-social.mjs` 生成（同步产出 `.github/assets/social-preview.png`，需在仓库 Settings → Social preview 手动上传）。
+- `docs/`：GitHub Pages 落地页源（`main` + `/docs` → `dapao-777.github.io/roamcat`）——`index.html`/`zh.html` 双语静态页（head 元数据 + 单个 `@graph` JSON-LD：WebSite / WebPage / SoftwareApplication / SoftwareSourceCode / Person / FAQPage，页面里的 FAQ 与 FAQPage 问题一一对应）+ `404.html`（noindex）+ `llms.txt` / `llms-full.txt`（给 AI 助手读的摘要与完整事实）+ `sitemap.xml`/`robots.txt`/`.nojekyll`；OG 图 `docs/assets/og-cover.png` 由 `node tools/capture-social.mjs` 生成（同步产出 `.github/assets/social-preview.png`，需在仓库 Settings → Social preview 手动上传）。发版时一起改：两个落地页的 `softwareVersion` / `dateModified` / 「最新版本」行 / 页脚日期、`llms.txt` 与 `llms-full.txt` 的版本和日期、`sitemap.xml` 的 `lastmod`，`tools/unit/site-seo.test.mjs` 拦截漂移（数字类事实归 `docs-facts.test.mjs`）。项目站里的 `robots.txt` 爬虫读不到——爬虫只认主机根目录的 `/robots.txt`，`dapao-777.github.io/robots.txt` 目前是 404（等于不设限）——所以收录靠在 Google Search Console / Bing Webmaster Tools 里提交 `sitemap.xml`；绑定自定义域名后该文件才在根目录生效，`404.html` 里的绝对地址也要同步改。落地页（`index.html`/`zh.html`/`404.html`）是独立静态页、不能 import tokens，所以 `:root` 调色板（`--paper`/`--card`/`--paper-2`/`--ink`/`--ink-soft`/`--line`/`--amber`）和 `theme-color` 是照抄 `tokens.css` 的 `--rc-canvas`/`--rc-surface`/`--rc-surface-subtle`/`--rc-ink`/`--rc-ink-secondary`/`--rc-line-mid`/`--rc-accent`（`theme-color` 取画布色，必须等于页面底色）；改了 `tokens.css` 里这几个值，要同步这三个页面，`site-seo.test.mjs` 会拦漂移。
 - `preview/`：验证报告与截图（不入库）。
 - 普通网页静态只加载 `page-bootstrap.js`；伴读猫启用时动态加载 UI 依赖与宠物脚本，阅读/翻译/摘要等实际操作再经 `ENSURE_PAGE_UI` 或 `PAGE_UI_INJECT` 加载阅读引擎。新增网页侧模块要同时维护 `background.js` 注入顺序、`build/gen-i18n-content.mjs` 动态文案扫描清单与模块图门禁。生产构建还会压缩源层 classic `.js`，开发构建仍字节拷贝。
 - 阅读器按 80 个正文块分页，目录跳转会切到对应分页；翻译结果按块 ID 保留。EPUB 在独立 worker 中只解压 container/OPF/nav/spine 文本（单文件 8 MiB、合计 32 MiB 上限），换书/关页会取消旧解析。

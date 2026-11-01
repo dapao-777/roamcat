@@ -18,6 +18,7 @@ import path from 'node:path';
 import {spawn} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {SUMMARY_PATTERN} from './lib/gate-report.mjs';
+import {npmCommand} from './lib/npm.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LOGS = path.join(ROOT, 'preview', 'gates', 'logs');
@@ -72,7 +73,10 @@ function runStep(step) {
   return new Promise(resolve => {
     const started = Date.now();
     const [command, ...rest] = step.cmd;
-    const child = spawn(command === 'node' ? process.execPath : command, rest, {cwd: ROOT, shell: command !== 'node', env: process.env});
+    // 不用带参数的 shell: true（Node 24 的 DEP0190 告警）：node 直接跑；npm 经 tools/lib/npm.mjs（node 直接执行 npm-cli.js）。
+    const invocation = command === 'node' ? {command: process.execPath, args: rest, options: {}} : command === 'npm' ? npmCommand(rest) : null;
+    if (!invocation) throw new Error(`未知命令：${command}`);
+    const child = spawn(invocation.command, invocation.args, {cwd: ROOT, env: process.env, ...invocation.options});
     let output = '';
     child.stdout.on('data', chunk => { output += chunk; });
     child.stderr.on('data', chunk => { output += chunk; });

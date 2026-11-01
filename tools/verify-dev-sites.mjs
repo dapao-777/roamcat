@@ -17,6 +17,7 @@ import http from 'node:http';
 import assert from 'node:assert/strict';
 import {DIST, REPO, extUrl, gateArgs, openBrowser, previewPath, sleep} from './lib/ego.mjs';
 import {printGateSummary} from './lib/gate-report.mjs';
+import {isBlockedPage} from './lib/site-walls.mjs';
 
 const LIVE = gateArgs().includes('--live');
 const extensionDir = path.resolve(process.env.EXTENSION_DIR || DIST);
@@ -49,7 +50,6 @@ const readProfiles = async (extPage, tabId) => {
     func: () => (globalThis.RoamCatSites?.PROFILES || []).flatMap(p => [...(p.root || []), ...(p.skip || []), ...(p.chrome || [])])
   }), tabId).then(frames => frames?.[0]?.result || []);
 };
-const BLOCKED_RE = /just a moment|verify you are (a )?human|are you a (human|robot)|captcha|access denied|unusual traffic|login\/\?reason/i;
 
 const cases = [
   {
@@ -440,7 +440,7 @@ async function runLive() {
           const title = await page.title().catch(() => '');
           const sample = await page.evaluate(() => document.body?.innerText?.slice(0, 2000) || '').catch(() => '');
           const url = await page.url();
-          if (BLOCKED_RE.test(title) || BLOCKED_RE.test(sample) || BLOCKED_RE.test(url)) return `SKIP 墙/登录页 (${url})`;
+          if (isBlockedPage({title, sample, url})) return `SKIP 墙/登录页 (${url})`;
             let inspect = await inspectTab(extPage, tabId);
             if (!inspect) { await sleep(3000); inspect = await inspectTab(extPage, tabId); }
             assert.ok(inspect, 'inspect() 无结果');

@@ -18,6 +18,7 @@ import {homedir} from 'node:os';
 import {delimiter,dirname,join,resolve} from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {SERVICE_PORT, copyConnectorSources, installService, serviceTokenFile, uninstallService} from './service-install.mjs';
+import {cliCommand} from './cli-command.mjs';
 
 const HOSTS = {
   chatgpt: 'com.roamcat.translate',
@@ -306,13 +307,18 @@ async function uninstallBackend(backend, opts) {
   return removed;
 }
 
+// 查 CLI 版本。.cmd/.bat shim（如 Windows npm 全局的 codex.cmd）必须经 cmd.exe 才能 spawn，否则 EINVAL；
+// 路径要在命令串里整体加引号（含空格的 C:\Users\Li Lei\… 才不会被拆开），写法与运行时共用（cli-command.mjs）。
+export function cliVersion(cliPath) {
+  const probe = cliCommand(cliPath, ['--version']);
+  return spawnSync(probe.command, probe.args, {encoding:'utf8', timeout:10000, windowsHide: true, ...probe.options});
+}
+
 async function installBackend(backend, cliPath, opts, ids) {
   const {root, host, windows, launcher, manifestPath, targets} = browserTargets(backend, opts);
   const origins = ids.map(i => `chrome-extension://${i}/`);
   const origin = origins.length === 1 ? origins[0] : origins;
-  // .cmd/.bat shim（如 Windows npm 全局的 codex.cmd）必须经 shell 才能 spawn，否则 EINVAL。
-  const cliNeedsShell = process.platform === 'win32' && /\.(cmd|bat)$/i.test(cliPath);
-  const version = spawnSync(cliPath, ['--version'], {encoding:'utf8', timeout:10000, windowsHide: true, ...(cliNeedsShell ? {shell:true} : {})});
+  const version = cliVersion(cliPath);
   const versionText = `${version.stdout || ''}\n${version.stderr || ''}`.trim();
   if (backend === 'chatgpt') {
     if (version.status !== 0 || !/^codex-cli \d+\.\d+\.\d+/m.test(version.stdout || '')) throw new Error('无法运行官方 Codex CLI。请检查 Node.js 与 Codex 的安装。');

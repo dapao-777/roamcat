@@ -27,6 +27,25 @@ import {
 const LOGIN_URL_WAIT_MS = 20_000;
 const LOGIN_HOSTS = new Set(["auth.x.ai", "accounts.x.ai"]);
 
+// 连接器只做文本翻译与分类，不该给模型任何工具。Grok CLI 1.0.70 无头模式默认带 23 个内置工具（含 run_terminal_command、
+// search_replace、scheduler_create），网页文字又会进提示词：离线抓 /chat/completions 请求实测，GROK_WRITE_FILE=0 之类的环境
+// 开关挡不住它们，--no-plan/--no-subagents 也不影响。下面三层叠加后请求里不再有 tools 字段：
+//   1. --tools 白名单只留 todo_write：版本新增的工具不在白名单里，默认不暴露；
+//   2. --disallowed-tools 把白名单里的 todo_write、随白名单出现的 search_tool/use_tool 和已知的内置工具全部点名禁用
+//      （未知工具名会被忽略，所以新旧版本都能传同一份清单）；
+//   3. --permission-mode dontAsk：万一仍有工具漏网，需要批准的调用直接拒绝，不会像 --always-approve 那样自动执行。
+const GROK_DISALLOWED_TOOLS = [
+  'ask_user_question', 'enter_plan_mode', 'exit_plan_mode', 'get_command_or_subagent_output', 'grep',
+  'image_edit', 'image_gen', 'image_to_video', 'kill_command_or_subagent', 'list_dir', 'monitor', 'read_file',
+  'reference_to_video', 'run_terminal_command', 'scheduler_create', 'scheduler_delete', 'scheduler_list',
+  'search_replace', 'search_tool', 'send_feedback', 'todo_write', 'use_tool', 'workflow',
+];
+const GROK_NO_TOOLS_ARGS = [
+  '--tools', 'todo_write',
+  '--disallowed-tools', GROK_DISALLOWED_TOOLS.join(','),
+  '--permission-mode', 'dontAsk',
+];
+
 export function buildGrokConfig() {
   return [
     '# Generated for the isolated RoamCat Grok connector.',
@@ -36,7 +55,10 @@ export function buildGrokConfig() {
   ].join('\n');
 }
 
-export function buildGrokEnv({ grokPath, grokHome, tmpDir }) {
+// homeDir 是连接器自己的空目录，当作子进程的用户主目录：Grok 会从主目录加载 .agents/skills、.claude、.cursor 里的技能、规则、
+// MCP 与 hooks（GROK_HOME 只隔离 ~/.grok，管不到这些），换成空目录后离线抓包确认用户技能不再进提示词。
+// 登录态在 GROK_HOME/auth.json，不依赖主目录。不传 homeDir 时沿用真实主目录。
+export function buildGrokEnv({ grokPath, grokHome, tmpDir, homeDir }) {
   const pathEntries = [...new Set([
     dirname(grokPath),
     dirname(process.execPath),
@@ -46,7 +68,7 @@ export function buildGrokEnv({ grokPath, grokHome, tmpDir }) {
   ].filter(Boolean))];
   const env = {
     GROK_HOME: grokHome,
-    HOME: homedir(),
+    HOME: homeDir || homedir(),
     LANG: 'en_US.UTF-8',
     PATH: pathEntries.join(delimiter),
     TMPDIR: tmpDir,
@@ -57,13 +79,13 @@ export function buildGrokEnv({ grokPath, grokHome, tmpDir }) {
     GROK_CRASH_HANDLER: '0',
   };
   if (process.platform === 'win32') {
-    env.USERPROFILE = homedir();
+    env.USERPROFILE = homeDir || homedir();
     env.SYSTEMROOT = process.env.SYSTEMROOT || process.env.SystemRoot || '';
     env.WINDIR = process.env.WINDIR || env.SYSTEMROOT;
     env.COMSPEC = process.env.COMSPEC || '';
     env.PATHEXT = process.env.PATHEXT || '.EXE;.CMD;.BAT;.COM';
-    env.APPDATA = process.env.APPDATA || '';
-    env.LOCALAPPDATA = process.env.LOCALAPPDATA || '';
+    env.APPDATA = homeDir ? join(homeDir, 'AppData', 'Roaming') : process.env.APPDATA || '';
+    env.LOCALAPPDATA = homeDir ? join(homeDir, 'AppData', 'Local') : process.env.LOCALAPPDATA || '';
     env.TEMP = tmpDir;
     env.TMP = tmpDir;
   }
@@ -201,7 +223,10 @@ function unwrapGrokValue(value) {
 function publicGrokError(error) {
   const joined = String(error?.message ?? error ?? '').toLowerCase();
   let category = 'request_failed', message = 'Grok 请求失败，请根据错误代码检查服务或连接器。';
-  if (/invalid.{0,40}schema|schema.{0,80}(invalid|must|unsupported)|json_schema|response_format/.test(joined)) {
+  // 旧版 CLI 不认识限制工具的开关时宁可报错也不去掉开关重试：悄悄退回「模型带着工具跑」比失败更糟。
+  if (/(?:unexpected|unrecognized|unknown)\s+(?:argument|option|flag)|invalid option/.test(joined) && /--(?:tools|disallowed-tools|permission-mode)\b/.test(joined)) {
+    category = 'unsupported_rpc'; message = '当前 Grok CLI 不支持连接器调用的接口，请更新 Grok CLI。';
+  } else if (/invalid.{0,40}schema|schema.{0,80}(invalid|must|unsupported)|json_schema|response_format/.test(joined)) {
     category = 'invalid_output_schema'; message = '结构化输出格式被 Grok 拒绝，请更新扩展与本机连接器。';
   } else if (/context.{0,20}(length|limit|exceed)|too many tokens/.test(joined)) {
     category = 'context_limit'; message = '请求超过模型的上下文限制，请选择更短内容。';
@@ -263,12 +288,17 @@ const grokHooks = {
   label: 'Grok',
   // Grok 的 page 范围翻译不回 onProgress 中间进度（整页结果体量大）。
   suppressPageProgress: true,
-  env: client => buildGrokEnv({ grokPath: client.cliPath, grokHome: client.grokHome, tmpDir: client.tmpDir }),
+  env: client => buildGrokEnv({ grokPath: client.cliPath, grokHome: client.grokHome, tmpDir: client.tmpDir, homeDir: client.homeDir }),
   async prepare(client) {
     await Promise.all([
       mkdir(client.grokHome, { recursive: true, mode: 0o700 }),
       mkdir(client.workDir, { recursive: true, mode: 0o700 }),
       mkdir(client.tmpDir, { recursive: true, mode: 0o700 }),
+      mkdir(client.homeDir, { recursive: true, mode: 0o700 }),
+      ...(process.platform === 'win32' ? [
+        mkdir(join(client.homeDir, 'AppData', 'Roaming'), { recursive: true, mode: 0o700 }),
+        mkdir(join(client.homeDir, 'AppData', 'Local'), { recursive: true, mode: 0o700 }),
+      ] : []),
     ]);
     const configPath = join(client.grokHome, 'config.toml');
     await writeFile(configPath, buildGrokConfig(), { mode: 0o600 });
@@ -299,7 +329,7 @@ const grokHooks = {
         '--no-subagents',
         '--no-memory',
         '--no-plan',
-        '--always-approve',
+        ...GROK_NO_TOOLS_ARGS,
         '--reasoning-effort', 'low',
         '--max-turns', '1',
         '--cwd', client.workDir,
@@ -355,6 +385,7 @@ export class GrokClient extends CliClient {
     if (!grokPath || !dataDir) throw new TypeError('grokPath 和 dataDir 为必填项');
     super({ cliPath: resolve(grokPath), dataDir: resolve(dataDir), timeoutMs, spawnImpl, diagnostic, provider: 'grok', hooks: grokHooks });
     this.grokHome = join(this.dataDir, 'grok');
+    this.homeDir = join(this.dataDir, 'home');
     this.userAuthPath = userAuthPath;
     this.loginChild = null;
     this.loginAuthUrl = null;

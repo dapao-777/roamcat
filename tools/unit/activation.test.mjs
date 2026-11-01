@@ -3,7 +3,8 @@
  * 文件职责：为领域层 extension/activation.js 的自动化策略纯函数提供 node:test 单元测试——
  *   SPEC 第 4.1 节声称这些函数「纯函数优先，可单测」，本文件把该承诺变为可执行断言。
  * 主要内容：pageOrigin 的协议与凭据约束、sitePattern 的完整 origin 要求、
- *   validateAutomation 的白名单/类型/唯一性/数量规则与默认值保持、validateVideo 的枚举与合并语义。
+ *   validateAutomation 的白名单/类型/唯一性/数量规则与默认值保持、validateVideo 的枚举与合并语义、
+ *   isManagedContentScript / contentScriptsInSync 的后台对账判断（一致不动、任何一处不同才重新注册）。
  * 模块边界：只 import 被测模块；被测模块无浏览器与 Node 依赖（由模块图 lint 的领域层规则保证）；
  *   运行方式为在仓库根执行 node:test 自动发现本目录全部 .test.mjs。
  *
@@ -24,6 +25,8 @@ import {
   sitePattern,
   validateAutomation,
   validateVideo,
+  isManagedContentScript,
+  contentScriptsInSync,
 } from '../../roamcat-0.0.1/extension/activation.js';
 
 test('常量导出保持稳定', () => {
@@ -109,4 +112,39 @@ test('validateVideo 校验字幕外观：显示方式、译文位置与颜色、
   assert.throws(() => validateVideo({translationColor: '#fff'}, base), /无效的译文颜色。/u);
   for (const offset of [-1, 0, 35, 80]) assert.equal(validateVideo({offset}, base).offset, offset);
   for (const offset of [-2, 81, 12.5, '10']) assert.throws(() => validateVideo({offset}, base), /无效的字幕位置。/u);
+});
+
+test('isManagedContentScript 只认本扩展注册的脚本 id（含早期按站点逐条注册的 ss-auto-start-*）', () => {
+  for (const id of ['ss-auto-start', 'ss-floating-pet', 'ss-youtube-captions', 'ss-auto-start-https://example.com']) assert.equal(isManagedContentScript(id), true, id);
+  for (const id of ['other-extension-script', 'ss-auto', 'ss-floating-pet-2', '']) assert.equal(isManagedContentScript(id), false, id);
+});
+
+test('contentScriptsInSync：与期望完全一致才算同步，任何一处不同都要重新注册', () => {
+  const wanted = () => [
+    {id: 'ss-auto-start', matches: ['http://*/*', 'https://*/*'], js: ['auto-start.js'], runAt: 'document_start', allFrames: false, persistAcrossSessions: true},
+    {id: 'ss-youtube-captions', matches: ['https://m.youtube.com/*', 'https://www.youtube.com/*'], js: ['youtube-captions-bridge.js'], world: 'MAIN', runAt: 'document_start', allFrames: false, persistAcrossSessions: true},
+  ];
+  // chrome.scripting.getRegisteredContentScripts 返回的形状：缺省值会被补齐（world 总有值），匹配范围的顺序不保证。
+  const registered = () => [
+    {id: 'ss-youtube-captions', matches: ['https://www.youtube.com/*', 'https://m.youtube.com/*'], js: ['youtube-captions-bridge.js'], world: 'MAIN', runAt: 'document_start', allFrames: false, persistAcrossSessions: true},
+    {id: 'ss-auto-start', matches: ['https://*/*', 'http://*/*'], js: ['auto-start.js'], world: 'ISOLATED', runAt: 'document_start', allFrames: false, persistAcrossSessions: true},
+  ];
+  assert.equal(contentScriptsInSync(registered(), wanted()), true, '顺序与缺省值不同不算差异');
+  assert.equal(contentScriptsInSync([], []), true, '都没有也是一致');
+  assert.equal(contentScriptsInSync([], wanted()), false, '该有的没注册');
+  assert.equal(contentScriptsInSync(registered().slice(1), wanted()), false);
+  assert.equal(contentScriptsInSync(registered(), wanted().slice(1)), false, '多出不该有的');
+  const mutate = (index, patch) => registered().map((item, i) => (i === index ? {...item, ...patch} : item));
+  assert.equal(contentScriptsInSync(mutate(1, {matches: ['https://*/*']}), wanted()), false, '匹配范围变了（权限收回或设置改了）');
+  assert.equal(contentScriptsInSync(mutate(1, {js: ['auto-start.js', 'extra.js']}), wanted()), false, '脚本清单变了（版本更新）');
+  assert.equal(contentScriptsInSync(mutate(1, {runAt: 'document_idle'}), wanted()), false);
+  assert.equal(contentScriptsInSync(mutate(0, {world: 'ISOLATED'}), wanted()), false);
+  assert.equal(contentScriptsInSync(mutate(1, {allFrames: true}), wanted()), false);
+  assert.equal(contentScriptsInSync(mutate(1, {persistAcrossSessions: false}), wanted()), false);
+  assert.equal(contentScriptsInSync(mutate(1, {css: ['x.css']}), wanted()), false, '带了我们从不注册的样式');
+  assert.equal(contentScriptsInSync(mutate(1, {excludeMatches: ['https://example.com/*']}), wanted()), false);
+  const reorderedJs = wanted().map(item => (item.id === 'ss-auto-start' ? {...item, js: ['b.js', 'a.js']} : item));
+  const registeredJs = registered().map(item => (item.id === 'ss-auto-start' ? {...item, js: ['a.js', 'b.js']} : item));
+  assert.equal(contentScriptsInSync(registeredJs, reorderedJs), false, '脚本顺序有意义（依赖在前）');
+  assert.equal(contentScriptsInSync([...registered(), {id: 'ss-auto-start', matches: [], js: []}], wanted()), false, 'id 重复');
 });

@@ -34,9 +34,9 @@ function tempDir() {
 /** 按调用序脚本化响应的假 spawn：handler({args, callIndex}) → {stdout, stderr, code, error}。 */
 function createFakeSpawn(handler) {
   const calls = [];
-  const spawnImpl = (command, args) => {
+  const spawnImpl = (command, args, ...rest) => {
     const callIndex = calls.length;
-    calls.push({command, args, options: [...arguments].slice(2)});
+    calls.push({command, args, options: rest});
     const script = handler({command, args, callIndex}) || {};
     const child = new EventEmitter();
     child.stdout = new PassThrough();
@@ -133,6 +133,63 @@ test('Grok 在 --prompt-file 不受支持时回退 -p 传提示词', async () =>
   assert.ok(taskCalls[1].args.includes('-p'), '回退调用应使用 -p');
   assert.ok(!taskCalls[1].args.includes('--prompt-file'), '回退调用不应再带 --prompt-file');
   await client.close();
+});
+
+test('Grok 任务命令行不自动批准工具，并关掉全部内置工具', async () => {
+  const dataDir = tempDir();
+  writeGrokAuth(dataDir);
+  const {spawnImpl, calls} = createFakeSpawn(({args}) => (args[0] === 'models' ? {stdout: GROK_MODELS} : {stdout: '{"domain":"tech"}'}));
+  const client = grokClient(dataDir, spawnImpl);
+  await client.classify({text: 'A relational database uses SQL queries.', title: 'Docs', model: 'grok-4.20-0309-non-reasoning'});
+  const {args} = calls.find(call => call.args.includes('--json-schema'));
+  assert.ok(!args.includes('--always-approve'), '网页文字会进提示词，不能自动批准任何工具');
+  assert.equal(args[args.indexOf('--permission-mode') + 1], 'dontAsk', '漏网的工具也只拒绝、不询问');
+  assert.equal(args[args.indexOf('--tools') + 1], 'todo_write', '白名单只留一个工具，新版本多出来的工具默认不暴露');
+  const denied = args[args.indexOf('--disallowed-tools') + 1].split(',');
+  // 白名单里的 todo_write 与随白名单出现的 search_tool/use_tool，以及 shell、读写文件、定时任务等内置工具都要点名禁用。
+  for (const tool of ['todo_write', 'search_tool', 'use_tool', 'run_terminal_command', 'search_replace', 'read_file', 'grep', 'list_dir', 'scheduler_create', 'workflow']) {
+    assert.ok(denied.includes(tool), `应禁用 ${tool}`);
+  }
+  assert.ok(args.includes('--max-turns') && args[args.indexOf('--max-turns') + 1] === '1');
+  await client.close();
+});
+
+test('Grok 子进程的用户主目录是连接器自己的空目录，真实主目录里的技能与配置不再进提示词', async () => {
+  const dataDir = tempDir();
+  writeGrokAuth(dataDir);
+  const {spawnImpl, calls} = createFakeSpawn(({args}) => (args[0] === 'models' ? {stdout: GROK_MODELS} : {stdout: '{"domain":"tech"}'}));
+  const client = grokClient(dataDir, spawnImpl);
+  await client.classify({text: 'A relational database uses SQL queries.', title: 'Docs', model: 'grok-4.20-0309-non-reasoning'});
+  const home = path.join(dataDir, 'home');
+  assert.ok(fs.statSync(home).isDirectory(), '连接器启动时创建这个空目录');
+  for (const call of calls) {
+    const env = call.options[0].env;
+    assert.equal(env.GROK_HOME, path.join(dataDir, 'grok'));
+    assert.equal(env.HOME, home);
+    assert.notEqual(env.HOME, os.homedir());
+    if (process.platform === 'win32') {
+      assert.equal(env.USERPROFILE, home);
+      assert.equal(env.APPDATA, path.join(home, 'AppData', 'Roaming'));
+      assert.equal(env.LOCALAPPDATA, path.join(home, 'AppData', 'Local'));
+      assert.ok(fs.statSync(env.APPDATA).isDirectory() && fs.statSync(env.LOCALAPPDATA).isDirectory());
+    }
+  }
+  await client.close();
+});
+
+test('Grok 旧版 CLI 不认识限制工具的开关时报需要更新，不去掉开关重试', async () => {
+  for (const flag of ['--tools', '--disallowed-tools', '--permission-mode']) {
+    const dataDir = tempDir();
+    writeGrokAuth(dataDir);
+    const {spawnImpl, calls} = createFakeSpawn(({args}) => (args[0] === 'models'
+      ? {stdout: GROK_MODELS}
+      : {stderr: `error: unexpected argument '${flag}' found`, code: 2}));
+    const client = grokClient(dataDir, spawnImpl);
+    await assert.rejects(client.classify({text: 'A database uses SQL.', title: '', model: 'grok-4.20-0309-non-reasoning'}), /不支持连接器调用的接口.*unsupported_rpc/u);
+    const taskCalls = calls.filter(call => call.args[0] !== 'models');
+    assert.equal(taskCalls.length, 1, `${flag}: 不得换一条没有限制开关的命令重试`);
+    await client.close();
+  }
 });
 
 test('Grok 无登录态时拒绝任务', async () => {
@@ -467,6 +524,53 @@ test('Antigravity 启动探测与紧随其后的状态刷新只跑一次 agy mod
   assert.equal(status.authenticated, true);
   assert.equal(fake.calls.filter(call => call.args[0] === 'models').length, 1);
   await client.close();
+});
+
+test('Antigravity 逐次与常驻调用都带沙箱、不展开斜杠命令，并把批准策略压回默认', async () => {
+  // 用户自己的 agy 设置常是 toolPermission=always-proceed（连 MCP 调用都自动批准）：本次会话压回 agy 的默认值，不写回用户的设置。
+  const assertIsolated = args => {
+    assert.ok(args.includes('--sandbox'));
+    assert.ok(args.includes('--disable-slash-commands'));
+    assert.deepEqual(JSON.parse(args[args.indexOf('--settings') + 1]), {toolPermission: 'request-review'});
+  };
+  const streamDir = tempDir();
+  const fake = createAgyFake({
+    onTurn: ({prompt}) => ({result: translated(prompt, '译文')}),
+    oneShot: args => args[0] === 'models' ? {stdout: AGY_MODELS} : {code: 1, stderr: 'unexpected one-shot call'},
+  });
+  const streamed = agyClient(streamDir, fake.spawnImpl);
+  try {
+    await streamed.emergencyTranslate({scope: 'page', items: [pageItem('One line.', 0)], model: 'gemini-3.8-flash-low'});
+    const workers = fake.calls.filter(call => call.args.includes('stream-json'));
+    assert.ok(workers.length > 0);
+    for (const call of workers) assertIsolated(call.args);
+  } finally { await streamed.close(); fs.rmSync(streamDir, {recursive: true, force: true}); }
+
+  const dataDir = tempDir();
+  const {spawnImpl, calls} = createFakeSpawn(({args}) => args[0] === 'models'
+    ? {stdout: AGY_MODELS}
+    : {stdout: JSON.stringify({status: 'SUCCESS', response: JSON.stringify({segments: []})})});
+  const spawned = agyClient(dataDir, spawnImpl);
+  try {
+    await spawned.transcribe({base64: Buffer.from('RIFFxxxxWAVEdataxxxx').toString('base64'), mimeType: 'audio/wav', duration: 3, model: 'gemini-3.8-flash-low'});
+    assertIsolated(calls.at(-1).args);
+    assert.ok(calls.filter(call => call.args[0] === 'models').every(call => !call.args.includes('--settings')), 'agy models 不跑模型，不需要覆盖设置');
+  } finally { await spawned.close(); fs.rmSync(dataDir, {recursive: true, force: true}); }
+});
+
+test('Antigravity 旧版 agy 不认 --settings（或不认其中的值）时报需要更新，不去掉开关重试', async () => {
+  for (const stderr of ['flag provided but not defined: -settings', 'Error: --settings: invalid value for setting "toolPermission": toolPermission: unrecognized value "request-review"']) {
+    const dataDir = tempDir();
+    const {spawnImpl, calls} = createFakeSpawn(({args}) => args[0] === 'models' ? {stdout: AGY_MODELS} : {stderr, code: 2});
+    const client = agyClient(dataDir, spawnImpl);
+    try {
+      await assert.rejects(
+        client.transcribe({base64: Buffer.from('RIFFxxxxWAVEdataxxxx').toString('base64'), mimeType: 'audio/wav', duration: 3, model: 'gemini-3.8-flash-low'}),
+        /不支持连接器调用的接口.*unsupported_rpc/u);
+      const taskCalls = calls.filter(call => call.args[0] !== 'models');
+      assert.ok(taskCalls.length > 0 && taskCalls.every(call => call.args.includes('--settings')), '不得换一条没有 --settings 的命令重试');
+    } finally { await client.close(); fs.rmSync(dataDir, {recursive: true, force: true}); }
+  }
 });
 
 test('Grok 复用本机 grok CLI 已有的登录；在扩展里退出后不再自动复用，也不登出 CLI', async () => {

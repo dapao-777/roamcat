@@ -30,6 +30,7 @@ import {
   CLASSIFICATION_SCHEMA,CLASSIFIER_INSTRUCTIONS,
   normalizePreferences,errorWithDiagnostic,stderrCategory,
 } from './cli-client.mjs';
+import {cliCommand} from './cli-command.mjs';
 const RPC_LINE_LIMIT = 8 * 1024 * 1024;
 const MAX_MODEL_PAGES = 10;
 const ASSIST_CONTENT_LIMIT = 24_000;
@@ -88,13 +89,9 @@ export function buildCodexConfig() {
   ].join("\n");
 }
 
-// Windows npm 全局的 codex 落盘为 codex.cmd，不能直接 spawn（EINVAL），要经 cmd.exe 执行。不用 shell: true：
-// 那样 Node 不给命令加引号，路径含空格（如 C:\Users\Li Lei\…）时 cmd 会把它拆开，而且传参会触发 DEP0190 弃用告警。
+// Windows npm 全局的 codex 落盘为 codex.cmd，不能直接 spawn（EINVAL），要经 cmd.exe 执行；写法见 cli-command.mjs（安装器共用）。
 export function codexSpawnCommand(codexPath, platform = process.platform, comspec = process.env.ComSpec) {
-  const args = ["app-server", "--stdio", "--strict-config"];
-  if (platform !== "win32" || !/\.(cmd|bat)$/i.test(codexPath)) return { command: codexPath, args, options: {} };
-  const shell = comspec || join(process.env.SystemRoot || "C:\\Windows", "System32", "cmd.exe");
-  return { command: shell, args: ["/d", "/s", "/c", `""${codexPath}" ${args.join(" ")}"`], options: { windowsVerbatimArguments: true } };
+  return cliCommand(codexPath, ["app-server", "--stdio", "--strict-config"], platform, comspec);
 }
 
 export function buildCodexEnv({ codexPath, codexHome, tmpDir }) {

@@ -1,6 +1,6 @@
 /**
  * @file extension/background.js
- * 文件职责：Service Worker 总控——76 种消息的注册表派发、设置校验与迁移、API/三订阅链路编排、
+ * 文件职责：Service Worker 总控——81 种消息的注册表派发、设置校验与迁移、API/三订阅链路编排、
  *   缓存/并发/看门狗、订阅端口状态与诊断编排，是扩展侧所有业务的唯一入口。
  * 主要内容：messageHandlers 注册表（与 message-protocol.js MESSAGE_TYPES 一一对应）、STATE_PATCH 编排、
  *   SUPPORT_BATCH/ASSIST/解构/整页翻译/摘要装配、supportCache 等会话缓存、subscription 端口管理。
@@ -96,7 +96,7 @@ import {
   PAGE_SUMMARY_SCHEMA,
   normalizePageSummaryResult
 } from './gloss.mjs';
-import {AUTO_SCRIPT_ID,PET_SCRIPT_ID,CAPTION_SCRIPT_ID,ALL_HOSTS,VIDEO_HOSTS,LIVE_CHAT_HOST,VIDEO_SUPPORT_ENABLED,pageOrigin,sitePattern,validateAutomation,validateVideo,resolveAutomation,registrationMatches,requiredPermissionOrigins,youtubeTimedtextUrl} from './activation.js';
+import {AUTO_SCRIPT_ID,PET_SCRIPT_ID,CAPTION_SCRIPT_ID,ALL_HOSTS,VIDEO_HOSTS,LIVE_CHAT_HOST,VIDEO_SUPPORT_ENABLED,pageOrigin,sitePattern,validateAutomation,validateVideo,resolveAutomation,registrationMatches,requiredPermissionOrigins,isManagedContentScript,contentScriptsInSync,youtubeTimedtextUrl} from './activation.js';
 import {createDiagnostics} from './diagnostic-service.js';
 import {USAGE_STATS_KEY,recordUsageEvent,summarizeUsage} from './usage-stats.mjs';
 import {createRateWindow} from './rate-window.mjs';
@@ -136,7 +136,7 @@ function writeReadingSession(values,generation){
 const DATA_MUTATIONS=new Set([...HISTORY_MUTATIONS].filter(type=>type!=='PERSONALIZATION_ANALYZE').concat(['STATE_PATCH','AUTOMATION_PATCH','VIDEO_SETTINGS_PATCH','PAGE_TRANSLATION_DISPLAY_SET','FLOATING_PET_POSITION_SET','ASSIST_COMMIT','ENCOUNTER','INTERACT','READING_ACTIVITY','ON_DEMAND_SUGGESTION','USAGE_STATS_CLEAR']));
 function assertDataAvailable(){if(cleanupPending)throw Object.assign(new Error(M('本机数据正在清理或清理尚未完成，请重试清理。','Local data cleanup is in progress or incomplete; please retry cleanup.')),{code:'NOT_READY'});}
 const ready = (async () => {
-  // setAccessLevel 仅存在于 Chrome 136+；旧版本上缺失时不能中断初始化（manifest 声明支持 116）。
+  // setAccessLevel 仅存在于 Chrome 136+；旧版本上缺失时不能中断初始化（manifest 声明支持 125）。
   if (typeof chrome.storage.local?.setAccessLevel === 'function') {
     try { await chrome.storage.local.setAccessLevel({accessLevel:'TRUSTED_CONTEXTS'}); } catch {}
   }
@@ -329,7 +329,8 @@ function handleSubscriptionStatus(kind,subscription) {
     invalidateClassification();
     await broadcast();
   });
-  void reconcileAutomation().catch(error => console.error('更新自动开启策略失败',error));
+  // 只有连着的时候登录状态才可信：刷新连接会先拆掉旧端口（发出一次「未连接」），再重连，别把这一断一连当成登录状态变化。
+  if(subscription.connected)void subscriptionAuthChanged(kind,Boolean(subscription.authenticated)).then(changed => changed && reconcileAutomation()).catch(error => console.error('更新自动开启策略失败',error));
 }
 onSubscriptionStatus(subscription => handleSubscriptionStatus('chatgpt',subscription),'chatgpt');
 onSubscriptionStatus(subscription => handleSubscriptionStatus('grok',subscription),'grok');
@@ -2810,7 +2811,8 @@ function patchAutomation(patch) {
 const PAGE_CORE_FILES=['design.js','i18n-content.js','content-ui.js','pet-quotes.js'];
 const READING_FILES=['reading-style.js','complexity.js','formula.js','site-profiles.js','content.js'];
 const PET_FILES=['floating-pet-helpers.js','floating-pet-styles.js','floating-pet-svg.js','floating-pet-quote-bubble.js','floating-pet-summary.js','floating-pet.js'];
-async function reconcileAutoScript(settings) {
+// 动态注册的内容脚本应有的样子：自动开启引导、YouTube 字幕桥、伴读猫。注册与否由权限决定，所以要问 permissions。
+async function plannedContentScripts(settings) {
   const autoCandidates = registrationMatches(settings.automation);
   const petWanted = settings.floatingPet?.enabled !== false;
   // 伴读猫按需注册：未启用时不在任何网页注入 floating-pet.js。
@@ -2820,9 +2822,6 @@ async function reconcileAutoScript(settings) {
   const allowed = new Set(candidates.filter((_pattern,index) => permitted[index]));
   const matches = autoCandidates.filter(pattern => allowed.has(pattern));
   const petMatches = petCandidates.filter(pattern => allowed.has(pattern));
-  const registrations = await chrome.scripting.getRegisteredContentScripts();
-  const obsolete = registrations.filter(item => item.id === AUTO_SCRIPT_ID || item.id === PET_SCRIPT_ID || item.id === CAPTION_SCRIPT_ID || item.id.startsWith('ss-auto-start-')).map(item => item.id);
-  if (obsolete.length) await chrome.scripting.unregisterContentScripts({ids:obsolete});
   const wanted = [];
   if (matches.length) wanted.push({id:AUTO_SCRIPT_ID,matches,js:['auto-start.js'],runAt:'document_start',allFrames:false,persistAcrossSessions:true});
   const videoMatches = VIDEO_SUPPORT_ENABLED && settings.automation.videoSites ? VIDEO_HOSTS.filter(pattern => allowed.has(pattern)) : [];
@@ -2830,6 +2829,14 @@ async function reconcileAutoScript(settings) {
   if (videoMatches.length) wanted.push({id:CAPTION_SCRIPT_ID,matches:videoMatches,js:['youtube-captions-bridge.js'],world:'MAIN',runAt:'document_start',allFrames:false,persistAcrossSessions:true});
   // 默认网页只有轻量引导；伴读猫启用时连同自身依赖注册，阅读引擎仍按需加载。
   if (petMatches.length) wanted.push({id:PET_SCRIPT_ID,matches:petMatches,js:[...PAGE_CORE_FILES,...PET_FILES],runAt:'document_idle',allFrames:false,persistAcrossSessions:true});
+  return wanted;
+}
+// 已注册的和应有的一致就一动不动：先反注册再注册会留下一段没有脚本的空窗，也是每次对账都白做的写入。
+async function reconcileAutoScript(settings) {
+  const wanted = await plannedContentScripts(settings);
+  const registered = (await chrome.scripting.getRegisteredContentScripts()).filter(item => isManagedContentScript(item.id));
+  if (contentScriptsInSync(registered, wanted)) return;
+  if (registered.length) await chrome.scripting.unregisterContentScripts({ids:registered.map(item => item.id)});
   if (wanted.length) await chrome.scripting.registerContentScripts(wanted);
 }
 
@@ -2894,16 +2901,48 @@ async function activateTab(tab, options = {}) {
     started=await chrome.tabs.sendMessage(tabId,autoStart,{frameId:0}).catch(() => null);
   }
 }
+// 对账分两档。MV3 Service Worker 约 30 秒空闲就被回收，每次被消息唤醒都会重跑模块顶层代码；若每次都全量对账，
+// 就是与已打开标签页数成正比的 executeScript 探测和 SS_AUTO_START 消息，外加把内容脚本先反注册再注册的空窗。
+//   全量（reconcileAutomation）：重对动态注册的内容脚本，再逐个已打开的标签页补注入。只在安装/更新、浏览器启动、
+//     站点权限变化、自动开启/伴读猫/服务商设置变化、订阅登录状态翻转时做。
+//   唤醒（startAutomation）：本浏览器会话里已经全量对账过，只确认已注册的内容脚本仍与设置一致，不一致才改。
+// 「已对账」标记放 storage.session：浏览器重启、扩展被禁用后重新启用/重载/更新都会清掉它，这几种情况的第一次唤醒仍走全量，
+// 补上那时已经打开、却没有内容脚本的标签页。
+const AUTOMATION_SYNCED_KEY = 'automationSynced';
 let automationReconciliation = Promise.resolve();
-function reconcileAutomation() {
-  const work = automationReconciliation.catch(() => {}).then(async () => {
-    const {settings}=await load(false);
-    await reconcileAutoScript(settings);
-    const tabs = await chrome.tabs.query({});
-    await Promise.allSettled(tabs.map(activateTab));
-  });
+let queuedFullReconciliation = null;
+const enqueueAutomation = task => {
+  const work = automationReconciliation.catch(() => {}).then(task);
   automationReconciliation = work;
   return work;
+};
+async function reconcileEverything() {
+  const {settings}=await load(false);
+  await reconcileAutoScript(settings);
+  const tabs = await chrome.tabs.query({});
+  await Promise.allSettled(tabs.map(activateTab));
+  await chrome.storage.session.set({[AUTOMATION_SYNCED_KEY]:Date.now()}).catch(() => {});
+}
+function reconcileAutomation() {
+  // 还没开始跑的全量对账合并成一次：它开跑时才读设置，后到的请求不会漏掉新设置。
+  if (queuedFullReconciliation) return queuedFullReconciliation;
+  const work = enqueueAutomation(() => { queuedFullReconciliation = null; return reconcileEverything(); });
+  queuedFullReconciliation = work;
+  return work;
+}
+function startAutomation() {
+  return enqueueAutomation(async () => {
+    const synced = (await chrome.storage.session.get(AUTOMATION_SYNCED_KEY))[AUTOMATION_SYNCED_KEY];
+    if (!synced) return reconcileEverything();
+    await reconcileAutoScript((await load(false)).settings);
+  });
+}
+// 订阅状态在每次唤醒后的刷新、定时确认里都会重复发出；只有某个订阅的登录状态真正翻转（会话内记着上一次的值）才重新对账。
+async function subscriptionAuthChanged(kind,authenticated) {
+  const key = `subscriptionAuth:${kind}`;
+  if ((await chrome.storage.session.get(key))[key] === authenticated) return false;
+  await chrome.storage.session.set({[key]:authenticated});
+  return true;
 }
 
 async function broadcastHelpLanguage(helpLanguage) {
@@ -3582,7 +3621,7 @@ chrome.tabs.onRemoved.addListener(tabId => {
   liveChatRate.forget(tabId);
   void forgetTabAutomation(tabId);
 });
-void reconcileAutomation().catch(error => console.error('初始化自动开启策略失败',error));
+void startAutomation().catch(error => console.error('初始化自动开启策略失败',error));
 
 
 async function clearTabStatus(tabId) {

@@ -7,11 +7,11 @@
 | 项 | 值 |
 |---|---|
 | 产品名 | RoamCat · 随心阅 |
-| 版本 | v0.0.1 prerelease（未上架 Chrome Web Store / Edge Add-ons） |
+| 版本 | 0.x（以 `manifest.json` 与 GitHub Releases 为准；未上架 Chrome Web Store / Edge Add-ons） |
 | 形态 | Chrome / Edge Manifest V3 扩展 + Node.js 本机 Native Messaging 连接器 |
 | 最低浏览器 | Chrome / Edge 125（`minimum_chrome_version: "125"`） |
 | 许可 | 项目代码 MPL-2.0；第三方材料见 `NOTICE.txt` 及各子目录声明 |
-| 规范版本 | v1.7（2026-10-21，麻薯猫亮暗双版形象与 logo；设置页单页签治理；本页译文容错与传输层严格/宽松解析分离；CI 恢复全绿（Node 20 测试运行器、单测固定界面语言、CI 安装依赖）；界面审查修复：小字对比度达 WCAG AA、删除 ui.css 主题 token 覆写块、诊断页切换即刷新） |
+| 规范版本 | v1.7（2026-10-21，麻薯猫亮暗双版形象与 logo；设置页单页签治理；本页译文容错与传输层严格/宽松解析分离；CI 恢复全绿（Node 20 测试运行器、单测固定界面语言、CI 安装依赖）；界面审查修复：小字对比度达 WCAG AA、删除 ui.css 主题 token 覆写块、诊断页切换即刷新）；此后的修订以 §14 与 git 历史为准 |
 
 ---
 
@@ -29,7 +29,7 @@
 - 视频不默认听写：双语字幕只在用户打开后发送播放点附近的字幕文本；无字幕的 YouTube 视频只有用户在字幕设置里手动开启云端听写，才分段上传播放器音轨（见 6.4.1）。
 
 ### 1.3 关键产品决策（2026-09-21 起）
-本页双语翻译**不做数据/费用二次确认**：工具栏「翻译本页」与 `Alt+Shift+T` 立即开始；停止不能撤回已发送请求。此决策同步体现在 `README.md`、`manifest.json` 命令描述、`ui/popup.html`（确认面板已移除）、`ui/popup.js`（intent 焦点直接 `popupEmergencyStart()`）。
+本页双语翻译**不做数据/费用二次确认**：工具栏「翻译本页」与 `Alt+Shift+T` 立即开始；停止不能撤回已发送请求。此决策同步体现在 `README.md`、`manifest.json` 命令描述、弹窗（`src/pages/popup/popup-app.js`：无确认面板，intent 焦点直接调用 `#emergencyStart()`）。
 
 ---
 
@@ -39,18 +39,20 @@
 
 ```
 ┌────────────────────────── 浏览器 ──────────────────────────┐
-│ content scripts（manifest 静态九件套，document_idle）         │
-│   design.js → i18n-content.js → reading-style.js → content-ui.js → pet-quotes.js → complexity.js → formula.js → site-profiles.js → content.js │
+│ content scripts：manifest 静态只有 page-bootstrap.js（document_idle） │
+│   · page-bootstrap.js：只回应状态；用户操作后由后台经 ENSURE_PAGE_UI 按需注入阅读引擎 │
+│   · 按需注入顺序：design.js → i18n-content.js → content-ui.js → pet-quotes.js → reading-style.js → complexity.js → formula.js → site-profiles.js → content.js │
 │   · i18n-content.js：i18n.js 的网页侧瘦身版（同一运行时，只含网页用到的命名空间） │
 │   · content-ui.js：lit-html 页内 UI 渲染层（构建产物入库）      │
 │   · pet-quotes.js：伴读猫哲学语录库（RoamCatPetQuotes）        │
 │   · content.js：阅读区识别/标注/查词卡片/解构/整页翻译          │
-│ 动态注册（chrome.scripting，按需注入）                         │
-│   · floating-pet*.js：伴读猫挂件（Shadow DOM）+ 文章摘要       │
+│ Twitch 页另有一项静态脚本：design.js + i18n-content.js + live-chat.js │
+│ 动态注册（chrome.scripting，按设置注册）                       │
+│   · floating-pet*.js：伴读猫挂件（Shadow DOM）+ 文章摘要（注册项连带 design / i18n-content / content-ui / pet-quotes） │
 │   · auto-start.js：按站规则自动开启                           │
 ├────────────────────────────────────────────────────────────┤
 │ Service Worker（background.js，ES module）                   │
-│   · 77 种消息路由、设置校验、缓存、并发、诊断、订阅端口管理    │
+│   · 81 种消息路由、设置校验、缓存、并发、诊断、订阅端口管理    │
 │   · roamcat_ui_lang 变更经 storage.onChanged → SS_REFRESH 广播 │
 ├────────────────────────────────────────────────────────────┤
 │ 扩展页面：popup.html / options.html / welcome.html / reader.html │
@@ -73,7 +75,7 @@
 | 来源 | 可信度 | 约束 |
 |---|---|---|
 | 扩展页面（popup/options/welcome/reader） | 高（trusted） | 可访问全部消息；`API_MODELS_LIST` 仅 options 页，`READER_TRANSLATE` 仅扩展页 |
-| 内容脚本（网页上下文） | 低 | 仅 `contentAllowed` 白名单 37 种消息；密钥/历史数据不直接暴露 |
+| 内容脚本（网页上下文） | 低 | 仅 `contentAllowed` 白名单 38 种消息；密钥/历史数据不直接暴露 |
 | 模型返回内容 | 不可信数据 | 全部经 `gloss.mjs` 的结构化校验后才进入 UI |
 | 网页 DOM 文本 | 不可信数据 | 提示词统一声明 `SOURCE_DATA_INSTRUCTIONS`（数据非指令） |
 
@@ -84,7 +86,7 @@
 ### 3.1 字段规范
 - `manifest_version: 3`；`background.service_worker = background.js`，`type: module`。
 - `minimum_chrome_version: "125"`；`content_security_policy.extension_pages = "script-src 'self' 'wasm-unsafe-eval'; object-src 'none'; base-uri 'none'"`（wasm 供本地 ONNX 推理）。
-- 内容脚本固定九件套 `design.js, i18n-content.js, reading-style.js, content-ui.js, pet-quotes.js, complexity.js, formula.js, site-profiles.js, content.js`（`content-ui.js` 为 `src/content-ui` 经 `vite.content-ui.config.mjs` 构建的 IIFE 产物，入库、不手改；`i18n-content.js` 由 `npm run gen:i18n` 从 `i18n.js` 生成、入库，必须在所有调用 `t()` 的脚本之前加载），`run_at: document_idle`，`all_frames: false`；`floating-pet.js` 与 `auto-start.js` 改为 `chrome.scripting` 按需动态注册（同为 classic 形态，受模块图 R1 同约束）；伴读猫注册项只含 `floating-pet*.js`，渲染层/语录库/文案由静态九件套提供，静态脚本晚到时它短暂等待依赖就绪再挂载。`injectPageUI` 给已打开的标签页补注入时按九件套同集同序注入（先 `i18n-content.js`，`complexity.js`/`formula.js` 不可省——缺了不报错，只会让长难句高亮变空、公式被送去翻译；`background-smoke.test.mjs` 断言对齐）。
+- 内容脚本：manifest 静态 `content_scripts` 只有两项。其一是所有 `http(s)` 页面的 `page-bootstrap.js`（`run_at: document_idle`，`all_frames: false`；只回应状态，不扫描正文、不轮询、不持有后台连接；`CONTENT_SCRIPT_ORDER` 固定为它一个）；其二是只匹配 `https://www.twitch.tv/*` 主框架的 `design.js` + `i18n-content.js` + `live-chat.js`。阅读 / 翻译 / 摘要等实际操作再由后台经 `ENSURE_PAGE_UI`（`injectPageUI`）按需补注入，顺序为：`PAGE_CORE_FILES`（`design.js`、`i18n-content.js`、`content-ui.js`、`pet-quotes.js`）→ 伴读猫（`floating-pet-*.js`，已启用时）→ `READING_FILES`（`reading-style.js`、`complexity.js`、`formula.js`、`site-profiles.js`、`content.js`）→ 视频页的字幕脚本。`i18n-content.js` 必须先于所有调用 `t()` 的脚本（缺了界面只剩键名），`complexity.js` / `formula.js` 不可省（缺了不报错，只会让长难句高亮变空、公式被送去翻译；`background-smoke.test.mjs` 断言对齐）。`content-ui.js` 为 `src/content-ui` 经 `vite.content-ui.config.mjs` 构建的 IIFE 产物，入库、不手改；`i18n-content.js` 由 `npm run gen:i18n` 从 `i18n.js` 生成、入库。伴读猫与 `auto-start.js` 由 `chrome.scripting.registerContentScripts` 按设置动态注册：伴读猫注册项是 `PAGE_CORE_FILES` + `floating-pet-*.js`，`auto-start.js` 按站点规则注册；按需注入与动态注册的脚本都是 classic 形态，受模块图 R1 同约束。
 - `web_accessible_resources` 仅 `icons/roamcat.svg` 与亮色版 `icons/roamcat-light.svg`（`use_dynamic_url: true`）——页面内品牌图标按网页明暗取用，最小暴露面。
 
 ### 3.2 权限与用途（上架时可直接引用的理由）
@@ -109,14 +111,14 @@
 ### 4.1 Service Worker
 | 文件 | 职责 | 关键约束 |
 |---|---|---|
-| `background.js` | 消息路由（77 种，与 `MESSAGE_TYPES` 一一对应）、设置校验与迁移、四大模型链路编排、缓存/并发/看门狗、订阅端口状态、诊断编排 | 无跨调用内存态假设；所有写操作串行化（`writes` 链）；长操作必须带 `guard()` |
-| `subscription.js` | 三个连接器的端口、请求-响应映射、超时（assist/翻译/总结 120s，其余 45s）、进度事件转发 | 端口单例；断开时拒绝全部在途请求 |
+| `background.js` | 消息路由（81 种，与 `MESSAGE_TYPES` 一一对应）、设置校验与迁移、四大模型链路编排、缓存/并发/看门狗、订阅端口状态、诊断编排 | 无跨调用内存态假设；所有写操作串行化（`writes` 链）；长操作必须带 `guard()`；自动开启对账分两档（见下） |
+| `subscription.js` | 三个连接器的端口、请求-响应映射、超时（assist / 翻译 / 总结 / 听写 120s，其余 45s）、进度事件转发 | 端口单例；断开时拒绝全部在途请求 |
 | `diagnostic-service.js` / `diagnostics.mjs` | traceId 贯穿、元数据脱敏、渲染回执、连接器镜像 | 只记录结构化元数据，不记录正文/密钥 |
 | `history-service.js` / `history-store.js` | 阅读记录（IndexedDB）、摘要/个性化引擎装配 | 记录默认关闭，需显式授权 origin |
 | `reading.js` / `lexicon.js` / `reading-style.js` / `domain-routing.js` | 渐退状态机、术语/词频/词形还原、分层样式 CSS 生成、站点规则匹配 | 纯函数优先，可单测 |
 | `local-classifier.js` | 离屏文档生命周期 + 本地分类请求队列 | 网页不得直接调用（`target:'local-classifier'` 校验 `sender.tab` 为空） |
 | `speech.js` | TTS 端口会话（一次一个，打断上一个） | 仅本地英文语音 |
-| `activation.js` / `auto-start.js` | 自动开启策略、动态注册 content script、SPA 导航检测；`pageOrigin`/`sitePattern`/`validateAutomation`/`validateVideo`/`registrationMatches` 为纯函数（已纳入领域层 lint 与单测） | `registrationMatches()` 是权限/注册的唯一事实源 |
+| `activation.js` / `auto-start.js` | 自动开启策略、动态注册 content script、SPA 导航检测；`pageOrigin`/`sitePattern`/`validateAutomation`/`validateVideo`/`registrationMatches`/`isManagedContentScript`/`contentScriptsInSync` 为纯函数（已纳入领域层 lint 与单测） | `registrationMatches()` 是权限/注册的唯一事实源；`contentScriptsInSync()` 判断已注册的内容脚本是否已与期望一致 |
 | `shared.js` | `DEFAULT_SETTINGS`、`normalizeSettings`、`wordId`、`request()` | 旧配置键不得通过 spread 复活 |
 | `message-router.js` | 类型化消息路由器：注册表构造、重复类型即失败、`parse`+`handle` 两段派发 | 泛型实现，不认识任何具体消息；未知类型抛「未知请求。」 |
 | `message-protocol.js` | 消息协议唯一事实源：`MESSAGE_TYPES`（81 种）、`CONTENT_ALLOWED_TYPES`、纯载荷解析器与自 `background.js` 下沉的 `validatePatch`（设置补丁校验）、`settingsPatchEffects`（STATE_PATCH 副作用计划）、`parseAssistRequest`/`parsePassageRequestRef`（请求身份）、`onDemandSuggestionDecision`（按需建议判定）、`text`/`domain`/`customDetectionService` | 只依赖 `shared.js`、`domain-routing.js`、`api-providers.mjs`、`gloss.mjs` 等领域/协议模块；新增类型必须同步注册表与第 5 节 |
@@ -128,21 +130,26 @@
 | `sentence-groups.mjs` / `assistance-stream.mjs` / `personalization.mjs` | 解构协议与修复、流式进度解析、个性化策略机 | 共享文件被连接器安装副本引用，改动需双边同步 |
 | `audio-transcription.mjs` | 听写音频片段校验（仅 WebM/WAV 容器头、0.5–25 秒、≤512KB base64）、听写 JSON Schema 与时间戳校验（不倒序、不重叠、不越界） | 扩展后台与连接器共用；连接器只把通过校验的片段写盘交给 CLI |
 
+**自动开启对账分两档**（`background.js`）。MV3 Service Worker 约 30 秒空闲就被回收，每次被唤醒都会重跑模块顶层代码；若每次都全量对账，就是与已打开标签页数成正比的 `executeScript` 探测和 `SS_AUTO_START` 消息，外加把动态注册的内容脚本先反注册再注册留下的空窗。
+- **全量**（`reconcileAutomation`）：对账动态注册的内容脚本（`ss-auto-start` / `ss-youtube-captions` / `ss-floating-pet`），再逐个已打开的标签页补注入并发 `SS_AUTO_START`，完成后在 `chrome.storage.session` 写 `automationSynced` 标记。只在这些时机做：安装/更新、浏览器启动、站点权限增减、`AUTOMATION_PATCH` 与伴读猫/服务商设置变化、订阅登录状态翻转。尚未开跑的全量对账会合并成一次（它开跑时才读设置）。订阅状态只在 `connected` 为真且登录状态与会话里记着的（`subscriptionAuth:<kind>`）不同时才触发：刷新连接会先拆旧端口，中间那次「未连接」的状态不可信。
+- **唤醒**（`startAutomation`，模块顶层调用）：标记在则只比对已注册的内容脚本与设置（`contentScriptsInSync`），一致就一动不动，不一致才重新注册，不碰标签页。标记不在——浏览器重启、扩展被禁用后重新启用、重载、更新都会清掉 `storage.session`——第一次唤醒走全量，给那时已经打开却没有内容脚本的标签页补注入。
+- 门禁：`tools/unit/background-wake.test.mjs`（会话首次启动做全量；普通唤醒不探测标签页、不发消息、不反注册；注册被清掉或过期时唤醒补回；标记丢失回到全量；关闭伴读猫仍走全量）、`tools/unit/background-subscription-reconcile.test.mjs`（登录状态翻转才对账）、`tools/unit/activation.test.mjs`；`verify:performance` 的 40 秒空闲回收与 `verify:audit` 的真后台覆盖浏览器侧。
+
 ### 4.2 内容脚本
 | 文件 | 职责 | 关键约束 |
 |---|---|---|
 | `content.js` | 阅读根识别、文本映射、自动标注、查词（按键+卡片+顶部词注）、选段翻译、阅读解构高亮、整页翻译引擎、历史采集、重载侦察（失效 toast） | 只拆文本节点不重建强调/链接；所有跨文档操作带 generation 校验；DOM 批量更新走 rAF；重载侦察用可见性门控的低频探测，不用常驻 port（不阻止 SW 空闲回收） |
 | `floating-pet.js` + `floating-pet-{helpers,styles,svg,quote-bubble,summary}.js` | 伴读猫（SVG/Shadow DOM/拖拽贴边/菜单/摘要/状态气泡/左侧快捷按钮行）、全局快捷键 | window 级监听只注册一次（`bindGlobalEvents`）；快捷键在输入框/可编辑区不触发（`petShortcutBlocked`）；左侧快捷按钮行（阅读开关/摘要/设置/贴边）贴左屏时翻向右侧，贴边时随旋旋翻隐藏 |
-| `live-chat.js` | Twitch 直播聊天实时翻译：聊天输入区「译」开关（存 `video.liveChat`）、新消息过滤（表情/单词梗/刷屏/中文不翻）、最新优先每批 ≤8 条经 `LIVE_CHAT_TRANSLATE` 发送、`SS_LIVE_CHAT_PROGRESS` 流式显示 | manifest 第二个 `content_scripts` 项，只匹配 `https://www.twitch.tv/*` 主框架，依赖第一项的 `i18n-content.js`；`injectPageUI` 对已打开的 Twitch 页补注入；不读历史聊天、不写阅读记录；后台返回 `throttled` 时把批次按先后插回队列并暂停到 `retryAfterMs` |
+| `live-chat.js` | Twitch 直播聊天实时翻译：聊天输入区「译」开关（存 `video.liveChat`）、新消息过滤（表情/单词梗/刷屏/中文不翻）、最新优先每批 ≤8 条经 `LIVE_CHAT_TRANSLATE` 发送、`SS_LIVE_CHAT_PROGRESS` 流式显示 | manifest 第二个 `content_scripts` 项（自带 `design.js` + `i18n-content.js` + `live-chat.js`），只匹配 `https://www.twitch.tv/*` 主框架；`injectPageUI` 对已打开的 Twitch 页补注入；不读历史聊天、不写阅读记录；后台返回 `throttled` 时把批次按先后插回队列并暂停到 `retryAfterMs` |
 | `design.js` | 设计 token（明暗双主题）唯一下发 | 仅当脚本带 `data-roamcat-page` 时才向页面根注入 |
-| `i18n.js` / `i18n-content.js` | 中英双语运行时 `RoamCatI18n`：`t()`/`lang()`/`pref()`/`setPref()`/`apply()`/`onChange()`，字典 1,784 键双语对齐；内容脚本加载生成的瘦身版（约 360 键，`i18n-content.test.mjs` 断言无漂移且网页侧引用的键齐全） | storage 受限上下文自动回退 `STATE_GET` 拉取偏好，监听 `SS_REFRESH` 同步变更 |
+| `i18n.js` / `i18n-content.js` | 中英双语运行时 `RoamCatI18n`：`t()`/`lang()`/`pref()`/`setPref()`/`apply()`/`onChange()`，字典中英逐键对齐（`node tools/check-dict.cjs` 校验）；内容脚本加载生成的瘦身版（只含网页侧用到的命名空间，`i18n-content.test.mjs` 断言无漂移且网页侧引用的键齐全） | storage 受限上下文自动回退 `STATE_GET` 拉取偏好，监听 `SS_REFRESH` 同步变更 |
 | `reading-style.js` | 三层（原文/词注/译文）样式规范化与 CSS 生成 | 选择器必须静态；`!important` 全覆盖以对抗站点样式 |
 
 ### 4.3 扩展页面
-- 四个扩展页均已迁移到 `src/`（Vite + Lit）：`build/extension-plugin.mjs` 的 `REPLACED_BY_BUILD` 清单使构建产物覆盖对应 `ui/` 文件；**不要直接改将由构建替代的源文件**。页内 UI（`src/content-ui`）同样经构建链产出 `content-ui.js`。
+- 四个扩展页均已迁移到 `src/`（Vite + Lit）：页面产物由 Vite 构建写入 `dist/extension/ui/`，源层 `extension/ui/` 只留共享模块与样式（`build/extension-plugin.mjs` 的 `REPLACED_BY_BUILD` 清单现为空，迁移已完成）。页内 UI（`src/content-ui`）同样经构建链产出 `content-ui.js`。
 - `ui/popup.html|js`（构建产物来自 `src/pages/popup/`）：本页开关、网站自动开启、阅读解构、本页双语翻译（立即开始）、服务告警、语言切换钮。
 - 设置页以 `options_ui`（`open_in_tab: true`）注册，全局只保留一个页签：`shared.js` 的 `focusOptionsPage`/`settleOptionsPages` 把设置页收回正在浏览的普通窗口（跳过无痕窗口），分区切换（改 hash）不搬页签；弹窗、阅读器、页内挂件都经 `OPEN_OPTIONS`（可带 `section`）打开。
-- `ui/options.html|js` + `options-nav.js`（构建产物来自 `src/pages/options/`：shell + 12 分区模板，`options-controller.js` 与 `@ext/ui/history.js` 动态加载填充动态内容）：12 个设置分区（assistance/appearance/sites/video/terms/personalization/history/privacy/service/diagnostics/shortcuts/guide，旧 #advanced 重定向到 sites），侧栏六个分组；「视频与直播」（video）集中 YouTube 播放器入口与双语字幕、字幕样式预览、云端听写说明与 Twitch 聊天翻译，字幕样式与播放器「字幕设置」菜单读写同一份 `settings.video`；顶栏含主题与语言循环钮。
+- `ui/options.html|js`（构建产物来自 `src/pages/options/`：shell + 12 分区模板，`options-controller.js` 与 `@ext/ui/history.js` 动态加载填充动态内容）：12 个设置分区（assistance/appearance/sites/video/terms/personalization/history/privacy/service/diagnostics/shortcuts/guide，旧 #advanced 重定向到 sites），侧栏六个分组；「视频与直播」（video）集中 YouTube 播放器入口与双语字幕、字幕样式预览、云端听写说明与 Twitch 聊天翻译，字幕样式与播放器「字幕设置」菜单读写同一份 `settings.video`；顶栏含主题与语言循环钮。
 - `ui/welcome.html|js` + `welcome.css`（构建产物来自 `src/pages/welcome/`）：首次安装引导与交互式演示，顶栏含主题/语言循环钮。
 - `ui/reader.html|js`（构建产物来自 `src/pages/reader/`）：PDF/EPUB/粘贴文章的阅读器，`READER_TRANSLATE` 逐段双语对照，工具栏含语言切换钮。
 - `ui/provider-picker.js`：原生 select + Popover 自定义列表（Chrome 116+）。
@@ -165,7 +172,7 @@
 - 非平凡的编排函数使用有意义的 step 注释（先做什么、再做什么、为什么）；注释解释「为什么、边界和所有权」，不复述语法；不为一行 getter、显然的类型守卫或简单映射机械添加。
 - 导出的公共契约需要 TSDoc 风格说明；临时兼容导出必须标注 `@deprecated` 与新路径。
 - 注释以中文为主，保留必要的协议名、标准名和用户可检索的英文错误上下文。
-- 执行手段：`tools/lib/module-graph.cjs` R7 在每次模块图检查时强制文件头存在（生成产物 `frequency/` 以 `// Generated by` 豁免）；`gloss.mjs` 与 `reading.js` 的文件头是本规范的示范。
+- 执行手段：`tools/lib/module-graph.cjs` R7 在每次模块图检查时强制文件头存在（生成产物 `frequency/` 以 `// Generated by` 豁免）。
 - 许可证：自有源文件的 `/** @file */` 块尾部统一附 MPL-2.0 文件头（`This Source Code Form … MPL/2.0/.`）；无文档块的脚本（如 `local-inference/`）、CSS 以 `/* */` 短块开头，HTML 在 `<!doctype>` 后加注释。第三方与生成文件（`vendor/`、`local-inference/runtime/`、`frequency/` 生成物）不加 MPL 头，保留各自许可。
 
 ---
@@ -176,7 +183,7 @@
 - 统一信封：请求 `{type, ...payload}` → 响应 `{ok:true,data,traceId}` / `{ok:false,error,code,traceId}`。
 - `sender.id !== chrome.runtime.id` 一律拒绝；`trusted = sender.url` 以扩展页开头。
 - 全部消息类型登记在 `message-protocol.js` 的 `MESSAGE_TYPES`（唯一事实源），由 `background.js` 的 `messageHandlers` 注册表逐一分派；`createMessageRouter` 构造期拒绝重复类型，未注册类型抛「未知请求。」；`tools/unit/message-router.test.mjs` 的源码契约测试强制注册表与清单一致。
-- 内容脚本仅可用白名单（`contentAllowed`，37 种，以 `CONTENT_ALLOWED_TYPES` 为准）：状态读取、分析、支持批次、解构、求助、翻译、历史信号、诊断回执、伴读猫位置等。
+- 内容脚本仅可用白名单（`contentAllowed`，38 种，以 `CONTENT_ALLOWED_TYPES` 为准）：状态读取、分析、支持批次、解构、求助、翻译、历史信号、诊断回执、伴读猫位置等。
 - 数据变更类消息进入 `activeDataRequests` 集合，供清理时排空（`clearReadingData`）。
 
 ### 5.2 消息分组（81 种，与 `MESSAGE_TYPES` 顺序一致）
@@ -196,8 +203,8 @@
 - 远程文档默认匿名下载；只有读者点击「使用网站登录状态重试」才带网站登录态，带凭据请求拒绝重定向。`READER_OPEN_ORIGINAL` 仅允许阅读器主框架发起，按标签页和完整 HTTP(S) 地址登记 30 秒内的一次性接管旁路，导航消耗后即恢复自动接管；关闭标签页清理旁路。文档地址不得含账号信息。
 - PDF 主包与解析 worker 同用 PDF.js legacy 构建，补齐 Chrome 125 缺失的内建 API；EPUB 解析按命名空间 URI 及 local name 识别 container、OPF、DC 和 XHTML 元素。
 
-### 5.3 页面 → 后台 的旁路消息（`tabs.sendMessage`）
-`SS_STATUS` `SS_SET_ENABLED` `SS_REFRESH` `SS_AUTO_START` `SS_CONTEXT_HELP` `SS_SET_SENTENCE_GROUPS` `SS_SET_SENTENCE_DENSITY` `SS_SET_SENTENCE_LINE_STYLE` `SS_EMERGENCY_START/STOP/RETRY/END` `SS_HELP_LANGUAGE` `SS_READING_STYLE` `SS_VIDEO_SETTINGS` `SS_PAGE_TRANSLATION_DISPLAY` `SS_TRANSLATION_PROGRESS` `SS_LIVE_CHAT_PROGRESS` `SS_ASSIST_PROGRESS` `SS_WORD_PREFERENCE`。
+### 5.3 扩展 → 页面 的旁路消息（后台与扩展页经 `tabs.sendMessage` 发给内容脚本）
+`SS_STATUS` `SS_SET_ENABLED` `SS_REFRESH` `SS_AUTO_START` `SS_CONTEXT_HELP` `SS_SET_SENTENCE_GROUPS` `SS_SET_SENTENCE_DENSITY` `SS_SET_SENTENCE_LINE_STYLE` `SS_EMERGENCY_START/STOP/RETRY/END/TOGGLE` `SS_HELP_LANGUAGE` `SS_READING_STYLE` `SS_VIDEO_SETTINGS` `SS_PAGE_TRANSLATION_DISPLAY` `SS_PAGE_TRANSLATION_PROGRESS` `SS_TRANSLATION_PROGRESS` `SS_LIVE_CHAT_PROGRESS` `SS_ASSIST_PROGRESS` `SS_WORD_PREFERENCE`。
 
 ---
 
@@ -231,7 +238,7 @@
 ### 6.4.1 视频双语字幕
 - 开关：`VIDEO_SUPPORT_ENABLED=true`。播放器按钮为「双语 / 这句 / 原文」。`video.bilingual` 默认 false，打开后才调用模型。
 - 字幕来源：YouTube 播放器轨道（人工优先于自动，优先片源语言）与 HTML `textTracks`。播放器暂时没有轨道时，主世界再问一次 YouTube 播放器接口。字幕正文只从 `www.youtube.com/api/timedtext` 拉取。
-- 翻译：把相邻字幕收成短句，从播放点起每批最多 4 句、向前约 12 句，走 `VIDEO_CUE_TRANSLATE`（复用选段翻译，不写阅读记录）。点击原文行仍走原来的单句求助。
+- 翻译：把相邻字幕收成短句，当前句优先，其余从播放点起向前预取约 30 秒（译文往返慢时放宽到四个往返时间）、每批至多 5 句，走 `VIDEO_CUE_TRANSLATE`（复用选段翻译，不写阅读记录）。点击原文行仍走原来的单句求助。
 - 没有文字轨道时默认不采集、不上传音频。画面上若已有平台字幕，只翻译当前这一行。
 - 云端听写（仅 YouTube）：字幕设置里「开始云端听写」由用户手动开启，要求服务来源为 Google（Antigravity）订阅且选了 Gemini 模型；`VIDEO_AUDIO_TRANSCRIBE` 先以 `check:true` 只验配置与登录态（不上传、不耗额度），通过后才开始采集。
 - 采集（`video-dictation.js`）：`video.captureStream()` 只取音轨（不申请麦克风），MediaRecorder 录成约 20 秒的独立 WebM/Opus 片段（≤25 秒、≤512KB），待听写队列最多 2 段，跟不上就停。拖动、倍速变化、换源、页面隐藏、换视频、广告出现或关掉「双语」即停止；暂停时收尾当前片段，播放后续录。播完时收尾最后一段：YouTube 自动连播倒计时（实测约 7 秒）短于单段听写（15–20 秒），`video-subtitles.js` 在听写未结束时点倒计时上的 `.ytp-autonav-endscreen-upnext-cancel-button`（不改自动播放开关）并提示「已取消自动连播」；没在听写时不干预连播。换视频导致的停止提示「已停止」原因而非「可回看」（字幕随换源清空）。
@@ -261,13 +268,13 @@
 
 ## 7. 模型服务层规范
 
-### 7.1 三种服务来源
+### 7.1 四种服务来源
 | 模式 | 说明 |
 |---|---|
 | `api` | 自备 API：33 家服务商、8 种协议（chat/responses/anthropic/google/bedrock/cohere/ollama/jev），每服务独立并发（默认 2，1–10 可调） |
 | `chatgpt` | 本机连接器 → 官方 Codex CLI（`app-server --stdio` JSON-RPC，隔离 config.toml 关闭全部工具/沙箱/更新） |
-| `grok` | 本机连接器 → 官方 Grok CLI（`--json-schema` + prompt 文件） |
-| `antigravity` | 本机连接器 → 官方 Antigravity CLI `agy`（`--json-schema`，剥离 RE2 不支持的 `pattern`） |
+| `grok` | 本机连接器 → 官方 Grok CLI（`--json-schema` + prompt 文件；不给模型任何工具、不自动批准，见 8.3） |
+| `antigravity` | 本机连接器 → 官方 Antigravity CLI `agy`（`--json-schema`，剥离 RE2 不支持的 `pattern`；沙箱 + 默认批准策略，见 8.3） |
 
 ### 7.2 结构化输出策略
 1. `chat`/`responses` 协议先做能力探测：带期望值的 `json_schema` 请求（期望值只出现在 response_format，不出现在提示词）；400/422 且错误指向格式不支持 → 降级 `json_object`（提示词内嵌 schema）。探测结果按 (provider, endpoint, model, key, thinking) 哈希缓存 1 小时。
@@ -278,9 +285,9 @@
 | 项 | 值 |
 |---|---|
 | API 请求 | 25s（阶跃星辰 60s）；模型列表 25s |
-| 订阅请求（扩展侧） | assist/emergencyTranslate/summarize 120s；其余 45s |
+| 订阅请求（扩展侧） | assist / emergencyTranslate / summarize / transcribe 120s；其余 45s |
 | Codex RPC | 30s/次；任务总超时 90s；并发 ≤3 |
-| Grok/Antigravity | 任务 90s；并发 ≤3；**仅格式类错误重试（Grok ≤3 次，Antigravity 不重试）** |
+| Grok/Antigravity | 任务 90s；并发 ≤3；Grok 仅格式类错误重试（≤3 次）；Antigravity 只对启动期瞬时错误（`TRANSIENT_FAILURE`：eligibility 检查失败 / EOF / ECONNRESET / 502 / 503）重试一次，听写在 25 秒内的一般失败（`NATIVE_RPC` / `OUTPUT_INVALID`）再重放一次，超时、限额、登录错误不重试 |
 | 背景槽位 | 并发 2，队列 16，超限即 `NOT_READY` |
 
 ---
@@ -291,7 +298,7 @@
 - 平台：macOS / Linux / Windows（Windows 用 `.NET csc.exe` 现场编译 C# 启动器 + 注册表；其余平台写 `launch` shell 脚本 + `NativeMessagingHosts` JSON）。
 - 浏览器：`chrome`/`edge` 默认；显式支持 `chromium`/`chrome-beta`/`chrome-testing`；只注册用户显式指定的目标。
 - 扩展 ID：`--extension-id` 支持单个或逗号分隔多个；缺省时按 manifest.key 或路径哈希推导。
-- CLI 启动：Windows 的 `codex.cmd`/`.bat` 经 `cmd.exe /d /s /c` 执行且路径自带引号（`codexSpawnCommand`），路径含空格也能拉起；不用 `shell: true`。
+- CLI 启动：Windows 的 `codex.cmd`/`.bat` 经 `cmd.exe /d /s /c` 执行且路径自带引号（`connector/cli-command.mjs` 的 `cliCommand`；运行时的 `codexSpawnCommand` 与安装器查版本的 `cliVersion` 共用），路径含空格（如 `C:\Users\Li Lei\…`）也能拉起；不用 `shell: true`。
 - CLI 查找：PATH + 平台特例（Windows `codex.cmd`/`.bat`、`~/.grok/bin`、`~/.local/bin`、`~/.gemini/bin` 等）；`--codex/--grok/--agy` 可指定。
 - 默认一次注册本机找得到的全部通道（`chatgpt` / `grok` / `antigravity`），找不到的跳过；`--backend` 只装一个。找不到任何 CLI，或指定通道注册失败时，进程以非 0 退出。
 - 登录态：仅缺失时才从 `~/.codex/auth.json` 复制；重装不覆盖。
@@ -307,6 +314,8 @@
 
 ### 8.3 隔离与权限
 - 数据目录 `0700`，配置文件 `0600`；Codex 使用隔离 `CODEX_HOME` 但保留真实 `HOME` 供钥匙串发现。
+- **Grok 不给模型任何工具**：网页文字会进提示词，而 Grok CLI 1.0.70 无头模式默认带 23 个内置工具（含 `run_terminal_command`、`search_replace`、`scheduler_create`）。`GROK_WRITE_FILE=0` 之类的环境开关与 `--no-plan`、`--no-subagents` 都挡不住它们，旧版又带 `--always-approve`。现在任务命令行不带 `--always-approve`，改为 `--tools todo_write`（白名单，新版本多出来的工具默认不暴露）+ `--disallowed-tools`（把白名单里的 `todo_write`、随白名单出现的 `search_tool`/`use_tool` 和全部已知内置工具点名禁用，未知名字会被忽略）+ `--permission-mode dontAsk`（漏网的工具只拒绝、不询问）；本机假接口抓包确认发给模型的请求里不再有 `tools` 字段，`response_format` 仍是 `json_schema`。`GROK_HOME` 只隔离 `~/.grok`，Grok 还会从主目录加载 `.agents/skills`、`.claude`、`.cursor` 的技能、规则、MCP 与 hooks，所以子进程的 `HOME`/`USERPROFILE`（Windows 还有 `APPDATA`/`LOCALAPPDATA`）指向数据目录下的空目录 `home/`；登录态在 `GROK_HOME/auth.json`，不依赖主目录。旧版 CLI 不认识这些开关时报 `unsupported_rpc`（请更新 Grok CLI），不去掉开关重试。门禁：`tools/unit/connector-clients.test.mjs` 锁命令行与环境；`npm run verify:grok-lockdown`（需本机装 Grok CLI，不并入 `verify:all`）用真实 CLI 对着本机假接口复验，带「旧命令行 + 真实主目录」对照组，Grok CLI 升级后重跑。
+- **Antigravity 的批准策略压回默认**：`agy -p` 会原样继承用户自己的 agy 设置，常见是 `toolPermission=always-proceed`（连 MCP 调用都自动批准）加 `agentMode=accept-edits`，用户装的 MCP 服务器、插件与 hooks 也照常加载。连接器每次调用带 `--sandbox`、`--disable-slash-commands`，并用 `--settings '{"toolPermission":"request-review"}'` 为本次会话覆盖（只对本次会话生效，不写回用户的设置；`agy models` 日志里 `toolPermission` 由 `always-proceed` 变为 `request-review`），需要确认的调用在无头模式下被软拒绝。没有用更严的 `strict`：听写要让 agy 读工作区里的音频文件，`strict` 是否放行这类读取没法离线验证。环境仍沿用用户会话（登录态在系统钥匙串）。**未收窄**：用户的 MCP 服务器、插件与 hooks 仍会加载，`agentMode` 也沿用用户设置；旧版 agy 不认 `--settings`（或不认其中的值）时同样报 `unsupported_rpc`。
 - 上游错误只映射为分类码 + 中文可读信息，**不回显上游原文**（可能含选区文本或密钥）。
 
 ### 8.4 本机常驻连接服务（`connector/service.mjs`）
@@ -358,7 +367,7 @@
 ## 10. 安全与隐私规范
 1. **密钥边界**：API Key 仅存 `chrome.storage.local`；不进入内容脚本、不进入诊断、不进入连接器（订阅模式由 CLI 自行管理登录态）。
 2. **内容脚本最小面**：白名单消息；`STATE_GET` 的非可信投影只含公开设置子集。
-3. **存储隔离**：`setAccessLevel(TRUSTED_CONTEXTS)`（Chrome 136+ 才存在，代码已做特性检测，116–135 自动跳过）。
+3. **存储隔离**：`setAccessLevel(TRUSTED_CONTEXTS)`（Chrome 136+ 才存在，代码已做特性检测，125–135 自动跳过）。
 4. **提示词注入防护**：所有页面内容以数据身份进入提示词（`SOURCE_DATA_INSTRUCTIONS`）；schema 只约束输出形状，不提升输入信任。
 5. **请求元数据**：载荷不含页面 URL；遥测/诊断不含正文与密钥。
 6. **权限最小化**：`chrome.permissions.remove` 在服务/网站规则移除后回收；provider 与站点模式分离保护。
@@ -368,7 +377,7 @@
 ---
 
 ## 11. 错误与诊断规范
-- 错误码全集见 `diagnostics.mjs DIAGNOSTIC_CODES`（43 个）；`diagnosticError()` 负责从 message 推断码。
+- 错误码全集见 `diagnostics.mjs DIAGNOSTIC_CODES`；`diagnosticError()` 负责从 message 推断码。
 - 用户可见错误一律走双语（`M(zh,en)` 或字典键）、可操作（「请先连接服务」/ "Connect a service first" 等）；技术细节进诊断。
 - `STALE/CANCELLED/NOT_READY` 视为取消而非失败，不计入失败率。
 - 诊断汇总：requests / failures / slow(≥10s) / pending(>150s 判 INTERRUPTED) / NOT_DISPLAYED（期望渲染但 15s 内无回执）/ REPEATED_FAILURE（同操作 ≥3 次）。
@@ -380,19 +389,19 @@
 |---|---|---|
 | 连接器单测 | `tools/unit/summary-timeout.test.mjs`（chrome mock + 定时器拦截，随 `npm test` 与 CI 运行） | 原生消息超时与计时器释放 |
 | 一键全套 | `npm run verify:all`（`tools/run-gates.mjs`：静态检查失败即停 → 构建一次 → 浏览器门禁 → 生产构建门禁；各门禁结尾统一汇总行 `GATE <名字>: N 通过，M 失败`，汇总写 `preview/gates/summary.json`） | 全部门禁的总入口；`--quick` / `--only` / `--skip` / `--jobs` 见 AGENTS |
-| 单元测试 | `npm test` → `tools/run-unit-tests.mjs` 显式列出 `tools/unit/*.test.mjs` 交给 `node --test`（Node 22.13+；阅读器用例依赖 `fflate`，持续构建用例使用真实 Vite，CI 先 `npm ci`；数量以运行结果为准） | `gloss.mjs` 四类协议的准备/校验/纠正重试与失败码；`reading.js` 渐退状态机、迁移与读者证据；`lexicon.js` 词提名（排除规则/优先级/出现位置）；`activation.js` 自动化策略；`message-router/protocol` 注册表契约、载荷解析、设置补丁与副作用计划；`connector/host.mjs` 帧协议与来源校验；`background.js` mock 浏览器冒烟（注册表构造、信任边界、真实派发） |
+| 单元测试 | `npm test` → `tools/run-unit-tests.mjs` 显式列出 `tools/unit/*.test.mjs` 交给 `node --test`（Node 22.13+；阅读器用例依赖 `fflate`，持续构建用例使用真实 Vite，CI 先 `npm ci`；数量以运行结果为准） | `gloss.mjs` 四类协议的准备/校验/纠正重试与失败码；`reading.js` 渐退状态机、迁移与读者证据；`lexicon.js` 词提名（排除规则/优先级/出现位置）；`activation.js` 自动化策略；`message-router/protocol` 注册表契约、载荷解析、设置补丁与副作用计划；`connector/host.mjs` 帧协议与来源校验；`background.js` mock 浏览器冒烟（注册表构造、信任边界、真实派发）；`docs-facts.test.mjs` 文档事实（README / 落地页 / `llms.txt` / SPEC 里的服务商数、消息数、白名单数、版本号与代码一致） |
 | 静态检查 | `node tools/verify-module-graph.cjs`（12 条规则：加载契约、import 解析、无环、连接器闭包纯净、分层方向、无反向依赖、文件头注释、无重复 ID、无内联脚本、manifest 资源存在、extension 脚本语法（单个子进程里 vm 只编译不执行：classic 用 `vm.Script`、ESM 用 `vm.SourceTextModule`）、字号档位）；`node tools/verify-deadcode.cjs`（未使用导出/导入，报告型） | 模块依赖方向、页面契约、语法与死代码 |
-| 真实扩展回归 | `npm run verify:audit`（`tools/audit-extension.mjs`：无头 ego lite 经 `tools/lib/ego.mjs` 自写 CDP 驱动，加载 host 权限收窄为 127.0.0.1 的扩展副本，本地 fixture 文章 + 模拟模型服务） | 截至 2026-09-22：完整回归 29 项 + 摘要补充回归 22 项（去重 30 场景）：设置持久化、12 分区明暗/窄窗、术语/规则、API 模型列表、内容脚本开关、真实按键查词卡片、语言切换、已认识词撤销、历史导出清理、句子结构、整页翻译显示与清除、本地模型零请求分类、个性化空态、摘要防重与切换文章/模型过期、伴读猫拖拽持久化、欢迎页 |
-| 专项回归 | `npm run verify:options`（`tools/verify-options.mjs`，设置页控制器行为）、`npm run verify:sites`（`tools/verify-dev-sites.mjs`，站点档案）、`npm run verify:service`（`tools/verify-connector-service.mjs`，常驻服务与配对令牌）、`npm run verify:video`（`tools/verify-video-ui.mjs` 与 `tools/lib/video-regressions.mjs`，原文稿/直播状态、原生字幕身份、换片队列与设置保存竞态）、`npm run verify:livechat`（`tools/verify-live-chat.mjs`，Twitch 聊天开关/排队/提示/伴读猫避让）、`npm run verify:release`（`tools/verify-release.mjs`，生产构建静态检查与冒烟）、`npm run verify:dictation`（`tools/verify-video-dictation.mjs`，无字幕视频云端听写的采集/续录/停止/回看/播完取消连播） | 设置页保存/回滚/思考等级、各站点阅读块与翻译单元分区、常驻服务握手与回退 |
-| 全界面门禁 | `npm run verify:ui`（`tools/verify-ui-all.mjs`，131 项断言；每轮先清理旧截图；动作后按状态轮询，不用固定等待） | options 全 12 分区明暗/窄窗（六档宽度下页头对齐、主区高度、窄屏导航文字且分组全部可见）、快捷键页清单说明宽度与对齐、标签栏无滚动条、全部分区与弹窗/引导页窄屏的版式体检、别的扩展页切换语言后设置页整页换语言、网页明暗判断、welcome/reader/popup、页内挂件（词卡/任务条/解构卡及标签对比度/toast/选区条/伴读猫）、中英文档断言（含英文下拉框不截断）、横向溢出、控制台错误 |
-| 伴读猫门禁 | `npm run verify:pet`（`tools/verify-pet-buttons.mjs`，69 项断言） | 快捷坞/旋旋翻/缩放/贴边/气泡/摘要窗全部按钮的真实点击与键盘操作、文案键解析 |
+| 真实扩展回归 | `npm run verify:audit`（`tools/audit-extension.mjs`：无头 ego lite 经 `tools/lib/ego.mjs` 自写 CDP 驱动，加载 host 权限收窄为 127.0.0.1 的扩展副本，本地 fixture 文章 + 模拟模型服务） | 覆盖：设置持久化、12 分区明暗/窄窗、术语/规则、API 模型列表、内容脚本开关、真实按键查词卡片、语言切换、已认识词撤销、历史导出清理、句子结构、整页翻译显示与清除（含双语 / 仅译文切换）、本地模型零请求分类、个性化空态、摘要防重与切换文章/模型过期、伴读猫拖拽持久化、欢迎页 |
+| 专项回归 | `npm run verify:options`（`tools/verify-options.mjs`，设置页控制器行为）、`npm run verify:sites`（`tools/verify-dev-sites.mjs`，站点档案）、`npm run verify:service`（`tools/verify-connector-service.mjs`，常驻服务与配对令牌）、`npm run verify:video`（`tools/verify-video-ui.mjs` 与 `tools/lib/video-regressions.mjs`，原文稿/直播状态、原生字幕身份、换片队列与设置保存竞态）、`npm run verify:livechat`（`tools/verify-live-chat.mjs`，Twitch 聊天开关/排队/提示/伴读猫避让）、`npm run verify:release`（`tools/verify-release.mjs`，生产构建静态检查与冒烟）、`npm run verify:dictation`（`tools/verify-video-dictation.mjs`，无字幕视频云端听写的采集/续录/停止/回看/播完取消连播）、`npm run verify:performance`（`tools/verify-performance.mjs`，长页面索引缓存与增量失效、阅读器分页、真实 EPUB worker、后台空闲回收）、`npm run verify:reader`（`tools/verify-reader.mjs`，阅读器翻译失败可见与重试、换书后旧请求丢弃、远程文件名与体积限制） | 设置页保存/回滚/思考等级、各站点阅读块与翻译单元分区、常驻服务握手与回退、长页面与阅读器的性能和重试 |
+| 全界面门禁 | `npm run verify:ui`（`tools/verify-ui-all.mjs`；每轮先清理旧截图；动作后按状态轮询，不用固定等待） | options 全 12 分区明暗/窄窗（六档宽度下页头对齐、主区高度、窄屏导航文字且分组全部可见）、快捷键页清单说明宽度与对齐、标签栏无滚动条、全部分区与弹窗/引导页窄屏的版式体检、别的扩展页切换语言后设置页整页换语言、网页明暗判断、welcome/reader/popup、页内挂件（词卡/任务条/解构卡及标签对比度/toast/选区条/伴读猫）、中英文档断言（含英文下拉框不截断）、横向溢出、控制台错误 |
+| 伴读猫门禁 | `npm run verify:pet`（`tools/verify-pet-buttons.mjs`） | 快捷坞/旋旋翻/缩放/贴边/气泡/摘要窗全部按钮的真实点击与键盘操作、文案键解析 |
 | 连接器行为 | 临时脚本（假 spawn） | Grok 重试门控（AUTH/429 不重试、格式错误重试、过长不重试） |
 
-模块图七规则（`tools/lib/module-graph.cjs`，零依赖，可由 `audit-extension.mjs` 在浏览器回归前自动执行，失败即中止）：
+模块图规则 R1–R12（`tools/lib/module-graph.cjs`，零依赖，可由 `audit-extension.mjs` 在浏览器回归前自动执行，失败即中止；R1–R7 列在下表，R8–R12 见表后）：
 
 | 规则 | 内容 |
 |---|---|
-| R1 | manifest content script 九件套顺序固定（`i18n-content.js` 先于所有 `t()` 调用方）、文件存在、且不得包含 ESM 语法；动态注册的 classic 脚本（`pet-quotes.js`、`floating-pet*.js`、`auto-start.js`）同约束 |
+| R1 | manifest 静态 content script 固定为 `page-bootstrap.js`（`CONTENT_SCRIPT_ORDER`）、文件存在、且不得包含 ESM 语法；按需注入与动态注册的 classic 脚本（`design.js`、`i18n-content.js`、`reading-style.js`、`content-ui.js`、`complexity.js`、`formula.js`、`site-profiles.js`、`content.js`、`pet-quotes.js`、`floating-pet*.js`、`auto-start.js`、`youtube-captions-bridge.js`）同约束 |
 | R2 | 全部相对 import 必须解析到真实文件 |
 | R3 | extension 与 connector 全图无循环依赖 |
 | R4 | connector 的 import 闭包内的 extension 文件必须属于 §4.1 共享协议清单，且能在 Node 中安全 import（顶层不触碰浏览器 API） |
@@ -420,7 +429,7 @@ MV3 下改代码必须重载扩展：service worker 变更需重载扩展本身�
 ## 13. 构建与发布规范
 - 扩展本体以构建产物为准：`npm run build` → `dist/extension/`（源层拷贝 − `REPLACED_BY_BUILD` + Vite 页面产物 + 变换后的 manifest；dev 模式注入 `build/extension-key.json` 的固定 key，`npm run build:release` 为无 key 的 minify 产物）。产物门禁 `npm run verify:build`：字节比对 + 浏览器（默认 ego lite）实际加载冒烟。
 - Release 包只含 `extension/`（构建产物重命名）、`connector/`、`README.md`、`LICENSE`、`NOTICE.txt`（白名单制；本文 SPEC.md 不随包发布）。
-- 发布前要求：干净且已提交的 HEAD；生成 `dist/roamcat-0.0.1.zip` + `SHA256SUMS`。
+- 发布前要求：干净且已提交的 HEAD；依次运行 `npm run build:release` 与 `node tools/package-release.mjs`，生成 `dist/release/roamcat-<版本>-extension.zip` + `SHA256SUMS`。
 - 升级约束：保持解压目录不变（未打包扩展 ID 与路径相关；使用 dev 构建时 ID 由 `build/extension-key.json` 固定）；连接器随扩展一起更新并重跑安装程序。
 - 上架准备（尚未提交）：权限理由、隐私政策、1280×800 截图、ZIP 排除开发产物。
 
@@ -444,24 +453,24 @@ MV3 下改代码必须重载扩展：service worker 变更需重载扩展本身�
 | 11 | ASSIST 文章标识解构、段落翻译编号校验、按需建议日期判定内联在浏览器运行时 | 下沉 `parseAssistRequest`/`parsePassageRequestRef`/`onDemandSuggestionDecision` 至 `message-protocol.js`；`activation.js` 纳入模块图领域层，`pageOrigin`/`sitePattern`/`validateAutomation`/`validateVideo` 获得单测（81 例） |
 | 12 | 改码后必须手动去 chrome://extensions 重载并逐标签页刷新，开发循环割裂 | 设置页新增「重新加载扩展」按钮（`chrome.runtime.reload()`）；`content.js` 增加可见性门控的重载侦察与页面角落一键刷新 toast（含自动刷新选项），并挂接 `request()` 失败路径 |
 | 13 | 切换文章后仍接受旧摘要 | 请求前后校验完整 URL 与文档身份，页面变化返回过期提示；详见 `preview/audit/调试报告-20260922.md` |
-| 15 | 连接器来源校验要求 `pathname === '/'`，而 Node 的 URL 对不带路径的 chrome-extension origin 返回空 pathname；安装白名单带斜杠而调用方可能不带，任一失配即拒绝所有连接 | `validateExtensionOrigin` 改为结尾斜杠归一化 + 接受空 pathname 与 `/`；`tools/unit/connector-frame.test.mjs` 覆盖两种合法形态与全部拒绝路径 |
-| 16 | 帧协议、`lexicon.js` 词提名、`activation.js` 无单测；SPEC 声称的重复 ID/CSP/资源检查无执行工具；迁移遗留未使用导入 | 新增 `connector-frame` 与 `lexicon` 单测（总计 103 例）；模块图 lint 补齐 R8–R11 静态门禁；`tools/verify-deadcode.cjs` 常驻化并清除 `background.js`/`grok.mjs`/`antigravity.mjs` 的未使用导入 |
-| 15 | 复制摘要误用新文章来源 | 快照摘要生成时的标题与地址，复制时使用原始来源 |
-| 16 | 旧请求占用新文章总结状态 | 请求绑定页面与独立请求对象：同页重复点击合并，切文后可立即重总结，晚到结果不覆盖；组件销毁后忽略晚到结果 |
-| 17 | 本页双语一次只送 4 段、合计 4000 字，长段还必须单独成批，进度被往返次数拖住 | 附近正文改为每批最多 8 段、合计 8000 字，长段的连续切片可以跟下一段一起送。仍只译视口附近，不预译整篇 |
-| 18 | 下一批要等上一批结束；一批抛错就停掉整页；译文要等整批结束才出现 | 附近最多两批同时在飞。一批失败只标失败段落，未连接服务时停住等待。流式进度先画出已经译完的段落 |
-| 19 | 服务商目录混入无官网、来源不明或与阅读场景不符的通道 | 移除 Jalapeno Cloud / Tensdaq / Atlas Cloud / Vercel / Replicate / Perplexity 六家及 `replicate` 协议实现与相关特判，服务商 32→26 家、协议 9→8 种；存量失效服务配置在加载归一化时静默丢弃 |
-| 20 | 页面层为手写 HTML/JS 无构建链：样式 token 多处重复、无产物门禁；伴读猫常驻所有页面；产品叙事未反映双模式定位 | 新增 `src/`（Vite + Lit 页面应用）+ `build/`（拷贝/manifest 变换插件、tokens 生成、dev 固定 key）构建链，`npm run build` → `dist/extension`，`verify:build` 产物门禁；`minimum_chrome_version` 升至 125；manifest content script 四件套→三件套，`floating-pet.js`/`auto-start.js` 改 `chrome.scripting` 按需动态注册；README/SPEC 按「双语翻译主模式 + 阅读辅助副模式」重写 |
-| 21 | options 页仍为经典 imperative 实现，与已迁移的 popup/welcome 两套 UI 体系并存；商店文案与 Release 说明仍是单模式旧口径 | options 迁移至 `src/pages/options`（Lit shell + 12 分区静态模板，`options-controller.js` 与 `@ext/ui/history.js` 动态填充），`REPLACED_BY_BUILD` 增加 options/options-nav/history 四项，扩展页全部 Lit 化；`verify:build` 新增 options 路由/主题/侧栏/弹层检查；`_locales` extDescription 与 Release 包内容清单改双模式与构建产物口径 |
-| 22 | 全界面硬编码中文，无双语切换 | 新增 `extension/i18n.js` 运行时字典（约 1,600 键双语对齐，`node tools/check-dict.cjs` 校验）；四个扩展页、页内挂件、伴读猫、后台错误消息全部接入；偏好 `roamcat_ui_lang` ∈ auto/zh/en，`auto` 跟随浏览器语言；content script 受限上下文经 `STATE_GET`/`SS_REFRESH` 同步；各页顶栏语言循环钮 |
-| 23 | 深色主题为 Relingo 蓝灰调色板，与 tokens.css 漂移、材质发糊 | 深色重设计为砚台冷墨材质（`#0b0e13` 微蓝底/象牙字/瓷白主键/琥珀收敛为语义色）；`ui.css` 重复 token 块清除，主题色回归 `src/styles/tokens.css` 单一事实源；新增 `--rc-face-panel` 大面板材质（大卡与小控件分层） |
-| 24 | 打开设置会另开窗口，浏览器「选项」菜单与阅读器入口各开一扇，进 Alt+Tab 又关不掉 | manifest 改 `options_ui`；`shared.js` 统一收回到浏览窗口并去重，跳过无痕窗口，hash 路由不触发搬迁；`tools/unit/options-pages.test.mjs` 覆盖 |
-| 25 | 思考模型在 JSON 外夹围栏/说明/额外字段时整批标失败；宽松解析曾放在共享传输层 | `gloss.mjs` 新增 `parseModelObject`，只用于本页翻译（`lenientJson`），其余协议仍严格；流式进度在下一条刚开头时不丢已完成段落；`api-transport-json.test.mjs` 覆盖 |
-| 26 | CI 连续失败：Node 20 不展开 `node --test` 通配符、英文环境下中文断言失败、未装 `fflate` | `npm test` 改由 `tools/run-unit-tests.mjs` 显式列文件；单测 mock 固定 `getUILanguage`；CI 先 `npm ci --ignore-scripts` |
-| 27 | 品牌形象：扫描线猫与亮色界面不搭 | 伴读猫与 logo 改为麻薯猫亮暗双版（`--pet-cat-*` / `--rc-cat-*` 变量，`icons/roamcat-light.svg`），全部 logo 资产与插图由 `tools/make-brand-cat.mjs` 生成 |
-| 28 | 界面审查：侧栏进诊断页要等 5 秒；小字对比度 3.2–4.3；`ui.css` 在手动亮色下覆写 13 个主题 token；查词卡开局出错无出路 | `optionsSectionEnter` 先记当前分区；弱化文字 token 加深达 AA；删除覆写块；错误态补「重试 / 连接或修复服务」，任务条错误态危险色 |
-| 29 | 完全没有字幕轨道的视频无法翻译 | 新增 YouTube 云端听写：消息 `VIDEO_AUDIO_TRANSCRIBE`（77→78 种，内容脚本白名单 36→37）、连接器请求 `transcribe`（13→14 种）、共享协议文件 `audio-transcription.mjs` 与页内采集 `video-dictation.js`；只用已连接的 Google（Antigravity）订阅，不新增 API 配置；`tools/verify-video-dictation.mjs` 在 ego lite 中用真实 captureStream/MediaRecorder 验证采集、暂停续录、停止与回看；真机实测（agy 1.4.9，116 秒英文语音 6 段，每段 15–20 秒）后，听写改用同系列 `-low` 档，快速失败的片段重放一次 |
-| 30 | 真站走查：YouTube 原文稿面板被标题区盖住；直播原文稿同时显示「正在读取」与「未找到」；Twitch 聊天在默认 flash-high 档下一分钟零译文、大片「…」撑高聊天、出错只在悬停提示里；伴读猫压住 Twitch 聊天输入框 | 原文稿面板改放 YouTube `#below` 最前面（其它页面跳出绝对定位外壳）；直播按 `.ytp-live` 判定，原文稿说明无可回看原文稿、隐藏下载，画面提示按 CC 状态；`LIVE_CHAT_TRANSLATE` 在 Google 订阅下改用同系列 `-low`（与听写同规则）；排队改为消息末尾淡色圆点，出错/限速在「译」上方弹提示并留红点；`floating-pet-helpers.js` 新增 `keepOutRight`，Twitch 上猫落进聊天栏时显示位置挪到栏左（保存位置不变，本页拖过则不挪） |
+| 14 | 连接器来源校验要求 `pathname === '/'`，而 Node 的 URL 对不带路径的 chrome-extension origin 返回空 pathname；安装白名单带斜杠而调用方可能不带，任一失配即拒绝所有连接 | `validateExtensionOrigin` 改为结尾斜杠归一化 + 接受空 pathname 与 `/`；`tools/unit/connector-frame.test.mjs` 覆盖两种合法形态与全部拒绝路径 |
+| 15 | 帧协议、`lexicon.js` 词提名、`activation.js` 无单测；SPEC 声称的重复 ID/CSP/资源检查无执行工具；迁移遗留未使用导入 | 新增 `connector-frame` 与 `lexicon` 单测（总计 103 例）；模块图 lint 补齐 R8–R11 静态门禁；`tools/verify-deadcode.cjs` 常驻化并清除 `background.js`/`grok.mjs`/`antigravity.mjs` 的未使用导入 |
+| 16 | 复制摘要误用新文章来源 | 快照摘要生成时的标题与地址，复制时使用原始来源 |
+| 17 | 旧请求占用新文章总结状态 | 请求绑定页面与独立请求对象：同页重复点击合并，切文后可立即重总结，晚到结果不覆盖；组件销毁后忽略晚到结果 |
+| 18 | 本页双语一次只送 4 段、合计 4000 字，长段还必须单独成批，进度被往返次数拖住 | 附近正文改为每批最多 8 段、合计 8000 字，长段的连续切片可以跟下一段一起送。仍只译视口附近，不预译整篇 |
+| 19 | 下一批要等上一批结束；一批抛错就停掉整页；译文要等整批结束才出现 | 附近最多两批同时在飞。一批失败只标失败段落，未连接服务时停住等待。流式进度先画出已经译完的段落 |
+| 20 | 服务商目录混入无官网、来源不明或与阅读场景不符的通道 | 移除 Jalapeno Cloud / Tensdaq / Atlas Cloud / Vercel / Replicate / Perplexity 六家及 `replicate` 协议实现与相关特判，服务商 32→26 家、协议 9→8 种；存量失效服务配置在加载归一化时静默丢弃 |
+| 21 | 页面层为手写 HTML/JS 无构建链：样式 token 多处重复、无产物门禁；伴读猫常驻所有页面；产品叙事未反映双模式定位 | 新增 `src/`（Vite + Lit 页面应用）+ `build/`（拷贝/manifest 变换插件、tokens 生成、dev 固定 key）构建链，`npm run build` → `dist/extension`，`verify:build` 产物门禁；`minimum_chrome_version` 升至 125；manifest content script 四件套→三件套，`floating-pet.js`/`auto-start.js` 改 `chrome.scripting` 按需动态注册；README/SPEC 按「双语翻译主模式 + 阅读辅助副模式」重写 |
+| 22 | options 页仍为经典 imperative 实现，与已迁移的 popup/welcome 两套 UI 体系并存；商店文案与 Release 说明仍是单模式旧口径 | options 迁移至 `src/pages/options`（Lit shell + 12 分区静态模板，`options-controller.js` 与 `@ext/ui/history.js` 动态填充），`REPLACED_BY_BUILD` 增加 options/options-nav/history 四项，扩展页全部 Lit 化；`verify:build` 新增 options 路由/主题/侧栏/弹层检查；`_locales` extDescription 与 Release 包内容清单改双模式与构建产物口径 |
+| 23 | 全界面硬编码中文，无双语切换 | 新增 `extension/i18n.js` 运行时字典（约 1,600 键双语对齐，`node tools/check-dict.cjs` 校验）；四个扩展页、页内挂件、伴读猫、后台错误消息全部接入；偏好 `roamcat_ui_lang` ∈ auto/zh/en，`auto` 跟随浏览器语言；content script 受限上下文经 `STATE_GET`/`SS_REFRESH` 同步；各页顶栏语言循环钮 |
+| 24 | 深色主题为 Relingo 蓝灰调色板，与 tokens.css 漂移、材质发糊 | 深色重设计为砚台冷墨材质（`#0b0e13` 微蓝底/象牙字/瓷白主键/琥珀收敛为语义色）；`ui.css` 重复 token 块清除，主题色回归 `src/styles/tokens.css` 单一事实源；新增 `--rc-face-panel` 大面板材质（大卡与小控件分层） |
+| 25 | 打开设置会另开窗口，浏览器「选项」菜单与阅读器入口各开一扇，进 Alt+Tab 又关不掉 | manifest 改 `options_ui`；`shared.js` 统一收回到浏览窗口并去重，跳过无痕窗口，hash 路由不触发搬迁；`tools/unit/options-pages.test.mjs` 覆盖 |
+| 26 | 思考模型在 JSON 外夹围栏/说明/额外字段时整批标失败；宽松解析曾放在共享传输层 | `gloss.mjs` 新增 `parseModelObject`，只用于本页翻译（`lenientJson`），其余协议仍严格；流式进度在下一条刚开头时不丢已完成段落；`api-transport-json.test.mjs` 覆盖 |
+| 27 | CI 连续失败：Node 20 不展开 `node --test` 通配符、英文环境下中文断言失败、未装 `fflate` | `npm test` 改由 `tools/run-unit-tests.mjs` 显式列文件；单测 mock 固定 `getUILanguage`；CI 先 `npm ci --ignore-scripts` |
+| 28 | 品牌形象：扫描线猫与亮色界面不搭 | 伴读猫与 logo 改为麻薯猫亮暗双版（`--pet-cat-*` / `--rc-cat-*` 变量，`icons/roamcat-light.svg`），全部 logo 资产与插图由 `tools/make-brand-cat.mjs` 生成 |
+| 29 | 界面审查：侧栏进诊断页要等 5 秒；小字对比度 3.2–4.3；`ui.css` 在手动亮色下覆写 13 个主题 token；查词卡开局出错无出路 | `optionsSectionEnter` 先记当前分区；弱化文字 token 加深达 AA；删除覆写块；错误态补「重试 / 连接或修复服务」，任务条错误态危险色 |
+| 30 | 完全没有字幕轨道的视频无法翻译 | 新增 YouTube 云端听写：消息 `VIDEO_AUDIO_TRANSCRIBE`（77→78 种，内容脚本白名单 36→37）、连接器请求 `transcribe`（13→14 种）、共享协议文件 `audio-transcription.mjs` 与页内采集 `video-dictation.js`；只用已连接的 Google（Antigravity）订阅，不新增 API 配置；`tools/verify-video-dictation.mjs` 在 ego lite 中用真实 captureStream/MediaRecorder 验证采集、暂停续录、停止与回看；真机实测（agy 1.4.9，116 秒英文语音 6 段，每段 15–20 秒）后，听写改用同系列 `-low` 档，快速失败的片段重放一次 |
+| 31 | 真站走查：YouTube 原文稿面板被标题区盖住；直播原文稿同时显示「正在读取」与「未找到」；Twitch 聊天在默认 flash-high 档下一分钟零译文、大片「…」撑高聊天、出错只在悬停提示里；伴读猫压住 Twitch 聊天输入框 | 原文稿面板改放 YouTube `#below` 最前面（其它页面跳出绝对定位外壳）；直播按 `.ytp-live` 判定，原文稿说明无可回看原文稿、隐藏下载，画面提示按 CC 状态；`LIVE_CHAT_TRANSLATE` 在 Google 订阅下改用同系列 `-low`（与听写同规则）；排队改为消息末尾淡色圆点，出错/限速在「译」上方弹提示并留红点；`floating-pet-helpers.js` 新增 `keepOutRight`，Twitch 上猫落进聊天栏时显示位置挪到栏左（保存位置不变，本页拖过则不挪） |
 
 
 ### 14.2 遗留 / 观察项

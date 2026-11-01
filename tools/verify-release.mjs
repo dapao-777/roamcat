@@ -19,9 +19,11 @@ import assert from 'node:assert/strict';
 import {execFileSync, spawnSync} from 'node:child_process';
 import {openBrowser, DIST, REPO, sleep, tabIdOf} from './lib/ego.mjs';
 import {createGateReport} from './lib/gate-report.mjs';
+import {npmCommand} from './lib/npm.mjs';
 
 const npm = script => {
-  const result = spawnSync('npm', ['run', script], {cwd: REPO, shell: true, encoding: 'utf8'});
+  const {command, args, options} = npmCommand(['run', script]);
+  const result = spawnSync(command, args, {cwd: REPO, encoding: 'utf8', ...options});
   if (result.status !== 0) throw new Error(`npm run ${script} 失败：${(result.stderr || result.stdout).split('\n').slice(-8).join('\n')}`);
 };
 const gate = createGateReport('release');

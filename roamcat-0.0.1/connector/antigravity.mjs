@@ -29,6 +29,14 @@ import {
 
 export { antigravitySchema };
 
+// 连接器只做文本翻译与听写，不该用任何会改动本机的工具。无头 -p 运行会原样继承用户自己的 agy 设置，而这些设置常被放宽到
+// toolPermission=always-proceed（连 MCP 调用都自动批准）加 agentMode=accept-edits，用户装的 MCP 服务器与插件也照常加载。
+// --settings 只对本次会话生效、不写回用户的设置：把批准策略压回 agy 自己的默认值 request-review——需要确认的调用
+// （如 MCP 调用、命令）在无头模式下被软拒绝（agy changelog：headless -p runs soft-deny tools that need confirmation）。
+// 不用更严的 strict：听写要让 agy 读工作区里的音频文件，strict 是否放行这类读取没法离线验证。
+// 实测 `agy --settings '{"toolPermission":"request-review"}' models` 的日志里 toolPermission 由 always-proceed 变为 request-review。
+const AGY_ISOLATION_ARGS = ['--disable-slash-commands', '--sandbox', '--settings', JSON.stringify({ toolPermission: 'request-review' })];
+
 export function buildAntgravityEnv({ agyPath, tmpDir }) {
   // Antigravity auth lives in the OS keyring / ~/.gemini for the real user, so
   // the environment must stay attached to the user session (no isolated HOME).
@@ -124,7 +132,10 @@ function extractAntigravityPayload(envelope) {
 function publicAntgravityError(error) {
   const joined = String(error?.message ?? error ?? '').toLowerCase();
   let category = 'request_failed', message = 'Antigravity 请求失败，请根据错误代码检查服务或连接器。';
-  if (/invalid.{0,40}schema|schema.{0,80}(invalid|must|unsupported)|json_schema|not valid regex|is not valid against metaschema/.test(joined)) {
+  // 旧版 agy 不认识 --settings 时宁可报错也不去掉开关重试：悄悄退回「继承用户放宽过的批准策略」比失败更糟。
+  if (/(?:flag provided but not defined|unknown flag):?\s*-{1,2}settings|--settings:\s*invalid/.test(joined)) {
+    category = 'unsupported_rpc'; message = '当前 Antigravity CLI 不支持连接器调用的接口，请更新 Antigravity CLI。';
+  } else if (/invalid.{0,40}schema|schema.{0,80}(invalid|must|unsupported)|json_schema|not valid regex|is not valid against metaschema/.test(joined)) {
     category = 'invalid_output_schema'; message = '结构化输出格式被 Antigravity 拒绝，请更新扩展与本机连接器。';
   } else if (/invalid model|not recognized as a known model|unknown model|model .* not (available|found)/.test(joined)) {
     category = 'unsupported_model'; message = '所选模型当前不可用，请刷新模型列表后重新选择。';
@@ -212,8 +223,8 @@ class AgyStreamWorker {
     this.idleTimer = null;
     const args = [];
     if (model) args.push('--model', model);
-    // 与逐次调用相同的隔离：沙箱 + 不展开斜杠命令，工作目录是连接器自己的目录。
-    args.push('--disable-slash-commands', '--sandbox', '-p', '', '--input-format', 'stream-json', '--output-format', 'stream-json');
+    // 与逐次调用相同的隔离：沙箱 + 不展开斜杠命令 + 批准策略压回默认，工作目录是连接器自己的目录。
+    args.push(...AGY_ISOLATION_ARGS, '-p', '', '--input-format', 'stream-json', '--output-format', 'stream-json');
     if (schemaText) args.push('--json-schema', schemaText);
     this.child = client.spawnImpl(client.cliPath, args, { cwd: client.workDir, env: client.env(), stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true });
     client.activeChildren.add(this.child);
@@ -365,7 +376,7 @@ async function runStreamed(client, task) {
 async function runSpawned(client, task) {
   const args = [];
   if (task.model) args.push('--model', task.model);
-  args.push('--disable-slash-commands', '--sandbox', '-p', taskPrompt(task), '--output-format', 'json');
+  args.push(...AGY_ISOLATION_ARGS, '-p', taskPrompt(task), '--output-format', 'json');
   if (task.schema) args.push('--json-schema', JSON.stringify(antigravitySchema(task.schema)));
   const result = await withTransientRetry(() => client.spawnCli(args, { timeoutMs: client.timeoutMs }));
   return task.parse(extractAntigravityPayload(parseAntgravityEnvelope(result.stdout)));
@@ -410,8 +421,8 @@ const agyHooks = {
   },
   async executeTask(client, task) {
     if (task.singleTurn) return runSpawned(client, task);
-    // Keep user content out of tool reach: sandbox + no slash expansion. The
-    // working directory is the isolated connector dir, never the page.
+    // Keep user content out of tool reach: sandbox + no slash expansion + default approval policy
+    // (AGY_ISOLATION_ARGS). The working directory is the isolated connector dir, never the page.
     if (!client.agyStreamUnsupported) {
       try { return await runStreamed(client, task); }
       catch (error) {
