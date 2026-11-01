@@ -4,6 +4,9 @@
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-10-31
+修改 Jev 接口域名时保护已保存的密钥；修复并发保存设置、旧版 Chrome 读取 PDF、带命名空间的 EPUB 与快捷键页布局。
+
 ### 修复
 - 修改 Jev 接口域名时必须重新填写密钥，避免把原接口密钥自动发送给新域名；同一网站修改接口路径仍可复用已保存密钥。
 - 并发保存设置时按最新状态校验和合并，避免伴读猫等嵌套设置丢失，以及当前 API 服务引用已经被删除的服务。
@@ -213,7 +216,8 @@ Twitch 直播聊天实时翻译；本机常驻连接服务改为配对令牌认�
 - `host_permissions` 仍为宽泛的 `http(s)://*/*`，计划改为 `optional_host_permissions` 按需申请。
 - 未上架商店；扩展仅支持开发者模式加载（直接加载 `roamcat-0.0.1/extension` 时 ID 与目录路径绑定；`npm run build` 产物 ID 固定）。
 
-[Unreleased]: https://github.com/dapao-777/roamcat/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/dapao-777/roamcat/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/dapao-777/roamcat/releases/tag/v0.6.1
 [0.6.0]: https://github.com/dapao-777/roamcat/releases/tag/v0.6.0
 [0.5.0]: https://github.com/dapao-777/roamcat/releases/tag/v0.5.0
 [0.4.0]: https://github.com/dapao-777/roamcat/releases/tag/v0.4.0
