@@ -194,6 +194,24 @@ try {
     await settled(popup);
     check(`popup 渲染[${theme}]`, popupState.len > 500 && popupState.buttons >= 2, JSON.stringify(popupState));
     await shot(popup, `popup-${theme}`);
+    if (theme === 'light') {
+      // 快捷键/右键菜单失败（图标红色「!」）的原因：弹窗打开时取走并显示在顶部，取走后记录清空。
+      const tabError = '辅助服务尚未连接。请到设置里连接服务后再翻译本页。';
+      // 不能 reload：标签页跳转本身就会按设计撤掉旧的失败记录。重新挂载弹窗组件，等同于再打开一次弹窗。
+      await popup.evaluate(async message => {
+        const tab = await chrome.tabs.getCurrent();
+        await chrome.storage.session.set({['tabError:' + tab.id]: {message, at: Date.now()}});
+        const old = document.querySelector('roamcat-popup');
+        old.replaceWith(document.createElement('roamcat-popup'));
+      }, tabError);
+      const card = await until(popup, () => popup.evaluate(() => { const el = document.querySelector('#tab-error'); return el && !el.hidden ? document.querySelector('#tab-error-copy').textContent : ''; }), Boolean);
+      const left = await popup.evaluate(async () => { const tab = await chrome.tabs.getCurrent(); return (await chrome.storage.session.get('tabError:' + tab.id))['tabError:' + tab.id] || null; });
+      check('popup 显示上次快捷键失败原因并取走记录', card === tabError && left === null, JSON.stringify({card, left}));
+      await settled(popup);
+      await shot(popup, 'popup-tab-error');
+      await popup.locator('#tab-error-dismiss').click();
+      check('popup 失败原因可以关掉', await until(popup, () => popup.evaluate(() => document.querySelector('#tab-error').hidden), Boolean));
+    }
     await popup.close();
     await extPage.bringToFront();
   }

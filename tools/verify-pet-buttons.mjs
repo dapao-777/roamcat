@@ -86,6 +86,21 @@ try {
   const waitPet = (ok, timeout) => until(petState, ok, timeout);
   const summaryOpen = () => tab.locator('.roamcat-summary-window.open').count();
   const summaryLoading = () => tab.locator('#summary-content .summary-loading').count();
+  const readingState = () => petCall(`() => {
+    const content = window.__ROAMCAT_CONTENT__;
+    const status = content?.status?.();
+    const pet = document.querySelector('#roamcat-pet-host')?.pet;
+    const btn = pet?.shadowQuery('#quick-reading');
+    return {
+      contentAlive: Boolean(content?.isAlive?.()),
+      enabled: Boolean(status?.enabled),
+      paused: Boolean(status?.paused),
+      btnActive: btn?.classList.contains('is-active'),
+      pressed: btn?.getAttribute('aria-pressed'),
+      title: btn?.title,
+      dockOpen: pet?.container?.classList.contains('dock-open'),
+    };
+  }`);
   const initial = await waitPet(Boolean, 8000);
   check('伴读猫就绪', Boolean(initial), JSON.stringify(initial));
 
@@ -93,6 +108,12 @@ try {
   check('初始快捷坞收起', initial && !initial.cls.includes('dock-open') && initial.expanded === 'false' && initial.inert === true,
     JSON.stringify(initial));
   check('初始缩放 100%', initial?.zoom === '100%', `zoom=${initial?.zoom}`);
+  // 默认 ambient 只规定开启后的工作方式，阅读引擎尚未加载时按钮必须保持关闭。
+  await petCall('async () => document.querySelector("#roamcat-pet-host").pet.updateReadingStatus()');
+  const initialReading = await readingState();
+  check('初始不加载阅读引擎', initialReading?.contentAlive === false, JSON.stringify(initialReading));
+  check('未开启页面时阅读按钮不误亮', initialReading?.btnActive === false && initialReading?.pressed === 'false', JSON.stringify(initialReading));
+  check('未开启页面时阅读按钮提示开启', initialReading?.title === '阅读辅助已暂停 · 点击开启', JSON.stringify(initialReading));
 
   // ---------- 2. 悬停预览：鼠标悬停猫身，卫星按钮即可交互 ----------
   const avatarBox = await avatar.boundingBox();
@@ -191,34 +212,34 @@ try {
     active, {timeout: 15000}).then(() => true).catch(() => false);
   await avatar.click();
   await waitPet(isOpen);
-  const beforeReading = await tab.locator('#quick-reading').evaluate(el => el.classList.contains('is-active'));
   await tab.locator('#quick-reading').click();
-  const landed1 = await waitReadingBtn(!beforeReading);
-  let afterReading = await petCall(`() => ({
-    enabled: window.__ROAMCAT_CONTENT__?.status?.().enabled,
-    paused: window.__ROAMCAT_CONTENT__?.status?.().paused,
-    btnActive: document.querySelector('#roamcat-pet-host').shadowRoot.querySelector('#quick-reading').classList.contains('is-active'),
-    title: document.querySelector('#roamcat-pet-host').shadowRoot.querySelector('#quick-reading').title,
-    dockOpen: document.querySelector('#roamcat-pet-host').shadowRoot.querySelector('.roamcat-pet-widget').classList.contains('dock-open'),
-  })`);
-  const nowEnabled = !beforeReading;
-  check('点击阅读辅助切换状态', landed1 && afterReading?.enabled === nowEnabled && afterReading?.btnActive === nowEnabled,
-    `before=${beforeReading} after=${JSON.stringify(afterReading)}`);
-  check('阅读辅助标题随状态更新', afterReading?.title === (nowEnabled ? '阅读辅助进行中 · 点击暂停' : '阅读辅助已暂停 · 点击开启'),
+  const landed1 = await waitReadingBtn(true);
+  let afterReading = await readingState();
+  check('首次点击加载并开启阅读辅助', landed1 && afterReading?.contentAlive === true && afterReading?.enabled === true
+    && afterReading?.paused === false && afterReading?.btnActive === true && afterReading?.pressed === 'true', JSON.stringify(afterReading));
+  check('阅读辅助标题随状态更新', afterReading?.title === '阅读辅助进行中 · 点击暂停',
     `title=${afterReading?.title}`);
   check('切换后快捷坞保持展开', afterReading?.dockOpen === true);
   // 再点复原
   await tab.locator('#quick-reading').click();
-  const landed2 = await waitReadingBtn(beforeReading);
-  afterReading = await petCall(`() => ({
-    enabled: window.__ROAMCAT_CONTENT__?.status?.().enabled,
-    btnActive: document.querySelector('#roamcat-pet-host').shadowRoot.querySelector('#quick-reading').classList.contains('is-active'),
-    title: document.querySelector('#roamcat-pet-host').shadowRoot.querySelector('#quick-reading').title,
-  })`);
-  check('再点阅读辅助复原', landed2 && afterReading?.enabled === beforeReading && afterReading?.btnActive === beforeReading,
+  const landed2 = await waitReadingBtn(false);
+  afterReading = await readingState();
+  check('再点阅读辅助关闭', landed2 && afterReading?.enabled === false && afterReading?.paused === true
+    && afterReading?.btnActive === false && afterReading?.pressed === 'false' && afterReading?.title === '阅读辅助已暂停 · 点击开启',
     JSON.stringify(afterReading));
   if (!landed1 || !landed2) {
     warn('体验问题：阅读辅助开关缺少 pending 反馈，rebuild 期间按钮态滞后于实际状态');
+  }
+  // 弹窗和快捷键通过同一消息切换页面；快捷坞开着时按钮也要跟随实际状态。
+  const readingTabId = await tabIdOf(extPage, `${fixtureBase}/*`);
+  for (const enabled of [true, false]) {
+    const response = await extPage.evaluate(async ({tabId, enabled}) =>
+      chrome.tabs.sendMessage(tabId, {type: 'SS_SET_ENABLED', enabled}, {frameId: 0}), {tabId: readingTabId, enabled});
+    const landed = await waitReadingBtn(enabled);
+    const state = await readingState();
+    check(`弹窗切换后伴读猫同步${enabled ? '开启' : '关闭'}`, response?.ok && landed && state?.enabled === enabled
+      && state?.btnActive === enabled && state?.pressed === String(enabled)
+      && state?.title === (enabled ? '阅读辅助进行中 · 点击暂停' : '阅读辅助已暂停 · 点击开启'), JSON.stringify(state));
   }
 
   // ---------- 10. 旋旋翻：无服务时走错误播报 ----------

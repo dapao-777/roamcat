@@ -114,6 +114,12 @@ function seedLocalState(profile) {
   const now = (BigInt(Date.now()) + 11644473600000n) * 1000n;
   fs.writeFileSync(path.join(profile, 'Local State'), JSON.stringify({password_manager: {os_password_blank: false, os_password_last_changed: String(now)}}));
 }
+// ego 是否走首次引导（chrome://onboarding/）只看用户数据目录里 ego_config.json 的 not_first_run，--no-first-run、
+// First Run 标记与 Local State 的 first_run_finished 都不管用。引导一打开就请求「设为默认浏览器」，Windows 随即弹出
+// 「默认应用 → ego (lite)」设置页，CDP 连上再关已经来不及；所以启动前写好这个标记，引导根本不出现。
+function seedEgoConfig(profile) {
+  fs.writeFileSync(path.join(profile, 'ego_config.json'), JSON.stringify({not_first_run: true}));
+}
 
 // extension：未打包扩展目录（默认 dist/extension），传 null 则不加载扩展。
 // 门禁被打断（Ctrl+C、崩溃、电脑重启）时临时配置与扩展副本来不及删，一个约 40 MB。启动时顺手清掉一小时前的残留：
@@ -161,6 +167,7 @@ export async function openBrowser({extension = DIST, args = []} = {}) {
   sweepStaleTemp();
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'roamcat-ego-'));
   seedLocalState(profile);
+  seedEgoConfig(profile);
   const flags = ['--remote-debugging-port=0', `--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check',
     '--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding',
     '--disable-features=CalculateNativeWinOcclusion', '--mute-audio', '--window-size=1440,1000'];
@@ -200,27 +207,20 @@ class Browser {
     openBrowsers.add(this);
   }
   send(method, params) { return this.connection.send(method, params); }
-  // ego 在全新配置上会自己打开首次引导窗口（chrome://onboarding/，--no-first-run、First Run 标记与 Local State 里的
-  // first_run_finished 都挡不住）；引导里会请求「设为默认浏览器」，Windows 随即弹出「默认应用 → ego (lite)」设置页，
-  // 每跑一次门禁弹一次。连上调试端口后立刻停止引导并退回空白页。
-  async closeOnboarding(timeout = 5000) {
-    const deadline = Date.now() + timeout;
-    while (Date.now() < deadline) {
-      const {targetInfos} = await this.connection.send('Target.getTargets');
-      const onboarding = targetInfos.filter(info => info.url.startsWith('chrome://onboarding'));
-      if (onboarding.length) {
-        // 直接销毁引导 WebContents 会触发 ego 的首次引导退出流程；无扩展时也会使其他会话失效。
-        // 先停止引导页面并导航到空白页，阻止其请求系统默认应用，同时保留浏览器窗口生命周期。
-        for (const info of onboarding) {
-          const {sessionId}=await this.connection.send('Target.attachToTarget',{targetId:info.targetId,flatten:true});
-          try{await this.connection.send('Page.stopLoading',{},sessionId);await this.connection.send('Page.navigate',{url:'about:blank'},sessionId);}
-          finally{await this.connection.send('Target.detachFromTarget',{sessionId}).catch(()=>{});}
-        }
-        return true;
-      }
-      await sleep(100);
+  // 兜底：seedEgoConfig 已让首次引导不出现；若 ego 升级后换了判断方式、引导又冒出来，就停止它并退回空白页，同时提醒更新标记。
+  // 直接销毁引导 WebContents 会触发 ego 的首次引导退出流程（无扩展时还会使其他会话失效），所以只导航走。
+  // 引导窗口在浏览器启动阶段创建，调用时 newPage 已返回，只查一次，不再轮询等待。
+  async closeOnboarding() {
+    const {targetInfos} = await this.connection.send('Target.getTargets');
+    const onboarding = targetInfos.filter(info => info.url.startsWith('chrome://onboarding'));
+    if (!onboarding.length) return false;
+    console.warn('[ego] 首次引导仍然出现（ego_config.json 的 not_first_run 可能已失效），可能会弹出「默认应用」设置页');
+    for (const info of onboarding) {
+      const {sessionId} = await this.connection.send('Target.attachToTarget', {targetId: info.targetId, flatten: true});
+      try { await this.connection.send('Page.stopLoading', {}, sessionId); await this.connection.send('Page.navigate', {url: 'about:blank'}, sessionId); }
+      finally { await this.connection.send('Target.detachFromTarget', {sessionId}).catch(() => {}); }
     }
-    return false;
+    return true;
   }
   async attach(targetId) {
     const {sessionId} = await this.connection.send('Target.attachToTarget', {targetId, flatten: true});

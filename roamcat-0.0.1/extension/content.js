@@ -3243,6 +3243,7 @@ const LIMIT_ERROR = T('c.limit');
     mountVideoTool();
     void startHistoryCapture();
     scheduleSentenceScan(0);
+    globalThis.RoamCatPet?.updateReadingStatus?.();
     return status();
   }
   function disable() {
@@ -3259,6 +3260,7 @@ const LIMIT_ERROR = T('c.limit');
     stopSentenceGroups(false);
     globalThis.RoamCatVideoSubtitles?.unmount();
     document.getElementById('roamcat-content-style')?.remove();
+    globalThis.RoamCatPet?.updateReadingStatus?.();
   }
   async function setManualEnabled(enabled){await request('PAGE_ACTIVITY_SET',{enabled});state.paused=!enabled;if(!enabled){disable();return status();}state.manual=true;state.videoAllowed=true;return enable();}
   // 快照与内容脚本 STATE_GET 的公开投影同构；翻译会话进行中仍需 STATE_GET 取回 tab 级 emergencyActive。

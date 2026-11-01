@@ -35,7 +35,7 @@ export const MESSAGE_TYPES = Object.freeze([
   'PERSONALIZATION_ROLLBACK', 'PERSONALIZATION_RESET', 'HISTORY_RULE_SET',
   'DIAGNOSTICS_GET', 'DIAGNOSTICS_EXPORT', 'DIAGNOSTICS_SET', 'DIAGNOSTICS_CLEAR', 'DIAGNOSTICS_RENDER',
   'USAGE_STATS_GET', 'USAGE_STATS_CLEAR',
-  'POPUP_INTENT_TAKE', 'PAGE_UI_INJECT', 'ENSURE_PAGE_UI',
+  'POPUP_INTENT_TAKE', 'TAB_ERROR_TAKE', 'PAGE_UI_INJECT', 'ENSURE_PAGE_UI',
   'SENTENCE_GROUPS_GET', 'SENTENCE_GROUPS_SET', 'SENTENCE_GROUPS_DENSITY_SET', 'SENTENCE_GROUPS_LINE_STYLE_SET',
   'AUTO_BOOTSTRAP_CHECK', 'AUTOMATION_GET', 'AUTOMATION_PATCH', 'PAGE_ACTIVITY_SET',
   'VIDEO_SETTINGS_PATCH', 'YOUTUBE_CAPTIONS_BRIDGE', 'YOUTUBE_CAPTION_FETCH', 'FLOATING_PET_POSITION_SET',
@@ -110,6 +110,12 @@ export function parseFloatingPetPatch(message) {
     floatingPet.scale = message.scale;
   }
   return floatingPet;
+}
+
+/** TAB_ERROR_TAKE 载荷：只需目标标签页。 */
+export function parseTabErrorTake(message) {
+  if (!Number.isInteger(message?.tabId)) throw new Error(M('标签页无效。','Invalid tab.'));
+  return message.tabId;
 }
 
 /** POPUP_INTENT_TAKE 载荷：目标标签页与网址必须完整。 */

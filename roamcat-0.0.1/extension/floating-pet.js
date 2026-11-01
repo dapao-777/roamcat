@@ -50,7 +50,6 @@
   let cachedSummary = null;
   let cachedSummarySource = null;
   let currentArticleMeta = null;
-  let readingEnabled = false;
   let detectedDomain = 'general';
 
   // 纯函数、样式与 SVG 拆在 floating-pet-*.js，与本文件同批注入且先于本文件执行。
@@ -1044,17 +1043,15 @@
       }
     }
 
-    async updateReadingStatus() {
+    updateReadingStatus() {
+      let readingEnabled = false;
       try {
-        if (window.__ROAMCAT_CONTENT__?.status) {
-          const st = window.__ROAMCAT_CONTENT__.status();
-          readingEnabled = Boolean(st?.enabled && !st?.paused);
-          if (st?.emergency) {
-            this.onEmergencyStatusChange(st.emergency);
-          }
-        } else {
-          const res = await chrome.runtime.sendMessage({ type: 'STATE_GET' });
-          readingEnabled = Boolean(res?.data?.settings?.assistanceMode === 'ambient');
+        // 全局辅助模式不代表本页已开启；引擎尚未注入或已经失效时保持关闭。
+        const content = window.__ROAMCAT_CONTENT__;
+        const st = content?.isAlive?.() ? content.status() : null;
+        readingEnabled = Boolean(st?.enabled && !st?.paused);
+        if (st?.emergency) {
+          this.onEmergencyStatusChange(st.emergency);
         }
       } catch {
         readingEnabled = false;
@@ -1086,14 +1083,14 @@
       quickReading?.classList.add('is-pending');
       try {
         const content = await this.ensurePageContent();
-        const next = !readingEnabled;
+        const st = content.status();
+        const next = !(st.enabled && !st.paused);
         await content.setManualEnabled(next);
-        readingEnabled = next;
-        this.updateReadingStatus();
       } catch (err) {
         console.error('Toggle reading mode error', err);
         this.speakStatus?.(T('pet.assistFailed'), { busy: false, duration: 2800 });
       } finally {
+        this.updateReadingStatus();
         quickReading?.classList.remove('is-pending');
       }
     }

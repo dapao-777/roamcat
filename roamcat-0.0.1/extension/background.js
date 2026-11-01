@@ -26,6 +26,7 @@ import {
   parseDomainTest,
   parseFloatingPetPatch,
   parsePopupIntentTake,
+  parseTabErrorTake,
   parseAnalyze,
   parseHistoryRuleSet,
   parseHistoryRecordRef,
@@ -239,6 +240,8 @@ let emergencyWrites=Promise.resolve();
 function changeEmergency(operation){const work=emergencyWrites.then(operation);emergencyWrites=work.catch(()=>{});return work;}
 const POPUP_INTENT_KEY='bilingualPopupIntent';
 const readerOriginalKey=tabId=>'readerOriginalOnce:'+tabId;
+// 快捷键、右键菜单在某个标签页上失败时记下原因：图标挂红色「!」，弹窗打开时取走原因展示给读者。
+const tabErrorKey=tabId=>'tabError:'+tabId;
 let popupIntentWrites=Promise.resolve();
 function changePopupIntent(operation){const work=popupIntentWrites.then(operation);popupIntentWrites=work.catch(()=>{});return work;}
 function setPopupIntent(intent){return changePopupIntent(()=>chrome.storage.session.set({[POPUP_INTENT_KEY]:intent}));}
@@ -3021,6 +3024,17 @@ const messageHandlers = [
     }
   },
   {
+    type: 'TAB_ERROR_TAKE',
+    handle: async (message, { trusted }) => {
+      if (!trusted) throw new Error(M('仅扩展界面可读取操作结果。', 'Only extension UI can read action results.'));
+      const tabId = parseTabErrorTake(message), key = tabErrorKey(tabId);
+      const record = (await chrome.storage.session.get(key))[key] || null;
+      // 弹窗已把原因展示给读者，图标上的感叹号完成了提醒，一并撤掉。
+      if (record) await clearTabStatus(tabId).catch(() => {});
+      return record;
+    }
+  },
+  {
     type: 'PAGE_UI_INJECT',
     handle: async (message, { sender, trusted }) => {
       const page = await tabPage(message.tabId);
@@ -3537,7 +3551,7 @@ chrome.webNavigation.onBeforeNavigate.addListener(details => {
 chrome.tabs.onRemoved.addListener(tabId => {
   void pruneBackgroundQueue();
   void clearPopupIntent(tabId);
-  void forgetEmergency(tabId);injectedEmergencyPages.delete(tabId);sentenceModeGeneration.delete(tabId);void chrome.storage.session.remove([sentenceModeKey(tabId),readingIntentKey(tabId),readerOriginalKey(tabId)]);
+  void forgetEmergency(tabId);injectedEmergencyPages.delete(tabId);sentenceModeGeneration.delete(tabId);void chrome.storage.session.remove([sentenceModeKey(tabId),readingIntentKey(tabId),readerOriginalKey(tabId),tabErrorKey(tabId)]);
   tabActivationGeneration.delete(tabId);
   tabSeenArticle.delete(tabId);
   liveChatRate.forget(tabId);
@@ -3549,9 +3563,21 @@ void reconcileAutomation().catch(error => console.error('初始化自动开启�
 async function clearTabStatus(tabId) {
   await Promise.all([
     chrome.action.setBadgeText({tabId,text:''}),
-    chrome.action.setTitle({tabId,title:M('RoamCat · 随心阅','RoamCat · Read freely')})
+    chrome.action.setTitle({tabId,title:M('RoamCat · 随心阅','RoamCat · Read freely')}),
+    chrome.storage.session.remove(tabErrorKey(tabId))
   ]);
 }
+
+// 感叹号只说明「这一页上刚才的操作失败了」：标签页换了页面（含单页应用换路由）就撤掉，不让旧错误挂在新页面上。
+// 标签页专属的徽标 Chrome 只在关闭标签页时自动清除，跳转不会清。
+async function clearStaleTabError(details) {
+  if (details.frameId !== 0) return;
+  const key = tabErrorKey(details.tabId);
+  if (!(await chrome.storage.session.get(key))[key]) return;
+  await clearTabStatus(details.tabId);
+}
+chrome.webNavigation.onCommitted.addListener(details => { void clearStaleTabError(details).catch(() => {}); });
+chrome.webNavigation.onHistoryStateUpdated.addListener(details => { void clearStaleTabError(details).catch(() => {}); });
 
 async function showTabError(tabId,error,fallback) {
   const message = error instanceof Error && error.message ? error.message : fallback;
@@ -3559,7 +3585,8 @@ async function showTabError(tabId,error,fallback) {
   await Promise.allSettled([
     chrome.action.setBadgeBackgroundColor({tabId,color:'#B42318'}),
     chrome.action.setBadgeText({tabId,text:'!'}),
-    chrome.action.setTitle({tabId,title:`RoamCat：${message}`})
+    chrome.action.setTitle({tabId,title:`RoamCat：${message}`}),
+    chrome.storage.session.set({[tabErrorKey(tabId)]:{message,at:Date.now()}})
   ]);
 }
 

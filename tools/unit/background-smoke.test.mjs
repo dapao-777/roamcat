@@ -6,7 +6,7 @@
  * 主要内容：mock chrome.runtime/storage/tabs；import 真实 background.js（node:test 每文件独立进程，
  *   模块缓存只在本文件内共享，因此 import 与全部派发断言放在同一测试的子树中）；经 onMessage 监听器
  *   发送 STATE_GET / OPEN_OPTIONS / DOMAIN_TEST / FLOATING_PET_POSITION_SET / API_MODELS_LIST /
- *   LIVE_CHAT_TRANSLATE（主机/开关检查与 API 限额）/ ENSURE_PAGE_UI（Twitch 补注入、阅读脚本与九件套同序）/ 未知类型，断言成功、拒绝与错误文案；导入期不得出现注册表完整性告警。
+ *   LIVE_CHAT_TRANSLATE（主机/开关检查与 API 限额）/ TAB_ERROR_TAKE（快捷键失败原因取走即清、换页面撤掉）/ ENSURE_PAGE_UI（Twitch 补注入、阅读脚本与九件套同序）/ 未知类型，断言成功、拒绝与错误文案；导入期不得出现注册表完整性告警。
  * 模块边界：仅 mock 浏览器边界，不 mock 任何被测扩展模块；不访问 IndexedDB（history-store 懒加载，
  *   本测试不触发历史操作）。
  *
@@ -39,6 +39,8 @@ function createChromeMock() {
     getContexts: async () => [],
   };
   const createdTabs = [];
+  // 工具栏徽标：记录 setBadgeText 调用，断言红色「!」的挂上与撤掉。
+  const badges = [];
   // 按标签页指定网址（缺省 example.com）；probe 为补注入前探测脚本的返回值，files 记录每次补注入的文件清单。
   const tabUrls = new Map();
   const injections = {probe: null, files: []};
@@ -90,13 +92,14 @@ function createChromeMock() {
     },
     tts: {},
     offscreen: {hasDocument: async () => false, createDocument: async () => {}},
-    webNavigation: {getFrame: async () => null, onHistoryStateUpdated: {addListener() {}}, onBeforeNavigate: {addListener() {}}},
+    webNavigation: {getFrame: async () => null, onHistoryStateUpdated: {addListener() {}}, onBeforeNavigate: {addListener() {}}, onCommitted: {addListener(fn) { listeners.committed = fn; }}},
+    action: {setBadgeText: async details => { badges.push(details); }, setBadgeBackgroundColor: async () => {}, setTitle: async () => {}},
     windows: {
       getAll: async () => [{id: 3, focused: true, type: 'normal', tabs: [{id: 1, url: 'https://example.com/'}]}],
       update: async () => {},
     },
   };
-  return {chrome, listeners, openedOptions, registeredScripts, createdTabs, tabUrls, injections,storageReads,storageWrites};
+  return {chrome, listeners, openedOptions, registeredScripts, createdTabs, tabUrls, injections,storageReads,storageWrites,badges};
 }
 
 const trustedPopup = chrome => ({id: chrome.runtime.id, url: chrome.runtime.getURL('ui/popup.html'), tab: {id: 1, url: 'https://example.com/'}});
@@ -106,7 +109,7 @@ test('迁移后的 background.js 在 mock 浏览器中构造注册表并按信�
   const warnings = [];
   const originalError = console.error;
   console.error = (...args) => warnings.push(args.join(' '));
-  const {chrome, listeners, registeredScripts, createdTabs, tabUrls, injections,storageReads,storageWrites} = createChromeMock();
+  const {chrome, listeners, registeredScripts, createdTabs, tabUrls, injections,storageReads,storageWrites,badges} = createChromeMock();
   globalThis.chrome = chrome;
   try {
     await import('../../roamcat-0.0.1/extension/background.js');
@@ -127,6 +130,25 @@ test('迁移后的 background.js 在 mock 浏览器中构造注册表并按信�
     const result=await send({type:'STATE_GET'},trustedPopup(chrome));assert.equal(result.ok,true,result.error);
     assert.ok(!storageReads.some(keys=>keys==null||keys==='words'||Array.isArray(keys)&&keys.includes('words')));
     assert.ok(!storageWrites.some(keys=>keys.includes('words')));
+  });
+
+  await t.test('快捷键失败原因：网页读不到，弹窗取走一次即清，标签页换页面自动撤掉', async () => {
+    await chrome.storage.session.set({'tabError:1': {message: '辅助服务尚未连接', at: 1}});
+    const denied = await send({type: 'TAB_ERROR_TAKE', tabId: 1}, contentPage(chrome));
+    assert.equal(denied.ok, false);
+    const taken = await send({type: 'TAB_ERROR_TAKE', tabId: 1}, trustedPopup(chrome));
+    assert.equal(taken.ok, true, taken.error);
+    assert.equal(taken.data.message, '辅助服务尚未连接');
+    assert.deepEqual(badges.at(-1), {tabId: 1, text: ''});
+    assert.equal((await send({type: 'TAB_ERROR_TAKE', tabId: 1}, trustedPopup(chrome))).data, null);
+    await chrome.storage.session.set({'tabError:2': {message: '此页面无法开启阅读辅助', at: 2}});
+    listeners.committed({tabId: 2, frameId: 3});
+    await new Promise(resolve => setTimeout(resolve, 10));
+    assert.ok((await chrome.storage.session.get('tabError:2'))['tabError:2'], '子框架跳转不应撤掉');
+    listeners.committed({tabId: 2, frameId: 0});
+    await new Promise(resolve => setTimeout(resolve, 10));
+    assert.equal((await chrome.storage.session.get('tabError:2'))['tabError:2'], undefined);
+    assert.deepEqual(badges.at(-1), {tabId: 2, text: ''});
   });
 
   await t.test('受信扩展页读取默认状态', async () => {

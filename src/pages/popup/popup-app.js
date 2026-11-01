@@ -49,6 +49,8 @@ class RoamcatPopup extends LitElement {
   #busy = false;
   #emergency = emergencySnapshot();
   #errors = {action: '', siteAuto: '', sentenceGroups: '', service: ''};
+  // 快捷键或右键菜单在本标签页上失败的原因（图标上的红色「!」）；打开弹窗时取走并展示。
+  #tabError = null;
   #serviceMenuOpen = false;
   #emergencyResult = {text: '', error: false};
   #suggestionVisible = false;
@@ -102,6 +104,7 @@ class RoamcatPopup extends LitElement {
     try {
       [this.#tab] = await chrome.tabs.query({active: true, currentWindow: true});
       [this.#state, this.#automation] = await Promise.all([request('STATE_GET'), request('AUTOMATION_GET', {tabId: this.#tab?.id})]);
+      this.#tabError = Number.isInteger(this.#tab?.id) ? await request('TAB_ERROR_TAKE', {tabId: this.#tab.id}).catch(() => null) : null;
       try {
         await this.#getSentenceGroups();
       } catch (error) {
@@ -450,6 +453,15 @@ class RoamcatPopup extends LitElement {
     </header>
 
     <div class="popup-content-body rc-stagger">
+      <section id="tab-error" class="popup-alert-card" role="status" ?hidden=${!this.#tabError}>
+        <div class="popup-alert-icon">${icon('alert', {size: 18})}</div>
+        <div class="popup-alert-info">
+          <b>${t('pop.lastFailTitle')}</b>
+          <p id="tab-error-copy">${this.#tabError?.message || ''}</p>
+          <button id="tab-error-dismiss" class="popup-alert-link" type="button" @click=${() => { this.#tabError = null; this.requestUpdate(); }}>${t('pop.lastFailOk')}</button>
+        </div>
+      </section>
+
       <section id="service-warning" class="popup-alert-card" ?hidden=${!serviceProblem}>
         <div class="popup-alert-icon">${icon('alert', {size: 18})}</div>
         <div class="popup-alert-info">
