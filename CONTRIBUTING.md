@@ -4,7 +4,7 @@
 
 ## 环境准备
 
-- 项目构建与验证使用 Node.js **22.13+**（Node 24 已验证）；仅安装随发布包提供的本机连接器仍可用 Node 20.11+。
+- 项目构建与验证使用 Node.js **22.13+**（Node 24 已验证）；仅安装随发布包提供的本机连接器仍可用 Node.js 20+。
 - Chrome 或 Edge（`npm run build` 后在 `chrome://extensions` 开发者模式加载 `dist/extension/`）。
 - 仅运行单元测试和静态检查不需要浏览器。
 - 浏览器门禁（`verify:build`/`verify:ui`/`verify:pet`/`verify:audit` 等）只用本机 [ego lite](https://lite.ego.app/)，需 Node.js 22+：`tools/lib/ego.mjs` 以临时配置另起无头 ego 并经 CDP 驱动，不碰你日常的 ego；装在别处时设 `ROAMCAT_EGO` 指向 `ego.exe`，`ROAMCAT_HEADED=1` 开窗观察。
@@ -29,8 +29,8 @@ CI 会强制以下检查，本地先跑一遍能省一轮返工：
    - 每个手写源文件必须以 `/** @file … */` 文件头开头（职责/主要内容/模块边界三段式）。
    - 分层方向：协议层 → 领域层 → 应用层 → 页面层，不允许反向依赖、不允许循环。
    - 连接器闭包（`connector/`）不得引用 chrome API。
-   - manifest 声明的资源必须存在；content script 按 `CONTENT_SCRIPT_ORDER` 顺序加载。
-2. **`npm test`** — `tools/unit/**/*.test.mjs`，纯 Node 单测。
+   - manifest 声明的资源必须存在；manifest 静态 content script 固定为 `page-bootstrap.js`（`CONTENT_SCRIPT_ORDER`），其余网页脚本按需注入，同样必须是 classic 脚本（不含 ESM 语法）。
+2. **`npm test`** — `tools/unit/*.test.mjs`，纯 Node 单测；其中 `docs-facts.test.mjs` 会核对 README / 落地页 / SPEC 里写到的服务商数、消息数、白名单数和版本号是否与代码一致，改了这些数字要同步改文档。
 3. **消息协议单一事实源**：新增消息类型必须先在 `extension/message-protocol.js` 的 `MESSAGE_TYPES` 登记并写校验器，background 注册表必须与之一一对应。
 4. **信任边界**：`sender.id !== chrome.runtime.id` 的消息一律拒绝；网页可见类型仅限 `CONTENT_ALLOWED_TYPES` 子集。修改路由/校验逻辑必须附带对应单测。
 5. **界面文案双语**：新增/修改用户可见文案必须在 `extension/i18n.js` 的 `DICTS.zh` 与 `DICTS.en` 各加同名键（`node tools/check-dict.cjs` 校验对齐），页面用 `t()`/`T()`/`M()` 取值，不得再写死单一语言。改完界面文案跑 `npm run verify:ui` 与 `npm run verify:pet`（含英文档断言）。
@@ -43,7 +43,7 @@ CI 会强制以下检查，本地先跑一遍能省一轮返工：
 
 ## 报告问题
 
-- Bug：用 Issue 模板的「缺陷报告」，附上 `chrome://extensions` 的扩展版本和设置页「数据与隐私 → 导出诊断」的脱敏 JSON。
+- Bug：用 Issue 模板的「缺陷报告」，附上 `chrome://extensions` 的扩展版本和设置页「运行诊断 → 导出诊断 JSON」的脱敏 JSON。
 - 安全漏洞：**不要**开公开 Issue，见 [SECURITY.md](SECURITY.md)。
 
 ## 许可证

@@ -1,26 +1,39 @@
 # RoamCat · 随心阅
 
-> RoamCat is a free, open-source (MPL-2.0) dual-mode reading extension for Chrome and Edge (Manifest V3). It helps Chinese-speaking readers on English websites in two ways: (1) Bilingual Translation — in-place English-Chinese paragraph pairs that follow your reading position; (2) Reading Assistance — the page stays English, with sparse hints on hard words, D+click word cards, sentence deconstruction and on-demand rescue that fade as you read. Local-first: no vendor servers, no telemetry, reading history off by default. AI comes from the user's choice — 28 bring-your-own API providers, a bundled local MiniLM model, or a local connector reusing signed-in ChatGPT / Grok / Antigravity (Google) CLI subscriptions. Includes a built-in PDF/EPUB reader and a draggable companion-cat widget. UI is fully bilingual (zh/en). Status: 0.0.1 prerelease, developer-mode install, not yet on the Chrome Web Store.
+> RoamCat (随心阅) is a free, open-source (MPL-2.0) browser extension for Chrome and Edge (Manifest V3) that helps Chinese-speaking readers read English websites. It has two modes on one engine: Bilingual Translation (in-place English-Chinese paragraph pairs that follow your reading position) and Reading Assistance (the page stays English; sparse hints, D+click word cards, sentence deconstruction and on-demand rescue fade as you improve). It also has a built-in PDF/EPUB reader, bilingual YouTube captions and opt-in Twitch chat translation. Local-first: no RoamCat servers, no telemetry, reading history off by default. AI comes from the user's choice — 33 bring-your-own API providers, a bundled offline MiniLM topic classifier, or a local connector reusing signed-in ChatGPT / Grok / Antigravity (Google) CLI subscriptions. UI is fully bilingual (zh/en). Status: 0.x (pre-1.0), developer-mode install, not yet on the Chrome Web Store.
+
+Key facts (checked against the v0.7.0 source code; last updated 2026-11-01):
+
+- Name: RoamCat is the product name and 随心阅 its Chinese name; the full name is written "RoamCat · 随心阅"
+- Positioning: an open-source, local-first alternative in the bilingual-translation / reading-assistance space (compare: Immersive Translate, Relingo, 彩云小译); a rebuild of the open-source RelyLess project
+- Platforms: Chrome / Edge 125+ desktop; no Firefox, Safari or mobile support
+- Cost: free software; users only pay their own chosen API provider, if any
+- Install: download the zip from GitHub Releases and load it unpacked in developer mode, or build from source (Node.js 22.13+); Chrome Web Store and Edge Add-ons listings are in progress
+- Privacy: API keys in chrome.storage.local only; content scripts may send only 38 whitelisted message types out of 81; no remote code execution
+- Tech: Manifest V3, Lit + Vite pages, lit-html content UI, Native Messaging connector (Node.js 20+), ONNX MiniLM local inference
+
+## Start here
+
+- [Landing page (English)](https://dapao-777.github.io/roamcat/): overview, facts table, FAQ and install steps
+- [Landing page (中文)](https://dapao-777.github.io/roamcat/zh.html): 中文落地页：概览、速览表、常见问题、安装步骤
+- [llms-full.txt](https://dapao-777.github.io/roamcat/llms-full.txt): complete plain-text reference for AI assistants — features, providers, permissions, privacy, limitations, comparison, FAQ
 
 ## Project
 
-- [Repository](https://github.com/dapao-777/roamcat): source, issues and releases
+- [Repository](https://github.com/dapao-777/roamcat): source, issues and discussions
 - [Releases](https://github.com/dapao-777/roamcat/releases): 0.7.0 extension package (zip) with SHA256SUMS
 - [README (English)](https://github.com/dapao-777/roamcat/blob/main/README.en.md): features, modes, quick start, architecture
 - [README (中文)](https://github.com/dapao-777/roamcat/blob/main/README.md): 中文说明
-- [Site (中文)](https://dapao-777.github.io/roamcat/zh.html): Chinese landing page
-
-## Key facts
-
-- Positioning: an open-source, local-first alternative in the bilingual-translation / reading-assistance space (compare: Immersive Translate, Relingo, 彩云小译); a rebuild of the open-source RelyLess project
-- Platforms: Chrome / Edge 125+ desktop; no Firefox or Safari
-- Cost: free software; users only pay their own chosen API provider if any
-- Privacy: API keys in chrome.storage.local only; content scripts limited to 33 whitelisted message types; no remote code
-- Tech: Manifest V3, Lit + Vite pages, lit-html content UI, Native Messaging connector (Node.js 20+), ONNX MiniLM local inference
+- [Changelog](https://github.com/dapao-777/roamcat/blob/main/CHANGELOG.md): version history (Keep a Changelog, in Chinese)
 
 ## Docs
 
-- [Product docs](https://github.com/dapao-777/roamcat/blob/main/roamcat-0.0.1/README.md): feature details and configuration
-- [Engineering spec](https://github.com/dapao-777/roamcat/blob/main/roamcat-0.0.1/SPEC.md): message protocol, storage model, security boundaries
-- [Privacy policy](https://github.com/dapao-777/roamcat/blob/main/roamcat-0.0.1/PRIVACY.md): full data-handling disclosure
-- [Changelog](https://github.com/dapao-777/roamcat/blob/main/CHANGELOG.md): version history
+- [Product docs](https://github.com/dapao-777/roamcat/blob/main/roamcat-0.0.1/README.md): feature details and configuration (Chinese)
+- [Privacy policy](https://github.com/dapao-777/roamcat/blob/main/roamcat-0.0.1/PRIVACY.md): full data-handling disclosure and the reason for each permission
+- [Engineering spec](https://github.com/dapao-777/roamcat/blob/main/roamcat-0.0.1/SPEC.md): message protocol, storage model, security boundaries (Chinese)
+
+## Optional
+
+- [Contributing](https://github.com/dapao-777/roamcat/blob/main/CONTRIBUTING.md): how to build, test and send changes
+- [Security policy](https://github.com/dapao-777/roamcat/blob/main/SECURITY.md): private vulnerability reporting
+- [License](https://github.com/dapao-777/roamcat/blob/main/LICENSE): MPL-2.0 text

@@ -16,7 +16,7 @@ RoamCat 是一个面向英语阅读的 Chrome / Edge 扩展，按双模式组织
 
 两个模式共用同一条本地优先的模型链路与同一套数据边界。自动辅助只面向能可靠识别的主要阅读区域；划词、选段翻译与查词卡片在全页（含侧栏与导航）可用，输入框、表单、代码块与交互控件不处理；结果仍取决于所选模型，可能超时、失败或不完整。
 
-> 当前版本：`v0.0.1` prerelease。尚未发布到 Chrome Web Store 或 Microsoft Edge Add-ons。
+> 当前版本见 [GitHub Releases](https://github.com/dapao-777/roamcat/releases/latest)（0.x，开发者模式安装）。尚未发布到 Chrome Web Store 或 Microsoft Edge Add-ons。
 
 ## 产品理念
 
@@ -55,9 +55,9 @@ RoamCat 是一个面向英语阅读的 Chrome / Edge 扩展，按双模式组织
 
 工具栏弹窗的 **本页双语翻译 → 翻译本页** 会立即开始翻译。`Alt+Shift+T` 打开同一入口并直接开始；浏览器不支持自动打开时，请点击工具栏图标。快捷键可在浏览器扩展快捷键页修改，原有 `Alt+Shift+S` 不变。
 
-进度按正文单元计数，区分已译、待阅读、失败和跳过。只处理视口附近正文，不后台预译整篇；无法安全原位插入的特殊布局保留英文并报告跳过。失败段落先按分级退避自动重试（约 2.5 秒、6 秒、14 秒，鉴权等不可恢复的错误不重试），用尽后才显示「重试这一段」；已成功部分不会重发。停止保留已有译文，点「继续」即可接着未完成段落；返回英文只移除扩展插入物，不回滚站点更新。已发出的请求可能继续计费。
+进度按正文单元计数，区分已译、待阅读、失败和跳过。只处理视口附近正文，不后台预译整篇；无法安全原位插入的特殊布局保留英文并报告跳过。失败段落先按分级退避自动重试（约 2.5 秒、6 秒、14 秒，鉴权等不可恢复的错误不重试），用尽后才显示「重试这一段」；已成功部分不会重发。停止保留已有译文，点「继续」即可接着未完成段落；返回英文只移除扩展插入物，不回滚站点更新。已发出的请求可能继续计费。有译文时，网页左下角和弹窗「本页双语翻译」里都可以在「双语」与「仅译文」之间一键切换，选择会记住。
 
-使用 ChatGPT 订阅连接器时，扩展与连接器须一起更新，并重新运行连接器安装程序；本次全文协议不兼容旧连接器。
+使用订阅连接器时，扩展与连接器须一起更新：升级扩展后请重新运行一次连接器安装命令；旧连接器不支持较新的功能（例如云端听写），扩展会提示重新安装。
 
 ## 路线图
 
@@ -72,11 +72,11 @@ RoamCat 是一个面向英语阅读的 Chrome / Edge 扩展，按双模式组织
 
 要求 Chrome 或 Edge **125 及以上版本**。
 
-预发布阶段推荐**从源码构建**（见下方[从源码开发](#从源码开发)）：`npm ci && npm run build` 后加载 `dist/extension`，扩展 ID 固定，连接器不会因移动目录失效。
+可以直接下载 Release 安装包（见下），也可以**从源码构建**（见下方[从源码开发](#从源码开发)）：`npm ci && npm run build` 后加载 `dist/extension`，扩展 ID 固定，连接器不会因移动目录失效。
 
-### 从 Release 安装（发布后提供）
+### 从 Release 安装
 
-免构建的预发布安装包 `roamcat-<版本>-extension.zip` 会在发布后附在 GitHub Releases 中：
+免构建安装包 `roamcat-<版本>-extension.zip` 附在 [GitHub Releases](https://github.com/dapao-777/roamcat/releases) 中：
 
 1. 从 GitHub Releases 下载安装包（附 `SHA256SUMS` 可校验）并解压，得到与安装包版本一致的 `roamcat-<版本>/` 目录，其中包含 `extension/`（`npm run build:release` 产物）、`connector/`（订阅连接器）、`README.md`、`LICENSE` 与 `NOTICE.txt`。
 2. 打开扩展管理页：
@@ -121,7 +121,7 @@ Windows 也可用：
 irm https://x.ai/cli/install.ps1 | iex
 ```
 
-然后在仓库的 `roamcat-0.0.1/` 目录下运行安装程序（从仓库根目录运行时写成 `node roamcat-0.0.1/connector/install.mjs …`）。把下面的占位符换成扩展管理页显示的**实际扩展 ID**——从源码构建的 `dist/extension` 固定为 `afpeggkplomdjjiemgajjgcajieincng`：
+然后在 `roamcat-0.0.1/` 目录（仓库中的目录；Release 安装包里是解压出的 `roamcat-<版本>/`）下运行安装程序（从仓库根目录运行时写成 `node roamcat-0.0.1/connector/install.mjs …`）。把下面的占位符换成扩展管理页显示的**实际扩展 ID**——从源码构建的 `dist/extension` 固定为 `afpeggkplomdjjiemgajjgcajieincng`：
 
 ```sh
 node connector/install.mjs --extension-id <YOUR_ACTUAL_EXTENSION_ID>
@@ -155,7 +155,7 @@ irm https://antigravity.google/cli/install.ps1 | iex
 
 先在终端运行 `agy`，按提示用你的 Google 账号（Google AI Pro / Ultra 订阅）完成登录。登录态保存在系统钥匙串中，连接器直接复用，不在扩展内走网页登录。
 
-然后在仓库的 `roamcat-0.0.1/` 目录下运行安装程序（从仓库根目录运行时写成 `node roamcat-0.0.1/connector/install.mjs …`）。把下面的占位符换成扩展管理页显示的**实际扩展 ID**——从源码构建的 `dist/extension` 固定为 `afpeggkplomdjjiemgajjgcajieincng`：
+然后在 `roamcat-0.0.1/` 目录（仓库中的目录；Release 安装包里是解压出的 `roamcat-<版本>/`）下运行安装程序（从仓库根目录运行时写成 `node roamcat-0.0.1/connector/install.mjs …`）。把下面的占位符换成扩展管理页显示的**实际扩展 ID**——从源码构建的 `dist/extension` 固定为 `afpeggkplomdjjiemgajjgcajieincng`：
 
 ```sh
 node connector/install.mjs --extension-id <YOUR_ACTUAL_EXTENSION_ID>
@@ -179,7 +179,7 @@ node connector/install.mjs --extension-id <YOUR_ACTUAL_EXTENSION_ID>
 npm install -g @openai/codex
 ```
 
-然后在仓库的 `roamcat-0.0.1/` 目录下运行安装程序（从仓库根目录运行时写成 `node roamcat-0.0.1/connector/install.mjs …`）。把下面的占位符换成扩展管理页显示的**实际扩展 ID**——从源码构建的 `dist/extension` 固定为 `afpeggkplomdjjiemgajjgcajieincng`：
+然后在 `roamcat-0.0.1/` 目录（仓库中的目录；Release 安装包里是解压出的 `roamcat-<版本>/`）下运行安装程序（从仓库根目录运行时写成 `node roamcat-0.0.1/connector/install.mjs …`）。把下面的占位符换成扩展管理页显示的**实际扩展 ID**——从源码构建的 `dist/extension` 固定为 `afpeggkplomdjjiemgajjgcajieincng`：
 
 ```sh
 node connector/install.mjs --extension-id <YOUR_ACTUAL_EXTENSION_ID>
@@ -187,7 +187,7 @@ node connector/install.mjs --extension-id <YOUR_ACTUAL_EXTENSION_ID>
 
 不要复制他人的扩展 ID，也不要把任何特定电脑上的 ID 写进脚本或公开配置。不带 `--backend` 时会一次注册本机找得到 CLI 的全部通道（找不到的跳过）；只装 ChatGPT 时加 `--backend chatgpt`。默认会为 Chrome 和 Edge 注册连接器；可用 `--browser chrome`、`--browser edge` 或逗号分隔的列表限制目标浏览器（另支持 `chromium`、`chrome-beta`、`chrome-testing`，仅注册显式指定的浏览器；`--extension-id` 支持逗号分隔的多个 ID）。安装后重新加载扩展，在“模型服务”中选择 **ChatGPT 订阅**，页面会自动检测，并按需完成 ChatGPT 登录。
 
-移动扩展目录后，浏览器可能生成新 ID；此时必须使用新的实际 ID 重新安装连接器。更稳妥的升级方式是始终保留原目录位置。连接器安装程序实现了 macOS / Linux / Windows 的 Native Messaging 注册，目前以 macOS 实测为主；Linux 仍需更多验证，Windows 上 ChatGPT 连接器为新增支持（经 `codex.cmd` + shell 启动），如遇启动失败请用 `--codex` 指定完整路径后重试。重装/更新不会覆盖连接器已有的登录态（`auth.json` 仅缺失时才从 `~/.codex` 复制）。
+移动扩展目录后，浏览器可能生成新 ID；此时必须使用新的实际 ID 重新安装连接器。更稳妥的升级方式是始终保留原目录位置。连接器安装程序实现了 macOS / Linux / Windows 的 Native Messaging 注册；常驻服务与配对令牌有端到端门禁（`npm run verify:service`），Linux 实测覆盖较少。Windows 上 ChatGPT 连接器经 `codex.cmd` + shell 启动，如遇启动失败请用 `--codex` 指定完整路径后重试。重装/更新不会覆盖连接器已有的登录态（`auth.json` 仅缺失时才从 `~/.codex` 复制）。
 
 ChatGPT 订阅是否包含可用 Codex 权益、可选模型和调用额度由 OpenAI 账户状态决定，订阅不等于无限或保证可用。
 
@@ -219,9 +219,9 @@ ChatGPT 订阅是否包含可用 Codex 权益、可选模型和调用额度由 O
 
 ## 从源码开发
 
-仓库根目录包含本目录（产品包 `roamcat-0.0.1/`）、`src/` 页面应用层、`build/` 构建脚本、`tools/` 验证脚本和单元测试，检出体积约 48 MB。`package.json` 保持 `private: true` 是为了防止误发布到 npm，不影响 GitHub 源码公开。
+仓库根目录包含本目录（产品包 `roamcat-0.0.1/`）、`src/` 页面应用层、`build/` 构建脚本、`tools/` 验证脚本和单元测试，检出体积较大（含本地模型、截图与介绍影片）。`package.json` 保持 `private: true` 是为了防止误发布到 npm，不影响 GitHub 源码公开。
 
-项目构建与验证要求 Node.js **22.13 或更新版本**（Node 24 已验证）；本机连接器可单独使用 Node 20.11+。单元测试需先安装项目依赖；浏览器加载请先构建：
+项目构建与验证要求 Node.js **22.13 或更新版本**（Node 24 已验证）；本机连接器可单独使用 Node.js 20+。单元测试需先安装项目依赖；浏览器加载请先构建：
 
 ```sh
 git clone https://github.com/dapao-777/roamcat.git

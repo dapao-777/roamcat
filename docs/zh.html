@@ -10,29 +10,160 @@
 <link rel="alternate" hreflang="en" href="https://dapao-777.github.io/roamcat/">
 <link rel="alternate" hreflang="zh-CN" href="https://dapao-777.github.io/roamcat/zh.html">
 <link rel="alternate" hreflang="x-default" href="https://dapao-777.github.io/roamcat/">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+<meta name="author" content="fenghua">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f7f6f3">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#141312">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="RoamCat · 随心阅">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:locale:alternate" content="en_US">
 <meta property="og:url" content="https://dapao-777.github.io/roamcat/zh.html">
 <meta property="og:title" content="RoamCat · 随心阅 — 中英双语阅读扩展（Chrome / Edge）">
 <meta property="og:description" content="双模式英文阅读助手：要对照就双语，不要就稀疏提示，英文原文始终在场。开源、本地优先、无遥测。">
 <meta property="og:image" content="https://dapao-777.github.io/roamcat/assets/og-cover.png">
 <meta property="og:image:width" content="1280">
 <meta property="og:image:height" content="640">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:alt" content="RoamCat 随心阅——Chrome / Edge 双模式英文阅读扩展：双语网页与视频字幕、稀疏提示阅读辅助，本地优先、无遥测，自备 33 家 API 或复用 AI 订阅">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="RoamCat · 随心阅 — 中英双语阅读扩展">
+<meta name="twitter:description" content="Chrome / Edge 双模式英文阅读助手：双语对照或稀疏提示。开源、本地优先、自备 API。">
 <meta name="twitter:image" content="https://dapao-777.github.io/roamcat/assets/og-cover.png">
+<meta name="twitter:image:alt" content="RoamCat 随心阅——Chrome / Edge 双模式英文阅读扩展">
 <link rel="icon" type="image/svg+xml" href="assets/roamcat.svg">
+<link rel="icon" type="image/png" sizes="48x48" href="assets/favicon-48.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="preload" href="assets/slk-700.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/slk-400.woff2" as="font" type="font/woff2" crossorigin>
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'unsafe-inline'; font-src 'self'; script-src 'none'; connect-src 'none'; base-uri 'self'; form-action 'none'">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://dapao-777.github.io/roamcat/#website",
+      "url": "https://dapao-777.github.io/roamcat/",
+      "name": "RoamCat · 随心阅",
+      "alternateName": ["RoamCat", "随心阅"],
+      "description": "RoamCat · 随心阅 官方网站——免费开源的 Chrome / Edge 中英双语阅读扩展。",
+      "inLanguage": ["en", "zh-CN"],
+      "publisher": { "@id": "https://dapao-777.github.io/roamcat/#author" }
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://dapao-777.github.io/roamcat/zh.html#webpage",
+      "url": "https://dapao-777.github.io/roamcat/zh.html",
+      "name": "RoamCat · 随心阅 — 中英双语阅读扩展（Chrome / Edge）",
+      "description": "RoamCat 随心阅是免费开源（MPL-2.0）的双模式英文阅读扩展：本页双语翻译 + 稀疏提示阅读辅助，保留英文原文。本地优先、无遥测，支持 33 家自备 API 或复用 ChatGPT / Grok / Google 订阅。适用于 Chrome 与 Edge（Manifest V3）。",
+      "inLanguage": "zh-CN",
+      "isPartOf": { "@id": "https://dapao-777.github.io/roamcat/#website" },
+      "about": { "@id": "https://dapao-777.github.io/roamcat/#software" },
+      "primaryImageOfPage": { "@type": "ImageObject", "url": "https://dapao-777.github.io/roamcat/assets/og-cover.png", "width": 1280, "height": 640 },
+      "dateModified": "2026-11-01"
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": "https://dapao-777.github.io/roamcat/#software",
+      "name": "RoamCat · 随心阅",
+      "alternateName": ["RoamCat", "随心阅"],
+      "description": "RoamCat（随心阅）是免费开源的 Chrome / Edge 浏览器扩展，帮助中文读者阅读英文网站。双语翻译按阅读位置在每段英文旁插入中文对照；阅读辅助保留整页英文，只给随你进步而渐退的稀疏提示。本地优先、无遥测。",
+      "applicationCategory": "BrowserApplication",
+      "applicationSubCategory": "用于中英双语翻译与英文阅读辅助的浏览器扩展",
+      "operatingSystem": "Chrome 125+, Edge 125+",
+      "browserRequirements": "需要桌面端 Chrome 或 Microsoft Edge 125 及以上（Manifest V3）。",
+      "softwareVersion": "0.7.0",
+      "dateModified": "2026-11-01",
+      "releaseNotes": "https://github.com/dapao-777/roamcat/releases/tag/v0.7.0",
+      "softwareRequirements": "自备 API 无需其他环境；可选的订阅连接器需要 Node.js 20+ 以及已登录的 Codex、Grok 或 Antigravity CLI。",
+      "softwareHelp": { "@type": "WebPage", "url": "https://github.com/dapao-777/roamcat/blob/main/README.md" },
+      "inLanguage": ["zh-CN", "en"],
+      "isAccessibleForFree": true,
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "license": "https://www.mozilla.org/MPL/2.0/",
+      "url": "https://dapao-777.github.io/roamcat/zh.html",
+      "downloadUrl": "https://github.com/dapao-777/roamcat/releases/latest",
+      "sameAs": ["https://github.com/dapao-777/roamcat"],
+      "image": "https://dapao-777.github.io/roamcat/assets/og-cover.png",
+      "screenshot": [
+        { "@type": "ImageObject", "url": "https://dapao-777.github.io/roamcat/assets/reader-dark.png", "width": 1440, "height": 1000, "caption": "内置阅读器双语对照" },
+        { "@type": "ImageObject", "url": "https://dapao-777.github.io/roamcat/assets/pet-summary-dark.png", "width": 584, "height": 479, "caption": "伴读猫文章摘要卡" },
+        { "@type": "ImageObject", "url": "https://dapao-777.github.io/roamcat/assets/widget-wordcard-dark.png", "width": 360, "height": 338, "caption": "按住 D 单击打开的查词卡片" },
+        { "@type": "ImageObject", "url": "https://dapao-777.github.io/roamcat/assets/banner-welcome-light.png", "width": 1440, "height": 628, "caption": "欢迎页与新手引导" }
+      ],
+      "author": { "@id": "https://dapao-777.github.io/roamcat/#author" },
+      "publisher": { "@id": "https://dapao-777.github.io/roamcat/#author" },
+      "isBasedOn": { "@type": "SoftwareSourceCode", "name": "RelyLess", "codeRepository": "https://github.com/rockythink/relyless" },
+      "featureList": [
+        "整页双语翻译：按阅读位置在每段英文旁插入中文对照，可一键切换「双语 / 仅译文」",
+        "阅读辅助模式：难点词稀疏提示随读渐退，按住 D 单击查词卡片，按需救援与句子解构",
+        "内置 PDF / EPUB 阅读器，共用同一套双语引擎",
+        "YouTube 双语字幕与默认关闭的 Twitch 直播聊天翻译",
+        "文章摘要与可拖拽的伴读猫小挂件",
+        "33 家自备 API（8 种协议），含用于本地模型的 Ollama",
+        "可选的本机连接器：复用 ChatGPT、Grok、Google（Antigravity）CLI 订阅",
+        "内置离线模型做页面领域识别",
+        "本地优先：无自有服务器、无遥测，阅读记录默认关闭",
+        "全界面中英双语"
+      ],
+      "keywords": "双语翻译, 英文阅读辅助, Chrome 扩展, Edge 扩展, Manifest V3, 开源, 自备 API, 本地优先, PDF 阅读器, EPUB 阅读器, YouTube 双语字幕"
+    },
+    {
+      "@type": "SoftwareSourceCode",
+      "@id": "https://dapao-777.github.io/roamcat/#source",
+      "name": "RoamCat 源代码",
+      "codeRepository": "https://github.com/dapao-777/roamcat",
+      "programmingLanguage": "JavaScript",
+      "runtimePlatform": "Chrome 与 Edge 125+（Manifest V3）",
+      "license": "https://www.mozilla.org/MPL/2.0/",
+      "targetProduct": { "@id": "https://dapao-777.github.io/roamcat/#software" },
+      "author": { "@id": "https://dapao-777.github.io/roamcat/#author" }
+    },
+    {
+      "@type": "Person",
+      "@id": "https://dapao-777.github.io/roamcat/#author",
+      "name": "fenghua",
+      "url": "https://github.com/dapao-777",
+      "sameAs": ["https://github.com/dapao-777"]
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://dapao-777.github.io/roamcat/zh.html#faq",
+      "mainEntityOfPage": { "@id": "https://dapao-777.github.io/roamcat/zh.html#webpage" },
+      "mainEntity": [
+        { "@type": "Question", "name": "RoamCat（随心阅）是什么？", "acceptedAnswer": { "@type": "Answer", "text": "RoamCat（随心阅）是免费开源的 Chrome / Edge 浏览器扩展，帮助中文读者阅读英文网站。一个引擎、两种模式：双语翻译按阅读位置在每段英文旁插入中文对照；阅读辅助保留整页英文，只给随你进步而渐退的稀疏提示。本地优先，没有自有服务器、不采集遥测。" } },
+        { "@type": "Question", "name": "RoamCat 收费吗？", "acceptedAnswer": { "@type": "Answer", "text": "不收——MPL-2.0 开源，无账户、无付费档、无遥测。只有你自己选择接入付费 API 时才需要向该服务商付费；内置本地模型与订阅连接器本身不额外收费。" } },
+        { "@type": "Question", "name": "有没有沉浸式翻译的开源替代？", "acceptedAnswer": { "@type": "Answer", "text": "RoamCat 是其中一个：MPL-2.0 开源、自备模型（33 家 API、本地 Ollama，或复用已有的 ChatGPT / Grok / Google 订阅）、无遥测，并提供以英文原文为主的第二种模式。沉浸式翻译是平台更全、更省心的成熟整页翻译工具；其他开源选择还有 kiss-translator、openai-translator。" } },
+        { "@type": "Question", "name": "RoamCat 会把我的阅读数据传到哪里吗？", "acceptedAnswer": { "@type": "Answer", "text": "项目没有自有服务器。阅读记录默认关闭、按站授权；页面文本只在你主动调用模型功能时离开本机，且直达你配置的服务商，不经任何中转。" } },
+        { "@type": "Question", "name": "支持哪些浏览器？", "acceptedAnswer": { "@type": "Answer", "text": "桌面端 Chrome 与 Edge 125+（Manifest V3）。暂不支持 Firefox 与 Safari。" } },
+        { "@type": "Question", "name": "能在 Chrome 应用商店安装吗？", "acceptedAnswer": { "@type": "Answer", "text": "暂时不能。请从 GitHub Releases 下载安装包并解压，打开 chrome://extensions（或 edge://extensions），开启开发者模式，「加载已解压的扩展」选择里面的 extension 文件夹。Chrome Web Store 与 Edge Add-ons 上架进行中。" } },
+        { "@type": "Question", "name": "能整页翻译吗？", "acceptedAnswer": { "@type": "Answer", "text": "能——双语翻译模式按阅读位置逐段插入中文对照，并可一键切换「双语 / 仅译文」。阅读辅助模式则保持整页英文，只给随读渐退的稀疏提示。" } },
+        { "@type": "Question", "name": "支持 PDF 和 EPUB 吗？", "acceptedAnswer": { "@type": "Answer", "text": "支持——内置阅读器可打开本地 PDF / EPUB 或粘贴的文章，共用同一套双语引擎。" } },
+        { "@type": "Question", "name": "能翻译 YouTube 字幕或 Twitch 直播聊天吗？", "acceptedAnswer": { "@type": "Answer", "text": "能。带字幕轨道的 YouTube 视频可显示原文与中文译文；没有字幕的视频可手动开启云端听写（需另行安装本机 Google 订阅连接器）。Twitch 直播聊天翻译默认关闭，开启后只翻译新出现的公开聊天消息。" } },
+        { "@type": "Question", "name": "可以用哪些模型？", "acceptedAnswer": { "@type": "Answer", "text": "33 家自备 API、8 种协议——OpenAI、Anthropic、Gemini、DeepSeek、Grok、OpenRouter、Groq、Mistral、Ollama、Azure OpenAI、Amazon Bedrock、阿里云百炼、火山引擎、Kimi、阶跃星辰等，也支持自定义 OpenAI 兼容接口；另有内置本地模型做页面领域识别，或经本机连接器复用已登录的 ChatGPT / Grok / Antigravity CLI 订阅——免 API Key。" } },
+        { "@type": "Question", "name": "没有 API Key，能用 ChatGPT / Grok / Google 订阅吗？", "acceptedAnswer": { "@type": "Answer", "text": "可以，通过可选的本机连接器。它复用你已登录的官方 CLI——Codex CLI（ChatGPT）、Grok CLI（SuperGrok / X Premium+）、Antigravity agy（Google AI Pro / Ultra）——经 Native Messaging 与本机 127.0.0.1 服务连接。需要 Node.js 20+ 并已安装对应 CLI；费用、额度与地区可用性由各服务商决定。" } },
+        { "@type": "Question", "name": "能完全本地运行（Ollama）吗？", "acceptedAnswer": { "@type": "Answer", "text": "能。选择 Ollama 服务商（默认 http://localhost:11434），无需 API Key，页面文本只会发往你自己的 Ollama 服务。内置的 MiniLM 只在离线状态下做页面领域识别——翻译与解释始终需要你配置的模型服务。" } },
+        { "@type": "Question", "name": "RoamCat 申请哪些权限，为什么？", "acceptedAnswer": { "@type": "Answer", "text": "共 8 项 Chrome 权限——activeTab、scripting、storage、nativeMessaging、offscreen、contextMenus、tts、webNavigation——以及 http / https 站点访问（用于在你选择的任意网站上阅读与翻译）。内容脚本只能发送 81 种内部消息中的 38 种；API Key 不会进入内容脚本。隐私政策逐项列出了每项权限及理由。" } },
+        { "@type": "Question", "name": "怎么安装 RoamCat？", "acceptedAnswer": { "@type": "Answer", "text": "从 GitHub Releases 下载最新安装包并解压，打开 chrome://extensions，开启开发者模式，选择「加载已解压的扩展」并指向里面的 extension 文件夹；也可用 Node.js 22.13+ 从源码构建（npm ci、npm run build）后加载 dist/extension。" } }
+      ]
+    }
+  ]
+}
+</script>
 <style>
 @font-face{font-family:'Silkscreen';src:url('assets/slk-400.woff2') format('woff2');font-weight:400;font-display:swap}
 @font-face{font-family:'Silkscreen';src:url('assets/slk-700.woff2') format('woff2');font-weight:700;font-display:swap}
+/* 调色板抄自产品 src/styles/tokens.css 的 --rc-canvas / --rc-surface / --rc-ink 等；tools/unit/site-seo.test.mjs 守住对应关系 */
 :root{
-  --paper:#faf9f4;--card:#fffdf8;--ink:#161511;--ink-soft:#55524a;--line:#d9d4c8;
-  --accent:#161511;--amber:#b4761a;--paper-2:#f1eee4;
+  --paper:#f7f6f3;--card:#ffffff;--ink:#1c1b18;--ink-soft:#57534b;--line:#d5d1c8;
+  --accent:#1c1b18;--amber:#9f4d25;--paper-2:#f2f0ec;
 }
 @media (prefers-color-scheme:dark){
   :root{
-    --paper:#0b0e13;--card:#12161d;--ink:#ece7d9;--ink-soft:#a8a294;--line:#2a3038;
-    --accent:#ece7d9;--amber:#f0a63c;--paper-2:#161a21;
+    --paper:#141312;--card:#1d1c1a;--ink:#edebe6;--ink-soft:#bab5ab;--line:rgba(255,250,240,.16);
+    --accent:#edebe6;--amber:#e8946a;--paper-2:#191816;
   }
 }
 *{box-sizing:border-box}
@@ -82,7 +213,7 @@ h2{font-family:'Silkscreen','Microsoft YaHei',monospace;font-size:clamp(19px,3.4
 .card p{margin:0;color:var(--ink-soft);font-size:14px}
 .shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
 .shots figure{margin:0;border:1.5px solid var(--line);border-radius:10px;overflow:hidden;background:var(--card)}
-.shots img{width:100%;display:block}
+.shots img{width:100%;height:auto;display:block}
 .shots figcaption{font-size:12.5px;color:var(--ink-soft);padding:8px 12px;border-top:1px solid var(--line)}
 table{width:100%;border-collapse:collapse;font-size:13.5px;background:var(--card);border-radius:10px;overflow:hidden}
 th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}
@@ -108,15 +239,33 @@ code{background:var(--paper-2);border:1px solid var(--line);border-radius:5px;pa
 footer{border-top:1px solid var(--line);padding:26px 0 40px;color:var(--ink-soft);font-size:13px}
 footer .links{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:10px}
 .mut{color:var(--ink-soft)}
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.lede{font-size:16px;max-width:780px;margin:0 0 22px}
+dl.facts{margin:0;border:1.5px solid var(--line);border-radius:10px;background:var(--card);overflow:hidden}
+dl.facts>div{display:grid;grid-template-columns:150px 1fr;border-top:1px solid var(--line)}
+dl.facts>div:first-child{border-top:0}
+dl.facts dt{margin:0;padding:9px 14px;font-weight:600;font-size:13px;background:var(--paper-2)}
+dl.facts dd{margin:0;padding:9px 14px;font-size:13.5px;color:var(--ink-soft)}
+.table-wrap{overflow-x:auto}
+.table-wrap table{min-width:640px}
+tbody th{background:none;font-size:inherit;letter-spacing:0;font-weight:600;white-space:nowrap}
+.prov{margin-top:16px}
+@media (max-width:560px){
+  header{flex-wrap:wrap}
+  nav{margin-left:0;width:100%;flex-wrap:wrap}
+  dl.facts>div{grid-template-columns:1fr}
+  dl.facts dt{padding-bottom:3px}
+  dl.facts dd{padding-top:3px}
+}
 </style>
 </head>
 <body>
 <div class="wrap">
 
 <header>
-  <img src="assets/roamcat.svg" alt="RoamCat 标志">
+  <img src="assets/roamcat.svg" alt="RoamCat 标志" width="34" height="34">
   <span class="brand">RoamCat · 随心阅</span>
-  <nav>
+  <nav aria-label="主导航">
     <a href="https://github.com/dapao-777/roamcat">GitHub</a>
     <a href="https://github.com/dapao-777/roamcat/releases">下载</a>
     <a href="https://github.com/dapao-777/roamcat/blob/main/README.md">文档</a>
@@ -124,8 +273,10 @@ footer .links{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:10px}
   </nav>
 </header>
 
+<main id="main">
+
 <div class="hero">
-  <img class="logo" src="assets/roamcat.svg" alt="RoamCat 麻薯猫标志">
+  <img class="logo" src="assets/roamcat.svg" alt="RoamCat 麻薯猫标志" width="92" height="92">
   <h1>像猫一样<br>漫游英文世界</h1>
   <p class="tag">双模式英文阅读扩展（Chrome / Edge）——要对照就双语，不要就稀疏提示。免费、开源（MPL-2.0）、本地优先。</p>
   <div class="pill-row">
@@ -141,6 +292,23 @@ footer .links{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:10px}
   </div>
   <p class="mut" style="font-size:13px;margin-top:18px">0.7.0——从 Releases 下载安装包，以开发者模式加载；Chrome Web Store / Edge Add-ons 上架进行中。</p>
 </div>
+
+<section id="about">
+  <h2>RoamCat 是什么？</h2>
+  <p class="lede"><strong>RoamCat（随心阅）</strong>是免费开源的 Chrome / Edge 浏览器扩展，帮助中文读者阅读英文网站。一个引擎、两种模式：<strong>双语翻译</strong>按阅读位置在每段英文旁插入中文对照；<strong>阅读辅助</strong>保留整页英文，只给随你进步而渐退的稀疏提示。它还支持 PDF 与 EPUB 文件、YouTube 字幕和 Twitch 聊天。AI 来自你自己选的来源——33 家自备 API、本地 Ollama 模型，或你已有的 ChatGPT、Grok、Google 订阅——没有自有服务器，也不采集遥测。</p>
+  <dl class="facts">
+    <div><dt>是什么</dt><dd>浏览器扩展（Manifest V3），为阅读英文网页、文档、视频字幕与直播聊天提供中文帮助</dd></div>
+    <div><dt>浏览器</dt><dd>桌面端 Chrome 与 Microsoft Edge 125+；暂不支持 Firefox、Safari</dd></div>
+    <div><dt>价格与许可</dt><dd>免费；MPL-2.0 开源</dd></div>
+    <div><dt>最新版本</dt><dd>0.7.0——<time datetime="2026-11-01">2026-11-01</time> 发布</dd></div>
+    <div><dt>获取方式</dt><dd>GitHub Releases 安装包或源码构建，以开发者模式加载；Chrome Web Store / Edge Add-ons 上架进行中</dd></div>
+    <div><dt>模型来源</dt><dd>33 家自备 API（8 种协议）、本地 Ollama，或经本机连接器复用 ChatGPT / Grok / Google 订阅</dd></div>
+    <div><dt>隐私</dt><dd>无自有服务器、无遥测；阅读记录默认关闭；API Key 只存 <code>chrome.storage.local</code></dd></div>
+    <div><dt>界面语言</dt><dd>中文与英文</dd></div>
+    <div><dt>源代码</dt><dd><a href="https://github.com/dapao-777/roamcat">github.com/dapao-777/roamcat</a></dd></div>
+    <div><dt>渊源</dt><dd>开源项目 <a href="https://github.com/rockythink/relyless">RelyLess</a> 的重构延续</dd></div>
+  </dl>
+</section>
 
 <section id="modes">
   <h2>两种模式，一个引擎</h2>
@@ -162,6 +330,10 @@ footer .links{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:10px}
       <h3>📚 内置阅读器</h3>
       <p>打开 PDF / EPUB 文件或粘贴文章，共用同一套双语引擎——「翻译全文」按你的阅读位置逐段生成中文对照。</p>
     </div>
+    <div class="card">
+      <h3>🎬 视频字幕与直播聊天</h3>
+      <p>带字幕轨道的 YouTube 视频可显示双语字幕；没有字幕的视频可手动开启云端听写（经 Google 订阅连接器）；Twitch 直播聊天翻译需手动开启，默认关闭。</p>
+    </div>
   </div>
 </section>
 
@@ -169,10 +341,10 @@ footer .links{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:10px}
   <h2>读懂真实网页</h2>
   <p class="sub">站点档案覆盖 GitHub、Reddit、Hacker News、Stack Exchange、Discourse、dev.to、Lobsters——代码区、diff、投票构件不进阅读块。</p>
   <div class="shots">
-    <figure><img src="assets/banner-welcome-light.png" alt="RoamCat 欢迎页" loading="lazy"><figcaption>欢迎页与新手引导</figcaption></figure>
-    <figure><img src="assets/reader-dark.png" alt="RoamCat 内置阅读器双语对照" loading="lazy"><figcaption>内置阅读器 · 双语对照</figcaption></figure>
-    <figure><img src="assets/pet-summary-dark.png" alt="伴读猫文章摘要卡" loading="lazy"><figcaption>伴读猫 · 文章摘要</figcaption></figure>
-    <figure><img src="assets/widget-wordcard-dark.png" alt="页内查词卡片" loading="lazy"><figcaption>D + 单击 · 查词卡片</figcaption></figure>
+    <figure><img src="assets/banner-welcome-light.png" alt="RoamCat 欢迎页" width="1440" height="628" loading="lazy" decoding="async"><figcaption>欢迎页与新手引导</figcaption></figure>
+    <figure><img src="assets/reader-dark.png" alt="RoamCat 内置阅读器双语对照" width="1440" height="1000" loading="lazy" decoding="async"><figcaption>内置阅读器 · 双语对照</figcaption></figure>
+    <figure><img src="assets/pet-summary-dark.png" alt="伴读猫文章摘要卡" width="584" height="479" loading="lazy" decoding="async"><figcaption>伴读猫 · 文章摘要</figcaption></figure>
+    <figure><img src="assets/widget-wordcard-dark.png" alt="页内查词卡片" width="360" height="338" loading="lazy" decoding="async"><figcaption>D + 单击 · 查词卡片</figcaption></figure>
   </div>
 </section>
 
@@ -184,6 +356,7 @@ footer .links{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:10px}
     <div class="card"><h3>订阅连接器</h3><p>本机 Native Messaging 复用官方 CLI 权益——Codex CLI（ChatGPT 订阅）、Grok CLI（SuperGrok / X Premium+）、Antigravity <code>agy</code>（Google AI Pro / Ultra），免 API Key。</p></div>
     <div class="card"><h3>本地模型</h3><p>内置 Xenova/all-MiniLM-L6-v2 在离屏文档中做页面领域识别——全程离线，无需下载。</p></div>
   </div>
+  <details class="prov"><summary>全部 33 家服务商</summary><p>OpenAI、Anthropic、Gemini、DeepSeek、Grok（xAI）、OpenRouter、Requesty、OpenCode、Command Code、MiniMax、SiliconFlow、Azure OpenAI、Amazon Bedrock、Groq、DeepInfra、Mistral AI、Together.ai、Cohere、Fireworks AI、Cerebras、Ollama、火山引擎（豆包）、阿里云百炼、月之暗面 Kimi、阶跃星辰、商汤日日新、智谱 GLM、小米 MiMo、腾讯混元 TokenHub、百度千帆、Hugging Face，以及自定义 Chat Completions / Responses 接口，共 8 种协议。想在自己的机器上跑模型，选 Ollama——无需 API Key。</p></details>
 </section>
 
 <section id="privacy">
@@ -191,7 +364,7 @@ footer .links{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:10px}
   <ul class="tight">
     <li>不经营服务器、不采集遥测；阅读记录默认关闭且按站授权；无痕页面不采集。</li>
     <li>API Key 只存 <code>chrome.storage.local</code>——不进内容脚本、诊断日志或连接器。</li>
-    <li>内容脚本仅可用 77 种消息中的 36 种白名单类型；模型输出全部经结构化校验才进入 UI。</li>
+    <li>内容脚本仅可用 81 种消息中的 38 种白名单类型；模型输出全部经结构化校验才进入 UI。</li>
     <li>自定义 API 地址强制 HTTPS（仅本机回环允许 HTTP）；无远端代码执行。</li>
   </ul>
 </section>
@@ -199,35 +372,50 @@ footer .links{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:10px}
 <section id="compare">
   <h2>与同类工具的对比</h2>
   <p class="sub">诚实的定位说明——RoamCat 不打算在所有人手里替代谁。</p>
+  <div class="table-wrap">
   <table>
-    <tr><th></th><th>RoamCat</th><th>沉浸式翻译</th><th>Relingo</th><th>彩云小译</th></tr>
-    <tr><td>思路</td><td>双语对照<em>或</em>保留原文为主的稀疏辅助</td><td>整页双语翻译</td><td>按词频分级高亮</td><td>整页与划词翻译</td></tr>
-    <tr><td>开源</td><td>✅ MPL-2.0</td><td>❌ 闭源</td><td>❌ 闭源</td><td>❌ 闭源</td></tr>
-    <tr><td>模型来源</td><td>33 家自备 API、本地模型，或复用已有 AI 订阅</td><td>内置服务 + 部分 AI 可自备 Key</td><td>内置</td><td>内置</td></tr>
-    <tr><td>费用</td><td>免费</td><td>订阅制免费额度</td><td>订阅制</td><td>订阅制</td></tr>
-    <tr><td>平台</td><td>Chrome / Edge 125+</td><td>Chrome、Edge、Firefox、Safari、移动端</td><td>Chrome、Edge</td><td>Chrome、Edge、App</td></tr>
+    <caption class="sr-only">RoamCat 与沉浸式翻译、Relingo、彩云小译的对比</caption>
+    <thead><tr><th scope="col"><span class="sr-only">维度</span></th><th scope="col">RoamCat</th><th scope="col">沉浸式翻译</th><th scope="col">Relingo</th><th scope="col">彩云小译</th></tr></thead>
+    <tbody>
+    <tr><th scope="row">思路</th><td>双语对照<em>或</em>保留原文为主的稀疏辅助</td><td>整页双语翻译</td><td>按词频分级高亮</td><td>整页与划词翻译</td></tr>
+    <tr><th scope="row">开源</th><td>✅ MPL-2.0</td><td>❌ 闭源</td><td>❌ 闭源</td><td>❌ 闭源</td></tr>
+    <tr><th scope="row">模型来源</th><td>33 家自备 API、本地模型，或复用已有 AI 订阅</td><td>内置服务 + 部分 AI 可自备 Key</td><td>内置</td><td>内置</td></tr>
+    <tr><th scope="row">费用</th><td>免费</td><td>订阅制免费额度</td><td>订阅制</td><td>订阅制</td></tr>
+    <tr><th scope="row">平台</th><td>Chrome / Edge 125+</td><td>Chrome、Edge、Firefox、Safari、移动端</td><td>Chrome、Edge</td><td>Chrome、Edge、App</td></tr>
+    </tbody>
   </table>
-  <p class="mut" style="font-size:13.5px;margin-top:14px">想要最省心、平台最全的整页翻译，沉浸式翻译更成熟。想让英文原文始终主导、想要可审计的开源代码、或想复用已有的 AI 订阅而非再买一个——选 RoamCat。开源邻居：<a href="https://github.com/fishjar/kiss-translator">kiss-translator</a>、<a href="https://github.com/openai-translator/openai-translator">openai-translator</a>。RoamCat 是 <a href="https://github.com/rockythink/relyless">RelyLess</a> 的重构延续。</p>
+  </div>
+  <p class="mut" style="font-size:13.5px;margin-top:14px">想要最省心、平台最全的整页翻译，沉浸式翻译更成熟。想让英文原文始终主导、想要可审计的开源代码、或想复用已有的 AI 订阅而非再买一个——选 RoamCat。开源邻居：<a href="https://github.com/fishjar/kiss-translator">kiss-translator</a>、<a href="https://github.com/openai-translator/openai-translator">openai-translator</a>。RoamCat 是 <a href="https://github.com/rockythink/relyless">RelyLess</a> 的重构延续。对比最近核对于 <time datetime="2026-11-01">2026-11-01</time>——同类产品的功能会变化，请以其官网为准。</p>
 </section>
 
 <section id="faq">
   <h2>常见问题</h2>
-  <details open><summary>RoamCat 收费吗？</summary><p>不收——MPL-2.0 开源，无账户、无付费档、无遥测。只有你自己选择接入付费 API 时才需要向该服务商付费。</p></details>
+  <details open><summary>RoamCat（随心阅）是什么？</summary><p>RoamCat（随心阅）是免费开源的 Chrome / Edge 浏览器扩展，帮助中文读者阅读英文网站。一个引擎、两种模式：双语翻译按阅读位置在每段英文旁插入中文对照；阅读辅助保留整页英文，只给随你进步而渐退的稀疏提示。本地优先，没有自有服务器、不采集遥测。</p></details>
+  <details><summary>RoamCat 收费吗？</summary><p>不收——MPL-2.0 开源，无账户、无付费档、无遥测。只有你自己选择接入付费 API 时才需要向该服务商付费；内置本地模型与订阅连接器本身不额外收费。</p></details>
+  <details><summary>有没有沉浸式翻译的开源替代？</summary><p>RoamCat 是其中一个：MPL-2.0 开源、自备模型（33 家 API、本地 Ollama，或复用已有的 ChatGPT / Grok / Google 订阅）、无遥测，并提供以英文原文为主的第二种模式。沉浸式翻译是平台更全、更省心的成熟整页翻译工具；其他开源选择还有 <a href="https://github.com/fishjar/kiss-translator">kiss-translator</a>、<a href="https://github.com/openai-translator/openai-translator">openai-translator</a>。</p></details>
   <details><summary>RoamCat 会把我的阅读数据传到哪里吗？</summary><p>项目没有自有服务器。阅读记录默认关闭、按站授权；页面文本只在你主动调用模型功能时离开本机，且直达你配置的服务商，不经任何中转。</p></details>
   <details><summary>支持哪些浏览器？</summary><p>桌面端 Chrome 与 Edge 125+（Manifest V3）。暂不支持 Firefox 与 Safari。</p></details>
-  <details><summary>能整页翻译吗？</summary><p>能——双语翻译模式按阅读位置逐段插入中文对照。阅读辅助模式则保持整页英文，只给随读渐退的稀疏提示。</p></details>
+  <details><summary>能在 Chrome 应用商店安装吗？</summary><p>暂时不能。请从 <a href="https://github.com/dapao-777/roamcat/releases">GitHub Releases</a> 下载安装包并解压，打开 <code>chrome://extensions</code>（或 <code>edge://extensions</code>），开启开发者模式，「加载已解压的扩展」选择里面的 <code>extension</code> 文件夹。Chrome Web Store 与 Edge Add-ons 上架进行中。</p></details>
+  <details><summary>能整页翻译吗？</summary><p>能——双语翻译模式按阅读位置逐段插入中文对照，并可一键切换「双语 / 仅译文」。阅读辅助模式则保持整页英文，只给随读渐退的稀疏提示。</p></details>
   <details><summary>支持 PDF 和 EPUB 吗？</summary><p>支持——内置阅读器可打开本地 PDF / EPUB 或粘贴的文章，共用同一套双语引擎。</p></details>
-  <details><summary>可以用哪些模型？</summary><p>33 家自备 API（OpenAI、DeepSeek、Gemini、Anthropic、xAI、OpenRouter、Ollama、阿里云、火山、Kimi、阶跃……）、内置本地领域识别模型，或经本机连接器复用已登录的 ChatGPT / Grok / Antigravity CLI 订阅——免 API Key。</p></details>
+  <details><summary>能翻译 YouTube 字幕或 Twitch 直播聊天吗？</summary><p>能。带字幕轨道的 YouTube 视频可显示原文与中文译文；没有字幕的视频可手动开启云端听写（需另行安装本机 Google 订阅连接器）。Twitch 直播聊天翻译默认关闭，开启后只翻译新出现的公开聊天消息。</p></details>
+  <details><summary>可以用哪些模型？</summary><p>33 家自备 API、8 种协议——OpenAI、Anthropic、Gemini、DeepSeek、Grok、OpenRouter、Groq、Mistral、Ollama、Azure OpenAI、Amazon Bedrock、阿里云百炼、火山引擎、Kimi、阶跃星辰等，也支持自定义 OpenAI 兼容接口；另有内置本地模型做页面领域识别，或经本机连接器复用已登录的 ChatGPT / Grok / Antigravity CLI 订阅——免 API Key。</p></details>
+  <details><summary>没有 API Key，能用 ChatGPT / Grok / Google 订阅吗？</summary><p>可以，通过可选的本机连接器。它复用你已登录的官方 CLI——Codex CLI（ChatGPT）、Grok CLI（SuperGrok / X Premium+）、Antigravity <code>agy</code>（Google AI Pro / Ultra）——经 Native Messaging 与本机 <code>127.0.0.1</code> 服务连接。需要 Node.js 20+ 并已安装对应 CLI；费用、额度与地区可用性由各服务商决定。</p></details>
+  <details><summary>能完全本地运行（Ollama）吗？</summary><p>能。选择 Ollama 服务商（默认 <code>http://localhost:11434</code>），无需 API Key，页面文本只会发往你自己的 Ollama 服务。内置的 MiniLM 只在离线状态下做页面领域识别——翻译与解释始终需要你配置的模型服务。</p></details>
+  <details><summary>RoamCat 申请哪些权限，为什么？</summary><p>共 8 项 Chrome 权限——<code>activeTab</code>、<code>scripting</code>、<code>storage</code>、<code>nativeMessaging</code>、<code>offscreen</code>、<code>contextMenus</code>、<code>tts</code>、<code>webNavigation</code>——以及 http / https 站点访问（用于在你选择的任意网站上阅读与翻译）。内容脚本只能发送 81 种内部消息中的 38 种；API Key 不会进入内容脚本。<a href="https://github.com/dapao-777/roamcat/blob/main/roamcat-0.0.1/PRIVACY.md">隐私政策</a>逐项列出了每项权限及理由。</p></details>
+  <details><summary>怎么安装 RoamCat？</summary><p>从 GitHub Releases 下载最新安装包并解压，打开 <code>chrome://extensions</code>，开启开发者模式，选择「加载已解压的扩展」并指向里面的 <code>extension</code> 文件夹；也可用 Node.js 22.13+ 从源码构建（<code>npm ci</code>、<code>npm run build</code>）后加载 <code>dist/extension</code>。</p></details>
 </section>
 
 <section id="install">
   <h2>三步安装</h2>
   <div class="steps">
-    <div class="step"><div><b>构建</b><p>克隆<a href="https://github.com/dapao-777/roamcat">仓库</a>，运行 <code>npm ci</code> 与 <code>npm run build</code>（需要 Node.js 20.11+）。免构建的预发布安装包之后会发布到 Releases。</p></div></div>
-    <div class="step"><div><b>加载</b><p>打开 <code>chrome://extensions</code>，开启开发者模式，「加载已解压的扩展」，选择 <code>dist/extension</code> 目录。</p></div></div>
+    <div class="step"><div><b>构建</b><p>克隆<a href="https://github.com/dapao-777/roamcat">仓库</a>，运行 <code>npm ci</code> 与 <code>npm run build</code>（需要 Node.js 22.13+）；也可以跳过构建，直接从 <a href="https://github.com/dapao-777/roamcat/releases">Releases</a> 下载免构建安装包。</p></div></div>
+    <div class="step"><div><b>加载</b><p>打开 <code>chrome://extensions</code>，开启开发者模式，「加载已解压的扩展」，选择 <code>dist/extension</code> 目录（Releases 安装包则选解压后里面的 <code>extension</code> 目录）。</p></div></div>
     <div class="step"><div><b>开读</b><p>在任意英文页面点工具栏图标——或按 <code>Alt+Shift+T</code> 双语翻译。模型来源在「设置」里配置。</p></div></div>
   </div>
 </section>
+
+</main>
 
 <footer>
   <div class="links">
@@ -239,6 +427,7 @@ footer .links{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:10px}
     <a href="./" hreflang="en">English</a>
   </div>
   <p>RoamCat 基于开源项目 <a href="https://github.com/rockythink/relyless">RelyLess</a> 重构——感谢原作者 B 站 UP 主 <a href="https://live.bilibili.com/392612">停车拾穗</a>。</p>
+  <p>最近更新 <time datetime="2026-11-01">2026-11-01</time> · v0.7.0 · 给 AI 助手与爬虫：<a href="llms.txt">llms.txt</a> · <a href="llms-full.txt">llms-full.txt</a> · <a href="sitemap.xml">sitemap.xml</a></p>
 </footer>
 
 </div>

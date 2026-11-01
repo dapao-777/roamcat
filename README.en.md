@@ -27,6 +27,7 @@
   <a href="#-model-services">Model services</a> ·
   <a href="#-faq">FAQ</a> ·
   <a href="#-docs">Docs</a> ·
+  <a href="https://dapao-777.github.io/roamcat/">Website</a> ·
   <a href="README.md">中文</a>
 </p>
 
@@ -44,6 +45,8 @@
   <sub>▶ 34-second intro film · click the clip for the full video with music</sub>
 </p>
 
+**RoamCat** (随心阅) is a free, open-source browser extension for **Chrome and Edge** that helps Chinese-speaking readers read English websites. It translates pages in place into **bilingual Chinese–English text**, or keeps the page in English and adds **sparse hints that fade as you improve**; it also covers **PDF/EPUB files**, **YouTube bilingual captions** and opt-in **Twitch chat translation**. It is **local-first with no telemetry**, and the AI is yours to choose: **33 bring-your-own API providers**, a local Ollama model, or your existing **ChatGPT / Grok / Google subscription**. More on the [website](https://dapao-777.github.io/roamcat/), and an [llms.txt](https://dapao-777.github.io/roamcat/llms.txt) for AI assistants.
+
 > [!NOTE]
 > **0.7.0 — switch page translation between bilingual and translation-only in one click, plus untruncated popup notes and a welcome page that fits narrow windows.** Download the package from [Releases](https://github.com/dapao-777/roamcat/releases/latest) or build from source, then load it in developer mode (see [Quick start](#-quick-start)); it is not on any extension store yet. RoamCat rebuilds, optimizes and repairs the open-source [RelyLess](https://github.com/rockythink/relyless) — see [Acknowledgements](#-acknowledgements).
 
@@ -52,7 +55,7 @@
 - **Two modes, one engine** — side-by-side bilingual pages, or a reading assistant that keeps the original English in charge.
 - **Reads real pages well** — site profiles for GitHub, Reddit, Hacker News, Stack Exchange, Discourse, dev.to and Lobsters keep code, diffs and vote chrome out of the way; formulas stay untouched.
 - **PDF & EPUB reader** — the same bilingual engine for local files and pasted articles.
-- **Your model, your choice** — 28 bring-your-own API providers, a bundled offline model, or a connector that reuses your ChatGPT / Grok / Google CLI subscription.
+- **Your model, your choice** — 33 bring-your-own API providers, a bundled offline model, or a connector that reuses your ChatGPT / Grok / Google CLI subscription.
 - **Local-first** — no RoamCat servers, no telemetry, reading history off by default and opt-in per site.
 - **Fully bilingual UI** — every surface switches between Chinese and English, and a companion cat (with light and dark looks) keeps you company at the page edge.
 
@@ -65,7 +68,7 @@
 | **Looks like** | Inline pairs in body text; tables and cards matched in place; navigation and sidebars get small inline translations; one click (bottom-left) switches to translation only | Lookup card, top-of-line glosses, sentence-structure underlines |
 | **Exit** | "Back to English" removes only what the extension inserted | Hints fade as you read — the goal is to stop needing them |
 
-Failed passages retry on a graded backoff (2.5s → 6s → 14s, classified by error code) before a manual "retry this passage" appears, so transient rate limits never flash failure UI.
+Failed passages retry on a graded backoff (2.5s → 6s → 14s, classified by error code) before a manual "Retry this paragraph" appears, so transient rate limits never flash failure UI.
 
 ## 📸 A quick tour
 
@@ -119,7 +122,7 @@ Failed passages retry on a graded backoff (2.5s → 6s → 14s, classified by er
 
 Requires **Chrome or Edge 125+**.
 
-**Option A — Release package.** Download `roamcat-0.7.0-extension.zip` from [Releases](https://github.com/dapao-777/roamcat/releases/latest) and unzip it. Open `chrome://extensions` (or `edge://extensions`), turn on **Developer mode**, choose **Load unpacked** and pick the unzipped **`roamcat-0.7.0/extension`** folder. For the subscription connector, run `node roamcat-0.7.0/connector/install.mjs` from the directory containing `roamcat-0.7.0/` (Node.js 20.11+); it works out the extension ID from that folder, so rerun it if you move the folder.
+**Option A — Release package.** Download `roamcat-0.7.0-extension.zip` from [Releases](https://github.com/dapao-777/roamcat/releases/latest) and unzip it. Open `chrome://extensions` (or `edge://extensions`), turn on **Developer mode**, choose **Load unpacked** and pick the unzipped **`roamcat-0.7.0/extension`** folder. For the subscription connector, run `node roamcat-0.7.0/connector/install.mjs` from the directory containing `roamcat-0.7.0/` (Node.js 20+); it works out the extension ID from that folder, so rerun it if you move the folder.
 
 **Option B — build from source** (Node.js 22.13+; Node 24 verified):
 
@@ -149,7 +152,7 @@ The service handshake requires a **pairing token**. Every install generates a fr
 ## 🔒 Privacy by design
 
 - Reading history is off by default and opt-in per site; nothing is collected on incognito pages; API keys live only in `chrome.storage.local`.
-- Keys never reach content scripts, diagnostic logs or the connector; content scripts may send only **36 whitelisted message types** out of 77.
+- Keys never reach content scripts, diagnostic logs or the connector; content scripts may send only **38 whitelisted message types** out of 81.
 - All model output passes structured validation (`gloss.mjs`) before reaching the UI; custom API endpoints must be HTTPS (loopback excepted).
 - Page text leaves your device only when you invoke a model feature, and goes straight to the provider you configured. Full details in the [privacy policy](roamcat-0.0.1/PRIVACY.md).
 
@@ -162,7 +165,7 @@ An honest look next to tools you may already know — RoamCat is not trying to b
 | **Approach** | Two modes: bilingual pairs *or* sparse assistance that keeps the original English primary | Full-page bilingual translation | Graded word highlights + look-ups | Page & selection translation |
 | **Open source** | ✅ MPL-2.0 | ❌ closed | ❌ closed | ❌ closed |
 | **Data path** | No vendor servers, no telemetry, history off by default | Text goes to the translation services you pick; vendor cloud features exist | Cloud account | Cloud service |
-| **Model source** | 28 BYOK providers, a bundled local model, or reuse ChatGPT / Grok / Google CLI subscriptions | Built-in services + BYOK for select AI models | Built-in | Built-in |
+| **Model source** | 33 BYOK providers, a bundled local model, or reuse ChatGPT / Grok / Google CLI subscriptions | Built-in services + BYOK for select AI models | Built-in | Built-in |
 | **Cost** | Free — you only pay your own API provider, if any | Freemium | Freemium | Freemium |
 | **Platforms** | Chrome / Edge 125+ | Chrome, Edge, Firefox, Safari, mobile | Chrome, Edge | Chrome, Edge, apps |
 
@@ -203,7 +206,7 @@ Yes — the built-in reader opens local PDF/EPUB files and pasted articles with 
 <details>
 <summary><strong>Which AI models can I use?</strong></summary>
 
-28 bring-your-own providers (OpenAI, DeepSeek, Gemini, Anthropic, xAI, OpenRouter, Ollama, Alibaba Cloud, Volcano Engine, Kimi, StepFun…), a bundled local model for on-device domain classification, or a local connector that reuses your signed-in ChatGPT / Grok / Antigravity CLI subscription — no API key needed.
+33 bring-your-own providers (OpenAI, DeepSeek, Gemini, Anthropic, xAI, OpenRouter, Ollama, Alibaba Cloud, Volcano Engine, Kimi, StepFun…), a bundled local model for on-device domain classification, or a local connector that reuses your signed-in ChatGPT / Grok / Antigravity CLI subscription — no API key needed.
 </details>
 
 <details>
@@ -214,18 +217,18 @@ Chinese-speaking readers who live on English sites — docs, GitHub, Reddit, Hac
 
 ## 🎨 Design language
 
-**Paper &amp; ink × pixels × soft skeuomorphism.** Cream paper `#faf9f4` and warm ink `#161511`, the Silkscreen pixel font and a rim-lit mochi cat for a digital accent; controls are keycaps with physical feedback. The dark theme mirrors the same materials as **cool inkstone graphite** — canvas `#0b0e13`, ivory ink `#ece7d9`, porcelain primary keys, amber `#f0a63c` kept for semantic accents. Small text meets WCAG AA contrast in both themes.
+**Warm paper &amp; ink × pixels × restrained flatness.** Light is warm-white paper `#f7f6f3` with white cards and ink-black text `#1c1b18`, accented in terracotta `#9f4d25`; dark is warm charcoal `#141312` with ivory text `#edebe6`, the accent lifted to warm orange `#e8946a`. The Silkscreen pixel font and a rim-lit mochi cat add a digital touch; controls are flat 1px-bordered cards and buttons, and only widgets floating above a web page get a shadow. Small text meets WCAG AA contrast in both themes.
 
 <details>
 <summary><strong>Design spec at a glance</strong></summary>
 
 | Item | Spec |
 |---|---|
-| UI text | System sans (Segoe UI / PingFang SC / Microsoft YaHei), 14–15px |
-| Reading text &amp; headings | Serif (Noto Serif SC → SimSun → Georgia), body 15px / 1.6 |
+| UI text | System sans (Segoe UI / PingFang SC / Microsoft YaHei), controls 14px, secondary text 13px |
+| Reading text | Serif (Georgia first for Latin, Noto Serif SC / SimSun for Chinese), body 15px / 1.6; used for word heads, examples, the reader body and welcome-page titles |
 | Brand / digits / keycaps | Silkscreen pixel font (bundled woff2, works offline) |
-| Palette | Paper `#faf9f4` + ink `#161511` in light; graphite `#0b0e13` + ivory `#ece7d9` + amber `#f0a63c` in dark |
-| Logo &amp; mascot | Mochi cat in two coats — rim-lit black on an inkstone tile (`icons/roamcat.svg`) and cream on a latte tile (`icons/roamcat-light.svg`), plus a mono mark; all generated by `tools/make-brand-cat.mjs` |
+| Palette | Light: canvas `#f7f6f3` + ink `#1c1b18` + terracotta `#9f4d25`; dark: canvas `#141312` + ivory `#edebe6` + warm orange `#e8946a` |
+| Logo &amp; mascot | Mochi cat in two coats — rim-lit black on an inkstone tile (`icons/roamcat.svg`) and cream on a pink-to-blue dawn-gradient tile (`icons/roamcat-light.svg`), plus a mono mark; all generated by `tools/make-brand-cat.mjs` |
 | Motion | 80 / 160 / 280 / 440ms tiers + `linear()` spring curves, honors `prefers-reduced-motion` |
 
 </details>
@@ -239,15 +242,16 @@ Every visual decision lives in one set of `--rc-*` tokens in `src/styles/tokens.
 
 ```
 ┌─────────────────────────────── browser ────────────────────────────────┐
-│ Content scripts (nine static entries, document_idle)                   │
-│   design.js → i18n-content.js → reading-style.js → content-ui.js →     │
-│   pet-quotes.js → complexity.js → formula.js → site-profiles.js →      │
-│   content.js                                                           │
-│ Dynamically registered (chrome.scripting, on demand)                   │
-│   · floating-pet.js companion cat · auto-start.js auto-enable          │
+│ Content scripts: only page-bootstrap.js is static (document_idle)      │
+│   The rest is injected on demand via ENSURE_PAGE_UI:                   │
+│   design.js → i18n-content.js → content-ui.js → pet-quotes.js →        │
+│   reading-style.js → complexity.js → formula.js → site-profiles.js →   │
+│   content.js (Twitch pages also get a static entry: live-chat.js)      │
+│ Dynamically registered (chrome.scripting, per settings)                │
+│   · floating-pet*.js companion cat · auto-start.js auto-enable         │
 ├────────────────────────────────────────────────────────────────────────┤
 │ Service Worker: background.js (ES module, stateless)                   │
-│   77 message routes · settings validation & migration ·                │
+│   81 message routes · settings validation & migration ·                │
 │   cache / concurrency / watchdog · subscription ports                  │
 ├────────────────────────────────────────────────────────────────────────┤
 │ Extension pages: popup / options / welcome / reader                    │
@@ -261,9 +265,9 @@ Every visual decision lives in one set of `--rc-*` tokens in `src/styles/tokens.
 
 </details>
 
-- **Trust boundary** — extension pages (trusted) → content scripts (33 whitelisted messages) → model output (validated before UI) → page DOM (enters prompts as data only).
-- **One source of truth for the protocol** — `extension/message-protocol.js` registers all 77 message types with payload parsers; contract tests keep the router in sync.
-- **One bilingual runtime** — `extension/i18n.js` holds 1,784 aligned zh/en keys shared by pages and the service worker; content scripts load the generated `i18n-content.js`, the same runtime trimmed to the namespaces web pages actually use.
+- **Trust boundary** — extension pages (trusted) → content scripts (38 whitelisted messages) → model output (validated before UI) → page DOM (enters prompts as data only).
+- **One source of truth for the protocol** — `extension/message-protocol.js` registers all 81 message types with payload parsers; contract tests keep the router in sync.
+- **One bilingual runtime** — `extension/i18n.js` holds every UI string as an aligned zh/en pair, shared by pages and the service worker; content scripts load the generated `i18n-content.js`, the same runtime trimmed to the namespaces web pages actually use.
 - **Stateless service worker** — cross-call state lives in `chrome.storage` and IndexedDB; writes are serialized and long operations carry watchdogs.
 
 The full engineering spec is in [`SPEC.md`](roamcat-0.0.1/SPEC.md) (Chinese).
@@ -276,15 +280,16 @@ The full engineering spec is in [`SPEC.md`](roamcat-0.0.1/SPEC.md) (Chinese).
 | `npm test` | Unit tests (`node --test` via `tools/run-unit-tests.mjs`; prints the current count) |
 | `npm run verify` | Module-graph gates R1–R12: load contract, no cycles, layering, file headers, manifest resources, font-size scale |
 | `npm run verify:build` | Build-artifact gates: byte comparison + real browser load smoke test |
-| `npm run verify:ui` | 131-check UI sweep: every page and widget, light + dark, zh + en, screenshots → `preview/ui-audit/` |
-| `npm run verify:pet` | 69-check companion-cat sweep: every floating button clicked for real |
+| `npm run verify:all` | Runs every gate in one go: static checks → build → browser gates → production-build gate; summary in `preview/gates/summary.json` (`-- --quick` skips the site-profile and production-build gates) |
+| `npm run verify:ui` | UI sweep: every page and widget, light + dark, zh + en, screenshots → `preview/ui-audit/` |
+| `npm run verify:pet` | Companion-cat sweep: every floating button clicked for real |
 | `npm run verify:sites` | Site-profile end-to-end checks against real-URL fixtures (`--live` rechecks real sites) |
 | `npm run verify:options` | Settings-page behaviour checks (saving, rollback on failure, reset, model list) |
-| `npm run verify:audit` | 30-check end-to-end audit: real background + local mock model in a real browser |
+| `npm run verify:audit` | End-to-end audit: real background + local mock model in a real browser |
 | `npm run build:release` · `node tools/package-release.mjs` | Release build (no dev key) → `dist/release/roamcat-<version>-extension.zip` + `SHA256SUMS` |
 | `npm run gen:tokens` · `npm run gen:i18n` · `node tools/check-dict.cjs` | Regenerate `extension/design.js` from tokens · regenerate the content-script dictionary `extension/i18n-content.js` · zh/en dictionary parity |
 
-Browser checks need a local [ego lite](https://lite.ego.app/) and Node.js 22+: `tools/lib/ego.mjs` starts its own headless ego with a throwaway profile and drives it over the Chrome DevTools Protocol (no Playwright). Set `ROAMCAT_EGO` to point at `ego.exe` if it is installed elsewhere. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before contributing and report security issues privately per [SECURITY.md](SECURITY.md).
+Browser checks need a local [ego lite](https://lite.ego.app/) and Node.js 22+: `tools/lib/ego.mjs` starts its own headless ego with a throwaway profile and drives it over the Chrome DevTools Protocol (no Playwright). Set `ROAMCAT_EGO` to point at `ego.exe` if it is installed elsewhere. The remaining focused gates (video captions, Twitch chat, reader, performance, cloud dictation, connector service, …) are listed in [`AGENTS.md`](AGENTS.md) (Chinese). Please read [CONTRIBUTING.md](CONTRIBUTING.md) before contributing and report security issues privately per [SECURITY.md](SECURITY.md).
 
 <details>
 <summary><strong>Repository layout</strong></summary>

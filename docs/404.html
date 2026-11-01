@@ -1,0 +1,42 @@
+<!doctype html>
+<!-- @file docs/404.html — GitHub Pages 自定义 404：noindex，把迷路的访客引回双语首页。链接用绝对地址（404 页会出现在任意路径下）；绑定自定义域名后同步改这里。仓库自有内容 MPL-2.0。 -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Page not found · RoamCat 随心阅</title>
+<meta name="robots" content="noindex, follow">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f7f6f3">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#141312">
+<link rel="icon" type="image/svg+xml" href="https://dapao-777.github.io/roamcat/assets/roamcat.svg">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'unsafe-inline'; font-src 'self'; script-src 'none'; connect-src 'none'; base-uri 'self'; form-action 'none'">
+<style>
+/* 调色板抄自产品 src/styles/tokens.css；tools/unit/site-seo.test.mjs 守住对应关系 */
+:root{--paper:#f7f6f3;--card:#ffffff;--ink:#1c1b18;--ink-soft:#57534b;--line:#d5d1c8;}
+@media (prefers-color-scheme:dark){:root{--paper:#141312;--card:#1d1c1a;--ink:#edebe6;--ink-soft:#bab5ab;--line:rgba(255,250,240,.16);}}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:var(--paper);color:var(--ink);font:15px/1.7 "Segoe UI",system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+main{max-width:520px;text-align:center}
+img{width:84px;height:84px}
+h1{font:700 clamp(22px,5vw,30px)/1.3 ui-monospace,Consolas,monospace;margin:18px 0 8px;letter-spacing:.5px}
+p{margin:0 0 10px;color:var(--ink-soft)}
+.links{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin:22px 0 0}
+a.btn{display:inline-block;padding:10px 20px;border:2px solid var(--ink);border-radius:9px;background:var(--card);color:var(--ink);font-weight:600;text-decoration:none;box-shadow:0 3px 0 var(--ink)}
+a.btn:hover{transform:translateY(1px);box-shadow:0 2px 0 var(--ink)}
+</style>
+</head>
+<body>
+<main>
+  <img src="https://dapao-777.github.io/roamcat/assets/roamcat.svg" alt="RoamCat logo" width="84" height="84">
+  <h1>404 — this page wandered off</h1>
+  <p>The page you asked for doesn't exist on the RoamCat site.</p>
+  <p lang="zh-CN">你要找的页面在 RoamCat 站点上不存在。</p>
+  <div class="links">
+    <a class="btn" href="https://dapao-777.github.io/roamcat/">English home</a>
+    <a class="btn" href="https://dapao-777.github.io/roamcat/zh.html" hreflang="zh-CN">中文首页</a>
+    <a class="btn" href="https://github.com/dapao-777/roamcat">GitHub</a>
+  </div>
+</main>
+</body>
+</html>

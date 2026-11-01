@@ -5,72 +5,165 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>RoamCat · 随心阅 — Bilingual reading extension for Chrome &amp; Edge</title>
-<meta name="description" content="RoamCat is a free, open-source (MPL-2.0) dual-mode reading extension for Chrome & Edge: in-place bilingual English-Chinese translation plus sparse-hint reading assistance. Local-first, no telemetry, 28 BYOK providers or reuse your ChatGPT / Grok / Google subscriptions.">
+<meta name="description" content="Free, open-source Chrome &amp; Edge extension for reading English: bilingual Chinese-English pages or sparse hints. Local-first, no telemetry, 33 BYOK AI providers.">
 <link rel="canonical" href="https://dapao-777.github.io/roamcat/">
 <link rel="alternate" hreflang="en" href="https://dapao-777.github.io/roamcat/">
 <link rel="alternate" hreflang="zh-CN" href="https://dapao-777.github.io/roamcat/zh.html">
 <link rel="alternate" hreflang="x-default" href="https://dapao-777.github.io/roamcat/">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+<meta name="author" content="fenghua">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f7f6f3">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#141312">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="RoamCat · 随心阅">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="zh_CN">
 <meta property="og:url" content="https://dapao-777.github.io/roamcat/">
 <meta property="og:title" content="RoamCat · 随心阅 — Bilingual reading extension for Chrome &amp; Edge">
 <meta property="og:description" content="A dual-mode reading assistant for the English web: bilingual translation or sparse hints that keep the original English in charge. Open source, local-first, no telemetry.">
 <meta property="og:image" content="https://dapao-777.github.io/roamcat/assets/og-cover.png">
 <meta property="og:image:width" content="1280">
 <meta property="og:image:height" content="640">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:alt" content="RoamCat 随心阅 — a dual-mode reading extension for Chrome and Edge: bilingual pages and video subtitles, sparse-hint reading assistance, local-first, BYOK × 33 providers or your AI subscription">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="RoamCat · 随心阅 — Bilingual reading extension">
 <meta name="twitter:description" content="Dual-mode English reading assistant for Chrome &amp; Edge. Open source, local-first, BYOK.">
 <meta name="twitter:image" content="https://dapao-777.github.io/roamcat/assets/og-cover.png">
+<meta name="twitter:image:alt" content="RoamCat 随心阅 — dual-mode reading extension for Chrome and Edge">
 <link rel="icon" type="image/svg+xml" href="assets/roamcat.svg">
+<link rel="icon" type="image/png" sizes="48x48" href="assets/favicon-48.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="preload" href="assets/slk-700.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/slk-400.woff2" as="font" type="font/woff2" crossorigin>
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'unsafe-inline'; font-src 'self'; script-src 'none'; connect-src 'none'; base-uri 'self'; form-action 'none'">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  "name": "RoamCat · 随心阅",
-  "alternateName": "RoamCat",
-  "applicationCategory": "BrowserApplication",
-  "applicationSubCategory": "Browser extension",
-  "operatingSystem": "Chrome 125+, Edge 125+",
-  "softwareVersion": "0.7.0",
-  "description": "A dual-mode reading extension for the English web: in-place bilingual English-Chinese translation plus sparse-hint reading assistance that keeps the original text primary. Local-first, no telemetry.",
-  "inLanguage": ["en", "zh-CN"],
-  "isAccessibleForFree": true,
-  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-  "license": "https://www.mozilla.org/MPL/2.0/",
-  "url": "https://dapao-777.github.io/roamcat/",
-  "downloadUrl": "https://github.com/dapao-777/roamcat",
-  "codeRepository": "https://github.com/dapao-777/roamcat",
-  "author": { "@type": "Person", "name": "fenghua" },
-  "featureList": "In-place bilingual translation; sparse-hint reading assistance; word lookup cards; sentence deconstruction; PDF/EPUB reader; companion cat widget; 28 BYOK model providers; ChatGPT/Grok/Google subscription connector; local domain classifier; bilingual zh/en UI"
-}
-</script>
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [
-    { "@type": "Question", "name": "Is RoamCat free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes — MPL-2.0 open source, no accounts, no paid tier, no telemetry. You only pay if you choose to connect a paid API yourself; the bundled local model and the subscription connector cost nothing." } },
-    { "@type": "Question", "name": "Does RoamCat send my reading data anywhere?", "acceptedAnswer": { "@type": "Answer", "text": "There are no RoamCat servers. Reading history is off by default and opt-in per site; page text leaves the device only when you invoke a model feature, and goes directly to the provider you configured." } },
-    { "@type": "Question", "name": "Which browsers are supported?", "acceptedAnswer": { "@type": "Answer", "text": "Chrome and Edge 125+ on desktop (Manifest V3). Firefox and Safari are not currently supported." } },
-    { "@type": "Question", "name": "Can it translate an entire page?", "acceptedAnswer": { "@type": "Answer", "text": "Yes — Bilingual mode inserts Chinese next to each English paragraph at your reading position. Reading Assistance mode instead keeps the page fully English and only adds sparse hints that fade as you read." } },
-    { "@type": "Question", "name": "Does it work with PDFs and EPUBs?", "acceptedAnswer": { "@type": "Answer", "text": "Yes — the built-in reader opens local PDF/EPUB files and pasted articles with the same bilingual engine." } },
-    { "@type": "Question", "name": "Which AI models can I use?", "acceptedAnswer": { "@type": "Answer", "text": "28 bring-your-own providers (OpenAI, DeepSeek, Gemini, Anthropic, xAI, OpenRouter, Ollama, Alibaba Cloud, Volcano Engine, Kimi, StepFun), a bundled local model for on-device domain classification, or a local connector that reuses your signed-in ChatGPT / Grok / Antigravity CLI subscriptions — no API key needed." } }
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://dapao-777.github.io/roamcat/#website",
+      "url": "https://dapao-777.github.io/roamcat/",
+      "name": "RoamCat · 随心阅",
+      "alternateName": ["RoamCat", "随心阅"],
+      "description": "Official site of RoamCat · 随心阅, a free, open-source bilingual reading extension for Chrome and Edge.",
+      "inLanguage": ["en", "zh-CN"],
+      "publisher": { "@id": "https://dapao-777.github.io/roamcat/#author" }
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://dapao-777.github.io/roamcat/#webpage",
+      "url": "https://dapao-777.github.io/roamcat/",
+      "name": "RoamCat · 随心阅 — Bilingual reading extension for Chrome & Edge",
+      "description": "Free, open-source Chrome & Edge extension for reading English: bilingual Chinese-English pages or sparse hints. Local-first, no telemetry, 33 BYOK AI providers.",
+      "inLanguage": "en",
+      "isPartOf": { "@id": "https://dapao-777.github.io/roamcat/#website" },
+      "about": { "@id": "https://dapao-777.github.io/roamcat/#software" },
+      "primaryImageOfPage": { "@type": "ImageObject", "url": "https://dapao-777.github.io/roamcat/assets/og-cover.png", "width": 1280, "height": 640 },
+      "dateModified": "2026-11-01"
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": "https://dapao-777.github.io/roamcat/#software",
+      "name": "RoamCat · 随心阅",
+      "alternateName": ["RoamCat", "随心阅"],
+      "description": "RoamCat is a free, open-source browser extension for Chrome and Edge that helps Chinese-speaking readers read English websites. Bilingual Translation places a Chinese line beside each English paragraph as you reach it; Reading Assistance keeps the page in English and adds sparse hints that fade as you improve. Local-first, no telemetry.",
+      "applicationCategory": "BrowserApplication",
+      "applicationSubCategory": "Browser extension for bilingual translation and English reading assistance",
+      "operatingSystem": "Chrome 125+, Edge 125+",
+      "browserRequirements": "Requires desktop Chrome or Microsoft Edge 125 or later (Manifest V3).",
+      "softwareVersion": "0.7.0",
+      "dateModified": "2026-11-01",
+      "releaseNotes": "https://github.com/dapao-777/roamcat/releases/tag/v0.7.0",
+      "softwareRequirements": "Bring-your-own-API use needs nothing else; the optional subscription connector needs Node.js 20+ and a signed-in Codex, Grok or Antigravity CLI.",
+      "softwareHelp": { "@type": "WebPage", "url": "https://github.com/dapao-777/roamcat/blob/main/README.en.md" },
+      "inLanguage": ["en", "zh-CN"],
+      "isAccessibleForFree": true,
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "license": "https://www.mozilla.org/MPL/2.0/",
+      "url": "https://dapao-777.github.io/roamcat/",
+      "downloadUrl": "https://github.com/dapao-777/roamcat/releases/latest",
+      "sameAs": ["https://github.com/dapao-777/roamcat"],
+      "image": "https://dapao-777.github.io/roamcat/assets/og-cover.png",
+      "screenshot": [
+        { "@type": "ImageObject", "url": "https://dapao-777.github.io/roamcat/assets/reader-dark.png", "width": 1440, "height": 1000, "caption": "Built-in reader with bilingual translation" },
+        { "@type": "ImageObject", "url": "https://dapao-777.github.io/roamcat/assets/pet-summary-dark.png", "width": 584, "height": 479, "caption": "Companion cat article digest card" },
+        { "@type": "ImageObject", "url": "https://dapao-777.github.io/roamcat/assets/widget-wordcard-dark.png", "width": 360, "height": 338, "caption": "Word lookup card opened with D + click" },
+        { "@type": "ImageObject", "url": "https://dapao-777.github.io/roamcat/assets/banner-welcome-light.png", "width": 1440, "height": 628, "caption": "Welcome and onboarding page" }
+      ],
+      "author": { "@id": "https://dapao-777.github.io/roamcat/#author" },
+      "publisher": { "@id": "https://dapao-777.github.io/roamcat/#author" },
+      "isBasedOn": { "@type": "SoftwareSourceCode", "name": "RelyLess", "codeRepository": "https://github.com/rockythink/relyless" },
+      "featureList": [
+        "In-place bilingual Chinese-English page translation that follows your reading position, with a one-click bilingual / translation-only toggle",
+        "Reading Assistance mode: sparse hints on hard words that fade as you improve, D + click word cards, on-demand rescue and sentence deconstruction",
+        "Built-in PDF and EPUB reader with the same bilingual engine",
+        "Bilingual YouTube captions and opt-in Twitch live-chat translation",
+        "Article digest and a draggable companion cat widget",
+        "33 bring-your-own AI providers across 8 API protocols, including Ollama for local models",
+        "Optional local connector that reuses ChatGPT, Grok and Google (Antigravity) CLI subscriptions",
+        "Bundled offline model for page-topic classification",
+        "Local-first: no vendor servers, no telemetry, reading history off by default",
+        "Fully bilingual Chinese / English interface"
+      ],
+      "keywords": "bilingual translation, English reading assistant, Chrome extension, Edge extension, Manifest V3, open source, BYOK, local-first, PDF reader, EPUB reader, YouTube bilingual subtitles"
+    },
+    {
+      "@type": "SoftwareSourceCode",
+      "@id": "https://dapao-777.github.io/roamcat/#source",
+      "name": "RoamCat source code",
+      "codeRepository": "https://github.com/dapao-777/roamcat",
+      "programmingLanguage": "JavaScript",
+      "runtimePlatform": "Chrome and Edge 125+ (Manifest V3)",
+      "license": "https://www.mozilla.org/MPL/2.0/",
+      "targetProduct": { "@id": "https://dapao-777.github.io/roamcat/#software" },
+      "author": { "@id": "https://dapao-777.github.io/roamcat/#author" }
+    },
+    {
+      "@type": "Person",
+      "@id": "https://dapao-777.github.io/roamcat/#author",
+      "name": "fenghua",
+      "url": "https://github.com/dapao-777",
+      "sameAs": ["https://github.com/dapao-777"]
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://dapao-777.github.io/roamcat/#faq",
+      "mainEntityOfPage": { "@id": "https://dapao-777.github.io/roamcat/#webpage" },
+      "mainEntity": [
+        { "@type": "Question", "name": "What is RoamCat?", "acceptedAnswer": { "@type": "Answer", "text": "RoamCat (随心阅) is a free, open-source browser extension for Chrome and Edge that helps Chinese-speaking readers read English websites. It has two modes on one engine: Bilingual Translation adds a Chinese line beside each English paragraph as you reach it, and Reading Assistance keeps the page in English and adds sparse hints that fade as you improve. It is local-first, with no RoamCat servers and no telemetry." } },
+        { "@type": "Question", "name": "Is RoamCat free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes — MPL-2.0 open source, no accounts, no paid tier, no telemetry. You only pay if you choose to connect a paid API yourself; the bundled local model and the subscription connector cost nothing extra." } },
+        { "@type": "Question", "name": "Is there an open-source alternative to Immersive Translate?", "acceptedAnswer": { "@type": "Answer", "text": "RoamCat is one: its source is MPL-2.0, you bring your own model (33 API providers, local Ollama, or an existing ChatGPT / Grok / Google subscription), there is no telemetry, and a second mode keeps the English original primary. Immersive Translate is the more mature set-and-forget full-page translator on more platforms; other open-source options include kiss-translator and openai-translator." } },
+        { "@type": "Question", "name": "Does RoamCat send my reading data anywhere?", "acceptedAnswer": { "@type": "Answer", "text": "There are no RoamCat servers. Reading history is off by default and opt-in per site; page text leaves the device only when you invoke a model feature, and goes directly to the provider you configured." } },
+        { "@type": "Question", "name": "Which browsers are supported?", "acceptedAnswer": { "@type": "Answer", "text": "Chrome and Edge 125+ on desktop (Manifest V3). Firefox and Safari are not currently supported." } },
+        { "@type": "Question", "name": "Is RoamCat on the Chrome Web Store?", "acceptedAnswer": { "@type": "Answer", "text": "Not yet. Download the extension zip from GitHub Releases, unzip it, open chrome://extensions (or edge://extensions), turn on Developer mode and load the unpacked extension folder. Chrome Web Store and Edge Add-ons listings are in progress." } },
+        { "@type": "Question", "name": "Can it translate an entire page?", "acceptedAnswer": { "@type": "Answer", "text": "Yes — Bilingual mode inserts Chinese next to each English paragraph at your reading position, and a one-click toggle switches between bilingual and translation-only. Reading Assistance mode instead keeps the page fully English and only adds sparse hints that fade as you read." } },
+        { "@type": "Question", "name": "Does it work with PDFs and EPUBs?", "acceptedAnswer": { "@type": "Answer", "text": "Yes — the built-in reader opens local PDF/EPUB files and pasted articles with the same bilingual engine." } },
+        { "@type": "Question", "name": "Can RoamCat translate YouTube captions or Twitch chat?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. YouTube videos that have caption tracks can show the original line with a Chinese translation; for videos without captions you can start manual cloud dictation, which needs the separately installed Google subscription connector. Twitch live-chat translation is off by default and translates only new public chat messages after you turn it on." } },
+        { "@type": "Question", "name": "Which AI models can I use?", "acceptedAnswer": { "@type": "Answer", "text": "33 bring-your-own providers across 8 API protocols — OpenAI, Anthropic, Gemini, DeepSeek, Grok, OpenRouter, Groq, Mistral, Ollama, Azure OpenAI, Amazon Bedrock, Alibaba Cloud, Volcengine, Kimi, StepFun and more, including custom OpenAI-compatible endpoints — plus a bundled local model for on-device page-topic classification, or a local connector that reuses your signed-in ChatGPT / Grok / Antigravity CLI subscriptions with no API key." } },
+        { "@type": "Question", "name": "Can I use my ChatGPT, Grok or Google subscription instead of an API key?", "acceptedAnswer": { "@type": "Answer", "text": "Yes, through an optional local connector. It reuses the official CLIs you are already signed in to — Codex CLI (ChatGPT), Grok CLI (SuperGrok / X Premium+) and Antigravity agy (Google AI Pro / Ultra) — over Native Messaging and a local service on 127.0.0.1. It needs Node.js 20+ and the CLI installed; fees, quotas and availability are set by each provider." } },
+        { "@type": "Question", "name": "Can I run it with a local model such as Ollama?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Pick the Ollama provider (default endpoint http://localhost:11434); it needs no API key, and page text then goes only to your own Ollama server. The bundled MiniLM model only classifies page topics offline — translation and explanations always need a model service you configure." } },
+        { "@type": "Question", "name": "What permissions does RoamCat ask for, and why?", "acceptedAnswer": { "@type": "Answer", "text": "Eight Chrome permissions — activeTab, scripting, storage, nativeMessaging, offscreen, contextMenus, tts and webNavigation — plus access to http and https pages so it can read and translate whichever sites you choose. Content scripts may send only 38 of 81 internal message types, and API keys never reach content scripts. The privacy policy lists each permission and its reason." } },
+        { "@type": "Question", "name": "How do I install RoamCat?", "acceptedAnswer": { "@type": "Answer", "text": "Download the latest extension zip from GitHub Releases and unzip it, open chrome://extensions, turn on Developer mode, choose Load unpacked and pick the extension folder inside. Or build from source with Node.js 22.13+ (npm ci, then npm run build) and load dist/extension." } }
+      ]
+    }
   ]
 }
 </script>
 <style>
 @font-face{font-family:'Silkscreen';src:url('assets/slk-400.woff2') format('woff2');font-weight:400;font-display:swap}
 @font-face{font-family:'Silkscreen';src:url('assets/slk-700.woff2') format('woff2');font-weight:700;font-display:swap}
+/* 调色板抄自产品 src/styles/tokens.css 的 --rc-canvas / --rc-surface / --rc-ink 等；tools/unit/site-seo.test.mjs 守住对应关系 */
 :root{
-  --paper:#faf9f4;--card:#fffdf8;--ink:#161511;--ink-soft:#55524a;--line:#d9d4c8;
-  --accent:#161511;--amber:#b4761a;--paper-2:#f1eee4;
+  --paper:#f7f6f3;--card:#ffffff;--ink:#1c1b18;--ink-soft:#57534b;--line:#d5d1c8;
+  --accent:#1c1b18;--amber:#9f4d25;--paper-2:#f2f0ec;
 }
 @media (prefers-color-scheme:dark){
   :root{
-    --paper:#0b0e13;--card:#12161d;--ink:#ece7d9;--ink-soft:#a8a294;--line:#2a3038;
-    --accent:#ece7d9;--amber:#f0a63c;--paper-2:#161a21;
+    --paper:#141312;--card:#1d1c1a;--ink:#edebe6;--ink-soft:#bab5ab;--line:rgba(255,250,240,.16);
+    --accent:#edebe6;--amber:#e8946a;--paper-2:#191816;
   }
 }
 *{box-sizing:border-box}
@@ -120,7 +213,7 @@ h2{font-family:'Silkscreen',monospace;font-size:clamp(19px,3.4vw,26px);margin:0 
 .card p{margin:0;color:var(--ink-soft);font-size:14px}
 .shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
 .shots figure{margin:0;border:1.5px solid var(--line);border-radius:10px;overflow:hidden;background:var(--card)}
-.shots img{width:100%;display:block}
+.shots img{width:100%;height:auto;display:block}
 .shots figcaption{font-size:12.5px;color:var(--ink-soft);padding:8px 12px;border-top:1px solid var(--line)}
 table{width:100%;border-collapse:collapse;font-size:13.5px;background:var(--card);border-radius:10px;overflow:hidden}
 th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}
@@ -146,31 +239,51 @@ code{background:var(--paper-2);border:1px solid var(--line);border-radius:5px;pa
 footer{border-top:1px solid var(--line);padding:26px 0 40px;color:var(--ink-soft);font-size:13px}
 footer .links{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:10px}
 .mut{color:var(--ink-soft)}
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.lede{font-size:16px;max-width:780px;margin:0 0 22px}
+dl.facts{margin:0;border:1.5px solid var(--line);border-radius:10px;background:var(--card);overflow:hidden}
+dl.facts>div{display:grid;grid-template-columns:150px 1fr;border-top:1px solid var(--line)}
+dl.facts>div:first-child{border-top:0}
+dl.facts dt{margin:0;padding:9px 14px;font-weight:600;font-size:13px;background:var(--paper-2)}
+dl.facts dd{margin:0;padding:9px 14px;font-size:13.5px;color:var(--ink-soft)}
+.table-wrap{overflow-x:auto}
+.table-wrap table{min-width:640px}
+tbody th{background:none;font-size:inherit;letter-spacing:0;font-weight:600;white-space:nowrap}
+.prov{margin-top:16px}
+@media (max-width:560px){
+  header{flex-wrap:wrap}
+  nav{margin-left:0;width:100%;flex-wrap:wrap}
+  dl.facts>div{grid-template-columns:1fr}
+  dl.facts dt{padding-bottom:3px}
+  dl.facts dd{padding-top:3px}
+}
 </style>
 </head>
 <body>
 <div class="wrap">
 
 <header>
-  <img src="assets/roamcat.svg" alt="RoamCat logo">
-  <span class="brand">RoamCat · 随心阅</span>
-  <nav>
+  <img src="assets/roamcat.svg" alt="RoamCat logo" width="34" height="34">
+  <span class="brand">RoamCat · <span lang="zh-CN">随心阅</span></span>
+  <nav aria-label="Primary">
     <a href="https://github.com/dapao-777/roamcat">GitHub</a>
     <a href="https://github.com/dapao-777/roamcat/releases">Releases</a>
-    <a href="https://github.com/dapao-777/roamcat#readme">Docs</a>
+    <a href="https://github.com/dapao-777/roamcat/blob/main/README.en.md">Docs</a>
     <a href="zh.html" hreflang="zh-CN">中文</a>
   </nav>
 </header>
 
+<main id="main">
+
 <div class="hero">
-  <img class="logo" src="assets/roamcat.svg" alt="RoamCat mochi cat logo">
+  <img class="logo" src="assets/roamcat.svg" alt="RoamCat mochi cat logo" width="92" height="92">
   <h1>Read the English web<br>like a cat roams it</h1>
   <p class="tag">A dual-mode reading extension for Chrome &amp; Edge — bilingual translation when you want it, sparse hints when you don't. Free, open-source (MPL-2.0), local-first.</p>
   <div class="pill-row">
     <span class="pill">MANIFEST V3</span>
     <span class="pill">CHROME / EDGE 125+</span>
     <span class="pill">LOCAL-FIRST · NO TELEMETRY</span>
-    <span class="pill">BYOK × 28 PROVIDERS</span>
+    <span class="pill">BYOK × 33 PROVIDERS</span>
     <span class="pill">ZH / EN UI</span>
   </div>
   <div class="cta">
@@ -179,6 +292,23 @@ footer .links{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:10px}
   </div>
   <p class="mut" style="font-size:13px;margin-top:18px">0.7.0 — download the package from Releases and load it in developer mode; Chrome Web Store / Edge Add-ons listing in progress.</p>
 </div>
+
+<section id="about">
+  <h2>What is RoamCat?</h2>
+  <p class="lede"><strong>RoamCat</strong> (<span lang="zh-CN">随心阅</span>, “read as you like”) is a free, open-source browser extension for Chrome and Edge that helps Chinese-speaking readers read English websites. It runs two modes on one engine: <strong>Bilingual Translation</strong> places a Chinese line beside each English paragraph as you reach it, while <strong>Reading Assistance</strong> keeps the page in English and adds sparse hints that fade as you improve. It also covers PDF and EPUB files, YouTube captions and Twitch chat. AI comes from a source you choose — 33 bring-your-own API providers, a local Ollama model, or your existing ChatGPT, Grok or Google subscription — and there are no RoamCat servers and no telemetry.</p>
+  <dl class="facts">
+    <div><dt>Type</dt><dd>Browser extension (Manifest V3) for reading English web pages, documents, video captions and live chat with Chinese help</dd></div>
+    <div><dt>Browsers</dt><dd>Chrome and Microsoft Edge 125+ on desktop; Firefox and Safari are not supported</dd></div>
+    <div><dt>Price &amp; license</dt><dd>Free; open source under MPL-2.0</dd></div>
+    <div><dt>Latest version</dt><dd>0.7.0 — released <time datetime="2026-11-01">2026-11-01</time></dd></div>
+    <div><dt>How to get it</dt><dd>Zip from GitHub Releases or build from source, loaded in Developer mode; Chrome Web Store and Edge Add-ons listings are in progress</dd></div>
+    <div><dt>Model sources</dt><dd>33 bring-your-own API providers (8 protocols), local Ollama, or your ChatGPT / Grok / Google subscription through a local connector</dd></div>
+    <div><dt>Privacy</dt><dd>No RoamCat servers, no telemetry; reading history off by default; API keys stay in <code>chrome.storage.local</code></dd></div>
+    <div><dt>Interface</dt><dd>Chinese and English</dd></div>
+    <div><dt>Source code</dt><dd><a href="https://github.com/dapao-777/roamcat">github.com/dapao-777/roamcat</a></dd></div>
+    <div><dt>Origin</dt><dd>A rebuild of the open-source <a href="https://github.com/rockythink/relyless">RelyLess</a></dd></div>
+  </dl>
+</section>
 
 <section id="modes">
   <h2>Two modes, one engine</h2>
@@ -200,6 +330,10 @@ footer .links{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:10px}
       <h3>📚 Built-in reader</h3>
       <p>Opens PDF and EPUB files — or any pasted article — with the same bilingual engine. "Translate all" renders paragraph by paragraph at your reading position.</p>
     </div>
+    <div class="card">
+      <h3>🎬 Video captions &amp; live chat</h3>
+      <p>Bilingual YouTube captions for videos with caption tracks, optional cloud dictation for videos without captions (through the Google subscription connector), and opt-in Twitch live-chat translation — off by default.</p>
+    </div>
   </div>
 </section>
 
@@ -207,10 +341,10 @@ footer .links{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:10px}
   <h2>On real pages</h2>
   <p class="sub">Site profiles for GitHub, Reddit, Hacker News, Stack Exchange, Discourse, dev.to and Lobsters keep code blocks, diffs and vote chrome out of reading blocks.</p>
   <div class="shots">
-    <figure><img src="assets/banner-welcome-light.png" alt="RoamCat welcome page" loading="lazy"><figcaption>Welcome &amp; onboarding</figcaption></figure>
-    <figure><img src="assets/reader-dark.png" alt="RoamCat built-in reader with bilingual translation" loading="lazy"><figcaption>Built-in reader · bilingual</figcaption></figure>
-    <figure><img src="assets/pet-summary-dark.png" alt="Companion cat article digest card" loading="lazy"><figcaption>Companion cat · article digest</figcaption></figure>
-    <figure><img src="assets/widget-wordcard-dark.png" alt="Word lookup card in page" loading="lazy"><figcaption>D + click · word card</figcaption></figure>
+    <figure><img src="assets/banner-welcome-light.png" alt="RoamCat welcome page" width="1440" height="628" loading="lazy" decoding="async"><figcaption>Welcome &amp; onboarding</figcaption></figure>
+    <figure><img src="assets/reader-dark.png" alt="RoamCat built-in reader with bilingual translation" width="1440" height="1000" loading="lazy" decoding="async"><figcaption>Built-in reader · bilingual</figcaption></figure>
+    <figure><img src="assets/pet-summary-dark.png" alt="Companion cat article digest card" width="584" height="479" loading="lazy" decoding="async"><figcaption>Companion cat · article digest</figcaption></figure>
+    <figure><img src="assets/widget-wordcard-dark.png" alt="Word lookup card in page" width="360" height="338" loading="lazy" decoding="async"><figcaption>D + click · word card</figcaption></figure>
   </div>
 </section>
 
@@ -222,6 +356,7 @@ footer .links{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:10px}
     <div class="card"><h3>Subscription connector</h3><p>A local Native Messaging host reuses your official CLI entitlements — Codex CLI (ChatGPT), Grok CLI (SuperGrok / X Premium+), Antigravity <code>agy</code> (Google AI Pro / Ultra). No API key needed.</p></div>
     <div class="card"><h3>Local model</h3><p>Bundled Xenova/all-MiniLM-L6-v2 runs page-domain classification in an offscreen document — fully offline, nothing to download.</p></div>
   </div>
+  <details class="prov"><summary>All 33 providers</summary><p>OpenAI, Anthropic, Gemini, DeepSeek, Grok (xAI), OpenRouter, Requesty, OpenCode, Command Code, MiniMax, SiliconFlow, Azure OpenAI, Amazon Bedrock, Groq, DeepInfra, Mistral AI, Together.ai, Cohere, Fireworks AI, Cerebras, Ollama, Volcengine (Doubao), Alibaba Cloud Model Studio, Moonshot AI (Kimi), StepFun, SenseNova, Zhipu GLM, Xiaomi MiMo, Tencent Hunyuan TokenHub, Baidu Qianfan and Hugging Face, plus custom Chat Completions and custom Responses endpoints. Together they speak 8 API protocols. To run a model on your own machine, choose Ollama — no API key needed.</p></details>
 </section>
 
 <section id="privacy">
@@ -229,7 +364,7 @@ footer .links{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:10px}
   <ul class="tight">
     <li>No servers operated, no telemetry; reading history is off by default and opt-in per site; nothing collected on incognito pages.</li>
     <li>API keys live only in <code>chrome.storage.local</code> — never in content scripts, diagnostics or the connector.</li>
-    <li>Content scripts can only send 36 whitelisted message types out of 77; all model output passes structured validation before reaching the UI.</li>
+    <li>Content scripts can only send 38 whitelisted message types out of 81; all model output passes structured validation before reaching the UI.</li>
     <li>Custom API endpoints must be HTTPS (loopback excepted); no remote code execution.</li>
   </ul>
 </section>
@@ -237,35 +372,50 @@ footer .links{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:10px}
 <section id="compare">
   <h2>How RoamCat compares</h2>
   <p class="sub">An honest look next to tools you may already know.</p>
+  <div class="table-wrap">
   <table>
-    <tr><th></th><th>RoamCat</th><th>Immersive Translate</th><th>Relingo</th><th>彩云小译</th></tr>
-    <tr><td>Approach</td><td>Bilingual pairs <em>or</em> sparse assistance keeping English primary</td><td>Full-page bilingual translation</td><td>Graded word highlights</td><td>Page &amp; selection translation</td></tr>
-    <tr><td>Open source</td><td>✅ MPL-2.0</td><td>❌ closed</td><td>❌ closed</td><td>❌ closed</td></tr>
-    <tr><td>Model source</td><td>28 BYOK providers, local model, or existing AI subscriptions</td><td>Built-in + BYOK for select AI models</td><td>Built-in</td><td>Built-in</td></tr>
-    <tr><td>Cost</td><td>Free</td><td>Freemium</td><td>Freemium</td><td>Freemium</td></tr>
-    <tr><td>Platforms</td><td>Chrome / Edge 125+</td><td>Chrome, Edge, Firefox, Safari, mobile</td><td>Chrome, Edge</td><td>Chrome, Edge, apps</td></tr>
+    <caption class="sr-only">RoamCat compared with Immersive Translate, Relingo and 彩云小译</caption>
+    <thead><tr><th scope="col"><span class="sr-only">Aspect</span></th><th scope="col">RoamCat</th><th scope="col">Immersive Translate</th><th scope="col">Relingo</th><th scope="col"><span lang="zh-CN">彩云小译</span></th></tr></thead>
+    <tbody>
+    <tr><th scope="row">Approach</th><td>Bilingual pairs <em>or</em> sparse assistance keeping English primary</td><td>Full-page bilingual translation</td><td>Graded word highlights</td><td>Page &amp; selection translation</td></tr>
+    <tr><th scope="row">Open source</th><td>✅ MPL-2.0</td><td>❌ closed</td><td>❌ closed</td><td>❌ closed</td></tr>
+    <tr><th scope="row">Model source</th><td>33 BYOK providers, local model, or existing AI subscriptions</td><td>Built-in + BYOK for select AI models</td><td>Built-in</td><td>Built-in</td></tr>
+    <tr><th scope="row">Cost</th><td>Free</td><td>Freemium</td><td>Freemium</td><td>Freemium</td></tr>
+    <tr><th scope="row">Platforms</th><td>Chrome / Edge 125+</td><td>Chrome, Edge, Firefox, Safari, mobile</td><td>Chrome, Edge</td><td>Chrome, Edge, apps</td></tr>
+    </tbody>
   </table>
-  <p class="mut" style="font-size:13.5px;margin-top:14px">Immersive Translate is the more mature set-and-forget translator on more platforms. Choose RoamCat if you want the English original to stay in charge, auditable open-source code, or to spend your existing AI subscriptions instead of buying another one. Open-source neighbors: <a href="https://github.com/fishjar/kiss-translator">kiss-translator</a>, <a href="https://github.com/openai-translator/openai-translator">openai-translator</a>. RoamCat is a rebuild of <a href="https://github.com/rockythink/relyless">RelyLess</a>.</p>
+  </div>
+  <p class="mut" style="font-size:13.5px;margin-top:14px">Immersive Translate is the more mature set-and-forget translator on more platforms. Choose RoamCat if you want the English original to stay in charge, auditable open-source code, or to spend your existing AI subscriptions instead of buying another one. Open-source neighbors: <a href="https://github.com/fishjar/kiss-translator">kiss-translator</a>, <a href="https://github.com/openai-translator/openai-translator">openai-translator</a>. RoamCat is a rebuild of <a href="https://github.com/rockythink/relyless">RelyLess</a>. Comparison last reviewed <time datetime="2026-11-01">2026-11-01</time> — competitor features change, so check their sites.</p>
 </section>
 
 <section id="faq">
   <h2>FAQ</h2>
-  <details open><summary>Is RoamCat free?</summary><p>Yes — MPL-2.0 open source, no accounts, no paid tier, no telemetry. You only pay if you choose to connect a paid API yourself.</p></details>
-  <details><summary>Does RoamCat send my reading data anywhere?</summary><p>There are no RoamCat servers. Reading history is off by default; page text leaves the device only when you invoke a model feature, and goes directly to the provider you configured.</p></details>
+  <details open><summary>What is RoamCat?</summary><p>RoamCat (<span lang="zh-CN">随心阅</span>) is a free, open-source browser extension for Chrome and Edge that helps Chinese-speaking readers read English websites. It has two modes on one engine: Bilingual Translation adds a Chinese line beside each English paragraph as you reach it, and Reading Assistance keeps the page in English and adds sparse hints that fade as you improve. It is local-first, with no RoamCat servers and no telemetry.</p></details>
+  <details><summary>Is RoamCat free?</summary><p>Yes — MPL-2.0 open source, no accounts, no paid tier, no telemetry. You only pay if you choose to connect a paid API yourself; the bundled local model and the subscription connector cost nothing extra.</p></details>
+  <details><summary>Is there an open-source alternative to Immersive Translate?</summary><p>RoamCat is one: its source is MPL-2.0, you bring your own model (33 API providers, local Ollama, or an existing ChatGPT / Grok / Google subscription), there is no telemetry, and a second mode keeps the English original primary. Immersive Translate is the more mature set-and-forget full-page translator on more platforms; other open-source options include <a href="https://github.com/fishjar/kiss-translator">kiss-translator</a> and <a href="https://github.com/openai-translator/openai-translator">openai-translator</a>.</p></details>
+  <details><summary>Does RoamCat send my reading data anywhere?</summary><p>There are no RoamCat servers. Reading history is off by default and opt-in per site; page text leaves the device only when you invoke a model feature, and goes directly to the provider you configured.</p></details>
   <details><summary>Which browsers are supported?</summary><p>Chrome and Edge 125+ on desktop (Manifest V3). Firefox and Safari are not currently supported.</p></details>
-  <details><summary>Can it translate an entire page?</summary><p>Yes — Bilingual mode inserts Chinese next to each English paragraph at your reading position. Reading Assistance mode keeps the page fully English with sparse hints that fade as you read.</p></details>
+  <details><summary>Is RoamCat on the Chrome Web Store?</summary><p>Not yet. Download the extension zip from <a href="https://github.com/dapao-777/roamcat/releases">GitHub Releases</a>, unzip it, open <code>chrome://extensions</code> (or <code>edge://extensions</code>), turn on Developer mode and load the unpacked extension folder. Chrome Web Store and Edge Add-ons listings are in progress.</p></details>
+  <details><summary>Can it translate an entire page?</summary><p>Yes — Bilingual mode inserts Chinese next to each English paragraph at your reading position, and a one-click toggle switches between bilingual and translation-only. Reading Assistance mode instead keeps the page fully English and only adds sparse hints that fade as you read.</p></details>
   <details><summary>Does it work with PDFs and EPUBs?</summary><p>Yes — the built-in reader opens local PDF/EPUB files and pasted articles with the same bilingual engine.</p></details>
-  <details><summary>Which AI models can I use?</summary><p>28 bring-your-own providers (OpenAI, DeepSeek, Gemini, Anthropic, xAI, OpenRouter, Ollama, Alibaba Cloud, Volcano Engine, Kimi, StepFun…), a bundled local model, or a local connector that reuses your signed-in ChatGPT / Grok / Antigravity CLI subscriptions.</p></details>
+  <details><summary>Can RoamCat translate YouTube captions or Twitch chat?</summary><p>Yes. YouTube videos that have caption tracks can show the original line with a Chinese translation; for videos without captions you can start manual cloud dictation, which needs the separately installed Google subscription connector. Twitch live-chat translation is off by default and translates only new public chat messages after you turn it on.</p></details>
+  <details><summary>Which AI models can I use?</summary><p>33 bring-your-own providers across 8 API protocols — OpenAI, Anthropic, Gemini, DeepSeek, Grok, OpenRouter, Groq, Mistral, Ollama, Azure OpenAI, Amazon Bedrock, Alibaba Cloud, Volcengine, Kimi, StepFun and more, including custom OpenAI-compatible endpoints — plus a bundled local model for on-device page-topic classification, or a local connector that reuses your signed-in ChatGPT / Grok / Antigravity CLI subscriptions with no API key.</p></details>
+  <details><summary>Can I use my ChatGPT, Grok or Google subscription instead of an API key?</summary><p>Yes, through an optional local connector. It reuses the official CLIs you are already signed in to — Codex CLI (ChatGPT), Grok CLI (SuperGrok / X Premium+) and Antigravity <code>agy</code> (Google AI Pro / Ultra) — over Native Messaging and a local service on <code>127.0.0.1</code>. It needs Node.js 20+ and the CLI installed; fees, quotas and availability are set by each provider.</p></details>
+  <details><summary>Can I run it with a local model such as Ollama?</summary><p>Yes. Pick the Ollama provider (default endpoint <code>http://localhost:11434</code>); it needs no API key, and page text then goes only to your own Ollama server. The bundled MiniLM model only classifies page topics offline — translation and explanations always need a model service you configure.</p></details>
+  <details><summary>What permissions does RoamCat ask for, and why?</summary><p>Eight Chrome permissions — <code>activeTab</code>, <code>scripting</code>, <code>storage</code>, <code>nativeMessaging</code>, <code>offscreen</code>, <code>contextMenus</code>, <code>tts</code> and <code>webNavigation</code> — plus access to http and https pages so it can read and translate whichever sites you choose. Content scripts may send only 38 of 81 internal message types, and API keys never reach content scripts. The <a href="https://github.com/dapao-777/roamcat/blob/main/roamcat-0.0.1/PRIVACY.md">privacy policy</a> lists each permission and its reason.</p></details>
+  <details><summary>How do I install RoamCat?</summary><p>Download the latest extension zip from GitHub Releases and unzip it, open <code>chrome://extensions</code>, turn on Developer mode, choose Load unpacked and pick the <code>extension</code> folder inside. Or build from source with Node.js 22.13+ (<code>npm ci</code>, then <code>npm run build</code>) and load <code>dist/extension</code>.</p></details>
 </section>
 
 <section id="install">
   <h2>Install in three steps</h2>
   <div class="steps">
-    <div class="step"><div><b>Build</b><p>Clone <a href="https://github.com/dapao-777/roamcat">the repository</a> and run <code>npm ci</code> then <code>npm run build</code> (Node.js 20.11+). A ready-made prerelease zip will follow on Releases.</p></div></div>
-    <div class="step"><div><b>Load</b><p>Open <code>chrome://extensions</code>, enable Developer mode, click "Load unpacked" and select the <code>dist/extension</code> folder.</p></div></div>
+    <div class="step"><div><b>Build</b><p>Clone <a href="https://github.com/dapao-777/roamcat">the repository</a> and run <code>npm ci</code> then <code>npm run build</code> (Node.js 22.13+) — or skip the build and download the ready-made zip from <a href="https://github.com/dapao-777/roamcat/releases">Releases</a>.</p></div></div>
+    <div class="step"><div><b>Load</b><p>Open <code>chrome://extensions</code>, enable Developer mode, click "Load unpacked" and select the <code>dist/extension</code> folder (or the <code>extension</code> folder inside the unzipped Releases package).</p></div></div>
     <div class="step"><div><b>Read</b><p>Click the toolbar icon on any English page — or press <code>Alt+Shift+T</code> for bilingual translation. Configure your model source in Settings.</p></div></div>
   </div>
 </section>
+
+</main>
 
 <footer>
   <div class="links">
@@ -277,6 +427,7 @@ footer .links{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:10px}
     <a href="zh.html" hreflang="zh-CN">中文页面</a>
   </div>
   <p>RoamCat is a rebuild of the open-source <a href="https://github.com/rockythink/relyless">RelyLess</a> — thanks to its author, Bilibili creator <a href="https://live.bilibili.com/392612">停车拾穗</a>.</p>
+  <p>Last updated <time datetime="2026-11-01">2026-11-01</time> · v0.7.0 · For AI assistants and crawlers: <a href="llms.txt">llms.txt</a> · <a href="llms-full.txt">llms-full.txt</a> · <a href="sitemap.xml">sitemap.xml</a></p>
 </footer>
 
 </div>

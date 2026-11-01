@@ -1,6 +1,6 @@
 # Chrome Web Store Listing — RoamCat · 随心阅
 
-> Last Updated: 2026-10-31（对照当前 Manifest 与 Chrome 官方文档校正商店 ZIP 结构、必需图片、全站权限、听写音频披露及发布门禁状态；修复伴读猫阅读辅助状态与首次点击；此前修复见版本历史）
+> Last Updated: 2026-11-01（补全版本历史，更正商店图标大小与截图文件名；隐私政策补充了远程领域识别与 Jev 的数据流，第三方许可声明补入 pdf.js / fflate / Silkscreen；此前对照当前 Manifest 与 Chrome 官方文档校正了商店 ZIP 结构、必需图片、全站权限、听写音频披露及发布门禁状态，此前修复见版本历史）
 > 本文是上架 Chrome Web Store / Microsoft Edge Add-ons 的单一事实源：商店文案、权限理由、隐私披露、版本历史。
 > 提交前请逐项核对文末「提交前检查单」。本文保存在 `roamcat-0.0.1/`，不在 Release ZIP 的打包白名单内。
 
@@ -110,7 +110,7 @@ Features
 • One-tap article digest with key takeaways and terms
 • A draggable desktop companion for quick access
 • YouTube bilingual captions: original text with Chinese translations, reusable translations when toggling captions, adjustable styling and a fresh start for each video
-• Manual cloud dictation for YouTube videos without captions; requires the separately installed local Google subscription connector and an available service
+• Manual cloud transcription for YouTube videos without captions; requires the separately installed local Google subscription connector and an available service
 • Optional translation of new public Twitch chat messages; off by default
 • Built-in reader for PDF / EPUB / pasted articles, with paragraph-by-paragraph bilingual translation
 • Fully bilingual interface (Chinese / English) across every page and in-page widget
@@ -145,13 +145,13 @@ Chinese (Simplified)
 
 | Asset | Dimensions | Status | Filename |
 |-------|-----------|--------|----------|
-| Store Icon [REQUIRED] | 128×128 PNG | ✅ Ready | `roamcat-0.0.1/extension/icons/icon-128.png`（实测 128×128，4.0KB） |
+| Store Icon [REQUIRED] | 128×128 PNG | ✅ Ready | `roamcat-0.0.1/extension/icons/icon-128.png`（实测 128×128） |
 | Screenshot 1 [REQUIRED] | 1280×800 | 🟡 需裁剪 | `preview/audit/real-lookup-card.png`（1440×1000） |
 | Screenshot 2 [RECOMMENDED] | 1280×800 | 🟡 需裁剪 | `preview/audit/real-page-translation.png`（1440×1000） |
 | Screenshot 3 [RECOMMENDED] | 1280×800 | 🟡 需裁剪 | `preview/audit/real-sentence-structure.png`（1440×1000） |
 | Screenshot 4 [RECOMMENDED] | 1280×800 | 🟡 需裁剪 | `preview/final-popup.png` 或 `preview/popup-emergency-ready.png` |
 | Screenshot 5 [RECOMMENDED] | 1280×800 | 🟡 需裁剪 | `.github/assets/welcome-light.png` / `options-dark.png`（最新 UI 审计产物，见下） |
-| 最新界面截图（README 同步） | — | ✅ 已更新 | `.github/assets/`：welcome-light/dark、options-light/dark/en、popup-light、reader-dark、widget-summary-dark、wordcard-light |
+| 最新界面截图（README 同步） | — | ✅ 已更新 | `.github/assets/`：welcome-light/dark、options-light/dark/en、popup-light、reader-dark、widget-summary-dark、widget-wordcard-dark |
 | 阅读器长文档分页 | — | 🟡 上架前更新 | 需展示分页与目录跳转；以当前 `preview/performance/` 验证结果为准 |
 | Small Promo Tile [REQUIRED] | 440×280 | ⬜ Not created | |
 | Marquee Promo Tile | 1400×560 | ⬜ Not created | |
@@ -178,7 +178,7 @@ Chinese (Simplified)
 | `contextMenus` | permissions | Adds selected-text help, reading assistance, and page translation actions to the right-click menu. |
 | `tts` | permissions | Reads requested English words and sentences using installed local English voices. Remote voices and third-party extension voices are excluded. |
 | `webNavigation` | permissions | Detects page and same-document navigation to keep reading features aligned with the current article, and optionally opens HTTP(S) PDF navigations in the built-in reader. |
-| `https://*/*`, `http://*/*` | host_permissions | Supports reading and bilingual translation on arbitrary user-selected websites, site-based automatic activation, the optional page companion, remote documents, and user-configured model endpoints. The current manifest requests these origins as required permissions. A lightweight bootstrap runs on ordinary HTTP(S) pages; reading features load when activated. Twitch chat translation is off by default. Caption translation sends text after activation; manually started YouTube cloud dictation also sends short player-audio segments through the local Google connector. |
+| `https://*/*`, `http://*/*` | host_permissions | Supports reading and bilingual translation on arbitrary user-selected websites, site-based automatic activation, the optional page companion, remote documents, and user-configured model endpoints. The current manifest requests these origins as required permissions. A lightweight bootstrap runs on ordinary HTTP(S) pages; reading features load when activated. Twitch chat translation is off by default. Caption translation sends text after activation; manually started YouTube cloud transcription also sends short player-audio segments through the local Google connector. |
 
 以上为当前实现的英文审核说明。不要把网站规则开关写成 `optional_host_permissions`；如要实现按站申请，需要先修改 Manifest、授权流程与相关回归。静态 Twitch 脚本只匹配其主框架；默认关闭的是聊天翻译功能，而非该脚本的加载。
 
@@ -202,7 +202,7 @@ Chinese (Simplified)
 | Location | 否 | 否 | — | 否 |
 | Web history | 否（不记录访问过的网址；阅读记录事件不含网址） | 否 | — | 否 |
 | User activity | 是（默认关闭，需明确开启并添加允许的网站） | 仅当用户开启「个性化分析」时，发送近 30 天有限的查询/摘要/客观统计（不含网址与原句） | 阅读记录、摘要与可逆的提示偏好调整 | 仅用户选择的服务商 |
-| Website content | 是（仅功能触发时：目标词句、所选段落、有限上下文；自动预备的文章上下文上限 12,000 字符；整页双语翻译时还包括导航、侧栏、页眉页脚等页面构件中的可见英文；在 YouTube 手动开启云端听写时，还包括正在播放的视频音轨片段，每段约 20 秒） | 是（发送到用户选择的模型服务；听写音频只经本机 Google 订阅连接器发给 Gemini） | 生成英文线索、局部中文说明、句子解构、整页双语翻译、摘要与无字幕视频的听写字幕 | 仅用户选择的服务商 |
+| Website content | 是（仅功能触发时：目标词句、所选段落、有限上下文；自动预备的文章上下文上限 12,000 字符；整页双语翻译时还包括导航、侧栏、页眉页脚等页面构件中的可见英文；选择远程领域识别（订阅连接器、自定义 API 或 Jev 增强判定）时，还包括标题和经过长度限制的正文样本；在 YouTube 手动开启云端听写时，还包括正在播放的视频音轨片段，每段约 20 秒） | 是（发送到用户选择的模型服务；听写音频只经本机 Google 订阅连接器发给 Gemini） | 生成英文线索、局部中文说明、句子解构、整页双语翻译、摘要、页面领域识别与无字幕视频的听写字幕 | 仅用户选择的服务商 |
 
 ### Data Use Certification
 - [x] Data is NOT sold to third parties
@@ -225,7 +225,7 @@ Chinese (Simplified)
 
 **Privacy Policy URL** [REQUIRED]
 `https://github.com/dapao-777/roamcat/blob/main/roamcat-0.0.1/PRIVACY.md`
-政策正文在 `roamcat-0.0.1/PRIVACY.md`。2026-10-31 已用浏览器打开上述 URL，页面展示更新日期 2026-10-31 与政策正文；最终提交前仍需以无登录状态复核公开可访问性，并确认远端包含最终的数据实践更新。若将来改用 GitHub Pages，先发布并核验新页面，再回填实际地址。
+政策正文在 `roamcat-0.0.1/PRIVACY.md`。2026-10-31 已用浏览器打开上述 URL，页面展示更新日期 2026-10-31 与政策正文；此后政策正文于 2026-11-01 补充了披露（远程领域识别与 Jev、本页双语翻译的处理范围），推送到远端后需重新核验；最终提交前仍需以无登录状态复核公开可访问性，并确认远端包含最终的数据实践更新。若将来改用 GitHub Pages，先发布并核验新页面，再回填实际地址。
 
 ---
 
@@ -257,6 +257,12 @@ https://github.com/dapao-777/roamcat
 | 0.7.0 | 2026-11-01 | 整页翻译新增「双语 / 仅译文」一键切换（网页左下角与弹窗），偏好保存在本地设置，不新增权限。核对商店发布流程，校正专用 ZIP 结构、必需小宣传图、全站权限与听写音频说明；更新发布前检查单，未提交商店。修复伴读猫在未开启页面误显示阅读辅助进行中、首次点击反向关闭，以及从弹窗切换后按钮状态不同步；工具栏红色「!」在换页面后撤掉，弹窗显示上一次快捷键失败的原因。 | GitHub Release（商店未提交） |
 | 0.6.1 | 2026-10-31 | 修复 Jev 接口域名变更时复用旧密钥、并发设置丢失或服务引用失效、旧版浏览器 PDF 读取、带命名空间前缀的 EPUB 解析和流式用量统计；远程文档增加主动登录重试及原站查看。权限范围不变。 | GitHub Release（商店未提交） |
 | 0.6.0 | 2026-10-31 | 改善长文章、阅读历史和大词库的响应；长文档分页，目录跳转后保留译文；修复超长段落漏翻、YouTube 双语开关后漏译、原生自动翻译替换原文、换视频后翻旧字幕及外观保存回退。现有权限与隐私披露范围不变。 | GitHub Release（商店未提交） |
+| 0.5.0 | 2026-10-28 | Twitch 直播聊天实时翻译（默认关闭，只处理开启后新到的公开消息）；本机常驻连接服务改为配对令牌认证；隐私政策与商店披露补上 Twitch 聊天会发送的数据。新增一项只匹配 `https://www.twitch.tv/*` 的静态脚本，权限列表不变。 | GitHub Release（商店未提交） |
+| 0.4.0 | 2026-10-26 | 「思考等级」按所选模型列出官方实际支持的档位。权限列表不变。 | GitHub Release（商店未提交） |
+| 0.3.1 | 2026-10-26 | 英文界面下，订阅连接器返回的已分类错误提示改为英文。权限列表不变。 | GitHub Release（商店未提交） |
+| 0.3.0 | 2026-10-26 | 各模型服务商新增可调「思考等级」。权限列表不变。 | GitHub Release（商店未提交） |
+| 0.2.0 | 2026-10-26 | 本机常驻连接服务（只监听 `127.0.0.1:47821`，登录自启，可用 `--no-service` 跳过）；设置页改版与「暖纸墨」新配色。权限列表不变。 | GitHub Release（商店未提交） |
+| 0.1.0 | 2026-10-22 | 首个正式版：YouTube 与带字幕轨道视频的双语字幕、三条订阅通道的稳定连接、技术站阅读（站点档案）、全界面中英双语与新一轮界面改版。权限列表不变。 | GitHub Release（商店未提交） |
 | 0.0.1（修订） | 2026-09-22 | 修复切换文章或模型后显示旧摘要的问题；新文章可立即重新总结，复制摘要保留原文标题和链接。 | Draft |
 | 0.0.1 | 2026-09-21 | 首个 prerelease：保留原文的稀疏阅读辅助（词义短注 / 局部中文说明）、查词卡片与顶部词注、句子阅读解构、本页双语翻译（按阅读位置推进、失败段可重试）、内置本地领域识别、生词渐退、文章摘要、伴读猫；模型服务支持自备 API 与 ChatGPT / Grok / Google 订阅连接器。 | Draft |
 
@@ -268,7 +274,7 @@ https://github.com/dapao-777/roamcat
 - **`host_permissions` 较宽**（`http/https://*/*`）：当前为必需权限，站点规则不是可选权限。官方说明全站权限可能延长审核；应核对每项现有功能需要的最小范围，逐项说明。改为 `optional_host_permissions` 是需要实现与回归的后续工作，不能仅修改材料声称已完成。
 - **第三方名称**：描述与设置中提到 ChatGPT / Grok / Google 仅为说明可复用的订阅权益，不代表关联或背书；商标归各自所有者（见 `NOTICE.txt` 与 `extension/icons/providers/NOTICE.txt`）。截图与文案避免使用第三方 Logo 于扩展自身品牌位。
 - **模型依赖**：功能质量、时延与费用取决于用户选择的服务；网络、额度、权限、CSP 与响应格式都可能导致失败，失败时保留英文原文并给出可操作提示。
-- **连接器平台与 ID**：单独安装的连接器需 Node.js 20.11+ 与对应 CLI；完整工程构建需 Node.js 22.13+。首次上传后取得商店 ID，更新安装说明并用正式 ID 验证本机连接；不要假设开发 ID 与正式 ID 相同。
+- **连接器平台与 ID**：单独安装的连接器需 Node.js 20+ 与对应 CLI；完整工程构建需 Node.js 22.13+。首次上传后取得商店 ID，更新安装说明并用正式 ID 验证本机连接；不要假设开发 ID 与正式 ID 相同。
 - **最低版本**：`minimum_chrome_version: 125`；个别增强（自动打开弹窗 `chrome.action.openPopup` 需 127+、存储访问级别需 136+）均已做特性检测与降级。
 - **Remote code**：无远端代码执行；本地 WASM 推理库随包分发（CSP `wasm-unsafe-eval`）。
 - **密钥安全待核对**：隐私政策明确说明 API Key 以本机明文保存；官方 User Data FAQ 对认证信息安全与静态存储加密有要求。提交前需检查实际保存方式并确定处理方案；本次未修改密钥存储实现，也未认定其已满足该要求。

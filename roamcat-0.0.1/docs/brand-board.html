@@ -274,7 +274,7 @@
     <p class="taglines">少一点依赖，多一点直接读懂。<br><em>Roam the English web like a cat.</em></p>
     <div class="hero-badges">
       <span class="chip">BRAND BOARD</span>
-      <span class="chip">v0.0.1</span>
+      <span class="chip">0.x</span>
       <span class="chip">PAPER · INK · PIXEL</span>
       <span class="chip">LOCAL-FIRST</span>
     </div>
@@ -313,7 +313,7 @@
       </figure>
       <figure class="mark-card">
         <div class="stage"><span class="badge-plate">MPL-2.0</span></div>
-        <figcaption>ENGRAVED PLATE · 凹刻铭牌用法</figcaption>
+        <figcaption>ENGRAVED PLATE · 凹刻铭牌用法（历史样式）</figcaption>
       </figure>
     </div>
 
@@ -328,56 +328,63 @@
   <section id="color">
     <p class="eyebrow">02 / COLOR</p>
     <h2>品牌色板 <span class="cn">纸 · 墨 · 琥</span></h2>
-    <p class="section-desc">色卡采用潘通式色票形制：上部色面、下部纸白签条（字标 + 编目号 + 色名 + 色值），悬停芯片可见对应 <code>--rc-*</code> token。用量仍是 70% 底 / 25% 墨 / 5% 琥——「墨色即强调」，琥珀越少越贵。</p>
+    <p class="section-desc">色卡采用潘通式色票形制：上部色面、下部纸白签条（字标 + 编目号 + 色名 + 色值），RC-001–003 是对外物料的品牌锚点，RC-1xx / 2xx 是产品界面色板，悬停芯片可见对应 <code>--rc-*</code> token。用量仍是 70% 底 / 25% 墨 / 5% 强调色——强调色越少越贵。</p>
 
     <div class="core-trio">
-      <div class="swatch-lg" title="--rc-paper"><div class="fill" style="background:#faf9f4"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-001</div><div class="nm">PAPER · 纸</div><div class="sub">#FAF9F4 · --rc-paper</div><div class="use">米白纸面 · 浅色卡片与浮层底</div></div></div>
-      <div class="swatch-lg" title="--rc-ink"><div class="fill" style="background:#161511"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-002</div><div class="nm">INK · 墨</div><div class="sub">#161511 · --rc-ink</div><div class="use">暖黑墨色 · 正文兼浅色主强调</div></div></div>
-      <div class="swatch-lg" title="--rc-accent"><div class="fill" style="background:#f0a63c"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-003</div><div class="nm">AMBER · 琥</div><div class="sub">#F0A63C · --rc-accent</div><div class="use">琥珀金 · 深色强调 / 品牌点缀</div></div></div>
+      <div class="swatch-lg" title="品牌锚点 · 对外物料"><div class="fill" style="background:#faf9f4"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-001</div><div class="nm">PAPER · 纸</div><div class="sub">#FAF9F4 · 品牌纸</div><div class="use">米白纸面 · 对外物料底色</div></div></div>
+      <div class="swatch-lg" title="品牌锚点 · 对外物料"><div class="fill" style="background:#161511"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-002</div><div class="nm">INK · 墨</div><div class="sub">#161511 · 品牌墨</div><div class="use">暖黑墨色 · 对外物料正文与墨猫</div></div></div>
+      <div class="swatch-lg" title="品牌锚点 · 对外物料"><div class="fill" style="background:#f0a63c"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-003</div><div class="nm">AMBER · 琥</div><div class="sub">#F0A63C · 品牌琥</div><div class="use">琥珀金 · 深色物料强调 / 品牌点缀</div></div></div>
     </div>
 
-    <p class="palette-title">LIGHT · 纸墨 — RC-1xx</p>
+    <p class="palette-title">LIGHT · 暖纸墨 — RC-1xx（产品界面）</p>
     <div class="palette">
-      <div class="swatch" title="--rc-canvas"><div class="fill" style="background:#efeee6"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-101</div><div class="nm">CANVAS · 米灰</div><div class="sub">#EFEEE6 · canvas</div></div></div>
-      <div class="swatch" title="--rc-paper"><div class="fill" style="background:#faf9f4"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-102</div><div class="nm">PAPER · 米白</div><div class="sub">#FAF9F4 · paper</div></div></div>
-      <div class="swatch" title="--rc-ink"><div class="fill" style="background:#161511"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-103</div><div class="nm">INK · 暖黑</div><div class="sub">#161511 · ink / accent</div></div></div>
-      <div class="swatch" title="--rc-ink-secondary"><div class="fill" style="background:#4c4a41"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-104</div><div class="nm">INK II · 次墨</div><div class="sub">#4C4A41 · ink-secondary</div></div></div>
-      <div class="swatch" title="--rc-ink-tertiary"><div class="fill" style="background:#6f6c5e"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-105</div><div class="nm">INK III · 淡墨</div><div class="sub">#6F6C5E · ink-tertiary</div></div></div>
-      <div class="swatch" title="--rc-ink-faint"><div class="fill" style="background:#9b9889"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-106</div><div class="nm">INK IV · 灰墨</div><div class="sub">#9B9889 · ink-faint</div></div></div>
-      <div class="swatch" title="--rc-line"><div class="fill" style="background:#dbd8c6"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-107</div><div class="nm">LINE · 纸线</div><div class="sub">#DBD8C6 · line</div></div></div>
-      <div class="swatch" title="--rc-amber"><div class="fill" style="background:#c26a1b"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-108</div><div class="nm">OCHRE · 赭石</div><div class="sub">#C26A1B · amber</div></div></div>
-      <div class="swatch" title="dot-wave / 营销图形"><div class="fill" style="background:#d97a2b"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-109</div><div class="nm">SIGNATURE · 签名琥</div><div class="sub">#D97A2B · graphics</div></div></div>
-      <div class="swatch" title="--rc-teal / --rc-green"><div class="fill" style="background:#8a5a17"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-110</div><div class="nm">TEAL · 暖棕</div><div class="sub">#8A5A17 · teal / green</div></div></div>
-      <div class="swatch" title="--rc-violet"><div class="fill" style="background:#70509c"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-111</div><div class="nm">VIOLET · 堇紫</div><div class="sub">#70509C · violet</div></div></div>
-      <div class="swatch" title="--rc-danger"><div class="fill" style="background:#b3261e"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-112</div><div class="nm">DANGER · 绛红</div><div class="sub">#B3261E · danger</div></div></div>
-      <div class="swatch" title="--rc-reading-mark"><div class="fill" style="background:#f0e8d2"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-113</div><div class="nm">MARK · 阅读标记</div><div class="sub">#F0E8D2 · reading-mark</div></div></div>
+      <div class="swatch" title="--rc-canvas / --rc-paper"><div class="fill" style="background:#f7f6f3"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-101</div><div class="nm">CANVAS · 暖白</div><div class="sub">#F7F6F3 · canvas / paper</div></div></div>
+      <div class="swatch" title="--rc-surface"><div class="fill" style="background:#ffffff"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-102</div><div class="nm">SURFACE · 卡片白</div><div class="sub">#FFFFFF · surface</div></div></div>
+      <div class="swatch" title="--rc-surface-subtle"><div class="fill" style="background:#f2f0ec"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-103</div><div class="nm">SUBTLE · 内嵌</div><div class="sub">#F2F0EC · surface-subtle</div></div></div>
+      <div class="swatch" title="--rc-surface-hover"><div class="fill" style="background:#ebe8e2"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-104</div><div class="nm">HOVER · 悬停</div><div class="sub">#EBE8E2 · surface-hover</div></div></div>
+      <div class="swatch" title="--rc-ink"><div class="fill" style="background:#1c1b18"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-105</div><div class="nm">INK · 暖黑</div><div class="sub">#1C1B18 · ink</div></div></div>
+      <div class="swatch" title="--rc-ink-secondary"><div class="fill" style="background:#57534b"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-106</div><div class="nm">INK II · 次墨</div><div class="sub">#57534B · ink-secondary</div></div></div>
+      <div class="swatch" title="--rc-ink-tertiary"><div class="fill" style="background:#6a655c"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-107</div><div class="nm">INK III · 淡墨</div><div class="sub">#6A655C · ink-tertiary</div></div></div>
+      <div class="swatch" title="--rc-line"><div class="fill" style="background:#e6e3dc"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-108</div><div class="nm">LINE · 纸线</div><div class="sub">#E6E3DC · line</div></div></div>
+      <div class="swatch" title="--rc-line-mid"><div class="fill" style="background:#d5d1c8"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-109</div><div class="nm">LINE II · 深纸线</div><div class="sub">#D5D1C8 · line-mid</div></div></div>
+      <div class="swatch" title="--rc-accent"><div class="fill" style="background:#9f4d25"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-110</div><div class="nm">ACCENT · 赭红</div><div class="sub">#9F4D25 · accent</div></div></div>
+      <div class="swatch" title="--rc-amber"><div class="fill" style="background:#b8652a"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-111</div><div class="nm">AMBER · 暖琥</div><div class="sub">#B8652A · amber</div></div></div>
+      <div class="swatch" title="--rc-teal / --rc-green"><div class="fill" style="background:#2b7149"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-112</div><div class="nm">GREEN · 成功绿</div><div class="sub">#2B7149 · teal / green</div></div></div>
+      <div class="swatch" title="--rc-violet"><div class="fill" style="background:#6e4fa0"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-113</div><div class="nm">VIOLET · 堇紫</div><div class="sub">#6E4FA0 · violet</div></div></div>
+      <div class="swatch" title="--rc-danger"><div class="fill" style="background:#b42318"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-114</div><div class="nm">DANGER · 绛红</div><div class="sub">#B42318 · danger</div></div></div>
+      <div class="swatch" title="--rc-warning"><div class="fill" style="background:#9a5806"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-115</div><div class="nm">WARNING · 赭黄</div><div class="sub">#9A5806 · warning</div></div></div>
+      <div class="swatch" title="--rc-reading-mark"><div class="fill" style="background:#f6e8db"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-116</div><div class="nm">MARK · 阅读标记</div><div class="sub">#F6E8DB · reading-mark</div></div></div>
+      <div class="swatch" title="dot-wave / 营销图形"><div class="fill" style="background:#d97a2b"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-117</div><div class="nm">SIGNATURE · 签名琥</div><div class="sub">#D97A2B · graphics</div></div></div>
     </div>
 
-    <p class="palette-title">DARK · 砚台墨 — RC-2xx</p>
+    <p class="palette-title">DARK · 暖炭黑 — RC-2xx（产品界面）</p>
     <div class="palette on-dark">
-      <div class="swatch" title="--rc-canvas"><div class="fill" style="background:#0b0e13"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-201</div><div class="nm">INKSTONE · 砚台底</div><div class="sub">#0B0E13 · canvas</div></div></div>
-      <div class="swatch" title="--rc-paper"><div class="fill" style="background:#10141b"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-202</div><div class="nm">PAPER D · 墨纸</div><div class="sub">#10141B · paper</div></div></div>
-      <div class="swatch" title="--rc-surface"><div class="fill" style="background:#161d27"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-203</div><div class="nm">SURFACE D · 浮层</div><div class="sub">#161D27 · surface</div></div></div>
-      <div class="swatch" title="--rc-ink"><div class="fill" style="background:#ece7d9"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-204</div><div class="nm">IVORY · 暖象牙</div><div class="sub">#ECE7D9 · ink</div></div></div>
-      <div class="swatch" title="--rc-ink-secondary"><div class="fill" style="background:#bcb6a5"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-205</div><div class="nm">IVORY II · 次象牙</div><div class="sub">#BCB6A5 · ink-secondary</div></div></div>
-      <div class="swatch" title="--rc-accent"><div class="fill" style="background:#f0a63c"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-206</div><div class="nm">AMBER · 琥珀金</div><div class="sub">#F0A63C · accent</div></div></div>
-      <div class="swatch" title="--rc-teal"><div class="fill" style="background:#d9ae6a"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-207</div><div class="nm">TEAL D · 淡金</div><div class="sub">#D9AE6A · teal</div></div></div>
-      <div class="swatch" title="--rc-violet"><div class="fill" style="background:#a99af2"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-208</div><div class="nm">VIOLET D · 兰紫</div><div class="sub">#A99AF2 · violet</div></div></div>
-      <div class="swatch" title="--rc-emerald"><div class="fill" style="background:#3ecf96"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-209</div><div class="nm">EMERALD · 翠绿</div><div class="sub">#3ECF96 · emerald</div></div></div>
-      <div class="swatch" title="--rc-danger"><div class="fill" style="background:#f0756a"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-210</div><div class="nm">DANGER D · 朱红</div><div class="sub">#F0756A · danger</div></div></div>
-      <div class="swatch" title="--rc-warning"><div class="fill" style="background:#eab23d"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-211</div><div class="nm">WARNING · 杏黄</div><div class="sub">#EAB23D · warning</div></div></div>
-      <div class="swatch" title="--rc-action"><div class="fill" style="background:#eae3d0"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-212</div><div class="nm">PORCELAIN · 瓷白键</div><div class="sub">#EAE3D0 · action</div></div></div>
+      <div class="swatch" title="--rc-canvas"><div class="fill" style="background:#141312"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-201</div><div class="nm">CHARCOAL · 暖炭底</div><div class="sub">#141312 · canvas</div></div></div>
+      <div class="swatch" title="--rc-paper"><div class="fill" style="background:#181715"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-202</div><div class="nm">PAPER D · 卡底</div><div class="sub">#181715 · paper</div></div></div>
+      <div class="swatch" title="--rc-surface"><div class="fill" style="background:#1d1c1a"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-203</div><div class="nm">SURFACE D · 浮层</div><div class="sub">#1D1C1A · surface</div></div></div>
+      <div class="swatch" title="--rc-surface-raised"><div class="fill" style="background:#22211e"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-204</div><div class="nm">RAISED · 抬升</div><div class="sub">#22211E · surface-raised</div></div></div>
+      <div class="swatch" title="--rc-surface-hover"><div class="fill" style="background:#272522"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-205</div><div class="nm">HOVER D · 悬停</div><div class="sub">#272522 · surface-hover</div></div></div>
+      <div class="swatch" title="--rc-ink"><div class="fill" style="background:#edebe6"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-206</div><div class="nm">IVORY · 暖象牙</div><div class="sub">#EDEBE6 · ink</div></div></div>
+      <div class="swatch" title="--rc-ink-secondary"><div class="fill" style="background:#bab5ab"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-207</div><div class="nm">IVORY II · 次象牙</div><div class="sub">#BAB5AB · ink-secondary</div></div></div>
+      <div class="swatch" title="--rc-ink-tertiary"><div class="fill" style="background:#959084"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-208</div><div class="nm">IVORY III · 淡象牙</div><div class="sub">#959084 · ink-tertiary</div></div></div>
+      <div class="swatch" title="--rc-accent"><div class="fill" style="background:#e8946a"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-209</div><div class="nm">ACCENT · 暖橙</div><div class="sub">#E8946A · accent</div></div></div>
+      <div class="swatch" title="--rc-amber / --rc-warning"><div class="fill" style="background:#e5a54b"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-210</div><div class="nm">AMBER D · 暖琥</div><div class="sub">#E5A54B · amber / warning</div></div></div>
+      <div class="swatch" title="--rc-teal / --rc-green"><div class="fill" style="background:#6cc596"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-211</div><div class="nm">GREEN D · 翠绿</div><div class="sub">#6CC596 · teal / green</div></div></div>
+      <div class="swatch" title="--rc-violet"><div class="fill" style="background:#b3a4f0"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-212</div><div class="nm">VIOLET D · 兰紫</div><div class="sub">#B3A4F0 · violet</div></div></div>
+      <div class="swatch" title="--rc-danger"><div class="fill" style="background:#f2836b"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-213</div><div class="nm">DANGER D · 朱红</div><div class="sub">#F2836B · danger</div></div></div>
     </div>
 
     <p class="palette-title">PET · 伴读猫专属 — RC-3xx</p>
     <div class="palette">
-      <div class="swatch" title="--pet-primary (light)"><div class="fill" style="background:#d97706"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-301</div><div class="nm">PET AMBER · 猫琥</div><div class="sub">#D97706 · pet-primary (L)</div></div></div>
-      <div class="swatch" title="--pet-cat-color (light)"><div class="fill" style="background:#0b0a0e"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-302</div><div class="nm">PET INK · 猫墨</div><div class="sub">#241F18 · pet-cat (L)</div></div></div>
-      <div class="swatch" title="--pet-ink (light)"><div class="fill" style="background:#0f172a"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-303</div><div class="nm">SLATE · 石板墨</div><div class="sub">#0F172A · pet-ink (L)</div></div></div>
-      <div class="swatch" title="--pet-primary (dark)"><div class="fill" style="background:#f0a63c"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-304</div><div class="nm">PET GOLD · 猫金</div><div class="sub">#F0A63C · pet-primary (D)</div></div></div>
-      <div class="swatch" title="--pet-cat-color / --pet-ink (dark)"><div class="fill" style="background:#ece7d9"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-305</div><div class="nm">PET IVORY · 猫象牙</div><div class="sub">#ECE7D9 · pet-cat / ink (D)</div></div></div>
+      <div class="swatch" title="--pet-primary (light)"><div class="fill" style="background:#9f4d25"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-301</div><div class="nm">PET ACCENT · 猫赭</div><div class="sub">#9F4D25 · pet-primary (L)</div></div></div>
+      <div class="swatch" title="--pet-ink (light)"><div class="fill" style="background:#1c1b18"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-302</div><div class="nm">PET INK · 猫墨</div><div class="sub">#1C1B18 · pet-ink (L)</div></div></div>
+      <div class="swatch" title="--pet-cat-body (light)"><div class="fill" style="background:#fffaf3"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-303</div><div class="nm">MOCHI CREAM · 奶白麻薯</div><div class="sub">#FFFAF3 · pet-cat-body (L)</div></div></div>
+      <div class="swatch" title="--pet-cat-face (light)"><div class="fill" style="background:#3a2e26"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-304</div><div class="nm">MOCHI FACE · 深色五官</div><div class="sub">#3A2E26 · pet-cat-face (L)</div></div></div>
+      <div class="swatch" title="--pet-primary (dark)"><div class="fill" style="background:#e8946a"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-305</div><div class="nm">PET ORANGE · 猫橙</div><div class="sub">#E8946A · pet-primary (D)</div></div></div>
+      <div class="swatch" title="--pet-ink (dark)"><div class="fill" style="background:#edebe6"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-306</div><div class="nm">PET IVORY · 猫象牙</div><div class="sub">#EDEBE6 · pet-ink (D)</div></div></div>
+      <div class="swatch" title="--pet-cat-body (dark)"><div class="fill" style="background:#0b0a0e"></div><div class="meta"><div class="wm">ROAMCAT®</div><div class="code">RC-307</div><div class="nm">MOCHI BLACK · 麻薯黑</div><div class="sub">#0B0A0E · pet-cat-body (D)</div></div></div>
     </div>
-    <p class="note">伴读猫（正面坐姿 + 风线拖尾）是图标侧影猫的<strong>另一种演绎</strong>，共享琥珀主色。编目号 RC-xxx 仅作品牌图形沟通用，工程引用仍以 <code>--rc-*</code> / <code>--pet-*</code> token 为准。</p>
+    <p class="note">伴读猫与图标上的是<strong>同一只麻薯猫</strong>（坐姿与贴边同一张脸），明暗两版各有一组 <code>--pet-cat-*</code> 变量。编目号 RC-xxx 仅作品牌图形沟通用，工程引用仍以 <code>--rc-*</code> / <code>--pet-*</code> token 为准。</p>
   </section>
 
   <hr class="rule">
@@ -386,24 +393,24 @@
   <section id="type">
     <p class="eyebrow">03 / TYPE</p>
     <h2>字体系统 <span class="cn">四种角色</span></h2>
-    <p class="section-desc">Silkscreen 只用在短而响的位置；阅读文本走宋体栈；界面控件走系统无衬线；技术标签走等宽。</p>
+    <p class="section-desc">Silkscreen 只用在短而响的位置；阅读文本走衬线栈（西文 Georgia 在前、中文宋体在后）；界面控件走系统无衬线；技术标签走等宽。</p>
 
     <div class="type-grid">
       <div class="type-card">
         <div class="role">DISPLAY · 品牌/数字/键帽</div>
-        <div class="stack">Silkscreen → JetBrains Mono → Courier（woff2 内置，SIL OFL 1.1）</div>
+        <div class="stack">Silkscreen → JetBrains Mono → Courier New（woff2 内置，SIL OFL 1.1）</div>
         <div class="sample-l display">ROAMCAT 0123456789</div>
-        <div class="sample-s display">ALT+SHIFT+T · MPL-2.0 · V0.0.1</div>
+        <div class="sample-s display">ALT+SHIFT+T · MPL-2.0 · V0.X</div>
       </div>
       <div class="type-card">
         <div class="role">READING · 阅读正文与标题</div>
-        <div class="stack">Noto Serif SC → Source Han Serif → 宋体 → Georgia · 15px / 1.6</div>
+        <div class="stack">Georgia → Times New Roman → Noto Serif SC → Source Han Serif SC → Songti SC → STSong → SimSun · 15px / 1.6</div>
         <div class="sample-l">像猫一样漫游英文世界</div>
         <div class="sample-s">双语翻译把页面英文原位译成中英对照；阅读辅助保留原文，只给稀疏提示与按需救援。The quick brown fox jumps over the lazy dog.</div>
       </div>
       <div class="type-card">
         <div class="role">UI · 界面功能字</div>
-        <div class="stack">Segoe UI → PingFang SC → Microsoft YaHei · 14px / 1.4</div>
+        <div class="stack">Segoe UI → PingFang SC → Microsoft YaHei → Noto Sans SC · 14px / 1.4</div>
         <div class="sample-l ui">设置 · 模型服务 · 阅读辅助</div>
         <div class="sample-s ui">控件、说明文字与表单标签使用系统无衬线，保证高密度信息下的清晰度。</div>
       </div>
@@ -421,8 +428,8 @@
   <!-- ======================= 04 MATERIAL ======================= -->
   <section id="material">
     <p class="eyebrow">04 / MATERIAL</p>
-    <h2>材质语言 <span class="cn">轻拟物 · 左上光源</span></h2>
-    <p class="section-desc">所有材质都是 token 化的 CSS 渐变与阴影，零图片。下面的控件是可直接按下/悬停的活样张。</p>
+    <h2>材质语言（历史样张） <span class="cn">产品界面已压平</span></h2>
+    <p class="section-desc">下面是早期拟物材质的历史样张，用本页自带的 CSS 渲染，不读取产品 token。产品界面自 0.1.0 起已压平：卡片是 1px 描边的扁平卡面，层级只靠边框与 <code>--elev-0/1/2</code>，对应的材质 token 保留名字、取值已压平。</p>
 
     <div class="mat-grid">
       <div class="mat-card">
@@ -512,12 +519,12 @@
     <ul class="rules">
       <li>字标写法：<code>ROAMCAT</code>（Silkscreen 全大写）或 <code>RoamCat · 随心阅</code>；不写 “Roam Cat”。</li>
       <li>标志留白 ≥ 图形高度 1/4；图形版最小 24px，应用图标最小 16px。</li>
-      <li>亮底猫体 <code>#161511</code>，暗底 <code>#ece7d9</code> 或 <code>#f0a63c</code>；不套渐变/阴影，不拉伸，旋转 ≤ ±15°。</li>
+      <li>亮底猫体 <code>#1c1b18</code>（<code>--rc-ink</code>），暗底 <code>#edebe6</code> 或 <code>#e8946a</code>；对外物料沿用品牌锚点 <code>#161511</code> / <code>#ece7d9</code> / <code>#f0a63c</code>；不套渐变/阴影，不拉伸，旋转 ≤ ±15°。</li>
       <li>对外图形配方：纸底 <code>#faf9f4</code> + 墨猫 + 签名琥 <code>#d97a2b</code> 点缀。</li>
       <li>语义色（绿/红/黄/紫）只在语义位出现，不做装饰。</li>
       <li>新色只进 <code>src/styles/tokens.css</code>，然后 <code>npm run gen:tokens</code>；页面样式不覆写主题 token。</li>
-      <li>伴读猫 <code>--pet-*</code> 在 floating-pet.js 有两处内联定义（data-theme + media 兜底），需同步改。</li>
-      <li> Silkscreen 不排段落、不排中文；中英混排中文走宋体栈、拉丁/数字走 Silkscreen。</li>
+      <li>伴读猫 <code>--pet-*</code> 深色变量在 floating-pet-styles.js 里内联两处（data-theme + media 兜底），需同步改。</li>
+      <li> Silkscreen 不排段落、不排中文；中英混排的阅读文本里西文走 Georgia、中文落到宋体栈，数字读数走 Silkscreen。</li>
       <li>界面拒绝玻璃拟态、霓虹渐变、3D 贴图；彩虹边缘光只属于猫，图形元素只用边缘光 / 圆点 / 像素三件套。</li>
     </ul>
   </section>

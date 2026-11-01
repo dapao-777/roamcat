@@ -27,6 +27,7 @@
   <a href="#-模型服务">模型服务</a> ·
   <a href="#-常见问题">常见问题</a> ·
   <a href="#-文档">文档</a> ·
+  <a href="https://dapao-777.github.io/roamcat/zh.html">官网</a> ·
   <a href="README.en.md">English</a>
 </p>
 
@@ -43,6 +44,8 @@
   </a><br>
   <sub>▶ 34 秒介绍短片 · 点击片段观看完整版（带音乐）</sub>
 </p>
+
+**RoamCat（随心阅）**是免费开源的 **Chrome / Edge** 浏览器扩展，帮助中文读者阅读英文网站：把页面原位译成**中英双语对照**，或保留整页英文、只给随你进步而**渐退的稀疏提示**；还支持 **PDF / EPUB 文件**、**YouTube 双语字幕**和需手动开启的 **Twitch 直播聊天翻译**。**本地优先、无遥测**，AI 由你自己选：**33 家自备 API**、本地 Ollama 模型，或你已有的 **ChatGPT / Grok / Google 订阅**。更多见[官网](https://dapao-777.github.io/roamcat/zh.html)，给 AI 助手的摘要见 [llms.txt](https://dapao-777.github.io/roamcat/llms.txt)。
 
 > [!NOTE]
 > **0.7.0：整页翻译一键切换「双语 / 仅译文」，弹窗说明不再截断、引导页适配窄窗口**。从 [Releases](https://github.com/dapao-777/roamcat/releases/latest) 下载安装包或从源码构建，再以开发者模式加载（见[快速开始](#-快速开始)），尚未上架扩展商店。本项目是对开源项目 [RelyLess](https://github.com/rockythink/relyless) 的重构、优化与修复，详见[致谢](#-致谢)。
@@ -119,7 +122,7 @@
 
 需要 **Chrome 或 Edge 125+**。
 
-**方式 A：Release 安装包。** 从 [Releases](https://github.com/dapao-777/roamcat/releases/latest) 下载 `roamcat-0.7.0-extension.zip` 并解压。打开 `chrome://extensions`（或 `edge://extensions`），开启**开发者模式**，点**加载已解压的扩展**，选择解压出的 **`roamcat-0.7.0/extension`** 文件夹。要用订阅连接器，在包含 `roamcat-0.7.0/` 的目录里运行 `node roamcat-0.7.0/connector/install.mjs`（需要 Node.js 20.11+）；它会按这个文件夹算出扩展 ID，移动文件夹后要重新运行。
+**方式 A：Release 安装包。** 从 [Releases](https://github.com/dapao-777/roamcat/releases/latest) 下载 `roamcat-0.7.0-extension.zip` 并解压。打开 `chrome://extensions`（或 `edge://extensions`），开启**开发者模式**，点**加载已解压的扩展**，选择解压出的 **`roamcat-0.7.0/extension`** 文件夹。要用订阅连接器，在包含 `roamcat-0.7.0/` 的目录里运行 `node roamcat-0.7.0/connector/install.mjs`（需要 Node.js 20+）；它会按这个文件夹算出扩展 ID，移动文件夹后要重新运行。
 
 **方式 B：从源码构建**（需要 Node.js 22.13+；Node 24 已验证）：
 
@@ -149,7 +152,7 @@ node roamcat-0.0.1/connector/install.mjs --extension-id afpeggkplomdjjiemgajjgca
 ## 🔒 本地优先的边界
 
 - 阅读记录默认关闭且按站授权，无痕页面不采集；API Key 只存在 `chrome.storage.local`。
-- 密钥不进内容脚本、诊断日志或连接器；内容脚本只能使用 77 种消息中的 **36 种白名单类型**。
+- 密钥不进内容脚本、诊断日志或连接器；内容脚本只能使用 81 种消息中的 **38 种白名单类型**。
 - 模型输出全部经结构化校验（`gloss.mjs`）才进入界面；自定义 API 地址强制 HTTPS（仅本机回环允许 HTTP）。
 - 页面文本只在你主动调用模型功能时离开本机，直达你配置的服务商。完整说明见[隐私政策](roamcat-0.0.1/PRIVACY.md)。
 
@@ -214,18 +217,18 @@ node roamcat-0.0.1/connector/install.mjs --extension-id afpeggkplomdjjiemgajjgca
 
 ## 🎨 设计语言
 
-**纸墨 × 像素 × 轻拟物**。米白纸面 `#faf9f4` + 暖黑墨色 `#161511`，Silkscreen 像素字体与边缘发光的麻薯猫点缀数码感；控件是带物理反馈的键帽。暗色主题是同一套材质的镜像：**砚台冷墨**——微蓝砚底 `#0b0e13` + 暖象牙字 `#ece7d9` + 瓷白漆主键，琥珀金 `#f0a63c` 只留给语义强调。两种主题下的小号文字都满足 WCAG AA 对比度。
+**暖纸墨 × 像素 × 克制的扁平**。亮色是暖白纸面 `#f7f6f3` + 白色卡片 + 墨黑字 `#1c1b18`，强调色是赭红 `#9f4d25`；暗色是暖炭黑 `#141312` + 暖象牙字 `#edebe6`，强调色提亮为暖橙 `#e8946a`。Silkscreen 像素字体与边缘发光的麻薯猫点缀数码感；控件是 1px 描边的扁平卡片和按钮，只有浮在网页之上的挂件才有阴影。两种主题下的小号文字都满足 WCAG AA 对比度。
 
 <details>
 <summary><strong>设计规格速览</strong></summary>
 
 | 项 | 规格 |
 |---|---|
-| 界面文字 | 系统无衬线（Segoe UI / PingFang SC / 微软雅黑），14–15px |
-| 阅读文本与标题 | 宋体系（Noto Serif SC → 宋体 → Georgia），正文 15px / 行距 1.6 |
+| 界面文字 | 系统无衬线（Segoe UI / PingFang SC / 微软雅黑），控件 14px、辅助 13px |
+| 阅读文本 | 衬线体（西文 Georgia 在前，中文落到 Noto Serif SC / 宋体），正文 15px / 行距 1.6；用于词头、例句、阅读器正文与引导页标题 |
 | 品牌 / 数字 / 键帽 | Silkscreen 像素体（已内置 woff2，离线可用） |
-| 色板 | 浅色：纸 `#faf9f4` + 墨 `#161511`；深色：砚台 `#0b0e13` + 象牙 `#ece7d9` + 琥珀 `#f0a63c` |
-| 标志与形象 | 麻薯猫两身打扮——砚底砖上的边缘发光黑猫（`icons/roamcat.svg`）与拿铁砖上的奶白猫（`icons/roamcat-light.svg`），另有单色标；均由 `tools/make-brand-cat.mjs` 生成 |
+| 色板 | 浅色：画布 `#f7f6f3` + 墨 `#1c1b18` + 赭红 `#9f4d25`；深色：画布 `#141312` + 象牙 `#edebe6` + 暖橙 `#e8946a` |
+| 标志与形象 | 麻薯猫两身打扮——砚底砖上的边缘发光黑猫（`icons/roamcat.svg`）与粉蓝晨光砖上的奶白猫（`icons/roamcat-light.svg`），另有单色标；均由 `tools/make-brand-cat.mjs` 生成 |
 | 动效 | 80 / 160 / 280 / 440ms 四档 + `linear()` 弹簧曲线，遵守 `prefers-reduced-motion` |
 
 </details>
@@ -239,15 +242,16 @@ node roamcat-0.0.1/connector/install.mjs --extension-id afpeggkplomdjjiemgajjgca
 
 ```
 ┌────────────────────────────── 浏览器 ──────────────────────────────────┐
-│ 内容脚本（静态九件套，document_idle）                                    │
-│   design.js → i18n-content.js → reading-style.js → content-ui.js →     │
-│   pet-quotes.js → complexity.js → formula.js → site-profiles.js →      │
-│   content.js                                                           │
-│ 动态注册（chrome.scripting，按需注入）                                   │
-│   · floating-pet.js 伴读猫 · auto-start.js 自动开启                      │
+│ 内容脚本：静态只有 page-bootstrap.js（document_idle，只回应状态）      │
+│   阅读 / 翻译 / 摘要等操作时，后台经 ENSURE_PAGE_UI 按需注入：         │
+│   design.js → i18n-content.js → content-ui.js → pet-quotes.js →        │
+│   reading-style.js → complexity.js → formula.js → site-profiles.js →   │
+│   content.js（Twitch 页另有静态项：live-chat.js）                      │
+│ 动态注册（chrome.scripting，按设置）                                   │
+│   · floating-pet*.js 伴读猫 · auto-start.js 自动开启                   │
 ├────────────────────────────────────────────────────────────────────────┤
 │ Service Worker：background.js（ES module，无状态）                       │
-│   77 种消息路由 · 设置校验与迁移 · 缓存 / 并发 / 看门狗 · 订阅端口          │
+│   81 种消息路由 · 设置校验与迁移 · 缓存 / 并发 / 看门狗 · 订阅端口          │
 ├────────────────────────────────────────────────────────────────────────┤
 │ 扩展页面：popup / options / welcome / reader                            │
 │   src/ 下的 Lit 应用，经 Vite 构建到 dist/extension/ui/                   │
@@ -260,9 +264,9 @@ node roamcat-0.0.1/connector/install.mjs --extension-id afpeggkplomdjjiemgajjgca
 
 </details>
 
-- **信任边界**——扩展页（可信）→ 内容脚本（36 种白名单消息）→ 模型输出（校验后才进界面）→ 网页 DOM（只以数据身份进入提示词）。
-- **消息协议唯一事实源**——`extension/message-protocol.js` 登记全部 77 种消息与载荷解析器，契约测试保证路由表同步。
-- **唯一的双语运行时**——`extension/i18n.js` 收录 1,784 个中英对齐键，扩展页与 Service Worker 共用；内容脚本加载由它生成的 `i18n-content.js`，运行时相同，词典只留网页侧用到的命名空间。
+- **信任边界**——扩展页（可信）→ 内容脚本（38 种白名单消息）→ 模型输出（校验后才进界面）→ 网页 DOM（只以数据身份进入提示词）。
+- **消息协议唯一事实源**——`extension/message-protocol.js` 登记全部 81 种消息与载荷解析器，契约测试保证路由表同步。
+- **唯一的双语运行时**——`extension/i18n.js` 收录全部中英对齐的界面文案，扩展页与 Service Worker 共用；内容脚本加载由它生成的 `i18n-content.js`，运行时相同，词典只留网页侧用到的命名空间。
 - **无状态 Service Worker**——跨调用状态落在 `chrome.storage` 与 IndexedDB；写操作串行化，长操作带看门狗。
 
 完整工程规范见 [`SPEC.md`](roamcat-0.0.1/SPEC.md)。
@@ -273,17 +277,18 @@ node roamcat-0.0.1/connector/install.mjs --extension-id afpeggkplomdjjiemgajjgca
 |---|---|
 | `npm run build` · `npm run build:watch` | 开发构建 → `dist/extension`（扩展 ID 固定）；watch 监听页面、页内 UI、只复制的扩展文件与构建配置并串行重建 |
 | `npm test` | 单元测试（经 `tools/run-unit-tests.mjs` 调用 `node --test`，数量以运行结果为准） |
-| `npm run verify` | 模块图门禁 R1–R11：加载契约、无环、分层方向、文件头、manifest 资源 |
+| `npm run verify` | 模块图门禁 R1–R12：加载契约、无环、分层方向、文件头、manifest 资源、字号档位 |
+| `npm run verify:all` | 一键跑全部门禁：静态检查 → 构建 → 浏览器门禁 → 生产构建门禁，汇总写 `preview/gates/summary.json`（`-- --quick` 跳过站点与生产构建门禁） |
 | `npm run verify:build` | 构建产物门禁：字节比对 + 浏览器实际加载冒烟 |
-| `npm run verify:ui` | 131 项全界面门禁：页面与挂件遍历、明暗主题、中英文断言，截图 → `preview/ui-audit/` |
-| `npm run verify:pet` | 69 项伴读猫门禁：真实点击全部悬浮按钮 |
+| `npm run verify:ui` | 全界面门禁：页面与挂件遍历、明暗主题、中英文断言，截图 → `preview/ui-audit/` |
+| `npm run verify:pet` | 伴读猫门禁：真实点击全部悬浮按钮 |
 | `npm run verify:sites` | 站点档案端到端检查：fixture 按真实 URL 路由（`--live` 复核真站） |
 | `npm run verify:options` | 设置页行为门禁：保存、失败回滚、重置、模型列表等 |
-| `npm run verify:audit` | 30 项端到端审计：浏览器加载真实后台 + 本地假模型 |
+| `npm run verify:audit` | 端到端审计：浏览器加载真实后台 + 本地假模型 |
 | `npm run build:release` · `node tools/package-release.mjs` | 发布构建（不带开发 key）→ `dist/release/roamcat-<版本>-extension.zip` 与 `SHA256SUMS` |
 | `npm run gen:tokens` · `npm run gen:i18n` · `node tools/check-dict.cjs` | 由 tokens.css 重新生成 `extension/design.js` · 重新生成内容脚本词典 `extension/i18n-content.js` · 中英字典对齐校验 |
 
-浏览器门禁需要本机 [ego lite](https://lite.ego.app/) 和 Node.js 22+：`tools/lib/ego.mjs` 以临时配置另起一个无头 ego，经 Chrome DevTools Protocol 直接驱动（不用 Playwright）；ego 装在别处时设 `ROAMCAT_EGO` 指向 `ego.exe`。贡献前请读 [CONTRIBUTING.md](CONTRIBUTING.md)；安全漏洞请按 [SECURITY.md](SECURITY.md) 私下报告。
+浏览器门禁需要本机 [ego lite](https://lite.ego.app/) 和 Node.js 22+：`tools/lib/ego.mjs` 以临时配置另起一个无头 ego，经 Chrome DevTools Protocol 直接驱动（不用 Playwright）；ego 装在别处时设 `ROAMCAT_EGO` 指向 `ego.exe`。其余专项门禁（视频字幕、Twitch 聊天、阅读器、性能、云端听写、常驻服务等）的命令与用途见 [`AGENTS.md`](AGENTS.md)。贡献前请读 [CONTRIBUTING.md](CONTRIBUTING.md)；安全漏洞请按 [SECURITY.md](SECURITY.md) 私下报告。
 
 <details>
 <summary><strong>仓库布局</strong></summary>

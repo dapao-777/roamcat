@@ -40,4 +40,4 @@
 
 ## 来源
 
-本行为准则改编自 [Contributor Covenant](https://www.contributor-covenant.org) 2.1 版。
+本行为准则的结构与条款改编自 [Contributor Covenant](https://www.contributor-covenant.org) 1.4 版，「我们的承诺」里的适用人群列表参照其 2.x 版。

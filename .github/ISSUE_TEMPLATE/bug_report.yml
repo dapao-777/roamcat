@@ -11,7 +11,7 @@ body:
     attributes:
       label: 扩展版本
       description: chrome://extensions 中 RoamCat 显示的版本号
-      placeholder: 0.0.1
+      placeholder: x.y.z
     validations:
       required: true
   - type: input
@@ -44,7 +44,7 @@ body:
     id: diagnostics
     attributes:
       label: 诊断导出（可选）
-      description: 设置页「数据与隐私 → 导出诊断」的 JSON，请先自查无敏感内容
+      description: 设置页「运行诊断 → 导出诊断 JSON」的 JSON，请先自查无敏感内容
       render: json
   - type: textarea
     id: console
