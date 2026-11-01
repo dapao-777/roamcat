@@ -196,6 +196,28 @@ test('迁移后的 background.js 在 mock 浏览器中构造注册表并按信�
     }
   });
 
+  await t.test('整页翻译显示方式：网页主框架可切换并进入网页快照，非法值与子框架被拒', async () => {
+    const before = await send({type: 'STATE_GET'}, trustedPopup(chrome));
+    assert.equal(before.data.settings.pageTranslationDisplay, 'bilingual');
+    try {
+      const saved = await send({type: 'PAGE_TRANSLATION_DISPLAY_SET', display: 'translation'}, contentPage(chrome));
+      assert.equal(saved.ok, true, saved.error);
+      assert.equal(saved.data.display, 'translation');
+      const snapshot = await send({type: 'STATE_GET'}, contentPage(chrome));
+      assert.equal(snapshot.data.settings.pageTranslationDisplay, 'translation');
+      const invalid = await send({type: 'PAGE_TRANSLATION_DISPLAY_SET', display: 'original'}, contentPage(chrome));
+      assert.equal(invalid.ok, false);
+      assert.match(invalid.error, /无效的整页翻译显示方式。/u);
+      const frame = await send({type: 'PAGE_TRANSLATION_DISPLAY_SET', display: 'bilingual'}, {...contentPage(chrome), frameId: 2});
+      assert.equal(frame.ok, false);
+      assert.match(frame.error, /只能由网页主框架更新/u);
+      const patch = await send({type: 'STATE_PATCH', patch: {pageTranslationDisplay: 'original'}}, trustedPopup(chrome));
+      assert.equal(patch.ok, false);
+    } finally {
+      await send({type: 'PAGE_TRANSLATION_DISPLAY_SET', display: before.data.settings.pageTranslationDisplay}, trustedPopup(chrome));
+    }
+  });
+
   await t.test('未知类型得到与旧 switch default 一致的错误', async () => {
     const unknown = await send({type: 'NOT_A_REAL_TYPE'}, trustedPopup(chrome));
     assert.equal(unknown.ok, false);

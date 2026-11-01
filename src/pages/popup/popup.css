@@ -42,6 +42,14 @@ roamcat-popup { display: contents; }
   animation: rc-shimmer 1.6s var(--rc-ease-standard) infinite;
 }
 
+/* 整页翻译显示方式：双语 / 仅译文分段按钮（未开始翻译时也可先选好） */
+.popup-body .emergency-display { display: flex; align-items: center; justify-content: space-between; gap: var(--rc-space-3); margin-top: 8px; min-width: 0; color: var(--rc-ink-tertiary); font-size: var(--fs-2); }
+.popup-body .emergency-display-choices { display: inline-flex; flex: none; gap: 2px; padding: 3px; border: 1px solid var(--rc-line); border-radius: 8px; background: var(--rc-surface-subtle); }
+.popup-body .emergency-display-choices button { min-height: 28px; padding: 3px 12px; border: 0; border-radius: 6px; background: transparent; color: var(--rc-ink-tertiary); font: inherit; font-size: var(--fs-2); line-height: 1.5; white-space: nowrap; cursor: pointer; }
+.popup-body .emergency-display-choices button:hover:not(:disabled) { color: var(--rc-ink); }
+.popup-body .emergency-display-choices button[aria-pressed="true"] { background: var(--rc-surface); color: var(--rc-ink); font-weight: 600; box-shadow: 0 0 0 1px var(--rc-line-mid); }
+.popup-body .emergency-display-choices button:focus-visible { outline: var(--rc-focus-ring); outline-offset: 1px; }
+
 /* 按钮按压反馈：独立 scale 属性，与 transform 位移共存 */
 .primary-action:where(:enabled):active,
 .secondary-button:where(:enabled):active,

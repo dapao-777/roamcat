@@ -64,6 +64,7 @@ class RoamcatPopup extends LitElement {
   get #supported() { return Boolean(this.#tab?.id && /^https?:\/\//iu.test(this.#tab.url || '')); }
   get #origin() { try { return this.#supported ? new URL(this.#tab.url).origin : ''; } catch { return ''; } }
   get #hostname() { try { return this.#supported ? new URL(this.#tab.url).hostname : t('pop.thisTab'); } catch { return t('pop.thisTab'); } }
+  get #translationDisplay() { return this.#state?.settings?.pageTranslationDisplay === 'translation' ? 'translation' : 'bilingual'; }
   get #lookupKey() {
     const key = this.#state?.settings?.lookupKey;
     return typeof key === 'string' && /^[A-Z]$/u.test(key) ? key : 'D';
@@ -331,6 +332,22 @@ class RoamcatPopup extends LitElement {
     }
   }
 
+  // 「双语 / 仅译文」：只改这一项偏好，后台再轻量同步各标签页（本页已有译文时立即切换）。
+  async #setTranslationDisplay(display) {
+    const previous = this.#translationDisplay;
+    if (!this.#state || display === previous) return;
+    const apply = value => { this.#state = {...this.#state, settings: {...this.#state.settings, pageTranslationDisplay: value}}; };
+    apply(display);
+    this.requestUpdate();
+    try {
+      await request('PAGE_TRANSLATION_DISPLAY_SET', {display});
+    } catch (error) {
+      if (this.#translationDisplay === display) apply(previous);
+      this.#emergencyResult = {text: errorText(error), error: true};
+      this.requestUpdate();
+    }
+  }
+
   async #emergencyAction(type) {
     if (this.#busy || !this.#supported) return;
     this.#busy = true;
@@ -526,6 +543,14 @@ class RoamcatPopup extends LitElement {
             <span id="emergency-progress-fill" class="emergency-progress-fill" style=${styleMap({width: emergencyPct + '%'})}></span>
           </div>
           <span id="emergency-counts">${t('pop.emCounts',{pending:this.#emergency.pending,failed:this.#emergency.failed,skipped:this.#emergency.skipped})}</span>
+        </div>
+
+        <div id="emergency-display" class="emergency-display">
+          <span id="emergency-display-label">${t('pop.tdLabel')}</span>
+          <div class="emergency-display-choices" role="group" aria-labelledby="emergency-display-label">
+            ${['bilingual', 'translation'].map(display => html`<button type="button" data-display=${display} aria-pressed=${String(this.#translationDisplay === display)}
+              .disabled=${!this.#state} @click=${() => void this.#setTranslationDisplay(display)}>${t(display === 'bilingual' ? 'ui.tdBilingual' : 'ui.tdTranslation')}</button>`)}
+          </div>
         </div>
 
         <div id="emergency-actions" class="provider-actions" role="group" aria-label=${t('pop.emGroup')} ?hidden=${!emergencyVisible}>

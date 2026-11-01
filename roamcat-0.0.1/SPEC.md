@@ -119,7 +119,7 @@
 | `activation.js` / `auto-start.js` | 自动开启策略、动态注册 content script、SPA 导航检测；`pageOrigin`/`sitePattern`/`validateAutomation`/`validateVideo`/`registrationMatches` 为纯函数（已纳入领域层 lint 与单测） | `registrationMatches()` 是权限/注册的唯一事实源 |
 | `shared.js` | `DEFAULT_SETTINGS`、`normalizeSettings`、`wordId`、`request()` | 旧配置键不得通过 spread 复活 |
 | `message-router.js` | 类型化消息路由器：注册表构造、重复类型即失败、`parse`+`handle` 两段派发 | 泛型实现，不认识任何具体消息；未知类型抛「未知请求。」 |
-| `message-protocol.js` | 消息协议唯一事实源：`MESSAGE_TYPES`（80 种）、`CONTENT_ALLOWED_TYPES`、纯载荷解析器与自 `background.js` 下沉的 `validatePatch`（设置补丁校验）、`settingsPatchEffects`（STATE_PATCH 副作用计划）、`parseAssistRequest`/`parsePassageRequestRef`（请求身份）、`onDemandSuggestionDecision`（按需建议判定）、`text`/`domain`/`customDetectionService` | 只依赖 `shared.js`、`domain-routing.js`、`api-providers.mjs`、`gloss.mjs` 等领域/协议模块；新增类型必须同步注册表与第 5 节 |
+| `message-protocol.js` | 消息协议唯一事实源：`MESSAGE_TYPES`（81 种）、`CONTENT_ALLOWED_TYPES`、纯载荷解析器与自 `background.js` 下沉的 `validatePatch`（设置补丁校验）、`settingsPatchEffects`（STATE_PATCH 副作用计划）、`parseAssistRequest`/`parsePassageRequestRef`（请求身份）、`onDemandSuggestionDecision`（按需建议判定）、`text`/`domain`/`customDetectionService` | 只依赖 `shared.js`、`domain-routing.js`、`api-providers.mjs`、`gloss.mjs` 等领域/协议模块；新增类型必须同步注册表与第 5 节 |
 | `api-providers.mjs` / `api-transport.mjs` | 33 家服务商目录、8 种协议适配、结构化输出能力探测、模型列表、各协议 usage 抽取（`onUsage` 回调） | HTTPS only（本机回环除外）；同源重定向禁止；密钥不进内容脚本 |
 | `thinking-levels.mjs` | 按「服务商 + 模型」声明思考档位（官方档位名、默认档、请求参数），供设置页与请求层共用 | 只收录官方文档写明的模型；未收录模型返回 null，请求沿用关闭思考参数 |
 | `rate-window.mjs` | 按键计数的滑动时间窗限额 `createRateWindow({limit,windowMs})`（`take`/`forget`） | 纯函数领域模块；计数只在内存，SW 重启归零——只作防失控上限，不承担正确性 |
@@ -179,10 +179,10 @@
 - 内容脚本仅可用白名单（`contentAllowed`，37 种，以 `CONTENT_ALLOWED_TYPES` 为准）：状态读取、分析、支持批次、解构、求助、翻译、历史信号、诊断回执、伴读猫位置等。
 - 数据变更类消息进入 `activeDataRequests` 集合，供清理时排空（`clearReadingData`）。
 
-### 5.2 消息分组（80 种，与 `MESSAGE_TYPES` 顺序一致）
+### 5.2 消息分组（81 种，与 `MESSAGE_TYPES` 顺序一致）
 | 分组 | 类型 |
 |---|---|
-| 状态与设置（8） | `STATE_GET` `STATE_PATCH` `AUTOMATION_GET` `AUTOMATION_PATCH` `PAGE_ACTIVITY_SET` `VIDEO_SETTINGS_PATCH` `FLOATING_PET_POSITION_SET` `OPEN_OPTIONS` |
+| 状态与设置（9） | `STATE_GET` `STATE_PATCH` `AUTOMATION_GET` `AUTOMATION_PATCH` `PAGE_ACTIVITY_SET` `VIDEO_SETTINGS_PATCH` `PAGE_TRANSLATION_DISPLAY_SET` `FLOATING_PET_POSITION_SET` `OPEN_OPTIONS` |
 | 模型服务（7） | `SUBSCRIPTION_STATUS` `SUBSCRIPTION_LOGIN` `SUBSCRIPTION_CANCEL` `SUBSCRIPTION_LOGOUT` `MODELS_LIST` `API_MODELS_LIST` `PROVIDER_TEST` |
 | 领域识别（4） | `RESOLVE_DOMAIN` `PAGE_DOMAIN_GET` `PAGE_DOMAIN_SET` `DOMAIN_TEST` |
 | 阅读辅助（12） | `ANALYZE` `SUPPORT_BATCH` `ASSIST` `ASSIST_PREVIEW` `ASSIST_COMMIT` `PREPARED_SUPPORT` `PREPARED_ASSIST` `ENCOUNTER` `INTERACT` `READING_ACTIVITY` `WORD_PREFERENCE_SET` `ON_DEMAND_SUGGESTION` |
@@ -197,7 +197,7 @@
 - PDF 主包与解析 worker 同用 PDF.js legacy 构建，补齐 Chrome 125 缺失的内建 API；EPUB 解析按命名空间 URI 及 local name 识别 container、OPF、DC 和 XHTML 元素。
 
 ### 5.3 页面 → 后台 的旁路消息（`tabs.sendMessage`）
-`SS_STATUS` `SS_SET_ENABLED` `SS_REFRESH` `SS_AUTO_START` `SS_CONTEXT_HELP` `SS_SET_SENTENCE_GROUPS` `SS_SET_SENTENCE_DENSITY` `SS_SET_SENTENCE_LINE_STYLE` `SS_EMERGENCY_START/STOP/RETRY/END` `SS_HELP_LANGUAGE` `SS_READING_STYLE` `SS_VIDEO_SETTINGS` `SS_TRANSLATION_PROGRESS` `SS_LIVE_CHAT_PROGRESS` `SS_ASSIST_PROGRESS` `SS_WORD_PREFERENCE`。
+`SS_STATUS` `SS_SET_ENABLED` `SS_REFRESH` `SS_AUTO_START` `SS_CONTEXT_HELP` `SS_SET_SENTENCE_GROUPS` `SS_SET_SENTENCE_DENSITY` `SS_SET_SENTENCE_LINE_STYLE` `SS_EMERGENCY_START/STOP/RETRY/END` `SS_HELP_LANGUAGE` `SS_READING_STYLE` `SS_VIDEO_SETTINGS` `SS_PAGE_TRANSLATION_DISPLAY` `SS_TRANSLATION_PROGRESS` `SS_LIVE_CHAT_PROGRESS` `SS_ASSIST_PROGRESS` `SS_WORD_PREFERENCE`。
 
 ---
 
@@ -225,6 +225,7 @@
 - 调度：仅视口 ±600px 内单元，就绪排序为可见性 → zone 权重（article > content > chrome）→ 距离 → 文档序；每批 ≤8 项、源文合计 ≤8000 字符；同一段的连续切片可以放进同一批。附近最多同时在飞 2 批，不预译整篇。模型一边返回，已完成的段落先画上。一批失败只标这一批，服务未连接时停住等待，滚动不会自动重发；连上服务或在弹窗里点「继续翻译」后再译，不把整页停掉。批次带 title/heading(≤160)/before/after(≤400) 封闭上下文。单段切片上限仍是 4000 字符。
 - 渲染：article/content 单元在原文下插块级译文行；chrome 单元用 `data-zone="chrome"` 走内联译文（跟在原文后、弱化样式），避免撑破导航与侧栏布局；flex/grid 容器的直接文本子节点仍按 `skipped` 跳过。
 - 失败：段落级失败可单独重试；成功译文仅入 5 分钟/256 项内存缓存；返回英文只移除扩展插入物。
+- 显示方式：设置 `pageTranslationDisplay` ∈ `bilingual`（默认，原文 + 译文）| `translation`（仅译文）。网页左下角的「双语 / 仅译文」切换（本页有译文时出现，清除后消失）与弹窗「本页双语翻译」里的同名分段按钮都走 `PAGE_TRANSLATION_DISPLAY_SET`（网页仅主框架），后台只改这一项并以 `SS_PAGE_TRANSLATION_DISPLAY` 同步各标签页，不触发 `SS_REFRESH` 重建。仅译文不改写网页节点：段落加 `data-roamcat-original-hidden`，样式把原文文字透明、行高归零并隐藏行内元素（字号不动，按 em 写的段距与行宽照旧），译文容器移到原文之前、按原文字号字重显示；样式以 `:has(>译文)` 兜底，译文被移除时原文自动恢复。只处理一段一译、全部译完、无图片/表单/按钮且链接文字不足六成的段落；chrome 区域、部分失败或原样抄回的段落保持双语。
 - 本页结果容错（`inspectPageTranslationResult`）：思考模型常在合法译文外加代码围栏、前后说明、额外字段或首尾空白。这些先剥掉再校验；导航/专名等短标签允许保留英文。带句号或从句的正文仍必须含汉字。选段翻译（`normalizeEmergencyResult`）保持严格字段集。
 
 ### 6.4.1 视频双语字幕

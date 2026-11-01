@@ -5,7 +5,7 @@
  * 主要内容：MESSAGE_TYPES（与 background.js 注册表一一对应的有序清单）、CONTENT_ALLOWED_TYPES
  *   （网页上下文可用的类型子集）、text/domain 校验器、validatePatch 设置补丁校验、
  *   settingsPatchEffects 副作用计划推导，以及 parseDomainTest / parseFloatingPetPatch /
- *   parsePopupIntentTake / parseAnalyze / parseHistoryRuleSet / parseHistoryRecordRef /
+ *   parsePopupIntentTake / parsePageTranslationDisplay / parseAnalyze / parseHistoryRuleSet / parseHistoryRecordRef /
  *   parseHistorySummaryEdit 载荷解析器。
  * 模块边界：只依赖 shared.js、domain-routing.js、api-providers.mjs 等领域模块，不访问 chrome、
  *   不发起请求、不读取配置；新增消息类型必须同步 MESSAGE_TYPES、background.js 注册表与
@@ -38,7 +38,7 @@ export const MESSAGE_TYPES = Object.freeze([
   'POPUP_INTENT_TAKE', 'TAB_ERROR_TAKE', 'PAGE_UI_INJECT', 'ENSURE_PAGE_UI',
   'SENTENCE_GROUPS_GET', 'SENTENCE_GROUPS_SET', 'SENTENCE_GROUPS_DENSITY_SET', 'SENTENCE_GROUPS_LINE_STYLE_SET',
   'AUTO_BOOTSTRAP_CHECK', 'AUTOMATION_GET', 'AUTOMATION_PATCH', 'PAGE_ACTIVITY_SET',
-  'VIDEO_SETTINGS_PATCH', 'YOUTUBE_CAPTIONS_BRIDGE', 'YOUTUBE_CAPTION_FETCH', 'FLOATING_PET_POSITION_SET',
+  'VIDEO_SETTINGS_PATCH', 'PAGE_TRANSLATION_DISPLAY_SET', 'YOUTUBE_CAPTIONS_BRIDGE', 'YOUTUBE_CAPTION_FETCH', 'FLOATING_PET_POSITION_SET',
   'STATE_GET', 'SUBSCRIPTION_STATUS', 'SUBSCRIPTION_LOGIN', 'SUBSCRIPTION_CANCEL', 'SUBSCRIPTION_LOGOUT',
   'MODELS_LIST', 'API_MODELS_LIST', 'PAGE_DOMAIN_GET', 'PAGE_DOMAIN_SET', 'RESOLVE_DOMAIN', 'DOMAIN_TEST',
   'STATE_PATCH', 'ANALYZE', 'SUPPORT_BATCH', 'SENTENCE_GROUPS_BATCH', 'PREPARED_SUPPORT', 'PREPARED_ASSIST',
@@ -57,7 +57,7 @@ export const CONTENT_ALLOWED_TYPES = Object.freeze([
   'STATE_GET', 'RESOLVE_DOMAIN', 'ANALYZE', 'SUPPORT_BATCH', 'SENTENCE_GROUPS_GET', 'SENTENCE_GROUPS_SET',
   'SENTENCE_GROUPS_BATCH', 'ASSIST', 'ASSIST_PREVIEW', 'ASSIST_COMMIT', 'ENCOUNTER', 'INTERACT',
   'READING_ACTIVITY', 'YOUTUBE_CAPTIONS_BRIDGE', 'YOUTUBE_CAPTION_FETCH', 'OPEN_OPTIONS', 'AUTO_BOOTSTRAP_CHECK', 'PAGE_ACTIVITY_SET',
-  'FLOATING_PET_POSITION_SET', 'VIDEO_SETTINGS_PATCH', 'PREPARED_SUPPORT', 'PREPARED_ASSIST', 'PASSAGE_TRANSLATE', 'VIDEO_CUE_TRANSLATE', 'VIDEO_AUDIO_TRANSCRIBE', 'LIVE_CHAT_TRANSLATE',
+  'FLOATING_PET_POSITION_SET', 'VIDEO_SETTINGS_PATCH', 'PAGE_TRANSLATION_DISPLAY_SET', 'PREPARED_SUPPORT', 'PREPARED_ASSIST', 'PASSAGE_TRANSLATE', 'VIDEO_CUE_TRANSLATE', 'VIDEO_AUDIO_TRANSCRIBE', 'LIVE_CHAT_TRANSLATE',
   'EMERGENCY_BEGIN', 'EMERGENCY_TRANSLATE', 'EMERGENCY_CANCEL_REQUEST', 'EMERGENCY_END', 'PAGE_SUMMARY',
   'ENSURE_PAGE_UI',
 ]);
@@ -118,6 +118,15 @@ export function parseTabErrorTake(message) {
   return message.tabId;
 }
 
+/** 整页翻译的两种显示方式：双语对照（原文 + 译文）与仅译文。 */
+const PAGE_TRANSLATION_DISPLAYS = ['bilingual', 'translation'];
+
+/** PAGE_TRANSLATION_DISPLAY_SET 载荷：只接受两种显示方式之一。 */
+export function parsePageTranslationDisplay(message) {
+  if (!PAGE_TRANSLATION_DISPLAYS.includes(message?.display)) throw new Error(M('无效的整页翻译显示方式。','Invalid page translation display.'));
+  return message.display;
+}
+
 /** POPUP_INTENT_TAKE 载荷：目标标签页与网址必须完整。 */
 export function parsePopupIntentTake(message) {
   if (!Number.isInteger(message?.tabId) || typeof message?.url !== 'string') throw new Error(M('快捷键操作无效。','Invalid shortcut action.'));
@@ -145,6 +154,7 @@ export function validatePatch(patch, currentSettings) {
   if (patch.automation !== undefined || patch.video !== undefined) throw new Error(M('请使用对应的自动开启或视频设置接口。','Please use the dedicated auto-enable or video-settings API.'));
   if (patch.assistanceMode !== undefined) { if (!['ambient', 'on-demand'].includes(patch.assistanceMode)) throw new Error(M('无效辅助模式。','Invalid assist mode.')); result.assistanceMode = patch.assistanceMode; }
   if (patch.lookupDisplay !== undefined) { if (!['card', 'annotation'].includes(patch.lookupDisplay)) throw new Error(M('无效查词展示方式。','Invalid lookup display mode.')); result.lookupDisplay = patch.lookupDisplay; }
+  if (patch.pageTranslationDisplay !== undefined) { if (!PAGE_TRANSLATION_DISPLAYS.includes(patch.pageTranslationDisplay)) throw new Error(M('无效的整页翻译显示方式。','Invalid page translation display.')); result.pageTranslationDisplay = patch.pageTranslationDisplay; }
   if (patch.helpLanguage !== undefined) { if (!['zh', 'en'].includes(patch.helpLanguage)) throw new Error(M('无效的帮助语言。','Invalid help language.')); result.helpLanguage = patch.helpLanguage; }
   if (patch.lookupKey !== undefined) { if (typeof patch.lookupKey !== 'string' || !/^[A-Z]$/.test(patch.lookupKey)) throw new Error(M('查词键必须是大写 A-Z 单字符。','The lookup key must be a single uppercase A-Z character.')); result.lookupKey = patch.lookupKey; }
   if (patch.readingStyle !== undefined) result.readingStyle = globalThis.RoamCatReadingStyle.validate(patch.readingStyle);

@@ -25,6 +25,7 @@ import {
   customDetectionService,
   parseDomainTest,
   parseFloatingPetPatch,
+  parsePageTranslationDisplay,
   parsePopupIntentTake,
   parseTabErrorTake,
   parseAnalyze,
@@ -132,7 +133,7 @@ function writeReadingSession(values,generation){
   const work=readingSessionWrites.then(async()=>{if(cleanupPending||generation!==providerGeneration)throw staleWork();try{await chrome.storage.session.set(values);}catch{/* 会话缓存写入失败（如配额）不应当中断阅读请求 */}});
   readingSessionWrites=work.catch(()=>{});return work;
 }
-const DATA_MUTATIONS=new Set([...HISTORY_MUTATIONS].filter(type=>type!=='PERSONALIZATION_ANALYZE').concat(['STATE_PATCH','AUTOMATION_PATCH','VIDEO_SETTINGS_PATCH','FLOATING_PET_POSITION_SET','ASSIST_COMMIT','ENCOUNTER','INTERACT','READING_ACTIVITY','ON_DEMAND_SUGGESTION','USAGE_STATS_CLEAR']));
+const DATA_MUTATIONS=new Set([...HISTORY_MUTATIONS].filter(type=>type!=='PERSONALIZATION_ANALYZE').concat(['STATE_PATCH','AUTOMATION_PATCH','VIDEO_SETTINGS_PATCH','PAGE_TRANSLATION_DISPLAY_SET','FLOATING_PET_POSITION_SET','ASSIST_COMMIT','ENCOUNTER','INTERACT','READING_ACTIVITY','ON_DEMAND_SUGGESTION','USAGE_STATS_CLEAR']));
 function assertDataAvailable(){if(cleanupPending)throw Object.assign(new Error(M('本机数据正在清理或清理尚未完成，请重试清理。','Local data cleanup is in progress or incomplete; please retry cleanup.')),{code:'NOT_READY'});}
 const ready = (async () => {
   // setAccessLevel 仅存在于 Chrome 136+；旧版本上缺失时不能中断初始化（manifest 声明支持 116）。
@@ -398,6 +399,7 @@ function publicState(state,trusted) {
         helpLanguage: source.helpLanguage,
         lookupKey: source.lookupKey,
         lookupDisplay: source.lookupDisplay,
+        pageTranslationDisplay: source.pageTranslationDisplay,
         readingStyle: globalThis.RoamCatReadingStyle.normalize(source.readingStyle),
         complexSentenceAssist: source.complexSentenceAssist !== false,
         formulaAssist: source.formulaAssist !== false,
@@ -3130,6 +3132,29 @@ const messageHandlers = [
       );
       await broadcastVideoSettings(video);
       return { video };
+    }
+  },
+  // 「双语 / 仅译文」切换（网页挂件与弹窗共用）：只改这一项偏好，再用轻量消息同步各标签页，不走整套 SS_REFRESH 重建。
+  {
+    type: 'PAGE_TRANSLATION_DISPLAY_SET',
+    handle: async (message, { sender, trusted }) => {
+      if (!trusted && (!Number.isInteger(sender.tab?.id) || sender.frameId !== 0))
+        throw new Error(
+          M('整页翻译显示方式只能由网页主框架更新。', 'Page translation display can only be updated by the page main frame.')
+        );
+      const display = parsePageTranslationDisplay(message);
+      await mutate(
+        state => {
+          state.settings = { ...state.settings, pageTranslationDisplay: display };
+        },
+        false,
+        false
+      );
+      const tabs = await chrome.tabs.query({});
+      await Promise.allSettled(
+        tabs.map(tab => chrome.tabs.sendMessage(tab.id, { type: 'SS_PAGE_TRANSLATION_DISPLAY', display }, { frameId: 0 }))
+      );
+      return { display };
     }
   },
   {

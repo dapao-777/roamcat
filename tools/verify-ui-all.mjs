@@ -344,6 +344,15 @@ try {
     check('popup 在普通网页上显示本页开关', popupHost.includes('127.0.0.1'), popupHost);
     check('popup 普通网页状态版式体检（说明不截断）', lintClean(popupLint), JSON.stringify(popupLint));
     await shot(pagePopup, 'popup-page', {minBytes: 1});
+    // 「双语 / 仅译文」：默认双语；真实点击切到仅译文后后台设置跟着变，再切回双语。
+    const displayChoice = () => pagePopup.evaluate(() => [...document.querySelectorAll('#emergency-display button')].map(button => `${button.dataset.display}:${button.getAttribute('aria-pressed')}`).join());
+    const savedDisplay = () => extPage.evaluate(async () => (await chrome.runtime.sendMessage({type: 'STATE_GET'})).data.settings.pageTranslationDisplay);
+    check('popup 整页翻译显示方式默认双语', await displayChoice() === 'bilingual:true,translation:false', await displayChoice());
+    await pagePopup.locator('#emergency-display button[data-display="translation"]').click();
+    const switched = await until(extPage, savedDisplay, value => value === 'translation');
+    check('popup 切到仅译文并写入设置', switched === 'translation' && await displayChoice() === 'bilingual:false,translation:true', `${switched} ${await displayChoice()}`);
+    await pagePopup.locator('#emergency-display button[data-display="bilingual"]').click();
+    check('popup 切回双语', await until(extPage, savedDisplay, value => value === 'bilingual') === 'bilingual', await savedDisplay());
   } else check('popup 在普通网页上显示本页开关', false, 'popup target not found');
   await extPage.evaluate(id => chrome.tabs.remove(id), popupTabId).catch(() => {});
 
@@ -486,6 +495,23 @@ try {
   await settled(tab);
   await shotLocator(tab.locator('[data-roamcat-ui="known-feedback"]'), 'widget-known-feedback');
   await execInTab(`() => window.__probe['known-feedback'].host.remove()`);
+
+  // B4b. 整页翻译「双语 / 仅译文」切换 × 双主题：一行排开、点击后按下态切到仅译文
+  for (const theme of THEMES) {
+    const toggle = await execInTab(`() => {
+      const {host, shadow} = ${WIDGET_HOST('translation-display', `position:fixed;left:16px;bottom:16px;z-index:2147483646;max-width:calc(100vw - 32px)`)};
+      host.setAttribute('data-theme', '${theme}');
+      const ui = globalThis.RoamCatContentUI.translationDisplayToggle(shadow, {brandIconUrl: ${JSON.stringify(iconUrl)}, onChange: display => ui.update(display)});
+      ui.update('bilingual');
+      ui.buttons[1].click();
+      const rects = ui.buttons.map(button => button.getBoundingClientRect());
+      return {pressed: ui.buttons.map(button => button.getAttribute('aria-pressed')).join(), oneRow: Math.abs(rects[0].top - rects[1].top) < 1, height: Math.round(ui.panel.getBoundingClientRect().height), labels: ui.buttons.map(button => button.textContent.trim()).join()};
+    }`);
+    check(`整页翻译显示切换[${theme}]：一行排开、点击切到仅译文`, Boolean(toggle?.oneRow && toggle.height <= 48 && toggle.pressed === 'false,true' && toggle.labels === '双语,仅译文'), JSON.stringify(toggle));
+    await settled(tab);
+    await shotLocator(tab.locator('[data-roamcat-ui="translation-display"]'), `widget-translation-display-${theme}`);
+  }
+  await execInTab(`() => window.__probe['translation-display'].host.remove()`);
 
   // B5. 选区操作条：先启用阅读辅助（真实 SW 管线），再真实鼠标拖选触发（isTrusted 必需）
   await extPage.evaluate(tabId=>chrome.runtime.sendMessage({type:'PAGE_UI_INJECT',tabId}),await tabIdOf(extPage,`${fixtureBase}/*`));

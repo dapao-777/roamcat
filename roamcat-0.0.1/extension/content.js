@@ -917,6 +917,18 @@ const LIMIT_ERROR = T('c.limit');
         ' button{font:inherit;font-size:.85em;line-height:1.4;min-height:32px;margin:0 .25em;padding:.2em .6em;border:1px solid currentColor;border-radius:4px;background:transparent;color:inherit;cursor:pointer}' +
         block +
         ' button:focus-visible{outline:2px solid currentColor;outline-offset:3px}';
+      // 仅译文：原文文字透明且行高归零（字号不动，网页按 em 写的段距、行宽照旧），行内元素隐藏；译文按原文字号、字重显示，去掉双语时的装饰。
+      const hidden = '[' + ORIGINAL_HIDDEN + ']:has(>' + block + ')';
+      style.textContent +=
+        hidden +
+        '{-webkit-text-fill-color:transparent!important;line-height:0!important;text-decoration:none!important;text-shadow:none!important;user-select:none!important}' +
+        hidden + '>:not(' + block + ',[' + OWN + '="passage-translation"],[' + OWN + '="passage-action"]){display:none!important}' +
+        hidden + '>' + block + '>:last-child{margin-bottom:0!important}' +
+        // 列表项的原生符号跟着原文一起透明了（::marker 不接受恢复填充色），改由译文前的伪元素按原列表样式画出。
+        hidden + '>' + block + '[data-marker]{position:relative!important}' +
+        hidden + '>' + block + '[data-marker]::before{content:var(--rc-marker)!important;position:absolute!important;inset-inline-end:100%!important;top:0!important;margin-inline-end:.5em!important;white-space:nowrap!important;font-variant-numeric:tabular-nums}' +
+        hidden + '>' + block +
+        '{margin:0!important;padding:0!important;border:0!important;background:none!important;box-shadow:none!important;opacity:1!important;color:var(--ss-source-color,inherit)!important;font-size:var(--ss-source-size,1em)!important;font-weight:inherit!important;font-style:inherit!important;text-decoration:none!important;user-select:text!important}';
       // chrome 区域（导航/侧栏/页眉页脚）译文走内联：跟在原文后面，不插块级行，避免撑破导航布局。
       style.textContent +=
         block +
@@ -2555,7 +2567,7 @@ const LIMIT_ERROR = T('c.limit');
   
   function removeEmergencyTranslations(){for(const node of queryAllDeep(document.documentElement,'['+OWN+'="emergency-translation"]'))node.remove();}
   function finishEmergency(remove=true,notify=true) {
-    const session=state.emergency;if(!session){if(remove){removeEmergencyTranslations();setPageStatus('emergency',null);globalThis.RoamCatPet?.onEmergencyStatusChange?.(emergencyStatus());}return;}
+    const session=state.emergency;if(!session){if(remove){removeEmergencyTranslations();clearTranslationDisplay();setPageStatus('emergency',null);globalThis.RoamCatPet?.onEmergencyStatusChange?.(emergencyStatus());}return;}
     session.active=false;session.generation++;session.phase='stopped';
     for(const pending of emergencyFlights)if(pending.session===session)pending.cancelled=true;
     for(const unit of session.units)if(unit.state==='translating')unit.state='queued';
@@ -2577,6 +2589,7 @@ const LIMIT_ERROR = T('c.limit');
       document.removeEventListener('load', session.onStyleLoad, true);
       session.colorScheme?.removeEventListener('change', session.syncStyles);
       removeEmergencyTranslations();
+      clearTranslationDisplay();
       setPageStatus('emergency', null);
       state.emergency = null;
       if (notify)
@@ -2625,7 +2638,72 @@ const LIMIT_ERROR = T('c.limit');
       busy: !paused && value.phase === 'translating',
       error: Boolean(session.error) && !paused
     });
+    applyTranslationDisplay(session);
     globalThis.RoamCatPet?.onEmergencyStatusChange?.(value);
+  }
+  // ---- 整页翻译显示方式：双语对照 / 仅译文 ----
+  // 仅译文不挪动、不改写网页自己的节点：给段落加一个属性，由样式把原文文字透明并压成零行高、行内元素隐藏，
+  // 译文挪到原文前面（只动自己的容器，列表符号因此对齐译文首行）。样式用 :has() 兜底：译文容器没了，原文自动恢复。
+  // 只处理「一个段落一段译文、全部译完、没有图片/表单/按钮、不以链接为主」的段落；导航区、开放 shadow 里（页面样式够不着）与其余情况保持双语。
+  const ORIGINAL_HIDDEN='data-roamcat-original-hidden',ORIGINAL_KEEP='img,picture,svg,video,audio,canvas,iframe,object,embed,math,input,select,textarea,button,[contenteditable]',hiddenOriginals=new Set(),translationDisplay={host:null,ui:null,saving:false};
+  const translationDisplayMode=()=>state.settings?.pageTranslationDisplay==='translation'?'translation':'bilingual';
+  function translationOnly(unit,entry,session){
+    const parent=unit.parent;
+    if(unit.zone==='chrome'||unit.state!=='complete'||!entry?.container.isConnected||entry.error||entry.parts.size!==unit.chunks?.length||session.byParent.get(parent)?.size!==1||!parent.isConnected||parent.getRootNode()!==document||parent.closest('a[href]'))return false;
+    const nodes=new Set(unit.nodes),letters=text=>(String(text||'').match(/\p{L}/gu)||[]).length;let linked=0;
+    for(const node of parent.childNodes){
+      if(node===entry.container||node.nodeType===1&&node.hasAttribute(OWN)&&!nodes.has(node))continue;
+      if(!nodes.has(node)){if(node.nodeType===3&&!node.nodeValue.trim())continue;return false;}
+      if(node.nodeType!==1)continue;
+      if(node.matches(ORIGINAL_KEEP)||node.querySelector(ORIGINAL_KEEP))return false;
+      for(const link of node.matches('a[href]')?[node]:node.querySelectorAll('a[href]'))linked+=letters(link.textContent);
+    }
+    return linked<letters(unit.text)*0.6;
+  }
+  function applyTranslationDisplay(session=state.emergency){
+    const keep=new Set();
+    if(session&&state.emergency===session&&translationDisplayMode()==='translation')
+      for(const [unit,entry]of session.containers){
+        if(!translationOnly(unit,entry,session))continue;
+        keep.add(unit.parent);
+        if(entry.container.nextSibling!==unit.nodes[0]){unit.nodes[0].before(entry.container);entry.leading=true;}
+        if(!unit.parent.hasAttribute(ORIGINAL_HIDDEN)){markListItem(unit.parent,entry.container);unit.parent.setAttribute(ORIGINAL_HIDDEN,'');hiddenOriginals.add(unit.parent);}
+      }
+    for(const parent of hiddenOriginals)if(!keep.has(parent)){parent.removeAttribute(ORIGINAL_HIDDEN);hiddenOriginals.delete(parent);}
+    // 回到双语：译文放回原文后面。
+    if(session)for(const [unit,entry]of session.containers)if(entry.leading&&!keep.has(unit.parent)){entry.leading=false;const last=unit.nodes.at(-1);if(last?.parentNode===unit.parent&&entry.container.isConnected)last.after(entry.container);}
+    syncTranslationDisplayToggle();
+  }
+  // 按列表项当前的符号样式生成替代符号：有序列表用 counter(list-item) 取浏览器算好的序号，无序列表画对应圆点，字符串样式原样照搬。
+  function markListItem(parent,container){
+    const style=getComputedStyle(parent),type=style.listStyleType;
+    if(style.display!=='list-item'||type==='none'&&style.listStyleImage==='none'){delete container.dataset.marker;return;}
+    const bullet=style.listStyleImage!=='none'||['disc','circle','square','disclosure-open','disclosure-closed'].includes(type);
+    container.style.setProperty('--rc-marker',/^["']/.test(type)?type:bullet?`counter(list-item, ${style.listStyleImage!=='none'?'disc':type})`:`counter(list-item, ${type}) "."`);
+    container.dataset.marker='';
+  }
+  function clearTranslationDisplay(){
+    for(const parent of hiddenOriginals)parent.removeAttribute(ORIGINAL_HIDDEN);hiddenOriginals.clear();
+    translationDisplay.host?.remove();translationDisplay.host=translationDisplay.ui=null;
+  }
+  // 左下角「双语 / 仅译文」切换：本页有译文显示时出现，整页翻译清除后消失（伴读猫在时也显示，它的气泡里没有这个开关）。
+  function syncTranslationDisplayToggle(){
+    if(!state.emergency?.containers.size){translationDisplay.host?.remove();translationDisplay.host=translationDisplay.ui=null;return;}
+    if(!translationDisplay.host?.isConnected){
+      const host=document.createElement('div');host.setAttribute(OWN,'translation-display');host.setAttribute('data-theme',pageTheme());
+      host.style.cssText='position:fixed;left:max(16px,env(safe-area-inset-left));bottom:max(16px,env(safe-area-inset-bottom));z-index:2147483646;max-width:calc(100vw - 32px)';
+      const shadow=host.attachShadow({mode:'closed'});
+      translationDisplay.ui=contentUI.translationDisplayToggle(shadow,{brandIconUrl:brandIcon(),onChange:display=>void setTranslationDisplay(display)});
+      document.documentElement.append(host);translationDisplay.host=host;
+    }
+    translationDisplay.ui.update(translationDisplayMode());
+  }
+  async function setTranslationDisplay(display){
+    const previous=translationDisplayMode();if(translationDisplay.saving||display===previous||!['bilingual','translation'].includes(display))return;
+    translationDisplay.saving=true;state.settings.pageTranslationDisplay=display;applyTranslationDisplay();
+    try{await request('PAGE_TRANSLATION_DISPLAY_SET',{display});}
+    catch(error){if(state.settings.pageTranslationDisplay===display)state.settings.pageTranslationDisplay=previous;applyTranslationDisplay();setPageStatus('translation-display',T('c.tdSaveFail',{err:error.message}),{error:true,duration:5000});}
+    finally{translationDisplay.saving=false;}
   }
   function retryEmergency(unit){
     const session = state.emergency;
@@ -2840,7 +2918,7 @@ const LIMIT_ERROR = T('c.limit');
     if(pending.session.token)void request('EMERGENCY_CANCEL_REQUEST',{token:pending.session.token,seq:pending.seq}).catch(()=>{});
   }
   function invalidateEmergencyUnit(unit,session,sourceChanged=true){
-    unit.version=++session.version;unit.invalid=unit.invalid||sourceChanged;unit.autoRetries=0;unit.done.clear();unit.translations?.clear();unit.state=unit.skipped?'skipped':'deferred';session.containers.get(unit)?.container.remove();session.containers.delete(unit);
+    unit.version=++session.version;unit.invalid=unit.invalid||sourceChanged;unit.autoRetries=0;unit.done.clear();unit.translations?.clear();unit.state=unit.skipped?'skipped':'deferred';session.containers.get(unit)?.container.remove();session.containers.delete(unit);if(hiddenOriginals.delete(unit.parent))unit.parent.removeAttribute(ORIGINAL_HIDDEN);
     for(const pending of emergencyFlights)if(pending.session===session&&pending.batch.some(item=>item.unit===unit))cancelEmergencyFlight(pending);
   }
   function takeEmergencyBatch(session){
@@ -3272,6 +3350,7 @@ const LIMIT_ERROR = T('c.limit');
     resetLookup();
     state.knownWords.clear();
     state.settings = next.settings;
+    applyTranslationDisplay();
     state.providerConfigured = Boolean(next.providerConfigured);
     state.domainResolved = false;
     state.domain = next.settings.domain !== 'auto' ? next.settings.domain : 'general';
@@ -3445,6 +3524,12 @@ const LIMIT_ERROR = T('c.limit');
    else if (message?.type === 'SS_VIDEO_SETTINGS') {
      state.settings.video = message.video;
      mountVideoTool();
+     operation = Promise.resolve(status());
+   } else if (message?.type === 'SS_PAGE_TRANSLATION_DISPLAY') {
+     if (['bilingual', 'translation'].includes(message.display) && !translationDisplay.saving) {
+       state.settings.pageTranslationDisplay = message.display;
+       applyTranslationDisplay();
+     }
      operation = Promise.resolve(status());
    } else return false;
    operation.then(data=>respond({ok:true,data}),error=>respond({ok:false,error:error.message||T('c.pageFail')}));return true;

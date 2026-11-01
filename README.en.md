@@ -62,7 +62,7 @@
 |---|---|---|
 | **Does** | Translates page English in place into Chinese-English pairs | Keeps the English; sparse hints plus on-demand rescue only |
 | **Invoke** | Popup "Translate this page" or `Alt+Shift+T` — follows your reading position, never pre-translates the whole article | Hints that taper off as you read; hold `D` + click to look up a word; select a passage for manual rescue |
-| **Looks like** | Inline pairs in body text; tables and cards matched in place; navigation and sidebars get small inline translations | Lookup card, top-of-line glosses, sentence-structure underlines |
+| **Looks like** | Inline pairs in body text; tables and cards matched in place; navigation and sidebars get small inline translations; one click (bottom-left) switches to translation only | Lookup card, top-of-line glosses, sentence-structure underlines |
 | **Exit** | "Back to English" removes only what the extension inserted | Hints fade as you read — the goal is to stop needing them |
 
 Failed passages retry on a graded backoff (2.5s → 6s → 14s, classified by error code) before a manual "retry this passage" appears, so transient rate limits never flash failure UI.

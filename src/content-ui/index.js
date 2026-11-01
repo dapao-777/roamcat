@@ -3,8 +3,8 @@
  * 文件职责：页面内 UI 渲染层——经 Vite 构建为 classic IIFE（extension/content-ui.js，
  *   生成物入库），在 manifest 三件套中位于 content.js 之前，向页面暴露
  *   globalThis.RoamCatContentUI。
- * 主要内容：lit-html 模板构建四个 closed-shadow UI（任务状态条 / 解构详情卡 /
- *   已认识 toast / 查词帮助卡）与共享品牌元素、解构树渲染；返回元素引用集，
+ * 主要内容：lit-html 模板构建五个 closed-shadow UI（任务状态条 / 解构详情卡 /
+ *   已认识 toast / 整页翻译显示切换 / 查词帮助卡）与共享品牌元素、解构树渲染；返回元素引用集，
  *   由 content.js 继续命令式驱动流式更新（编排逻辑不迁移）。
  * 模块边界：页面世界运行，不触密钥；样式经 RoamCatDesign.cssFor 注入 token。
  *
@@ -197,6 +197,34 @@ export function knownFeedback(shadow, {brandIconUrl, term, onUndo}) {
   const undo = el('.undo');
   undo.onclick = onUndo;
   return {panel: el('.panel'), message: el('.message'), undo};
+}
+
+// ---------- 整页翻译显示方式切换（左下角「双语 / 仅译文」分段按钮） ----------
+
+const TRANSLATION_DISPLAY_CSS = `:host{font:var(--type-control)/var(--leading-control) var(--ui, var(--sans));color:var(--ink)}*{box-sizing:border-box}.panel{display:flex;align-items:center;gap:var(--space-2);padding:var(--space-1) var(--space-1) var(--space-1) var(--space-2);border:1px solid var(--rim-soft,var(--line));border-radius:var(--radius-pill);background-color:var(--surface);background-image:var(--face-raised,none);box-shadow:var(--elev-2);animation:rc-ui-in var(--rc-dur-fast,160ms) var(--rc-ease-out,cubic-bezier(.16,1,.3,1)) both}.choices{display:flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--surface-subtle,transparent)}button{min-height:28px;padding:var(--space-1) var(--space-3);border:0;border-radius:var(--radius-pill);background:transparent;color:var(--muted);font:inherit;font-size:var(--fs-2, 13px);line-height:1.5;white-space:nowrap;cursor:pointer}button:hover{color:var(--ink)}button[aria-pressed=true]{background:var(--surface);color:var(--ink);font-weight:var(--weight-semibold);box-shadow:0 0 0 1px var(--rim-soft,var(--line))}button:focus-visible{outline:var(--focus-ring);outline-offset:var(--focus-offset)}button:disabled{cursor:progress}@keyframes rc-ui-in{from{opacity:0;translate:0 6px}to{opacity:1;translate:0 0}}@media(prefers-reduced-motion:reduce){.panel{animation:none}}@media print{:host{display:none!important}}`;
+
+export function translationDisplayToggle(shadow, {brandIconUrl, onChange}) {
+  render(html`
+    <style>${designCss(':host')}${TRANSLATION_DISPLAY_CSS}</style>
+    <div class="panel" role="group" aria-label=${T('ui.tdAria')}>
+      ${brandIconTpl(brandIconUrl)}
+      <div class="choices">
+        <button type="button" data-display="bilingual" aria-pressed="true">${T('ui.tdBilingual')}</button>
+        <button type="button" data-display="translation" aria-pressed="false">${T('ui.tdTranslation')}</button>
+      </div>
+    </div>`, shadow);
+  const buttons = [...shadow.querySelectorAll('button[data-display]')];
+  for (const button of buttons) button.onclick = () => { if (button.getAttribute('aria-pressed') !== 'true') onChange?.(button.dataset.display); };
+  return {
+    panel: shadow.querySelector('.panel'),
+    buttons,
+    update(display, {busy = false} = {}) {
+      for (const button of buttons) {
+        button.setAttribute('aria-pressed', String(button.dataset.display === display));
+        button.disabled = busy;
+      }
+    }
+  };
 }
 
 // ---------- 查词帮助卡（词卡 / 选段帮助主界面） ----------
