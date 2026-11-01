@@ -4,6 +4,9 @@
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-01
+整页翻译可一键切换「双语 / 仅译文」；弹窗说明不再截断、引导页适配窄窗口、跨页面语言同步，阅读器按失败原因给重试入口，工具栏「!」换页后撤掉并在弹窗说明原因。
+
 ### 新增
 - 整页翻译可在「双语」和「仅译文」之间一键切换：网页左下角在有译文时出现切换按钮，弹窗「本页双语翻译」里也有同样的分段按钮（还没开始翻译时可先选好）；选择会记住，并同步到其他正在显示译文的标签页。仅译文不改动网页自己的内容：列表符号照常对齐、段距不变；导航栏、纯链接、带图片或表单控件、含嵌套列表的段落以及翻译不完整的段落仍保留原文对照。正文里夹着的链接在仅译文时点不到，需要时切回双语。
 
@@ -233,7 +236,8 @@ Twitch 直播聊天实时翻译；本机常驻连接服务改为配对令牌认�
 - `host_permissions` 仍为宽泛的 `http(s)://*/*`，计划改为 `optional_host_permissions` 按需申请。
 - 未上架商店；扩展仅支持开发者模式加载（直接加载 `roamcat-0.0.1/extension` 时 ID 与目录路径绑定；`npm run build` 产物 ID 固定）。
 
-[Unreleased]: https://github.com/dapao-777/roamcat/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/dapao-777/roamcat/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/dapao-777/roamcat/releases/tag/v0.7.0
 [0.6.1]: https://github.com/dapao-777/roamcat/releases/tag/v0.6.1
 [0.6.0]: https://github.com/dapao-777/roamcat/releases/tag/v0.6.0
 [0.5.0]: https://github.com/dapao-777/roamcat/releases/tag/v0.5.0
