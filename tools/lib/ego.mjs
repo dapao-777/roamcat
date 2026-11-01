@@ -4,7 +4,8 @@
  *   直接驱动，不依赖 Playwright，也不碰用户日常的 ego 配置与数据。
  * 主要内容：
  *   - openBrowser({extension})：以临时配置启动 ego.exe（--headless=new、--remote-debugging-port=0，端口从 DevToolsActivePort
- *     读出），可加载未打包扩展（默认 dist/extension）；每个页面开在独立窗口里，扩展看到的 tab.active 恒为真。
+ *     读出），可加载未打包扩展（默认 dist/extension，实际加载的是隔离了本机订阅连接器的副本）；每个页面开在独立窗口里，
+ *     扩展看到的 tab.active 恒为真。
  *   - Page：goto / evaluate / 截图 / 视口与配色仿真 / 初始化脚本 / 原生鼠标键盘 / 文件上传 / 对话框 / 请求拦截，
  *     以及 pageerror、console、request、requestfailed、response、dialog 事件。
  *   - Locator：在页面里按 CSS 查找（穿透 open shadow root），支持 first / nth / 子 locator 与末尾的 :visible，点击走真实坐标。
@@ -20,6 +21,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import http from 'node:http';
+import net from 'node:net';
 import {spawn, spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {checkBuildStamp} from '../../build/source-stamp.mjs';
@@ -121,6 +123,36 @@ function seedEgoConfig(profile) {
   fs.writeFileSync(path.join(profile, 'ego_config.json'), JSON.stringify({not_first_run: true}));
 }
 
+// 门禁加载的扩展 ID 固定，正好在本机已装订阅连接器的 allowed_origins 里，常驻服务也认这个 Origin：不隔离的话，
+// 扩展一查订阅状态就会拉起用户真实的连接器（launch.exe → host.mjs → codex，在 Windows Terminal 当默认终端时还会弹出空白
+// 控制台窗口，浏览器关掉后成了孤儿进程），门禁结果也跟着本机安装与账号走。所以加载前拷一份副本：三个 NativeMessaging
+// 宿主名改成不存在的名字（回退立刻报「未找到」），常驻服务地址改到一个没人监听的端口。verify:service 传进来的副本已经
+// 自己改过这两处（假服务端口、antigravity 宿主），这里只改仍是出厂值的部分。
+const CONNECTOR_HOSTS = /(['"])com\.roamcat\.(translate|grok|antigravity)\1/g;
+const SHIPPED_SERVICE = /ws:\/\/127\.0\.0\.1:47821\//g;
+function closedPort() {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer().once('error', reject).listen(0, '127.0.0.1', () => {
+      const {port} = server.address();
+      server.close(() => resolve(port));
+    });
+  });
+}
+async function isolatedExtension(extension, profile) {
+  const copy = path.join(profile, 'roamcat-extension');
+  fs.cpSync(extension, copy, {recursive: true});
+  const file = path.join(copy, 'subscription.js');
+  const port = await closedPort();
+  const patched = fs.readFileSync(file, 'utf8')
+    .replace(CONNECTOR_HOSTS, (_, quote, kind) => `${quote}com.roamcat.${kind}_gate_absent${quote}`)
+    .replace(SHIPPED_SERVICE, `ws://127.0.0.1:${port}/`);
+  // 连接器代码改过写法时替换会悄悄落空，门禁又会去连真实连接器：三个宿主都得是不存在的名字、出厂服务地址不能留下。
+  const absent = new Set([...patched.matchAll(/com\.roamcat\.(translate|grok|antigravity)_gate_absent/g)].map(match => match[1]));
+  if (absent.size !== 3 || /127\.0\.0\.1:47821\b/.test(patched)) throw new Error('无法在扩展副本里隔离本机订阅连接器：subscription.js 的宿主名或服务地址写法变了，请同步更新 tools/lib/ego.mjs');
+  fs.writeFileSync(file, patched);
+  return copy;
+}
+
 // extension：未打包扩展目录（默认 dist/extension），传 null 则不加载扩展。
 // 门禁被打断（Ctrl+C、崩溃、电脑重启）时临时配置与扩展副本来不及删，一个约 40 MB。启动时顺手清掉一小时前的残留：
 // 正在运行的门禁目录都比这新，并行跑的门禁不会互删。
@@ -168,13 +200,17 @@ export async function openBrowser({extension = DIST, args = []} = {}) {
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'roamcat-ego-'));
   seedLocalState(profile);
   seedEgoConfig(profile);
+  const removeProfile = () => fs.rmSync(profile, {recursive: true, force: true, maxRetries: 8, retryDelay: 300});
+  if (extension) {
+    try { extension = await isolatedExtension(extension, profile); }
+    catch (error) { removeProfile(); throw error; }
+  }
   const flags = ['--remote-debugging-port=0', `--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check',
     '--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding',
     '--disable-features=CalculateNativeWinOcclusion', '--mute-audio', '--window-size=1440,1000'];
   if (process.env.ROAMCAT_HEADED !== '1') flags.push('--headless=new', '--hide-scrollbars');
   if (extension) flags.push(`--disable-extensions-except=${extension}`, `--load-extension=${extension}`);
   const proc = spawn(egoExecutable(), [...flags, ...args, 'about:blank'], {stdio: 'ignore'});
-  const removeProfile = () => fs.rmSync(profile, {recursive: true, force: true, maxRetries: 8, retryDelay: 300});
   // --remote-debugging-port=0 让浏览器自己挑端口，写进配置目录的 DevToolsActivePort（第一行端口，第二行浏览器端点路径）。
   const portFile = path.join(profile, 'DevToolsActivePort');
   let endpoint = null;
