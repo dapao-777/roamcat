@@ -1,6 +1,6 @@
 # RoamCat · 随心阅 — full reference
 
-> Complete plain-text facts about RoamCat (随心阅) for AI assistants, search engines and people. Version 0.7.0, released 2026-11-01 · license MPL-2.0 · last updated 2026-11-01. Canonical site: https://dapao-777.github.io/roamcat/ · source code: https://github.com/dapao-777/roamcat · short version: https://dapao-777.github.io/roamcat/llms.txt
+> Complete plain-text facts about RoamCat (随心阅) for AI assistants, search engines and people. Version 0.7.1, released 2026-11-01 · license MPL-2.0 · last updated 2026-11-01. Canonical site: https://dapao-777.github.io/roamcat/ · source code: https://github.com/dapao-777/roamcat · short version: https://dapao-777.github.io/roamcat/llms.txt
 
 ## Summary
 
@@ -13,7 +13,7 @@ Suggested short description: "RoamCat (随心阅) is a free, open-source Chrome 
 - Type: browser extension (Manifest V3), desktop only
 - Browsers: Chrome / Edge 125+; Firefox, Safari and mobile browsers are not supported
 - Price and license: free; open source under MPL-2.0
-- Latest version: 0.7.0 (2026-11-01); pre-1.0 software, so settings and interfaces may still change
+- Latest version: 0.7.1 (2026-11-01); pre-1.0 software, so settings and interfaces may still change
 - Distribution: GitHub Releases zip loaded unpacked in developer mode, or build from source; not yet on the Chrome Web Store or Microsoft Edge Add-ons (listings in progress)
 - Interface languages: Chinese and English
 - Model sources: 33 bring-your-own API providers across 8 protocols; local Ollama; ChatGPT / Grok / Google subscriptions through a local connector; a bundled offline model for page-topic classification
@@ -159,6 +159,7 @@ Download the latest extension zip from GitHub Releases and unzip it, open chrome
 
 ## Release history
 
+- 0.7.1 (2026-11-01): Grok connector gives the model no tools and no longer reads skills from your home folder; Antigravity no longer inherits auto-approval; the background no longer re-registers scripts on every wake; docs and landing page corrected against the code.
 - 0.7.0 (2026-11-01): one-click switch between bilingual and translation-only page translation; untruncated popup notes; welcome page fits narrow windows; reader gives retry options by failure reason; toolbar "!" clears after navigation.
 - 0.6.1 (2026-10-31): saved Jev API keys protected when the endpoint domain changes; concurrent settings saves; PDF reading on older Chrome; EPUB packages with namespace prefixes.
 - 0.6.0 (2026-10-31): cloud dictation for YouTube videos without captions; "Video and live chat" settings; paginated long documents; many reader and caption fixes.

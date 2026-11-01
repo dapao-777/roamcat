@@ -4,13 +4,18 @@
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-11-01
+订阅连接器收紧权限：Grok 不再给模型任何工具、不再读你主目录里的技能，Antigravity 不再继承你放宽过的自动批准；后台唤醒不再每次全量对账；文档与落地页按当前代码校正。
+
 ### 安全
 - Grok 订阅连接器不再给模型任何工具：以前命令行带 `--always-approve`，而 Grok CLI 无头模式默认带 23 个内置工具（含运行终端命令、改文件、定时任务），网页里的文字又会进提示词；你主目录里的 `.agents/skills`、`.claude`、`.cursor` 的技能、规则与 MCP 也会一并进提示词。现在去掉自动批准，用工具白名单加禁用清单把全部内置工具关掉、需要批准的调用一律拒绝，子进程的用户主目录换成连接器自己的空目录（离线抓包确认发给模型的请求里不再有工具，技能不再进提示词）。旧版 Grok CLI 不认识这些开关时提示更新，不会去掉开关重试。
-- Antigravity 订阅连接器把批准策略压回 agy 默认值：用户自己的 agy 设置常是「始终继续」（连 MCP 调用都自动批准），无头运行会原样继承；现在每次会话用 `--settings` 覆盖（只对本次会话生效、不改你的设置），需要确认的调用被拒绝。你在 agy 里装的 MCP 服务器、插件与 hooks 仍会加载，目前没有收窄。
+- Antigravity 订阅连接器把批准策略压回 agy 默认值：用户自己的 agy 设置常是「始终继续」（连 MCP 调用都自动批准），无头运行会原样继承；现在每次会话用 `--settings` 覆盖（只对本次会话生效、不改你的设置），需要确认的调用被拒绝。你在 agy 里装的 MCP 服务器、插件与 hooks 仍会加载，目前没有收窄。真机实测（agy 1.4.12）翻译与听写都正常，听写读取音频不受影响。
 
 ### 改进
 - 浏览器回收后台后每次唤醒，不再把动态注册的内容脚本先撤再注册、也不再逐个已打开的标签页补注入：只确认已注册的内容脚本仍与设置一致；全量对账只在安装/更新、浏览器启动、站点权限/自动开启/伴读猫/服务商设置变化、订阅登录状态翻转时做。标签页多时，每次唤醒少一轮与标签页数成正比的脚本探测。
 - 开发与测试：新增 `npm run verify:grok-lockdown`（真实 Grok CLI 对着本机假接口，带对照组，不耗额度；Grok 升级后重跑）；`verify:sites --live` 在中文系统上把 Cloudflare 验证页（「请稍候…」）与 Hacker News 限流页记成失败，现在识别后记为跳过；`verify:all` 与 `verify:release` 不再每次打印 Node 24 的 DEP0190 弃用告警。
+- 文档按当前代码校正：README、SPEC、隐私说明、上架清单与品牌 / 设计文档里过期的消息数、服务商数、版本与发布阶段、内容脚本加载方式、设计配色、设置页路径与第三方许可声明（补 pdf.js、fflate、Silkscreen）都已改正，PRIVACY 补上远程领域识别发送标题与正文样本的说明；README 截图按当前界面重拍。新增文档事实单测，消息类型、服务商数或版本号变了而文档没跟上时 `npm test` 会失败。
+- 落地页：中英两页补齐搜索引擎与 AI 助手引用所需的元数据和结构化数据，新增 `llms-full.txt`、404 页与网站图标，配色改为与扩展一致的暖纸墨；GitHub 仓库开启 Discussions 与私密漏洞报告。
 
 ### 修复
 - 本机连接器安装器在 Windows 上查 CLI 版本时，路径含空格（如 `C:\Users\Li Lei\…`）的 `codex.cmd` 被命令行拆开，报「无法运行官方 Codex CLI」；现在与运行时共用同一套带引号的启动写法。
@@ -247,7 +252,8 @@ Twitch 直播聊天实时翻译；本机常驻连接服务改为配对令牌认�
 - `host_permissions` 仍为宽泛的 `http(s)://*/*`，计划改为 `optional_host_permissions` 按需申请。
 - 未上架商店；扩展仅支持开发者模式加载（直接加载 `roamcat-0.0.1/extension` 时 ID 与目录路径绑定；`npm run build` 产物 ID 固定）。
 
-[Unreleased]: https://github.com/dapao-777/roamcat/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/dapao-777/roamcat/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/dapao-777/roamcat/releases/tag/v0.7.1
 [0.7.0]: https://github.com/dapao-777/roamcat/releases/tag/v0.7.0
 [0.6.1]: https://github.com/dapao-777/roamcat/releases/tag/v0.6.1
 [0.6.0]: https://github.com/dapao-777/roamcat/releases/tag/v0.6.0

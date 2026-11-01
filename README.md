@@ -16,7 +16,7 @@
 <p align="center">
   <a href="LICENSE"><img alt="License: MPL-2.0" src="https://img.shields.io/badge/license-MPL--2.0-blue"></a>
   <a href="https://github.com/dapao-777/roamcat/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/dapao-777/roamcat/actions/workflows/ci.yml/badge.svg"></a>
-  <img alt="版本 0.7.0" src="https://img.shields.io/badge/version-0.7.0-blue">
+  <img alt="版本 0.7.1" src="https://img.shields.io/badge/version-0.7.1-blue">
   <img alt="Chrome / Edge 125+" src="https://img.shields.io/badge/Chrome%20%2F%20Edge-125%2B-green">
   <img alt="Manifest V3" src="https://img.shields.io/badge/manifest-V3-blueviolet">
 </p>
@@ -48,7 +48,7 @@
 **RoamCat（随心阅）**是免费开源的 **Chrome / Edge** 浏览器扩展，帮助中文读者阅读英文网站：把页面原位译成**中英双语对照**，或保留整页英文、只给随你进步而**渐退的稀疏提示**；还支持 **PDF / EPUB 文件**、**YouTube 双语字幕**和需手动开启的 **Twitch 直播聊天翻译**。**本地优先、无遥测**，AI 由你自己选：**33 家自备 API**、本地 Ollama 模型，或你已有的 **ChatGPT / Grok / Google 订阅**。更多见[官网](https://dapao-777.github.io/roamcat/zh.html)，给 AI 助手的摘要见 [llms.txt](https://dapao-777.github.io/roamcat/llms.txt)。
 
 > [!NOTE]
-> **0.7.0：整页翻译一键切换「双语 / 仅译文」，弹窗说明不再截断、引导页适配窄窗口**。从 [Releases](https://github.com/dapao-777/roamcat/releases/latest) 下载安装包或从源码构建，再以开发者模式加载（见[快速开始](#-快速开始)），尚未上架扩展商店。本项目是对开源项目 [RelyLess](https://github.com/rockythink/relyless) 的重构、优化与修复，详见[致谢](#-致谢)。
+> **0.7.1：订阅连接器收紧权限（Grok 不再给模型任何工具，Antigravity 不再继承自动批准），文档与落地页按当前代码校正**。从 [Releases](https://github.com/dapao-777/roamcat/releases/latest) 下载安装包或从源码构建，再以开发者模式加载（见[快速开始](#-快速开始)），尚未上架扩展商店。本项目是对开源项目 [RelyLess](https://github.com/rockythink/relyless) 的重构、优化与修复，详见[致谢](#-致谢)。
 
 ## ✨ 亮点
 
@@ -122,7 +122,7 @@
 
 需要 **Chrome 或 Edge 125+**。
 
-**方式 A：Release 安装包。** 从 [Releases](https://github.com/dapao-777/roamcat/releases/latest) 下载 `roamcat-0.7.0-extension.zip` 并解压。打开 `chrome://extensions`（或 `edge://extensions`），开启**开发者模式**，点**加载已解压的扩展**，选择解压出的 **`roamcat-0.7.0/extension`** 文件夹。要用订阅连接器，在包含 `roamcat-0.7.0/` 的目录里运行 `node roamcat-0.7.0/connector/install.mjs`（需要 Node.js 20+）；它会按这个文件夹算出扩展 ID，移动文件夹后要重新运行。
+**方式 A：Release 安装包。** 从 [Releases](https://github.com/dapao-777/roamcat/releases/latest) 下载 `roamcat-0.7.1-extension.zip` 并解压。打开 `chrome://extensions`（或 `edge://extensions`），开启**开发者模式**，点**加载已解压的扩展**，选择解压出的 **`roamcat-0.7.1/extension`** 文件夹。要用订阅连接器，在包含 `roamcat-0.7.1/` 的目录里运行 `node roamcat-0.7.1/connector/install.mjs`（需要 Node.js 20+）；它会按这个文件夹算出扩展 ID，移动文件夹后要重新运行。
 
 **方式 B：从源码构建**（需要 Node.js 22.13+；Node 24 已验证）：
 
