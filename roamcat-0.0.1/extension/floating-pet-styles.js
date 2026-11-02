@@ -359,15 +359,15 @@
          居中立在猫头上方、两耳之间，自上而下为设置 / 提炼 / 阅读开关 / 旋旋翻
          （离猫最近）。常驻显示（不等悬停或点猫），拖动时跟着猫走；上方放不下时
          （.dock-below，clampPosition 判定）改挂到猫脚下，顺序随之倒过来，旋旋翻
-         仍离猫最近。猫的画稿上方留白：头顶约在挂件框顶下 30px × scale、离脚底
-         38px × scale，胶囊底边落在头顶上方 4px，缩放猫时一起挪。只有贴边探头时
+         仍离猫最近。猫的画稿（58×62，贴底居中）上方留白：头顶离脚底约
+         34px × scale，胶囊底边落在头顶上方约 4px，缩放猫时一起挪。只有贴边探头时
          整条收起（点猫唤醒后从猫头升回来）。胶囊本身是 elev-2 浮层，里面的按钮
          不再各带描边投影。
          ========================================================= */
       .roamcat-quick-dock {
         position: absolute;
         left: 50%;
-        bottom: calc(38px * var(--pet-scale, 1) + 4px);
+        bottom: calc(34px * var(--pet-scale, 1) + 4px);
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -415,11 +415,11 @@
         transition-delay: 0s;
       }
 
-      /* 缩放控制胶囊：挂在猫朝页面内侧的一边、对齐猫身中线（离脚底约 24px × scale；
+      /* 缩放控制胶囊：挂在猫朝页面内侧的一边、对齐猫身中线（离脚底约 20px × scale；
          猫头上方留给竖排按钮与气泡），只在点猫头展开（dock-open）时出现。 */
       .roamcat-zoom-controls {
         position: absolute;
-        bottom: calc(24px * var(--pet-scale, 1));
+        bottom: calc(20px * var(--pet-scale, 1));
         right: calc(100% + 8px);
         /* --zoom-shift-x 由 fitZoomControls() 写入：视口窄到放不下时把胶囊收进视口。 */
         transform: translate(var(--zoom-shift-x, 0px), 50%);
@@ -657,7 +657,7 @@
       .cat-speech-bubble {
         position: absolute;
         /* 以放大后的猫为基线（猫按 --pet-scale 从脚底放大）：漫游态 --bubble-rise 取耳尖
-           离脚底的 42px，气泡底边与最下面的竖排按钮齐平、尾巴贴着耳尖；贴边探头态取整框高 68px。 */
+           离脚底的 39px，气泡底边与最下面的竖排按钮齐平、尾巴贴着耳尖；贴边探头态取整框高 68px。 */
         bottom: calc(var(--bubble-rise, 68px) * var(--pet-scale, 1) + 8px);
         left: 50%;
         transform: translateX(calc(-50% + var(--bubble-shift-x, 0px))) translateY(4px);
@@ -721,7 +721,7 @@
          与缩放比例无关。贴边探头态没有工具栏，气泡仍贴猫外缘。 */
       .roamcat-pet-widget:not(.docked) {
         --bubble-lane: 56px;
-        --bubble-rise: 42px;
+        --bubble-rise: 39px;
       }
 
       /* 针对右半屏或贴右边缘的对齐策略：气泡右对齐，向网页内侧展开，100% 避免超出视口！ */
@@ -982,9 +982,6 @@
       }
 
       /* Official 2D Scanline Mascot Cat SVG & Breathing Animation */
-        50% { transform: scale(1.15) rotate(4deg); }
-      }
-
       .cat-svg {
         width: 58px;
         height: 62px;
@@ -1261,7 +1258,10 @@
          10. Peeking Mascot Mode (贴边探头姿态 · 软萌双爪扣边 · 灵动眨眼)
          ========================================================= */
       .cat-mode-roaming {
-        display: block;
+        /* 58×62 的画稿在 64×68 的框里水平居中、贴底站在挂件底边，缩放同样以底边中点为原点。 */
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
         width: 100%;
         height: 100%;
         transform: scale(var(--pet-scale, 1));

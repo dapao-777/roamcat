@@ -555,7 +555,8 @@ try {
   const petLayout = () => execInTab(`() => {
     const host = document.querySelector('#roamcat-pet-host'), sr = host.shadowRoot;
     const r = el => { const b = el.getBoundingClientRect(); return {l: b.left, t: b.top, r: b.right, b: b.bottom}; };
-    return {host: r(host), btns: ['#quick-options', '#quick-summary', '#quick-reading', '#roamcat-flip-btn'].map(s => r(sr.querySelector(s))),
+    const body = [...sr.querySelectorAll('.cat-svg > path')].find(p => (p.getAttribute('fill') || 'none') !== 'none');
+    return {host: r(host), head: r(body), btns: ['#quick-options', '#quick-summary', '#quick-reading', '#roamcat-flip-btn'].map(s => r(sr.querySelector(s))),
       bubble: r(sr.querySelector('#cat-speech')), zoom: r(sr.querySelector('#roamcat-zoom-controls')), speaking: sr.querySelector('#cat-speech').classList.contains('speaking')};
   }`);
   const boxesOverlap = (a, b) => a.l < b.r - 0.5 && b.l < a.r - 0.5 && a.t < b.b - 0.5 && b.t < a.b - 0.5;
@@ -574,7 +575,8 @@ try {
   const columnLayout = await petLayout();
   check('伴读猫快捷按钮竖排一列、与猫居中立在猫头上方', columnLayout.btns.every((b, i) => Math.abs(b.l - columnLayout.btns[0].l) < 1
       && Math.abs((b.l + b.r) / 2 - (columnLayout.host.l + columnLayout.host.r) / 2) < 1 && (i === 0 || b.t >= columnLayout.btns[i - 1].b))
-    && columnLayout.btns[3].b <= columnLayout.host.t + 0.38 * (columnLayout.host.b - columnLayout.host.t),
+    && columnLayout.btns[3].b <= columnLayout.head.t
+    && Math.abs((columnLayout.head.l + columnLayout.head.r) / 2 - (columnLayout.host.l + columnLayout.host.r) / 2) < 1,
   JSON.stringify(columnLayout));
   check('伴读猫缩放胶囊在猫内侧且不压按钮', columnLayout.zoom.r <= columnLayout.host.l && columnLayout.btns.every(b => !boxesOverlap(b, columnLayout.zoom)), JSON.stringify(columnLayout));
   await hoverQuick(true);

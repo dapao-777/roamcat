@@ -79,19 +79,21 @@ try {
     } : null;
   }`);
 
-  // 竖排快捷按钮的几何：四颗按钮自上而下为设置 / 提炼 / 阅读 / 旋旋翻，连同猫、气泡、缩放胶囊的视口矩形。
+  // 竖排快捷按钮的几何：四颗按钮自上而下为设置 / 提炼 / 阅读 / 旋旋翻，连同猫、猫身（麻薯身体路径，
+  // 取头顶）、气泡、缩放胶囊的视口矩形。
   const layout = () => petCall(`() => {
     const host = document.querySelector('#roamcat-pet-host'), sr = host.shadowRoot;
     const r = el => { const b = el.getBoundingClientRect(); return {l: Math.round(b.left), t: Math.round(b.top), r: Math.round(b.right), b: Math.round(b.bottom)}; };
-    return {cls: sr.querySelector('.roamcat-pet-widget').className, vh: innerHeight, host: r(host),
+    const body = [...sr.querySelectorAll('.cat-svg > path')].find(p => (p.getAttribute('fill') || 'none') !== 'none');
+    return {cls: sr.querySelector('.roamcat-pet-widget').className, vh: innerHeight, host: r(host), head: body ? r(body) : null,
       btns: ['#quick-options', '#quick-summary', '#quick-reading', '#roamcat-flip-btn'].map(s => r(sr.querySelector(s))),
       bubble: r(sr.querySelector('#cat-speech')), zoom: r(sr.querySelector('#roamcat-zoom-controls'))};
   }`);
   const overlaps = (a, b) => a.l < b.r && b.l < a.r && a.t < b.b && b.t < a.b;
   const oneColumn = l => Boolean(l) && l.btns.every(b => Math.abs(b.l - l.btns[0].l) <= 1);
   const centerX = b => (b.l + b.r) / 2;
-  // 猫的画稿上方留白，耳尖约在挂件框顶下 0.38 处：竖列挂在猫头上方时最下面的按钮要在耳尖之上。
-  const earLine = l => l.host.t + 0.38 * (l.host.b - l.host.t);
+  // 工具栏立在猫头上方时，最下面的按钮不压到猫头（按实际画稿量，不写死比例）。
+  const aboveHead = l => Boolean(l?.head) && l.btns[3].b <= l.head.t;
 
   const isOpen = s => Boolean(s?.cls.includes('dock-open')) && s.expanded === 'true' && s.inert === false;
   const isClosed = s => Boolean(s) && !s.cls.includes('dock-open') && s.expanded === 'false' && s.inert === true;
@@ -154,7 +156,7 @@ try {
   check('快捷按钮竖排一列、自上而下设置/提炼/阅读/旋旋翻', oneColumn(column) && gaps.length === 3 && gaps.every(g => g >= 0 && g <= 4),
     JSON.stringify({btns: column?.btns, gaps}));
   check('竖排工具栏与猫居中对齐', Boolean(column) && column.btns.every(b => Math.abs(centerX(b) - centerX(column.host)) <= 1), JSON.stringify(column));
-  check('竖列挂在猫头上方', Boolean(column) && column.btns[3].b <= earLine(column) && column.btns[0].t >= 0 && !column.cls.includes('dock-below'),
+  check('竖列挂在猫头上方', Boolean(column) && aboveHead(column) && column.btns[0].t >= 0 && !column.cls.includes('dock-below'),
     JSON.stringify(column));
   check('缩放胶囊在猫朝页面内侧一边', Boolean(column) && column.zoom.r <= column.host.l && column.btns.every(b => !overlaps(b, column.zoom)),
     JSON.stringify(column));
@@ -444,7 +446,7 @@ try {
   await dragPetTo(300, 600);
   lay = await until(layout, l => l?.cls.includes('is-left') && !l.cls.includes('dock-below'));
   check('猫在左半屏时工具栏仍与猫居中', lay.cls.includes('is-left') && oneColumn(lay) && lay.btns.every(b => Math.abs(centerX(b) - centerX(lay.host)) <= 1)
-    && lay.btns[3].b <= earLine(lay), JSON.stringify(lay));
+    && aboveHead(lay), JSON.stringify(lay));
   const sumBox = await tab.locator('#quick-summary').boundingBox();
   await tab.mouse.move(sumBox.x + sumBox.width / 2, sumBox.y + sumBox.height / 2);
   lay = await until(layout, l => l.bubble.l >= l.btns[0].r);
@@ -471,8 +473,8 @@ try {
       `zoom=${st?.zoom} scale=${st?.scale}`);
   }
   check('缩放写入 --pet-scale', st?.scale === '1.6', `scale=${st?.scale}`);
-  const big = await until(layout, l => l.btns[3].b <= earLine(l));
-  check('160% 时竖列仍在耳尖之上、胶囊不压猫', big.btns[3].b <= earLine(big) && big.zoom.r <= big.host.l, JSON.stringify(big));
+  const big = await until(layout, aboveHead);
+  check('160% 时工具栏仍立在猫头之上、胶囊不压猫', aboveHead(big) && big.zoom.r <= big.host.l, JSON.stringify(big));
   await shot('zoom-160');
   // 复位 100%（1.6→1.4→1.2→1.0 三步）
   for (const label of ['140%', '120%', '100%']) { await tab.locator('#zoom-out').click(); await waitPet(s => s?.zoom === label); }

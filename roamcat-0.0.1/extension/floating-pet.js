@@ -646,10 +646,10 @@
       }
 
       // 竖排工具栏默认立在猫头上方；猫被拖到视口顶部附近、上方放不下时改挂到猫脚下（下方更宽裕才换）。
-      // 工具栏底边落在头顶上方 4px，头顶在挂件框顶下 30px × scale（见样式表 .roamcat-quick-dock）；
+      // 工具栏底边落在头顶上方约 4px，头顶在挂件框顶下约 34px × scale（见样式表 .roamcat-quick-dock）；
       // offsetHeight 不受收起态的 visibility/scale 影响；再留 8px 视口边距。
       const roomAbove = window.innerHeight - currentBottom - petH;
-      const dockNeed = (this.quickDock?.offsetHeight || 0) + 4 - 30 * petScale + 8;
+      const dockNeed = (this.quickDock?.offsetHeight || 0) + 4 - 34 * petScale + 8;
       this.container.classList.toggle('dock-below', roomAbove < dockNeed && currentBottom > roomAbove);
 
       // Adaptive summary window positioning (keeps it anchored near the pet and fully on-screen)
