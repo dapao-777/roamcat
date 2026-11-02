@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-02
+
 ### 新增
 - 接入 14 种机器翻译服务，支持整页、字幕、直播聊天、阅读器与选段分别选择引擎；默认跟随大模型，失败条目可按设置回退。新增凭据表单、连接检查、Chrome 本机语言包准备与机翻用量统计。密钥不进网页、诊断或导出；行内代码标记丢失或重复会触发回退。详情见机器翻译接入说明。
 
@@ -281,7 +283,8 @@ Twitch 直播聊天实时翻译；本机常驻连接服务改为配对令牌认�
 - `host_permissions` 仍为宽泛的 `http(s)://*/*`，计划改为 `optional_host_permissions` 按需申请。
 - 未上架商店；扩展仅支持开发者模式加载（直接加载 `roamcat-0.0.1/extension` 时 ID 与目录路径绑定；`npm run build` 产物 ID 固定）。
 
-[Unreleased]: https://github.com/roamcat-dev/roamcat/compare/v0.7.2...HEAD
+[Unreleased]: https://github.com/roamcat-dev/roamcat/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/roamcat-dev/roamcat/releases/tag/v0.8.0
 [0.7.2]: https://github.com/roamcat-dev/roamcat/releases/tag/v0.7.2
 [0.7.1]: https://github.com/roamcat-dev/roamcat/releases/tag/v0.7.1
 [0.7.0]: https://github.com/roamcat-dev/roamcat/releases/tag/v0.7.0

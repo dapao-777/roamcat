@@ -45,12 +45,14 @@ const MESSAGE_TOTAL_PATTERNS = [
   /(\d+)\s*种消息路由/g,
   /登记全部\s*(\d+)\s*种消息/g,
   /(\d+)\s+message\s+(?:routes|types)\b/gi,
+  /(\d+)\s+internal\s+message\s+types\b/gi,
   /MESSAGE_TYPES`（(\d+) 种）/g,
   /消息分组（(\d+) 种/g,
 ];
 const ALLOWED_PATTERNS = [
   /(\d+)\s*种白名单(?:消息|类型)/g,
   /(\d+)\s+whitelisted\s+message(?:s|\s+types)/gi,
+  /(\d+)\s+of\s+\d+\s+internal\s+message\s+types\b/gi,
   /`contentAllowed`，(\d+) 种/g,
   /白名单\s*(\d+)\s*种消息/g,
 ];
@@ -80,7 +82,7 @@ test('文档里的消息总数与内容脚本白名单数和 message-protocol.js
   const {MESSAGE_TYPES, CONTENT_ALLOWED_TYPES} = await extension('message-protocol.js');
   const total = MESSAGE_TYPES.length;
   const allowed = CONTENT_ALLOWED_TYPES.length ?? CONTENT_ALLOWED_TYPES.size;
-  const files = ['README.md', 'README.en.md', 'docs/index.html', 'docs/zh.html', 'docs/llms.txt', 'roamcat-0.0.1/SPEC.md'];
+  const files = ['README.md', 'README.en.md', 'docs/index.html', 'docs/zh.html', 'docs/llms.txt', 'docs/llms-full.txt', 'roamcat-0.0.1/SPEC.md'];
   const mentions = new Map(files.map(file => [file, 0]));
   for (const file of files) {
     const text = read(file);
@@ -88,7 +90,7 @@ test('文档里的消息总数与内容脚本白名单数和 message-protocol.js
     for (const pattern of MESSAGE_TOTAL_PATTERNS) count += expectEvery(file, text, pattern, total, '消息总数');
     for (const pattern of ALLOWED_PATTERNS) count += expectEvery(file, text, pattern, allowed, '内容脚本白名单数');
     // 「N 种消息中的 M 种白名单」与「M whitelisted message types out of N」两种合写
-    for (const match of text.matchAll(/(\d+)\s*种消息中的\s*\**(\d+)\s*种白名单/g)) {
+    for (const match of text.matchAll(/(\d+)\s*种(?:内部)?消息中的\s*\**(\d+)\s*种(?:白名单)?/g)) {
       count += 1;
       assert.equal(Number(match[1]), total, `${file}：消息总数写的是 ${match[1]}，代码里是 ${total}`);
       assert.equal(Number(match[2]), allowed, `${file}：白名单数写的是 ${match[2]}，代码里是 ${allowed}`);

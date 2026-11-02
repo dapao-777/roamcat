@@ -1,12 +1,12 @@
 # Chrome Web Store Listing — RoamCat · 随心阅
 
-> Last Updated: 2026-11-02（补充机翻拆包保留、单次请求超时及逐项失败修复；既有发布与审核准备记录见版本历史）
+> Last Updated: 2026-11-02（发布 0.8.0：十四种机翻、伴读猫工具栏与机翻稳定性修复；既有发布与审核准备记录见版本历史）
 > 本文是上架 Chrome Web Store / Microsoft Edge Add-ons 的单一事实源：商店文案、权限理由、隐私披露、版本历史。
 > 提交前请逐项核对文末「提交前检查单」。本文保存在 `roamcat-0.0.1/`，不在 Release ZIP 的打包白名单内。
 
 ## 当前上架准备状态
 
-2026-11-02 已完成本地全量门禁与补充排查；没有生成商店专用安装包、登录开发者后台或提交审核。当前源码版本为 **0.7.2**，已经采用 Manifest V3；首次上架可使用此版本，不需要为了上架改成 1.0。
+2026-11-02 已完成本地全量门禁与补充排查；没有生成商店专用安装包、登录开发者后台或提交审核。当前源码版本为 **0.8.0**，已经采用 Manifest V3；首次上架可使用此版本，不需要为了上架改成 1.0。
 
 | 项目 | 当前状态与待办 |
 |------|----------------|
@@ -67,7 +67,8 @@ Roam the English web like a cat: bilingual page translation plus reading aids wi
 • 领域识别——内置本地模型识别软件、数据、金融、医学、法律、设计等领域，让释义更贴合语境
 • 生词渐退——对反复求助的用法自动从「短注」渐退到「仅标记」再到「暂缓」，熟悉的内容不再打扰
 • 文章摘要——一键提炼整篇文章的核心结论、主要论点与关键术语；复制时保留原文章标题与链接
-• 伴读猫——可拖拽的桌面小伙伴，随时访问常用功能，阅读辅助开关显示当前页面的实际状态
+• 伴读猫——可拖拽的桌面小伙伴，通过常驻竖排工具栏访问常用功能，阅读辅助开关显示当前页面的实际状态
+• 14 种机器翻译服务，整页、字幕、直播聊天、阅读器和选段可分别选引擎，失败项可回退到大模型
 • YouTube 双语字幕——有字幕的视频可显示原文与中文译文，关闭再开启可接续已有译文；字幕外观可调整，换视频后跟随新内容
 • 无字幕视频听写——在 YouTube 上手动开启云端听写后，为正在播放的声音生成原文与中文字幕；需要另行安装本机 Google 订阅连接器并具备可用服务
 • Twitch 直播聊天翻译——手动开启后，在新出现的公开聊天消息下显示中文译文；默认关闭
@@ -89,7 +90,7 @@ Roam the English web like a cat: bilingual page translation plus reading aids wi
 支持
 问题与建议：https://github.com/roamcat-dev/roamcat/issues
 
-当前版本 0.7.2；首次商店提交尚未完成。
+当前版本 0.8.0；首次商店提交尚未完成。
 ```
 
 **英文描述备选**（供多语言市场上架时使用）
@@ -108,7 +109,8 @@ Features
 • Built-in local domain recognition for tech, data, finance, medical, legal and design contexts
 • Gradual fade-out for words you keep looking up, so familiar content stops interrupting
 • One-tap article digest with key takeaways and terms
-• A draggable desktop companion for quick access
+• A draggable desktop companion with an always-visible vertical toolbar
+• 14 machine-translation services with separate engines for pages, captions, live chat, readers and passages, plus optional AI fallback
 • YouTube bilingual captions: original text with Chinese translations, reusable translations when toggling captions, adjustable styling and a fresh start for each video
 • Manual cloud transcription for YouTube videos without captions; requires the separately installed local Google subscription connector and an available service
 • Optional translation of new public Twitch chat messages; off by default
@@ -184,7 +186,7 @@ Chinese (Simplified)
 
 ---
 
-### Machine translation (next release)
+### Machine translation (0.8.0)
 
 14 translation services can be selected per scene. Cloud translation sends source text directly to the selected provider (DeepL may also receive limited page context); Chrome on-device translation keeps text local after a user-initiated language-pack download. Google and Edge web endpoints are unofficial; DeepLX uses only a user-supplied deployment. Credentials and optional MyMemory email are stored locally, excluded from content scripts, diagnostics and exports. Optional AI fallback sends only failed items to the configured model. No new permissions are added. Authentication and website-content disclosures must include these providers and credentials.
 
@@ -201,12 +203,12 @@ Chinese (Simplified)
 | Personally identifiable info | 是（订阅连接器在本机读取并展示用户自己 CLI 登录态中的邮箱/套餐） | 不上传至项目运营者；此处仅在本机显示 | 展示订阅账户状态 | 不向新增第三方分享 |
 | Health info | 否 | 否 | — | 否 |
 | Financial info | 否 | 否 | — | 否 |
-| Authentication info | 是（用户自备 API Key；远程文档主动重试时使用浏览器已有的网站登录态） | 是（API Key 发往用户配置的模型端点；网站登录态仅在主动重试时发往文档网站，不跟随重定向） | 调用用户选择的模型服务；读取需要登录的文档 | 用户选择的模型服务商；文档所属网站 |
-| Personal communications | 是（仅开启 Twitch 直播聊天翻译时：公开聊天室里新出现的消息文本；不读私信、不读历史聊天） | 是（发送到用户选择的模型服务；使用 API 时每个标签页每分钟至多 12 次请求） | 在原消息下方显示简体中文译文 | 仅用户选择的服务商 |
+| Authentication info | 是（用户自备 API Key；远程文档主动重试时使用浏览器已有的网站登录态） | 是（API Key 发往用户配置的模型或机器翻译端点；网站登录态仅在主动重试时发往文档网站，不跟随重定向） | 调用用户选择的模型服务；读取需要登录的文档 | 用户选择的模型或机器翻译服务商；文档所属网站 |
+| Personal communications | 是（仅开启 Twitch 直播聊天翻译时：公开聊天室里新出现的消息文本；不读私信、不读历史聊天） | 是（发送到用户选择的模型或机器翻译服务；每个标签页每分钟至多 12 次模型请求或 30 批机翻请求） | 在原消息下方显示简体中文译文 | 仅用户选择的服务商 |
 | Location | 否 | 否 | — | 否 |
 | Web history | 否（不记录访问过的网址；阅读记录事件不含网址） | 否 | — | 否 |
 | User activity | 是（默认关闭，需明确开启并添加允许的网站） | 仅当用户开启「个性化分析」时，发送近 30 天有限的查询/摘要/客观统计（不含网址与原句） | 阅读记录、摘要与可逆的提示偏好调整 | 仅用户选择的服务商 |
-| Website content | 是（仅功能触发时：目标词句、所选段落、有限上下文；自动预备的文章上下文上限 12,000 字符；整页双语翻译时还包括导航、侧栏、页眉页脚等页面构件中的可见英文；选择远程领域识别（订阅连接器、自定义 API 或 Jev 增强判定）时，还包括标题和经过长度限制的正文样本；在 YouTube 手动开启云端听写时，还包括正在播放的视频音轨片段，每段约 20 秒） | 是（发送到用户选择的模型服务；听写音频只经本机 Google 订阅连接器发给 Gemini） | 生成英文线索、局部中文说明、句子解构、整页双语翻译、摘要、页面领域识别与无字幕视频的听写字幕 | 仅用户选择的服务商 |
+| Website content | 是（仅功能触发时：目标词句、所选段落、有限上下文；自动预备的文章上下文上限 12,000 字符；整页双语翻译时还包括导航、侧栏、页眉页脚等页面构件中的可见英文；选择远程领域识别（订阅连接器、自定义 API 或 Jev 增强判定）时，还包括标题和经过长度限制的正文样本；在 YouTube 手动开启云端听写时，还包括正在播放的视频音轨片段，每段约 20 秒） | 是（发送到用户选择的模型或机器翻译服务；听写音频只经本机 Google 订阅连接器发给 Gemini） | 生成英文线索、局部中文说明、句子解构、整页双语翻译、摘要、页面领域识别与无字幕视频的听写字幕 | 仅用户选择的服务商 |
 
 ### Data Use Certification
 - [x] Data is NOT sold to third parties
@@ -229,7 +231,7 @@ Chinese (Simplified)
 
 **Privacy Policy URL** [REQUIRED]
 `https://github.com/roamcat-dev/roamcat/blob/main/roamcat-0.0.1/PRIVACY.md`
-政策正文在 `roamcat-0.0.1/PRIVACY.md`。2026-10-31 已用浏览器打开上述 URL，页面展示更新日期 2026-10-31 与政策正文；此后政策正文于 2026-11-01 补充了披露（远程领域识别与 Jev、本页双语翻译的处理范围），推送到远端后需重新核验；最终提交前仍需以无登录状态复核公开可访问性，并确认远端包含最终的数据实践更新。若将来改用 GitHub Pages，先发布并核验新页面，再回填实际地址。
+政策正文在 `roamcat-0.0.1/PRIVACY.md`。2026-10-31 已用浏览器打开上述 URL，页面展示更新日期 2026-10-31 与政策正文；此后政策正文于 2026-11-02 补充了机翻原文、有限上下文与凭据处理等披露，推送到远端后需重新核验；最终提交前仍需以无登录状态复核公开可访问性，并确认远端包含最终的数据实践更新。若将来改用 GitHub Pages，先发布并核验新页面，再回填实际地址。
 
 ---
 
@@ -258,7 +260,7 @@ https://github.com/roamcat-dev/roamcat
 
 | Version | Date | Changes | Status |
 |---------|------|---------|--------|
-| Unreleased | 2026-11-02 | 机翻拆包失败时保留已完成译文；按每次请求计算超时；关闭回退后逐项错误兼容；修正多句英文原样返回的校验。不新增权限或数据去向。 | 本地修复，待发布 |
+| 0.8.0 | 2026-11-02 | 接入 14 种机翻，按场景选引擎并可回退；保留部分成功译文，按单次请求超时，修复英文校验及逐项错误兼容；伴读猫常驻竖排工具栏与托举动作。云端原文直达所选机翻服务，Chrome 本机翻译不上传；权限列表不变。项目迁移到 roamcat-dev/roamcat。 | GitHub Release（商店未提交） |
 | 0.7.2 | 2026-11-01 | 扩展与本机常驻服务改为挑战—应答双向认证，令牌不再上线；不新增权限。 | GitHub Release（商店未提交） |
 | 0.7.1 | 2026-11-01 | 本机订阅连接器收紧权限（Grok 不给模型工具、隔离主目录；Antigravity 批准策略压回默认），后台唤醒只比对已注册脚本，文档与落地页按代码校正；不新增权限。 | GitHub Release（商店未提交） |
 | 0.7.0 | 2026-11-01 | 整页翻译新增「双语 / 仅译文」一键切换（网页左下角与弹窗），偏好保存在本地设置，不新增权限。核对商店发布流程，校正专用 ZIP 结构、必需小宣传图、全站权限与听写音频说明；更新发布前检查单，未提交商店。修复伴读猫在未开启页面误显示阅读辅助进行中、首次点击反向关闭，以及从弹窗切换后按钮状态不同步；工具栏红色「!」在换页面后撤掉，弹窗显示上一次快捷键失败的原因。 | GitHub Release（商店未提交） |
@@ -289,7 +291,7 @@ https://github.com/roamcat-dev/roamcat
 - **截图更新**：发布前更新阅读器加载失败页截图，包含「使用网站登录状态重试」和「在浏览器中查看原文档」入口；伴读猫截图需展示与弹窗一致的阅读辅助开启/关闭状态。
 
 ### 提交前检查单（源自 chrome-extensions 技能包 review-checklist）
-- [x] manifest_version 3；当前源码与 package.json 版本均为 0.7.2，商店尚未提交
+- [x] manifest_version 3；当前源码与 package.json 版本均为 0.8.0，商店尚未提交
 - [x] 本地化名称与材料一致（中文 `RoamCat · 随心阅`；英文 `RoamCat`）
 - [x] 中英文 manifest description 均不超过 132 字符（以 `_locales/*/messages.json` 为准）
 - [ ] 商店专用 ZIP：根目录直接有 `manifest.json`；只含生产扩展运行文件与必要许可，不带外层 `extension/`、连接器、开发配置或密钥；不要上传 GitHub Release 安装包

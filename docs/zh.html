@@ -62,7 +62,7 @@
       "isPartOf": { "@id": "https://roamcat-dev.github.io/roamcat/#website" },
       "about": { "@id": "https://roamcat-dev.github.io/roamcat/#software" },
       "primaryImageOfPage": { "@type": "ImageObject", "url": "https://roamcat-dev.github.io/roamcat/assets/og-cover.png", "width": 1280, "height": 640 },
-      "dateModified": "2026-11-01"
+      "dateModified": "2026-11-02"
     },
     {
       "@type": "SoftwareApplication",
@@ -74,9 +74,9 @@
       "applicationSubCategory": "用于中英双语翻译与英文阅读辅助的浏览器扩展",
       "operatingSystem": "Chrome 125+, Edge 125+",
       "browserRequirements": "需要桌面端 Chrome 或 Microsoft Edge 125 及以上（Manifest V3）。",
-      "softwareVersion": "0.7.2",
-      "dateModified": "2026-11-01",
-      "releaseNotes": "https://github.com/roamcat-dev/roamcat/releases/tag/v0.7.2",
+      "softwareVersion": "0.8.0",
+      "dateModified": "2026-11-02",
+      "releaseNotes": "https://github.com/roamcat-dev/roamcat/releases/tag/v0.8.0",
       "softwareRequirements": "自备 API 无需其他环境；可选的订阅连接器需要 Node.js 20+ 以及已登录的 Codex、Grok 或 Antigravity CLI。",
       "softwareHelp": { "@type": "WebPage", "url": "https://github.com/roamcat-dev/roamcat/blob/main/README.md" },
       "inLanguage": ["zh-CN", "en"],
@@ -145,7 +145,7 @@
         { "@type": "Question", "name": "可以用哪些模型？", "acceptedAnswer": { "@type": "Answer", "text": "33 家自备 API、8 种协议——OpenAI、Anthropic、Gemini、DeepSeek、Grok、OpenRouter、Groq、Mistral、Ollama、Azure OpenAI、Amazon Bedrock、阿里云百炼、火山引擎、Kimi、阶跃星辰等，也支持自定义 OpenAI 兼容接口；另有内置本地模型做页面领域识别，或经本机连接器复用已登录的 ChatGPT / Grok / Antigravity CLI 订阅——免 API Key。" } },
         { "@type": "Question", "name": "没有 API Key，能用 ChatGPT / Grok / Google 订阅吗？", "acceptedAnswer": { "@type": "Answer", "text": "可以，通过可选的本机连接器。它复用你已登录的官方 CLI——Codex CLI（ChatGPT）、Grok CLI（SuperGrok / X Premium+）、Antigravity agy（Google AI Pro / Ultra）——经 Native Messaging 与本机 127.0.0.1 服务连接。需要 Node.js 20+ 并已安装对应 CLI；费用、额度与地区可用性由各服务商决定。" } },
         { "@type": "Question", "name": "能完全本地运行（Ollama）吗？", "acceptedAnswer": { "@type": "Answer", "text": "能。选择 Ollama 服务商（默认 http://localhost:11434），无需 API Key，页面文本只会发往你自己的 Ollama 服务。内置的 MiniLM 只在离线状态下做页面领域识别——翻译与解释始终需要你配置的模型服务。" } },
-        { "@type": "Question", "name": "RoamCat 申请哪些权限，为什么？", "acceptedAnswer": { "@type": "Answer", "text": "共 8 项 Chrome 权限——activeTab、scripting、storage、nativeMessaging、offscreen、contextMenus、tts、webNavigation——以及 http / https 站点访问（用于在你选择的任意网站上阅读与翻译）。内容脚本只能发送 81 种内部消息中的 38 种；API Key 不会进入内容脚本。隐私政策逐项列出了每项权限及理由。" } },
+        { "@type": "Question", "name": "RoamCat 申请哪些权限，为什么？", "acceptedAnswer": { "@type": "Answer", "text": "共 8 项 Chrome 权限——activeTab、scripting、storage、nativeMessaging、offscreen、contextMenus、tts、webNavigation——以及 http / https 站点访问（用于在你选择的任意网站上阅读与翻译）。内容脚本只能发送 82 种内部消息中的 38 种；API Key 不会进入内容脚本。隐私政策逐项列出了每项权限及理由。" } },
         { "@type": "Question", "name": "怎么安装 RoamCat？", "acceptedAnswer": { "@type": "Answer", "text": "从 GitHub Releases 下载最新安装包并解压，打开 chrome://extensions，开启开发者模式，选择「加载已解压的扩展」并指向里面的 extension 文件夹；也可用 Node.js 22.13+ 从源码构建（npm ci、npm run build）后加载 dist/extension。" } }
       ]
     }
@@ -290,7 +290,7 @@ tbody th{background:none;font-size:inherit;letter-spacing:0;font-weight:600;whit
     <a class="btn primary" href="#install">开始使用</a>
     <a class="btn" href="https://github.com/roamcat-dev/roamcat">在 GitHub 点星</a>
   </div>
-  <p class="mut" style="font-size:13px;margin-top:18px">0.7.2——从 Releases 下载安装包，以开发者模式加载；Chrome Web Store / Edge Add-ons 上架进行中。</p>
+  <p class="mut" style="font-size:13px;margin-top:18px">0.8.0——从 Releases 下载安装包，以开发者模式加载；Chrome Web Store / Edge Add-ons 上架进行中。</p>
 </div>
 
 <section id="about">
@@ -300,7 +300,7 @@ tbody th{background:none;font-size:inherit;letter-spacing:0;font-weight:600;whit
     <div><dt>是什么</dt><dd>浏览器扩展（Manifest V3），为阅读英文网页、文档、视频字幕与直播聊天提供中文帮助</dd></div>
     <div><dt>浏览器</dt><dd>桌面端 Chrome 与 Microsoft Edge 125+；暂不支持 Firefox、Safari</dd></div>
     <div><dt>价格与许可</dt><dd>免费；MPL-2.0 开源</dd></div>
-    <div><dt>最新版本</dt><dd>0.7.2——<time datetime="2026-11-01">2026-11-01</time> 发布</dd></div>
+    <div><dt>最新版本</dt><dd>0.8.0——<time datetime="2026-11-02">2026-11-02</time> 发布</dd></div>
     <div><dt>获取方式</dt><dd>GitHub Releases 安装包或源码构建，以开发者模式加载；Chrome Web Store / Edge Add-ons 上架进行中</dd></div>
     <div><dt>模型来源</dt><dd>33 家自备 API（8 种协议）、本地 Ollama，或经本机连接器复用 ChatGPT / Grok / Google 订阅</dd></div>
     <div><dt>隐私</dt><dd>无自有服务器、无遥测；阅读记录默认关闭；API Key 只存 <code>chrome.storage.local</code></dd></div>
@@ -356,7 +356,7 @@ tbody th{background:none;font-size:inherit;letter-spacing:0;font-weight:600;whit
     <div class="card"><h3>订阅连接器</h3><p>本机 Native Messaging 复用官方 CLI 权益——Codex CLI（ChatGPT 订阅）、Grok CLI（SuperGrok / X Premium+）、Antigravity <code>agy</code>（Google AI Pro / Ultra），免 API Key。</p></div>
     <div class="card"><h3>本地模型</h3><p>内置 Xenova/all-MiniLM-L6-v2 在离屏文档中做页面领域识别——全程离线，无需下载。</p></div>
   </div>
-  <p>下个版本另接入 <strong>14 种机器翻译服务</strong>，整页、字幕、聊天、阅读器、选段可分别选引擎，失败可回退到大模型；Chrome 本机翻译不上传原文。<a href="https://github.com/roamcat-dev/roamcat/blob/main/roamcat-0.0.1/MACHINE_TRANSLATION.md">接入说明</a>。</p>
+  <p>另提供 <strong>14 种机器翻译服务</strong>，整页、字幕、聊天、阅读器、选段可分别选引擎，失败可回退到大模型；Chrome 本机翻译不上传原文。<a href="https://github.com/roamcat-dev/roamcat/blob/main/roamcat-0.0.1/MACHINE_TRANSLATION.md">接入说明</a>。</p>
   <details class="prov"><summary>全部 33 家服务商</summary><p>OpenAI、Anthropic、Gemini、DeepSeek、Grok（xAI）、OpenRouter、Requesty、OpenCode、Command Code、MiniMax、SiliconFlow、Azure OpenAI、Amazon Bedrock、Groq、DeepInfra、Mistral AI、Together.ai、Cohere、Fireworks AI、Cerebras、Ollama、火山引擎（豆包）、阿里云百炼、月之暗面 Kimi、阶跃星辰、商汤日日新、智谱 GLM、小米 MiMo、腾讯混元 TokenHub、百度千帆、Hugging Face，以及自定义 Chat Completions / Responses 接口，共 8 种协议。想在自己的机器上跑模型，选 Ollama——无需 API Key。</p></details>
 </section>
 
@@ -403,7 +403,7 @@ tbody th{background:none;font-size:inherit;letter-spacing:0;font-weight:600;whit
   <details><summary>可以用哪些模型？</summary><p>33 家自备 API、8 种协议——OpenAI、Anthropic、Gemini、DeepSeek、Grok、OpenRouter、Groq、Mistral、Ollama、Azure OpenAI、Amazon Bedrock、阿里云百炼、火山引擎、Kimi、阶跃星辰等，也支持自定义 OpenAI 兼容接口；另有内置本地模型做页面领域识别，或经本机连接器复用已登录的 ChatGPT / Grok / Antigravity CLI 订阅——免 API Key。</p></details>
   <details><summary>没有 API Key，能用 ChatGPT / Grok / Google 订阅吗？</summary><p>可以，通过可选的本机连接器。它复用你已登录的官方 CLI——Codex CLI（ChatGPT）、Grok CLI（SuperGrok / X Premium+）、Antigravity <code>agy</code>（Google AI Pro / Ultra）——经 Native Messaging 与本机 <code>127.0.0.1</code> 服务连接。需要 Node.js 20+ 并已安装对应 CLI；费用、额度与地区可用性由各服务商决定。</p></details>
   <details><summary>能完全本地运行（Ollama）吗？</summary><p>能。选择 Ollama 服务商（默认 <code>http://localhost:11434</code>），无需 API Key，页面文本只会发往你自己的 Ollama 服务。内置的 MiniLM 只在离线状态下做页面领域识别——翻译与解释始终需要你配置的模型服务。</p></details>
-  <details><summary>RoamCat 申请哪些权限，为什么？</summary><p>共 8 项 Chrome 权限——<code>activeTab</code>、<code>scripting</code>、<code>storage</code>、<code>nativeMessaging</code>、<code>offscreen</code>、<code>contextMenus</code>、<code>tts</code>、<code>webNavigation</code>——以及 http / https 站点访问（用于在你选择的任意网站上阅读与翻译）。内容脚本只能发送 81 种内部消息中的 38 种；API Key 不会进入内容脚本。<a href="https://github.com/roamcat-dev/roamcat/blob/main/roamcat-0.0.1/PRIVACY.md">隐私政策</a>逐项列出了每项权限及理由。</p></details>
+  <details><summary>RoamCat 申请哪些权限，为什么？</summary><p>共 8 项 Chrome 权限——<code>activeTab</code>、<code>scripting</code>、<code>storage</code>、<code>nativeMessaging</code>、<code>offscreen</code>、<code>contextMenus</code>、<code>tts</code>、<code>webNavigation</code>——以及 http / https 站点访问（用于在你选择的任意网站上阅读与翻译）。内容脚本只能发送 82 种内部消息中的 38 种；API Key 不会进入内容脚本。<a href="https://github.com/roamcat-dev/roamcat/blob/main/roamcat-0.0.1/PRIVACY.md">隐私政策</a>逐项列出了每项权限及理由。</p></details>
   <details><summary>怎么安装 RoamCat？</summary><p>从 GitHub Releases 下载最新安装包并解压，打开 <code>chrome://extensions</code>，开启开发者模式，选择「加载已解压的扩展」并指向里面的 <code>extension</code> 文件夹；也可用 Node.js 22.13+ 从源码构建（<code>npm ci</code>、<code>npm run build</code>）后加载 <code>dist/extension</code>。</p></details>
 </section>
 
@@ -428,7 +428,7 @@ tbody th{background:none;font-size:inherit;letter-spacing:0;font-weight:600;whit
     <a href="./" hreflang="en">English</a>
   </div>
   <p>RoamCat 基于开源项目 <a href="https://github.com/rockythink/relyless">RelyLess</a> 重构——感谢原作者 B 站 UP 主 <a href="https://live.bilibili.com/392612">停车拾穗</a>。</p>
-  <p>最近更新 <time datetime="2026-11-01">2026-11-01</time> · v0.7.2 · 给 AI 助手与爬虫：<a href="llms.txt">llms.txt</a> · <a href="llms-full.txt">llms-full.txt</a> · <a href="sitemap.xml">sitemap.xml</a></p>
+  <p>最近更新 <time datetime="2026-11-02">2026-11-02</time> · v0.8.0 · 给 AI 助手与爬虫：<a href="llms.txt">llms.txt</a> · <a href="llms-full.txt">llms-full.txt</a> · <a href="sitemap.xml">sitemap.xml</a></p>
 </footer>
 
 </div>

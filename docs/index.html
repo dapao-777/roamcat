@@ -62,7 +62,7 @@
       "isPartOf": { "@id": "https://roamcat-dev.github.io/roamcat/#website" },
       "about": { "@id": "https://roamcat-dev.github.io/roamcat/#software" },
       "primaryImageOfPage": { "@type": "ImageObject", "url": "https://roamcat-dev.github.io/roamcat/assets/og-cover.png", "width": 1280, "height": 640 },
-      "dateModified": "2026-11-01"
+      "dateModified": "2026-11-02"
     },
     {
       "@type": "SoftwareApplication",
@@ -74,9 +74,9 @@
       "applicationSubCategory": "Browser extension for bilingual translation and English reading assistance",
       "operatingSystem": "Chrome 125+, Edge 125+",
       "browserRequirements": "Requires desktop Chrome or Microsoft Edge 125 or later (Manifest V3).",
-      "softwareVersion": "0.7.2",
-      "dateModified": "2026-11-01",
-      "releaseNotes": "https://github.com/roamcat-dev/roamcat/releases/tag/v0.7.2",
+      "softwareVersion": "0.8.0",
+      "dateModified": "2026-11-02",
+      "releaseNotes": "https://github.com/roamcat-dev/roamcat/releases/tag/v0.8.0",
       "softwareRequirements": "Bring-your-own-API use needs nothing else; the optional subscription connector needs Node.js 20+ and a signed-in Codex, Grok or Antigravity CLI.",
       "softwareHelp": { "@type": "WebPage", "url": "https://github.com/roamcat-dev/roamcat/blob/main/README.en.md" },
       "inLanguage": ["en", "zh-CN"],
@@ -145,7 +145,7 @@
         { "@type": "Question", "name": "Which AI models can I use?", "acceptedAnswer": { "@type": "Answer", "text": "33 bring-your-own providers across 8 API protocols — OpenAI, Anthropic, Gemini, DeepSeek, Grok, OpenRouter, Groq, Mistral, Ollama, Azure OpenAI, Amazon Bedrock, Alibaba Cloud, Volcengine, Kimi, StepFun and more, including custom OpenAI-compatible endpoints — plus a bundled local model for on-device page-topic classification, or a local connector that reuses your signed-in ChatGPT / Grok / Antigravity CLI subscriptions with no API key." } },
         { "@type": "Question", "name": "Can I use my ChatGPT, Grok or Google subscription instead of an API key?", "acceptedAnswer": { "@type": "Answer", "text": "Yes, through an optional local connector. It reuses the official CLIs you are already signed in to — Codex CLI (ChatGPT), Grok CLI (SuperGrok / X Premium+) and Antigravity agy (Google AI Pro / Ultra) — over Native Messaging and a local service on 127.0.0.1. It needs Node.js 20+ and the CLI installed; fees, quotas and availability are set by each provider." } },
         { "@type": "Question", "name": "Can I run it with a local model such as Ollama?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Pick the Ollama provider (default endpoint http://localhost:11434); it needs no API key, and page text then goes only to your own Ollama server. The bundled MiniLM model only classifies page topics offline — translation and explanations always need a model service you configure." } },
-        { "@type": "Question", "name": "What permissions does RoamCat ask for, and why?", "acceptedAnswer": { "@type": "Answer", "text": "Eight Chrome permissions — activeTab, scripting, storage, nativeMessaging, offscreen, contextMenus, tts and webNavigation — plus access to http and https pages so it can read and translate whichever sites you choose. Content scripts may send only 38 of 81 internal message types, and API keys never reach content scripts. The privacy policy lists each permission and its reason." } },
+        { "@type": "Question", "name": "What permissions does RoamCat ask for, and why?", "acceptedAnswer": { "@type": "Answer", "text": "Eight Chrome permissions — activeTab, scripting, storage, nativeMessaging, offscreen, contextMenus, tts and webNavigation — plus access to http and https pages so it can read and translate whichever sites you choose. Content scripts may send only 38 of 82 internal message types, and API keys never reach content scripts. The privacy policy lists each permission and its reason." } },
         { "@type": "Question", "name": "How do I install RoamCat?", "acceptedAnswer": { "@type": "Answer", "text": "Download the latest extension zip from GitHub Releases and unzip it, open chrome://extensions, turn on Developer mode, choose Load unpacked and pick the extension folder inside. Or build from source with Node.js 22.13+ (npm ci, then npm run build) and load dist/extension." } }
       ]
     }
@@ -290,7 +290,7 @@ tbody th{background:none;font-size:inherit;letter-spacing:0;font-weight:600;whit
     <a class="btn primary" href="#install">Get started</a>
     <a class="btn" href="https://github.com/roamcat-dev/roamcat">Star on GitHub</a>
   </div>
-  <p class="mut" style="font-size:13px;margin-top:18px">0.7.2 — download the package from Releases and load it in developer mode; Chrome Web Store / Edge Add-ons listing in progress.</p>
+  <p class="mut" style="font-size:13px;margin-top:18px">0.8.0 — download the package from Releases and load it in developer mode; Chrome Web Store / Edge Add-ons listing in progress.</p>
 </div>
 
 <section id="about">
@@ -300,7 +300,7 @@ tbody th{background:none;font-size:inherit;letter-spacing:0;font-weight:600;whit
     <div><dt>Type</dt><dd>Browser extension (Manifest V3) for reading English web pages, documents, video captions and live chat with Chinese help</dd></div>
     <div><dt>Browsers</dt><dd>Chrome and Microsoft Edge 125+ on desktop; Firefox and Safari are not supported</dd></div>
     <div><dt>Price &amp; license</dt><dd>Free; open source under MPL-2.0</dd></div>
-    <div><dt>Latest version</dt><dd>0.7.2 — released <time datetime="2026-11-01">2026-11-01</time></dd></div>
+    <div><dt>Latest version</dt><dd>0.8.0 — released <time datetime="2026-11-02">2026-11-02</time></dd></div>
     <div><dt>How to get it</dt><dd>Zip from GitHub Releases or build from source, loaded in Developer mode; Chrome Web Store and Edge Add-ons listings are in progress</dd></div>
     <div><dt>Model sources</dt><dd>33 bring-your-own API providers (8 protocols), local Ollama, or your ChatGPT / Grok / Google subscription through a local connector</dd></div>
     <div><dt>Privacy</dt><dd>No RoamCat servers, no telemetry; reading history off by default; API keys stay in <code>chrome.storage.local</code></dd></div>
@@ -356,7 +356,7 @@ tbody th{background:none;font-size:inherit;letter-spacing:0;font-weight:600;whit
     <div class="card"><h3>Subscription connector</h3><p>A local Native Messaging host reuses your official CLI entitlements — Codex CLI (ChatGPT), Grok CLI (SuperGrok / X Premium+), Antigravity <code>agy</code> (Google AI Pro / Ultra). No API key needed.</p></div>
     <div class="card"><h3>Local model</h3><p>Bundled Xenova/all-MiniLM-L6-v2 runs page-domain classification in an offscreen document — fully offline, nothing to download.</p></div>
   </div>
-  <p>Next release: <strong>14 machine-translation services</strong>, with separate engines for pages, captions, live chat, readers and passages. Optional AI fallback; Chrome translation stays on device. <a href="https://github.com/roamcat-dev/roamcat/blob/main/roamcat-0.0.1/MACHINE_TRANSLATION.md">Integration details</a>.</p>
+  <p>Choose from <strong>14 machine-translation services</strong>, with separate engines for pages, captions, live chat, readers and passages. Optional AI fallback; Chrome translation stays on device. <a href="https://github.com/roamcat-dev/roamcat/blob/main/roamcat-0.0.1/MACHINE_TRANSLATION.md">Integration details</a>.</p>
   <details class="prov"><summary>All 33 providers</summary><p>OpenAI, Anthropic, Gemini, DeepSeek, Grok (xAI), OpenRouter, Requesty, OpenCode, Command Code, MiniMax, SiliconFlow, Azure OpenAI, Amazon Bedrock, Groq, DeepInfra, Mistral AI, Together.ai, Cohere, Fireworks AI, Cerebras, Ollama, Volcengine (Doubao), Alibaba Cloud Model Studio, Moonshot AI (Kimi), StepFun, SenseNova, Zhipu GLM, Xiaomi MiMo, Tencent Hunyuan TokenHub, Baidu Qianfan and Hugging Face, plus custom Chat Completions and custom Responses endpoints. Together they speak 8 API protocols. To run a model on your own machine, choose Ollama — no API key needed.</p></details>
 </section>
 
@@ -403,7 +403,7 @@ tbody th{background:none;font-size:inherit;letter-spacing:0;font-weight:600;whit
   <details><summary>Which AI models can I use?</summary><p>33 bring-your-own providers across 8 API protocols — OpenAI, Anthropic, Gemini, DeepSeek, Grok, OpenRouter, Groq, Mistral, Ollama, Azure OpenAI, Amazon Bedrock, Alibaba Cloud, Volcengine, Kimi, StepFun and more, including custom OpenAI-compatible endpoints — plus a bundled local model for on-device page-topic classification, or a local connector that reuses your signed-in ChatGPT / Grok / Antigravity CLI subscriptions with no API key.</p></details>
   <details><summary>Can I use my ChatGPT, Grok or Google subscription instead of an API key?</summary><p>Yes, through an optional local connector. It reuses the official CLIs you are already signed in to — Codex CLI (ChatGPT), Grok CLI (SuperGrok / X Premium+) and Antigravity <code>agy</code> (Google AI Pro / Ultra) — over Native Messaging and a local service on <code>127.0.0.1</code>. It needs Node.js 20+ and the CLI installed; fees, quotas and availability are set by each provider.</p></details>
   <details><summary>Can I run it with a local model such as Ollama?</summary><p>Yes. Pick the Ollama provider (default endpoint <code>http://localhost:11434</code>); it needs no API key, and page text then goes only to your own Ollama server. The bundled MiniLM model only classifies page topics offline — translation and explanations always need a model service you configure.</p></details>
-  <details><summary>What permissions does RoamCat ask for, and why?</summary><p>Eight Chrome permissions — <code>activeTab</code>, <code>scripting</code>, <code>storage</code>, <code>nativeMessaging</code>, <code>offscreen</code>, <code>contextMenus</code>, <code>tts</code> and <code>webNavigation</code> — plus access to http and https pages so it can read and translate whichever sites you choose. Content scripts may send only 38 of 81 internal message types, and API keys never reach content scripts. The <a href="https://github.com/roamcat-dev/roamcat/blob/main/roamcat-0.0.1/PRIVACY.md">privacy policy</a> lists each permission and its reason.</p></details>
+  <details><summary>What permissions does RoamCat ask for, and why?</summary><p>Eight Chrome permissions — <code>activeTab</code>, <code>scripting</code>, <code>storage</code>, <code>nativeMessaging</code>, <code>offscreen</code>, <code>contextMenus</code>, <code>tts</code> and <code>webNavigation</code> — plus access to http and https pages so it can read and translate whichever sites you choose. Content scripts may send only 38 of 82 internal message types, and API keys never reach content scripts. The <a href="https://github.com/roamcat-dev/roamcat/blob/main/roamcat-0.0.1/PRIVACY.md">privacy policy</a> lists each permission and its reason.</p></details>
   <details><summary>How do I install RoamCat?</summary><p>Download the latest extension zip from GitHub Releases and unzip it, open <code>chrome://extensions</code>, turn on Developer mode, choose Load unpacked and pick the <code>extension</code> folder inside. Or build from source with Node.js 22.13+ (<code>npm ci</code>, then <code>npm run build</code>) and load <code>dist/extension</code>.</p></details>
 </section>
 
@@ -428,7 +428,7 @@ tbody th{background:none;font-size:inherit;letter-spacing:0;font-weight:600;whit
     <a href="zh.html" hreflang="zh-CN">中文页面</a>
   </div>
   <p>RoamCat is a rebuild of the open-source <a href="https://github.com/rockythink/relyless">RelyLess</a> — thanks to its author, Bilibili creator <a href="https://live.bilibili.com/392612">停车拾穗</a>.</p>
-  <p>Last updated <time datetime="2026-11-01">2026-11-01</time> · v0.7.2 · For AI assistants and crawlers: <a href="llms.txt">llms.txt</a> · <a href="llms-full.txt">llms-full.txt</a> · <a href="sitemap.xml">sitemap.xml</a></p>
+  <p>Last updated <time datetime="2026-11-02">2026-11-02</time> · v0.8.0 · For AI assistants and crawlers: <a href="llms.txt">llms.txt</a> · <a href="llms-full.txt">llms-full.txt</a> · <a href="sitemap.xml">sitemap.xml</a></p>
 </footer>
 
 </div>

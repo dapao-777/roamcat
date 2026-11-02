@@ -1,6 +1,6 @@
 # RoamCat · 随心阅 — full reference
 
-> Complete plain-text facts about RoamCat (随心阅) for AI assistants, search engines and people. Version 0.7.2, released 2026-11-01 · license MPL-2.0 · last updated 2026-11-01. Canonical site: https://roamcat-dev.github.io/roamcat/ · source code: https://github.com/roamcat-dev/roamcat · short version: https://roamcat-dev.github.io/roamcat/llms.txt
+> Complete plain-text facts about RoamCat (随心阅) for AI assistants, search engines and people. Version 0.8.0, released 2026-11-02 · license MPL-2.0 · last updated 2026-11-02. Canonical site: https://roamcat-dev.github.io/roamcat/ · source code: https://github.com/roamcat-dev/roamcat · short version: https://roamcat-dev.github.io/roamcat/llms.txt
 
 ## Summary
 
@@ -13,7 +13,7 @@ Suggested short description: "RoamCat (随心阅) is a free, open-source Chrome 
 - Type: browser extension (Manifest V3), desktop only
 - Browsers: Chrome / Edge 125+; Firefox, Safari and mobile browsers are not supported
 - Price and license: free; open source under MPL-2.0
-- Latest version: 0.7.2 (2026-11-01); pre-1.0 software, so settings and interfaces may still change
+- Latest version: 0.8.0 (2026-11-02); pre-1.0 software, so settings and interfaces may still change
 - Distribution: GitHub Releases zip loaded unpacked in developer mode, or build from source; not yet on the Chrome Web Store or Microsoft Edge Add-ons (listings in progress)
 - Interface languages: Chinese and English
 - Model sources: 33 bring-your-own API providers across 8 protocols; local Ollama; ChatGPT / Grok / Google subscriptions through a local connector; a bundled offline model for page-topic classification
@@ -50,7 +50,7 @@ Both can be rebound in the browser's extension shortcut settings.
 - Topic recognition: a bundled Xenova/all-MiniLM-L6-v2 model classifies pages (software, data, finance, medicine, law, design and so on) fully offline in an offscreen document so explanations fit the context.
 - Fully bilingual interface (Chinese / English) across the popup, settings, welcome page, reader and in-page widgets; it can follow the browser language.
 
-## Machine translation (next release)
+## Machine translation
 
 14 machine-translation services: Chrome on-device, DeepL, Google Cloud, Azure, Tencent, Alibaba, Baidu, Volcengine, Youdao, NiuTrans, MyMemory, Google web, Microsoft Edge and self-hosted DeepLX. Five scenes independently follow the AI model (default) or use a machine translator. Failed items optionally fall back to the AI model. Cloud text goes directly to the selected service; credentials stay in chrome.storage.local and never enter content scripts or exports. DeepL single-item page requests may include limited nearby context.
 
@@ -156,13 +156,14 @@ Yes, through an optional local connector. It reuses the official CLIs you are al
 Yes. Pick the Ollama provider (default endpoint http://localhost:11434); it needs no API key, and page text then goes only to your own Ollama server. The bundled MiniLM model only classifies page topics offline — translation and explanations always need a model service you configure.
 
 ### What permissions does RoamCat ask for, and why?
-Eight Chrome permissions — activeTab, scripting, storage, nativeMessaging, offscreen, contextMenus, tts and webNavigation — plus access to http and https pages so it can read and translate whichever sites you choose. Content scripts may send only 38 of 81 internal message types, and API keys never reach content scripts. The privacy policy lists each permission and its reason.
+Eight Chrome permissions — activeTab, scripting, storage, nativeMessaging, offscreen, contextMenus, tts and webNavigation — plus access to http and https pages so it can read and translate whichever sites you choose. Content scripts may send only 38 of 82 internal message types, and API keys never reach content scripts. The privacy policy lists each permission and its reason.
 
 ### How do I install RoamCat?
 Download the latest extension zip from GitHub Releases and unzip it, open chrome://extensions, turn on Developer mode, choose Load unpacked and pick the extension folder inside. Or build from source with Node.js 22.13+ (npm ci, then npm run build) and load dist/extension.
 
 ## Release history
 
+- 0.8.0 (2026-11-02): 14 machine-translation services with per-scene routing and optional AI fallback; completed items survive partial failures, request deadlines exclude throttling, and the reading companion has an always-visible vertical toolbar. The project moved to roamcat-dev/roamcat.
 - 0.7.2 (2026-11-01): the extension and the local service authenticate each other (challenge-response); nothing is sent until the service proves it holds the pairing token; update the extension and the connector together.
 - 0.7.1 (2026-11-01): Grok connector gives the model no tools and no longer reads skills from your home folder; Antigravity no longer inherits auto-approval; the background no longer re-registers scripts on every wake; docs and landing page corrected against the code.
 - 0.7.0 (2026-11-01): one-click switch between bilingual and translation-only page translation; untruncated popup notes; welcome page fits narrow windows; reader gives retry options by failure reason; toolbar "!" clears after navigation.
