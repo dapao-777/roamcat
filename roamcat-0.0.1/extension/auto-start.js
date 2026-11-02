@@ -51,12 +51,6 @@
   };
   wrap('pushState');
   wrap('replaceState');
-  chrome.runtime.onMessage.addListener(message => {
-    if (message?.type === 'SS_AUTO_RECHECK') {
-      lastArticle = '';
-      schedule();
-    }
-  });
   if (document.readyState === 'loading') addEventListener('DOMContentLoaded',schedule,{once:true});
   else schedule();
 })();
