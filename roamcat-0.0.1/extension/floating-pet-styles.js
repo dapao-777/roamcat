@@ -359,24 +359,22 @@
          居中立在猫头上方、两耳之间，自上而下为设置 / 提炼 / 阅读开关 / 旋旋翻
          （离猫最近）。常驻显示（不等悬停或点猫），拖动时跟着猫走；上方放不下时
          （.dock-below，clampPosition 判定）改挂到猫脚下，顺序随之倒过来，旋旋翻
-         仍离猫最近。猫的画稿（58×62，贴底居中）上方留白：头顶离脚底约
-         34px × scale，胶囊底边落在头顶上方约 4px，缩放猫时一起挪。只有贴边探头时
-         整条收起（点猫唤醒后从猫头升回来）。胶囊本身是 elev-2 浮层，里面的按钮
-         不再各带描边投影。
+         仍离猫最近。猫的画稿（58×62，贴底居中）上方留白：耳尖离脚底约
+         39px × scale，胶囊底边留在耳尖上方 8px，不压耳朵，缩放猫时一起挪。只有
+         贴边探头时整条收起（点猫唤醒后从猫头升回来）。常驻但不抢戏：胶囊是
+         半透明磨砂面（见下方 .roamcat-quick-dock, .roamcat-zoom-controls 共用规则），
+         按钮平时用次级墨色，悬停/聚焦才换强调色。
          ========================================================= */
       .roamcat-quick-dock {
         position: absolute;
         left: 50%;
-        bottom: calc(34px * var(--pet-scale, 1) + 4px);
+        bottom: calc(39px * var(--pet-scale, 1) + 8px);
         display: flex;
         flex-direction: column;
         align-items: center;
         gap: 2px;
         padding: 3px;
         border-radius: 999px;
-        background: var(--pet-btn-face, var(--pet-surface-elevated, #ffffff));
-        border: 1px solid var(--pet-btn-rim, var(--pet-line, #e2ded4));
-        box-shadow: var(--pet-btn-cast, var(--pet-shadow-sm));
         z-index: 12;
         transform-origin: 50% 100%;
         /* 收起态：缩回猫头；visibility 等过渡走完再隐藏。left:50% + translate -50% 居中。 */
@@ -415,6 +413,17 @@
         transition-delay: 0s;
       }
 
+      /* 工具栏与缩放胶囊共用的磨砂面：页面底色透出约三成并模糊，描边减弱，层级用 elev-2；
+         与猫柔和的边缘光同一路数，不再是一整块实心色块。 */
+      .roamcat-quick-dock,
+      .roamcat-zoom-controls {
+        background: color-mix(in srgb, var(--pet-surface-elevated, #ffffff) 72%, transparent);
+        border: 1px solid color-mix(in srgb, var(--pet-btn-rim, rgba(28, 27, 24, 0.12)) 70%, transparent);
+        box-shadow: var(--elev-2, var(--pet-shadow-sm));
+        -webkit-backdrop-filter: blur(12px) saturate(1.3);
+        backdrop-filter: blur(12px) saturate(1.3);
+      }
+
       /* 缩放控制胶囊：挂在猫朝页面内侧的一边、对齐猫身中线（离脚底约 20px × scale；
          猫头上方留给竖排按钮与气泡），只在点猫头展开（dock-open）时出现。 */
       .roamcat-zoom-controls {
@@ -428,9 +437,6 @@
         gap: 2px;
         padding: 2px;
         border-radius: 999px;
-        background: var(--pet-btn-face, var(--pet-surface-elevated, #ffffff));
-        border: 1px solid var(--pet-btn-rim, var(--pet-line, #e2ded4));
-        box-shadow: var(--pet-btn-inset, none), var(--pet-btn-cast, var(--pet-shadow-sm));
         z-index: 12;
         visibility: hidden;
         opacity: 0;
@@ -462,24 +468,20 @@
         border-radius: 50%;
         border: none;
         background: transparent;
-        color: var(--pet-glyph, var(--pet-muted, #6b7280));
+        color: var(--pet-muted, #6b7280);
         cursor: pointer;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         padding: 0;
         line-height: 0;
-        transition: box-shadow 0.15s ease, color 0.15s ease;
+        transition: background-color 0.15s ease, color 0.15s ease;
       }
       .zoom-btn svg { display: block; filter: var(--pet-glyph-emboss, none); }
+      /* 与竖排工具栏的按钮同一套：悬停换强调色并垫主色淡底。 */
       .zoom-btn:hover:not(:disabled) {
-        /* 悬停微凸：胶囊内再浮起一颗小瓷扣 */
-        background: var(--pet-btn-face, var(--pet-tag-bg, rgba(0,0,0,0.05)));
-        box-shadow: var(--pet-btn-inset, none), 0 1px 2px rgba(64, 48, 21, 0.18);
+        background: color-mix(in srgb, var(--pet-primary, #d97757) 12%, transparent);
         color: var(--pet-primary, #f59e0b);
-      }
-      .zoom-btn:active:not(:disabled) {
-        box-shadow: var(--pet-btn-press, none);
       }
       .zoom-btn:disabled {
         opacity: 0.35;
@@ -557,12 +559,13 @@
         100% { opacity: 0; transform: translateX(16px) scale(1.4); }
       }
 
-      /* 快捷按钮：胶囊工具栏里的扁平图标钮——平时透明、不带描边投影（层级交给胶囊），
-         悬停主色淡底与字形，开启态主色实底反白。 */
+      /* 快捷按钮：磨砂胶囊里的扁平图标钮——平时透明、次级墨色，不抢猫的戏；
+         悬停/键盘聚焦换强调色并垫一层主色淡底；开启态（阅读辅助 / 双语翻译）用更深的
+         主色淡底 + 主色细环 + 主色字形，不用实心色块。 */
       .roamcat-quick-btn {
         position: relative;
-        width: 28px;
-        height: 28px;
+        width: 26px;
+        height: 26px;
         border-radius: 50%;
         background: transparent;
         border: 0;
@@ -576,16 +579,17 @@
         outline: none;
         font-size: var(--fs-3, 14px);
         line-height: 1;
-        color: var(--pet-glyph, var(--pet-muted, #6b7280));
+        color: var(--pet-muted, #6b7280);
         transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
                     background-color 0.2s ease,
+                    box-shadow 0.2s ease,
                     color 0.2s ease,
                     opacity 0.2s ease;
         user-select: none;
       }
 
-      .roamcat-quick-btn:hover {
-        background: var(--pet-btn-hover-face, var(--pet-primary-soft, #fbf3ef));
+      .roamcat-quick-btn:is(:hover, :focus-visible) {
+        background: color-mix(in srgb, var(--pet-primary, #d97757) 12%, transparent);
         color: var(--pet-primary, #d97757);
       }
 
@@ -609,15 +613,14 @@
         transform: scale(0.92);
       }
 
-      /* 开启态（阅读辅助 / 双语翻译共用）：主色实底 + 反白字形，与关闭态一眼可分 */
       .roamcat-quick-btn.is-active {
-        background: var(--pet-btn-active-face, var(--pet-primary, #d97757));
-        color: var(--pet-btn-active-ink, #ffffff);
+        background: color-mix(in srgb, var(--pet-primary, #d97757) 20%, transparent);
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pet-primary, #d97757) 50%, transparent);
+        color: var(--pet-primary, #d97757);
       }
 
       .roamcat-quick-btn.is-active:hover {
-        background: var(--pet-primary-hover, #c25e3e);
-        color: var(--pet-btn-active-ink, #ffffff);
+        background: color-mix(in srgb, var(--pet-primary, #d97757) 28%, transparent);
       }
 
       /* 切换进行中：压暗 + 主色细环，并屏蔽连点 */
@@ -657,7 +660,7 @@
       .cat-speech-bubble {
         position: absolute;
         /* 以放大后的猫为基线（猫按 --pet-scale 从脚底放大）：漫游态 --bubble-rise 取耳尖
-           离脚底的 39px，气泡底边与最下面的竖排按钮齐平、尾巴贴着耳尖；贴边探头态取整框高 68px。 */
+           离脚底的 39px，气泡底边与工具栏底边齐平（都在耳尖上方 8px）、尾巴指向耳尖；贴边探头态取整框高 68px。 */
         bottom: calc(var(--bubble-rise, 68px) * var(--pet-scale, 1) + 8px);
         left: 50%;
         transform: translateX(calc(-50% + var(--bubble-shift-x, 0px))) translateY(4px);
@@ -715,12 +718,12 @@
         visibility: visible !important;
       }
 
-      /* 竖排工具栏居中立在猫头上方、宽 36px（28px 按钮 + 3px 内边距 + 1px 描边）：
+      /* 竖排工具栏居中立在猫头上方、宽 34px（26px 按钮 + 3px 内边距 + 1px 描边）：
          气泡让到工具栏朝页面内侧的一边、与它隔 6px，两者同时出现也不重叠。气泡在
-         64px 宽、同样居中的 avatar-wrap 里定位，故离 avatar-wrap 外缘 32 + 18 + 6 = 56px，
+         64px 宽、同样居中的 avatar-wrap 里定位，故离 avatar-wrap 外缘 32 + 17 + 6 = 55px，
          与缩放比例无关。贴边探头态没有工具栏，气泡仍贴猫外缘。 */
       .roamcat-pet-widget:not(.docked) {
-        --bubble-lane: 56px;
+        --bubble-lane: 55px;
         --bubble-rise: 39px;
       }
 

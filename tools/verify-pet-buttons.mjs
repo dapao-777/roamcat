@@ -151,7 +151,8 @@ try {
   await shot('dock-open');
   // 竖排快捷按钮（参照陪读蛙）：收在一条竖胶囊工具栏里，居中立在猫头上方，旋旋翻离猫最近；
   // 缩放胶囊在猫朝页面内侧一边，不压按钮。
-  const column = await until(layout, l => oneColumn(l) && !overlaps(l.zoom, l.btns[3]));
+  // 点猫会触发果冻反馈，猫身形变期间量不准：等猫回到常态再量。
+  const column = await until(layout, l => oneColumn(l) && aboveHead(l) && !overlaps(l.zoom, l.btns[3]), 5000);
   const gaps = column ? column.btns.slice(1).map((b, i) => b.t - column.btns[i].b) : [];
   check('快捷按钮竖排一列、自上而下设置/提炼/阅读/旋旋翻', oneColumn(column) && gaps.length === 3 && gaps.every(g => g >= 0 && g <= 4),
     JSON.stringify({btns: column?.btns, gaps}));
