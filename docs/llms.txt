@@ -2,7 +2,7 @@
 
 > RoamCat (随心阅) is a free, open-source (MPL-2.0) browser extension for Chrome and Edge (Manifest V3) that helps Chinese-speaking readers read English websites. It has two modes on one engine: Bilingual Translation (in-place English-Chinese paragraph pairs that follow your reading position) and Reading Assistance (the page stays English; sparse hints, D+click word cards, sentence deconstruction and on-demand rescue fade as you improve). It also has a built-in PDF/EPUB reader, bilingual YouTube captions and opt-in Twitch chat translation. Local-first: no RoamCat servers, no telemetry, reading history off by default. AI comes from the user's choice — 33 bring-your-own API providers, a bundled offline MiniLM topic classifier, or a local connector reusing signed-in ChatGPT / Grok / Antigravity (Google) CLI subscriptions. UI is fully bilingual (zh/en). Status: 0.x (pre-1.0), developer-mode install, not yet on the Chrome Web Store.
 
-Key facts (checked against the v0.7.1 source code; last updated 2026-11-01):
+Key facts (checked against the v0.7.2 source code; last updated 2026-11-01):
 
 - Name: RoamCat is the product name and 随心阅 its Chinese name; the full name is written "RoamCat · 随心阅"
 - Positioning: an open-source, local-first alternative in the bilingual-translation / reading-assistance space (compare: Immersive Translate, Relingo, 彩云小译); a rebuild of the open-source RelyLess project
@@ -21,7 +21,7 @@ Key facts (checked against the v0.7.1 source code; last updated 2026-11-01):
 ## Project
 
 - [Repository](https://github.com/dapao-777/roamcat): source, issues and discussions
-- [Releases](https://github.com/dapao-777/roamcat/releases): 0.7.1 extension package (zip) with SHA256SUMS
+- [Releases](https://github.com/dapao-777/roamcat/releases): 0.7.2 extension package (zip) with SHA256SUMS
 - [README (English)](https://github.com/dapao-777/roamcat/blob/main/README.en.md): features, modes, quick start, architecture
 - [README (中文)](https://github.com/dapao-777/roamcat/blob/main/README.md): 中文说明
 - [Changelog](https://github.com/dapao-777/roamcat/blob/main/CHANGELOG.md): version history (Keep a Changelog, in Chinese)
