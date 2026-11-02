@@ -541,11 +541,57 @@ try {
     return b.left >= -0.5 && b.right <= innerWidth + 0.5 && b.top >= -0.5 && b.bottom <= innerHeight + 0.5;
   }`);
 
+  // 竖排快捷按钮常驻显示：不悬停、不点猫也可见可点（点猫只开合缩放胶囊）。
+  const idleQuick = await until(tab, () => execInTab(`() => [...document.querySelector('#roamcat-pet-host').shadowRoot.querySelector('.roamcat-quick-dock').children]
+    .map(b => { const s = getComputedStyle(b); return s.visibility === 'visible' && Number(s.opacity) > 0.9 && s.pointerEvents === 'auto'; })`), v => v?.length === 4 && v.every(Boolean));
+  check('伴读猫快捷按钮常态显示（未点猫）', idleQuick?.length === 4 && idleQuick.every(Boolean), JSON.stringify(idleQuick));
   await execInTab(`() => globalThis.RoamCatPet.openQuickDock()`);
   const dockOpen = await until(tab, () => execInTab(`() => document.querySelector('#roamcat-pet-host').shadowRoot.querySelector('.roamcat-pet-widget').classList.contains('dock-open')`), Boolean);
   await settled(tab);
   check('伴读猫快捷坞展开', Boolean(dockOpen));
   await shot(tab, 'pet-dock-open');
+  // 竖排快捷按钮（参照陪读蛙）：一列挂在猫头上方、贴猫朝屏幕边的外缘；悬停播报的气泡与缩放胶囊让到竖列内侧。
+  // 双主题各截一张只含伴读猫的近景，供审查按钮、气泡、胶囊的相对位置。
+  const petLayout = () => execInTab(`() => {
+    const host = document.querySelector('#roamcat-pet-host'), sr = host.shadowRoot;
+    const r = el => { const b = el.getBoundingClientRect(); return {l: b.left, t: b.top, r: b.right, b: b.bottom}; };
+    return {host: r(host), btns: ['#quick-options', '#quick-summary', '#quick-reading', '#roamcat-flip-btn'].map(s => r(sr.querySelector(s))),
+      bubble: r(sr.querySelector('#cat-speech')), zoom: r(sr.querySelector('#roamcat-zoom-controls')), speaking: sr.querySelector('#cat-speech').classList.contains('speaking')};
+  }`);
+  const boxesOverlap = (a, b) => a.l < b.r - 0.5 && b.l < a.r - 0.5 && a.t < b.b - 0.5 && b.t < a.b - 0.5;
+  const petCloseUp = async name => {
+    const g = await petLayout();
+    const boxes = [g.host, g.bubble, g.zoom, ...g.btns];
+    const x = Math.max(0, Math.min(...boxes.map(b => b.l)) - 24), y = Math.max(0, Math.min(...boxes.map(b => b.t)) - 24);
+    const clip = {x, y, width: Math.min(1440, Math.max(...boxes.map(b => b.r)) + 24) - x, height: Math.min(1000, Math.max(...boxes.map(b => b.b)) + 24) - y};
+    await tab.screenshot({path: path.join(out, name + '.png'), clip});
+  };
+  const hoverQuick = on => execInTab(`() => {
+    const btn = document.querySelector('#roamcat-pet-host').shadowRoot.querySelector('#quick-summary');
+    btn.dispatchEvent(new PointerEvent(${on ? "'pointerenter'" : "'pointerleave'"}));
+    return true;
+  }`);
+  const columnLayout = await petLayout();
+  check('伴读猫快捷按钮竖排一列、与猫居中立在猫头上方', columnLayout.btns.every((b, i) => Math.abs(b.l - columnLayout.btns[0].l) < 1
+      && Math.abs((b.l + b.r) / 2 - (columnLayout.host.l + columnLayout.host.r) / 2) < 1 && (i === 0 || b.t >= columnLayout.btns[i - 1].b))
+    && columnLayout.btns[3].b <= columnLayout.host.t + 0.38 * (columnLayout.host.b - columnLayout.host.t),
+  JSON.stringify(columnLayout));
+  check('伴读猫缩放胶囊在猫内侧且不压按钮', columnLayout.zoom.r <= columnLayout.host.l && columnLayout.btns.every(b => !boxesOverlap(b, columnLayout.zoom)), JSON.stringify(columnLayout));
+  await hoverQuick(true);
+  for (const theme of ['light', 'dark']) {
+    if (theme === 'dark') {
+      await tab.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
+      await until(tab, () => execInTab(`() => document.querySelector('#roamcat-pet-host').getAttribute('data-theme')`), v => v === 'dark');
+    }
+    const hovered = await until(tab, petLayout, g => g.speaking && g.bubble.r <= g.btns[0].l);
+    await settled(tab);
+    check(`伴读猫悬停气泡让到竖列内侧（${theme}）`, hovered.speaking && hovered.bubble.r <= hovered.btns[0].l
+      && hovered.btns.every(b => !boxesOverlap(b, hovered.bubble)) && !boxesOverlap(hovered.bubble, hovered.zoom), JSON.stringify(hovered));
+    await petCloseUp(`pet-dock-${theme}`);
+  }
+  await hoverQuick(false);
+  await tab.evaluate(() => document.documentElement.removeAttribute('data-theme'));
+  await until(tab, () => execInTab(`() => document.querySelector('#roamcat-pet-host').getAttribute('data-theme')`), v => v === 'light');
 
   await execInTab(`() => { globalThis.RoamCatPet.closeQuickDock(); globalThis.RoamCatPet.dock('right'); }`);
   const docked = await until(tab, () => execInTab(`() => document.querySelector('#roamcat-pet-host').shadowRoot.querySelector('.roamcat-pet-widget').classList.contains('docked')`), Boolean);

@@ -313,112 +313,15 @@
       }
 
       /* =========================================================
-         Satellite Orbit Quick Switch: 旋旋翻按钮 (Orbit / Flip Button)
-         已并入 .roamcat-quick-dock 卫星带末端（离猫最近），定位与贴边
-         隐藏/探出由 dock 统一接管。
+         旋旋翻按钮：与其余快捷按钮同一款（.roamcat-quick-btn，翻译线条图标），
+         另有翻译进行中的轨道环。定位与贴边隐藏由 .roamcat-quick-dock 统一接管。
          ========================================================= */
-      .roamcat-flip-btn {
-        position: relative;
-        flex-shrink: 0;
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        /* 与快捷钮同一象牙瓷扣面（曾为黄铜铣边币，已统一为同排按钮材质） */
-        background: var(--pet-btn-face, var(--pet-surface-elevated, #ffffff));
-        border: 1px solid var(--pet-btn-rim, var(--pet-line, #e2ded4));
-        box-shadow: var(--pet-btn-inset, none), var(--pet-btn-cast, var(--pet-shadow-sm));
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
-        margin: 0;
-        outline: none;
-        z-index: 12;
-        transition: transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1),
-                    box-shadow 0.2s ease,
-                    border-color 0.2s ease,
-                    background-color 0.2s ease,
-                    opacity 0.2s ease;
-        user-select: none;
-        perspective: 600px;
-      }
-
-      .roamcat-flip-btn:not(.is-active):hover {
-        transform: translateY(-1px);
-        background: var(--pet-btn-hover-face, var(--pet-primary-soft, #fbf3ef));
-        border-color: color-mix(in srgb, var(--pet-primary, #d97757) 45%, transparent);
-      }
-
-      .roamcat-flip-btn:focus-visible {
-        outline: 2px solid var(--pet-primary, #f59e0b);
-        outline-offset: 2px;
-      }
-
-      .roamcat-flip-btn:active {
-        transform: scale(0.94);
-        box-shadow: var(--pet-btn-press, none);
-      }
-
-      /* 3D Coin/Card Container */
-      .flip-coin {
-        width: 100%;
-        height: 100%;
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      /* Coin Face：内层字形容器——币面材质已去除，与钮面同色，仅负责字形居中 */
-      .coin-face {
-        position: absolute;
-        inset: 0;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .coin-face-front {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
-        letter-spacing: -0.6px;
-        line-height: 1;
-      }
-
-      /* 中/En 字形按钮面图标处理：同色压印，与 quick-glyph svg 一致 */
-      .coin-glyph-bilingual {
-        display: inline-flex;
-        align-items: center;
-        font-size: var(--fs-1, 12px);
-        font-weight: 700;
-        filter: var(--pet-glyph-emboss, none);
-      }
-
-      .glyph-main {
-        color: var(--pet-glyph, var(--pet-ink, #161511));
-        font-size: var(--fs-1, 12px);
-      }
-
-      .glyph-sep {
-        font-size: var(--fs-1, 12px);
-        color: var(--pet-muted, #9ca3af);
-        opacity: 0.6;
-        margin: 0 -0.5px;
-      }
-
-      .glyph-sub {
-        font-size: var(--fs-1, 12px);
-        color: var(--pet-glyph, var(--pet-ink, #161511));
-      }
-
-      /* Orbit SVG Spinner Ring */
       .flip-orbit-ring {
         position: absolute;
         top: -2px;
         left: -2px;
-        width: 34px;
-        height: 34px;
+        width: calc(100% + 4px);
+        height: calc(100% + 4px);
         pointer-events: none;
         overflow: visible;
         opacity: 0;
@@ -440,23 +343,7 @@
         transform-origin: center;
       }
 
-      /* ACTIVE STATE (双语翻译已开启)：与快捷钮同一开启态——琥珀釉面 +
-         主色描边 + 右上角状态点；字形换深色墨 */
-      .roamcat-flip-btn.is-active .coin-glyph-bilingual .glyph-main,
-      .roamcat-flip-btn.is-active .coin-glyph-bilingual .glyph-sub {
-        color: var(--pet-btn-active-ink, #5d3d0c);
-      }
-
-      .roamcat-flip-btn.is-active .coin-glyph-bilingual .glyph-sep {
-        color: var(--pet-btn-active-ink, #5d3d0c);
-        opacity: 0.55;
-      }
-
-      /* TRANSLATING STATE (正在逐段翻译中) */
-      .roamcat-flip-btn.is-translating {
-        border-color: var(--pet-primary, #f59e0b);
-      }
-
+      /* TRANSLATING STATE (正在逐段翻译中)：主色细环转圈 */
       .roamcat-flip-btn.is-translating .flip-orbit-ring {
         opacity: 1;
         animation: orbit-spin 1.1s linear infinite;
@@ -467,199 +354,75 @@
         to { transform: rotate(360deg); }
       }
 
-      /* Tooltip for the flip button：与 .quick-tooltip 一致，向带内方向弹出 */
-      .flip-tooltip {
-        position: absolute;
-        right: calc(100% + 6px);
-        top: 50%;
-        transform: translateY(-50%) translateX(4px);
-        background: var(--pet-surface-elevated, #ffffff);
-        color: var(--pet-glyph, var(--pet-ink, #161511));
-        border: 1px solid var(--pet-btn-rim, var(--pet-line, #e2ded4));
-        border-radius: 999px;
-        padding: 3px 9px;
-        font-size: var(--fs-1, 12px);
-        font-weight: 600;
-        white-space: nowrap;
-        box-shadow: var(--pet-btn-cast, 0 4px 12px rgba(0,0,0,0.12));
-        pointer-events: none;
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.18s ease, transform 0.18s cubic-bezier(0.2, 0.9, 0.3, 1);
-        z-index: 20;
-      }
-
-      /* Pet 贴左屏时提示翻到按钮右侧（朝向页面中心） */
-      .roamcat-pet-widget.is-left .roamcat-flip-btn .flip-tooltip {
-        right: auto;
-        left: calc(100% + 6px);
-        transform: translateY(-50%) translateX(-4px);
-      }
-
-      .roamcat-flip-btn:hover .flip-tooltip {
-        opacity: 1;
-        visibility: visible;
-        transform: translateY(-50%) translateX(0);
-      }
-
-      .roamcat-pet-widget.dragging .flip-tooltip {
-        opacity: 0 !important;
-        visibility: hidden;
-      }
-
       /* =========================================================
-         快捷按钮 2×2 方阵：上排 .roamcat-cat-menu（提炼 / 设置），下排
-         .roamcat-quick-dock（旋旋翻 / 阅读开关）。两排同列右对齐、同以猫脚
-         为基线锚定，缩放猫时方阵不被拉散。贴边时整组隐藏（贴边态只探头，
-         点猫唤醒）；猫贴左屏时整组翻到右侧。
+         竖排快捷按钮（参照陪读蛙的悬浮按钮）：四颗按钮收在一条竖胶囊工具栏里，
+         居中立在猫头上方、两耳之间，自上而下为设置 / 提炼 / 阅读开关 / 旋旋翻
+         （离猫最近）。常驻显示（不等悬停或点猫），拖动时跟着猫走；上方放不下时
+         （.dock-below，clampPosition 判定）改挂到猫脚下，顺序随之倒过来，旋旋翻
+         仍离猫最近。猫的画稿上方留白：头顶约在挂件框顶下 30px × scale、离脚底
+         38px × scale，胶囊底边落在头顶上方 4px，缩放猫时一起挪。只有贴边探头时
+         整条收起（点猫唤醒后从猫头升回来）。胶囊本身是 elev-2 浮层，里面的按钮
+         不再各带描边投影。
          ========================================================= */
-      .roamcat-quick-dock,
-      .roamcat-cat-menu {
-        position: absolute;
-        right: calc(100% + 6px);
-        left: auto;
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        gap: 6px;
-        visibility: hidden;
-        /* 容器在收起过渡结束后才隐藏（visibility 延迟衔接子按钮 160ms 收拢动画） */
-        transition: visibility 0s 0.36s;
-      }
       .roamcat-quick-dock {
-        bottom: -2px;
-        z-index: 11;
-      }
-      .roamcat-cat-menu {
-        bottom: 34px;
-        z-index: 13;
-      }
-
-      /* 悬停桥：盖住方阵与猫身之间的 6px 缝（上下各放 3px 接住两排间隙），
-         指针从猫移向按钮时不掉 :hover。收起态随容器 visibility:hidden 失效。 */
-      .roamcat-quick-dock::before,
-      .roamcat-cat-menu::before {
-        content: '';
         position: absolute;
-        top: -3px;
-        right: -8px;
-        bottom: -3px;
-        width: 8px;
+        left: 50%;
+        bottom: calc(38px * var(--pet-scale, 1) + 4px);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        padding: 3px;
+        border-radius: 999px;
+        background: var(--pet-btn-face, var(--pet-surface-elevated, #ffffff));
+        border: 1px solid var(--pet-btn-rim, var(--pet-line, #e2ded4));
+        box-shadow: var(--pet-btn-cast, var(--pet-shadow-sm));
+        z-index: 12;
+        transform-origin: 50% 100%;
+        /* 收起态：缩回猫头；visibility 等过渡走完再隐藏。left:50% + translate -50% 居中。 */
+        visibility: hidden;
+        opacity: 0;
+        translate: -50% 8px;
+        scale: 0.85;
+        transition:
+          opacity 0.16s ease-in,
+          translate 0.16s ease-in,
+          scale 0.16s ease-in,
+          visibility 0s 0.16s;
+      }
+      .roamcat-pet-widget.dock-below .roamcat-quick-dock {
+        bottom: auto;
+        top: calc(100% + 6px);
+        flex-direction: column-reverse;
+        transform-origin: 50% 0;
+        translate: -50% -8px;
       }
 
-      .roamcat-pet-widget.is-left :is(.roamcat-quick-dock, .roamcat-cat-menu)::before {
-        right: auto;
-        left: -8px;
+      /* 竖排工具栏除贴边探头外一直显示；缩放胶囊仍由点猫头（dock-open）开合。 */
+      .roamcat-pet-widget:not(.docked) .roamcat-quick-dock {
+        visibility: visible;
+        opacity: 1;
+        translate: -50% 0;
+        scale: 1;
+        transition:
+          opacity 0.18s ease,
+          translate 0.32s cubic-bezier(0.34, 1.56, 0.64, 1),
+          scale 0.32s cubic-bezier(0.34, 1.56, 0.64, 1),
+          visibility 0s 0s;
       }
-
-      /* Pet 贴左屏时方阵翻到右侧（始终朝向页面中心，避免超出视口）。 */
-      .roamcat-pet-widget.is-left :is(.roamcat-quick-dock, .roamcat-cat-menu) {
-        right: auto;
-        left: calc(100% + 6px);
-      }
-
-      /* 显隐两条路：点猫头 dock-open 常驻展开；悬停 widget 临时展开，
-         移开后经 360ms visibility 延迟收起——窗口内按钮仍可命中，微抖动不闪断。 */
-      .roamcat-pet-widget:is(.dock-open, :hover):not(.docked) :is(.roamcat-quick-dock, .roamcat-cat-menu),
       .roamcat-pet-widget.dock-open .roamcat-zoom-controls {
         visibility: visible;
         transition-delay: 0s;
       }
 
-      /* 子按钮逐个收放：opacity/translate/scale 三个独立属性动画
-         （transform 留给 hover/active 等交互态，避免互相覆盖）。
-         --i 为"离猫距离"序号：贴右边时阅读开关最近（--i:0），
-         贴左边时旋旋翻最近。 */
-      .roamcat-quick-dock > :nth-child(1) { --i: 1; }
-      .roamcat-quick-dock > :nth-child(2) { --i: 0; }
-      .roamcat-pet-widget.is-left .roamcat-quick-dock > :nth-child(1) { --i: 0; }
-      .roamcat-pet-widget.is-left .roamcat-quick-dock > :nth-child(2) { --i: 1; }
-      .roamcat-cat-menu > .roamcat-quick-btn {
-        opacity: 0;
-        translate: 14px 0;
-        scale: 0.6;
-        pointer-events: none;
-        transition:
-          transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
-          box-shadow 0.2s ease,
-          border-color 0.2s ease,
-          background-color 0.2s ease,
-          opacity 0.16s ease-in,
-          translate 0.16s ease-in,
-          scale 0.16s ease-in;
-      }
-      .roamcat-pet-widget:is(.dock-open, :hover):not(.docked) .roamcat-cat-menu > .roamcat-quick-btn {
-        opacity: 1;
-        translate: 0 0;
-        scale: 1;
-        pointer-events: auto;
-        transition:
-          transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
-          box-shadow 0.2s ease,
-          border-color 0.2s ease,
-          background-color 0.2s ease,
-          opacity 0.18s ease,
-          translate 0.32s cubic-bezier(0.34, 1.56, 0.64, 1),
-          scale 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
-      }
-
-      .roamcat-pet-widget .roamcat-quick-dock > * {
-        opacity: 0;
-        translate: 14px 0;
-        scale: 0.6;
-        pointer-events: none;
-        /* 在此统一接管过渡列表（前 5 项为交互态，后 3 项为显隐动画），
-           保证 opacity/translate/scale 的错峰延迟不被按钮自身 transition 重置。
-           收起：160ms 收拢，最远端先动（反向错峰）。 */
-        transition:
-          transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
-          box-shadow 0.2s ease,
-          border-color 0.2s ease,
-          background-color 0.2s ease,
-          color 0.2s ease,
-          opacity 0.16s ease-in calc((4 - var(--i, 0)) * 35ms),
-          translate 0.16s ease-in calc((4 - var(--i, 0)) * 35ms),
-          scale 0.16s ease-in calc((4 - var(--i, 0)) * 35ms);
-      }
-      .roamcat-pet-widget.is-left :is(.roamcat-quick-dock, .roamcat-cat-menu) > * {
-        translate: -14px 0;
-      }
-      .roamcat-pet-widget:is(.dock-open, :hover):not(.docked) .roamcat-quick-dock > * {
-        opacity: 1;
-        translate: 0 0;
-        scale: 1;
-        pointer-events: auto;
-        /* 展开：translate/scale 320ms 回弹曲线，opacity 180ms，近猫端先动 */
-        transition:
-          transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
-          box-shadow 0.2s ease,
-          border-color 0.2s ease,
-          background-color 0.2s ease,
-          color 0.2s ease,
-          opacity 0.18s ease calc(var(--i, 0) * 35ms),
-          translate 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--i, 0) * 35ms),
-          scale 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--i, 0) * 35ms);
-      }
-
-      /* 悬停/聚焦的子按钮整体抬到兄弟之上：dock 子项各经 scale/translate 建立
-         独立层叠上下文，其内部 tooltip 的 z-index 只在本按钮上下文内生效——
-         不抬父级，向左弹出的提示会被相邻按钮（尤其 z-index:12 的旋旋翻币）盖住。 */
-      .roamcat-quick-dock > *:is(:hover, :focus-within) {
-        z-index: 16;
-      }
-
-      /* 快捷坞展开时气泡抬高，避开缩放胶囊 */
-      .roamcat-pet-widget.dock-open {
-        --zoom-offset: 34px;
-      }
-
-      /* 缩放控制胶囊：悬于猫头上方，与快捷坞同显同隐 */
+      /* 缩放控制胶囊：挂在猫朝页面内侧的一边、对齐猫身中线（离脚底约 24px × scale；
+         猫头上方留给竖排按钮与气泡），只在点猫头展开（dock-open）时出现。 */
       .roamcat-zoom-controls {
         position: absolute;
-        top: -32px;
-        left: 50%;
-        /* --zoom-shift-x 由 fitZoomControls() 写入：猫贴视口左右边时把胶囊收进视口。 */
-        transform: translateX(calc(-50% + var(--zoom-shift-x, 0px)));
+        bottom: calc(24px * var(--pet-scale, 1));
+        right: calc(100% + 8px);
+        /* --zoom-shift-x 由 fitZoomControls() 写入：视口窄到放不下时把胶囊收进视口。 */
+        transform: translate(var(--zoom-shift-x, 0px), 50%);
         display: inline-flex;
         align-items: center;
         gap: 2px;
@@ -678,6 +441,10 @@
           translate 0.16s ease-in,
           scale 0.16s ease-in,
           visibility 0s 0.36s;
+      }
+      .roamcat-pet-widget.is-left .roamcat-zoom-controls {
+        right: auto;
+        left: calc(100% + 8px);
       }
       .roamcat-pet-widget.dock-open .roamcat-zoom-controls {
         opacity: 1;
@@ -790,15 +557,16 @@
         100% { opacity: 0; transform: translateX(16px) scale(1.4); }
       }
 
+      /* 快捷按钮：胶囊工具栏里的扁平图标钮——平时透明、不带描边投影（层级交给胶囊），
+         悬停主色淡底与字形，开启态主色实底反白。 */
       .roamcat-quick-btn {
         position: relative;
-        width: 30px;
-        height: 30px;
+        width: 28px;
+        height: 28px;
         border-radius: 50%;
-        /* 象牙瓷扣：凸面受光渐变 + 顶棱高光 + 底部接触暗边 + 双层投影 */
-        background: var(--pet-btn-face, var(--pet-surface-elevated, #ffffff));
-        border: 1px solid var(--pet-btn-rim, var(--pet-line, #e2ded4));
-        box-shadow: var(--pet-btn-inset, none), var(--pet-btn-cast, var(--pet-shadow-sm));
+        background: transparent;
+        border: 0;
+        box-shadow: none;
         cursor: pointer;
         display: flex;
         align-items: center;
@@ -810,18 +578,14 @@
         line-height: 1;
         color: var(--pet-glyph, var(--pet-muted, #6b7280));
         transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
-                    box-shadow 0.2s ease,
-                    border-color 0.2s ease,
                     background-color 0.2s ease,
+                    color 0.2s ease,
                     opacity 0.2s ease;
         user-select: none;
       }
 
-      /* 悬停：主色淡底 + 主色描边与字形，轻抬 1px */
       .roamcat-quick-btn:hover {
-        transform: translateY(-1px);
         background: var(--pet-btn-hover-face, var(--pet-primary-soft, #fbf3ef));
-        border-color: color-mix(in srgb, var(--pet-primary, #d97757) 45%, transparent);
         color: var(--pet-primary, #d97757);
       }
 
@@ -838,74 +602,29 @@
 
       .roamcat-quick-btn:focus-visible {
         outline: 2px solid var(--pet-primary, #f59e0b);
-        outline-offset: 2px;
+        outline-offset: 1px;
       }
 
       .roamcat-quick-btn:active {
-        transform: scale(0.94);
-        box-shadow: var(--pet-btn-press, none);
+        transform: scale(0.92);
       }
 
       /* 开启态（阅读辅助 / 双语翻译共用）：主色实底 + 反白字形，与关闭态一眼可分 */
-      .roamcat-quick-btn.is-active,
-      .roamcat-flip-btn.is-active {
+      .roamcat-quick-btn.is-active {
         background: var(--pet-btn-active-face, var(--pet-primary, #d97757));
-        border-color: var(--pet-btn-active-face, var(--pet-primary, #d97757));
         color: var(--pet-btn-active-ink, #ffffff);
       }
 
-      .roamcat-quick-btn.is-active:hover,
-      .roamcat-flip-btn.is-active:hover {
-        transform: translateY(-1px);
+      .roamcat-quick-btn.is-active:hover {
         background: var(--pet-primary-hover, #c25e3e);
-        border-color: var(--pet-primary-hover, #c25e3e);
         color: var(--pet-btn-active-ink, #ffffff);
       }
 
-      /* 切换进行中：压暗 + 琥珀细环脉冲，并屏蔽连点 */
+      /* 切换进行中：压暗 + 主色细环，并屏蔽连点 */
       .roamcat-quick-btn.is-pending {
         opacity: 0.55;
         pointer-events: none;
-        box-shadow: var(--pet-btn-inset, none), 0 0 0 1px var(--pet-primary, #f59e0b);
-      }
-
-      .roamcat-quick-btn .quick-tooltip {
-        position: absolute;
-        right: calc(100% + 6px);
-        top: 50%;
-        transform: translateY(-50%) translateX(4px);
-        background: var(--pet-surface-elevated, #ffffff);
-        color: var(--pet-glyph, var(--pet-ink, #161511));
-        border: 1px solid var(--pet-btn-rim, var(--pet-line, #e2ded4));
-        border-radius: 999px;
-        padding: 3px 9px;
-        font-size: var(--fs-1, 12px);
-        font-weight: 600;
-        white-space: nowrap;
-        box-shadow: var(--pet-btn-cast, 0 4px 12px rgba(0, 0, 0, 0.12));
-        opacity: 0;
-        visibility: hidden;
-        pointer-events: none;
-        transition: opacity 0.18s ease, transform 0.18s ease;
-        z-index: 13;
-      }
-
-      /* Pet 贴左屏时提示翻到按钮右侧（始终朝向页面中心，避免超出视口） */
-      .roamcat-pet-widget.is-left .roamcat-quick-btn .quick-tooltip {
-        right: auto;
-        left: calc(100% + 6px);
-        transform: translateY(-50%) translateX(-4px);
-      }
-
-      .roamcat-quick-btn:hover .quick-tooltip {
-        opacity: 1;
-        visibility: visible;
-        transform: translateY(-50%) translateX(0);
-      }
-
-      .roamcat-pet-widget.dragging .quick-tooltip {
-        opacity: 0 !important;
-        visibility: hidden;
+        box-shadow: inset 0 0 0 1px var(--pet-primary, #f59e0b);
       }
 
       /* Pure 2D Scanline Character Pet Container (NO BALL / NO CIRCLE BASE / TRANSPARENT) */
@@ -937,7 +656,9 @@
       /* Speech Bubble (Hover & Speaking Notification) */
       .cat-speech-bubble {
         position: absolute;
-        bottom: calc(100% + 8px + var(--zoom-offset, 0px));
+        /* 以放大后的猫为基线（猫按 --pet-scale 从脚底放大）：漫游态 --bubble-rise 取耳尖
+           离脚底的 42px，气泡底边与最下面的竖排按钮齐平、尾巴贴着耳尖；贴边探头态取整框高 68px。 */
+        bottom: calc(var(--bubble-rise, 68px) * var(--pet-scale, 1) + 8px);
         left: 50%;
         transform: translateX(calc(-50% + var(--bubble-shift-x, 0px))) translateY(4px);
         background: var(--pet-surface-elevated, #ffffff);
@@ -994,10 +715,19 @@
         visibility: visible !important;
       }
 
+      /* 竖排工具栏居中立在猫头上方、宽 36px（28px 按钮 + 3px 内边距 + 1px 描边）：
+         气泡让到工具栏朝页面内侧的一边、与它隔 6px，两者同时出现也不重叠。气泡在
+         64px 宽、同样居中的 avatar-wrap 里定位，故离 avatar-wrap 外缘 32 + 18 + 6 = 56px，
+         与缩放比例无关。贴边探头态没有工具栏，气泡仍贴猫外缘。 */
+      .roamcat-pet-widget:not(.docked) {
+        --bubble-lane: 56px;
+        --bubble-rise: 42px;
+      }
+
       /* 针对右半屏或贴右边缘的对齐策略：气泡右对齐，向网页内侧展开，100% 避免超出视口！ */
       .roamcat-pet-widget:not(.is-left) .cat-speech-bubble {
         left: auto !important;
-        right: 0 !important;
+        right: var(--bubble-lane, 0px) !important;
         transform: translateX(var(--bubble-shift-x, 0px)) translateY(4px);
       }
       .roamcat-pet-widget:not(.is-left) .cat-speech-bubble.speaking,
@@ -1007,7 +737,7 @@
 
       /* 针对左半屏或贴左边缘的对齐策略：气泡左对齐，向网页内侧展开，100% 避免超出视口！ */
       .roamcat-pet-widget.is-left .cat-speech-bubble {
-        left: 0 !important;
+        left: var(--bubble-lane, 0px) !important;
         right: auto !important;
         transform: translateX(var(--bubble-shift-x, 0px)) translateY(4px);
       }
@@ -1679,7 +1409,6 @@
         .roamcat-pet-widget,
         .roamcat-edge-tab,
         .roamcat-flip-btn,
-        .flip-coin,
         .cat-speech-bubble,
         .roamcat-summary-window,
         .cat-mode-roaming,
@@ -1691,30 +1420,15 @@
         .pet-car * {
           transition: none !important;
         }
-        /* 快捷坞显隐降级为纯透明度过渡：120ms、无错峰、无位移缩放 */
-        .roamcat-pet-widget .roamcat-quick-dock > *,
-        .roamcat-pet-widget:is(.dock-open, :hover):not(.docked) .roamcat-quick-dock > * {
-          opacity: var(--dock-opacity, 0);
-          translate: none;
-          scale: none;
-          transition: opacity 0.12s ease !important;
-        }
-        .roamcat-pet-widget:is(.dock-open, :hover):not(.docked) .roamcat-quick-dock > * {
-          --dock-opacity: 1;
-        }
-        .roamcat-pet-widget .roamcat-cat-menu > .roamcat-quick-btn,
-        .roamcat-pet-widget:is(.dock-open, :hover):not(.docked) .roamcat-cat-menu > .roamcat-quick-btn {
-          opacity: var(--dock-opacity, 0);
-          translate: none;
-          scale: none;
-          transition: opacity 0.12s ease !important;
-        }
-        .roamcat-pet-widget:is(.dock-open, :hover):not(.docked) .roamcat-cat-menu > .roamcat-quick-btn {
-          --dock-opacity: 1;
-        }
+        /* 竖排工具栏显隐降级为纯透明度过渡：120ms、无位移缩放（保留居中用的 -50%） */
         .roamcat-quick-dock,
-        .roamcat-pet-widget:is(.dock-open, :hover):not(.docked) .roamcat-quick-dock {
-          transition: visibility 0s 0.13s !important;
+        .roamcat-pet-widget:not(.docked) .roamcat-quick-dock {
+          translate: -50% 0;
+          scale: none;
+          transition: opacity 0.12s ease, visibility 0s 0.13s !important;
+        }
+        .roamcat-pet-widget:not(.docked) .roamcat-quick-dock {
+          transition: opacity 0.12s ease, visibility 0s 0s !important;
         }
         .roamcat-zoom-controls,
         .roamcat-pet-widget.dock-open .roamcat-zoom-controls {

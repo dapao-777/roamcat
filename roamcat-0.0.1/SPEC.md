@@ -139,7 +139,7 @@
 | 文件 | 职责 | 关键约束 |
 |---|---|---|
 | `content.js` | 阅读根识别、文本映射、自动标注、查词（按键+卡片+顶部词注）、选段翻译、阅读解构高亮、整页翻译引擎、历史采集、重载侦察（失效 toast） | 只拆文本节点不重建强调/链接；所有跨文档操作带 generation 校验；DOM 批量更新走 rAF；重载侦察用可见性门控的低频探测，不用常驻 port（不阻止 SW 空闲回收） |
-| `floating-pet.js` + `floating-pet-{helpers,styles,svg,quote-bubble,summary}.js` | 伴读猫（SVG/Shadow DOM/拖拽贴边/菜单/摘要/状态气泡/左侧快捷按钮行）、全局快捷键 | window 级监听只注册一次（`bindGlobalEvents`）；快捷键在输入框/可编辑区不触发（`petShortcutBlocked`）；左侧快捷按钮行（阅读开关/摘要/设置/贴边）贴左屏时翻向右侧，贴边时随旋旋翻隐藏 |
+| `floating-pet.js` + `floating-pet-{helpers,styles,svg,quote-bubble,summary}.js` | 伴读猫（SVG/Shadow DOM/拖拽贴边/菜单/摘要/状态气泡/竖排快捷按钮）、全局快捷键 | window 级监听只注册一次（`bindGlobalEvents`）；快捷键在输入框/可编辑区不触发（`petShortcutBlocked`）；竖排快捷按钮（设置/摘要/阅读开关/旋旋翻）收在一条竖胶囊工具栏里常驻显示，居中立在猫头上方，上方放不下时挂到猫脚下，只在贴边探头时整组隐藏；点猫头只开合缩放胶囊 |
 | `live-chat.js` | Twitch 直播聊天实时翻译：聊天输入区「译」开关（存 `video.liveChat`）、新消息过滤（表情/单词梗/刷屏/中文不翻）、最新优先每批 ≤8 条经 `LIVE_CHAT_TRANSLATE` 发送、`SS_LIVE_CHAT_PROGRESS` 流式显示 | manifest 第二个 `content_scripts` 项（自带 `design.js` + `i18n-content.js` + `live-chat.js`），只匹配 `https://www.twitch.tv/*` 主框架；`injectPageUI` 对已打开的 Twitch 页补注入；不读历史聊天、不写阅读记录；后台返回 `throttled` 时把批次按先后插回队列并暂停到 `retryAfterMs` |
 | `design.js` | 设计 token（明暗双主题）唯一下发 | 仅当脚本带 `data-roamcat-page` 时才向页面根注入 |
 | `i18n.js` / `i18n-content.js` | 中英双语运行时 `RoamCatI18n`：`t()`/`lang()`/`pref()`/`setPref()`/`apply()`/`onChange()`，字典中英逐键对齐（`node tools/check-dict.cjs` 校验）；内容脚本加载生成的瘦身版（只含网页侧用到的命名空间，`i18n-content.test.mjs` 断言无漂移且网页侧引用的键齐全） | storage 受限上下文自动回退 `STATE_GET` 拉取偏好，监听 `SS_REFRESH` 同步变更 |

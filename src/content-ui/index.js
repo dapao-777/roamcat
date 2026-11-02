@@ -422,33 +422,21 @@ export function petWidget(shadow, {domainKey = 'general', domainName = '', catSv
         <button type="button" class="zoom-btn" id="zoom-in" aria-label=${T('pet.zoomIn')} title=${T('pet.zoomIn')}>${icon('plus', {size: 12})}</button>
       </div>
       <div class="roamcat-quick-dock">
-        <button type="button" class="roamcat-flip-btn" id="roamcat-flip-btn" tabindex="-1" aria-label=${T('pet.flipAria')} aria-pressed="false">
-          <div class="flip-coin">
-            <div class="coin-face coin-face-front">
-              <span class="coin-glyph-bilingual">
-                <span class="glyph-main">中</span><span class="glyph-sep">/</span><span class="glyph-sub">En</span>
-              </span>
-            </div>
-          </div>
+        <button type="button" class="roamcat-quick-btn" id="quick-options" aria-label=${T('pet.optAria')} title=${T('pet.optTip')}>
+          <span class="quick-glyph" aria-hidden="true">${icon('settings', {size: 15})}</span>
+        </button>
+        <button type="button" class="roamcat-quick-btn" id="quick-summary" aria-label=${T('pet.sumAria')} title=${T('pet.sumTip')}>
+          <span class="quick-glyph" aria-hidden="true">${icon('file-text', {size: 15})}</span>
+        </button>
+        <button type="button" class="roamcat-quick-btn" id="quick-reading" aria-label=${T('pet.readAria')} title=${T('pet.readTip')} aria-pressed="false">
+          <span class="quick-glyph" aria-hidden="true">${icon('book-open', {size: 15})}</span>
+        </button>
+        <button type="button" class="roamcat-quick-btn roamcat-flip-btn" id="roamcat-flip-btn" aria-label=${T('pet.flipAria')} title=${T('pet.flipTip')} aria-pressed="false">
+          <span class="quick-glyph" aria-hidden="true">${icon('languages', {size: 15})}</span>
           <svg class="flip-orbit-ring" viewBox="0 0 34 34">
             <circle class="orbit-bg" cx="17" cy="17" r="15" />
             <circle class="orbit-active" cx="17" cy="17" r="15" />
           </svg>
-          <div class="flip-tooltip" id="flip-tooltip">${T('pet.flipTip')}</div>
-        </button>
-        <button type="button" class="roamcat-quick-btn" id="quick-reading" tabindex="-1" aria-label=${T('pet.readAria')} title=${T('pet.readTip')} aria-pressed="false">
-          <span class="quick-glyph" aria-hidden="true">${icon('book-open', {size: 15})}</span>
-          <span class="quick-tooltip">${T('pet.readTip')}</span>
-        </button>
-      </div>
-      <div class="roamcat-cat-menu" id="roamcat-cat-menu">
-        <button type="button" class="roamcat-quick-btn" id="quick-summary" tabindex="-1" aria-label=${T('pet.sumAria')} title=${T('pet.sumTip')}>
-          <span class="quick-glyph" aria-hidden="true">${icon('file-text', {size: 15})}</span>
-          <span class="quick-tooltip">${T('pet.sumTip')}</span>
-        </button>
-        <button type="button" class="roamcat-quick-btn" id="quick-options" tabindex="-1" aria-label=${T('pet.optAria')} title=${T('pet.optTip')}>
-          <span class="quick-glyph" aria-hidden="true">${icon('settings', {size: 15})}</span>
-          <span class="quick-tooltip">${T('pet.optTip')}</span>
         </button>
       </div>
       <div class="roamcat-avatar-wrap" role="button" tabindex="0" aria-expanded="false" aria-label=${T('pet.avatarAria')} title=${T('pet.avatarTitle')}>

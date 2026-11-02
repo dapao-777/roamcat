@@ -1,6 +1,6 @@
 /**
  * @file tools/verify-pet-buttons.mjs
- * 文件职责：伴读猫悬浮按钮专项门禁（npm run verify:pet）——在 ego lite 的真实 content script 环境里，对猫头 / 快捷坞按钮 /
+ * 文件职责：伴读猫悬浮按钮专项门禁（npm run verify:pet）——在 ego lite 的真实 content script 环境里，对猫头 / 竖排快捷工具栏（几何与换边） /
  *   旋旋翻 / 缩放 / 贴边标签 / 气泡关闭 / 摘要窗做真实鼠标点击与键盘操作，断言状态变化与可及性。
  * 主要内容：本地 fixture 文章页（tools/fixtures/sites/devto-article.html）上挂载的伴读猫；伴读猫实例挂在隔离世界的宿主上，
  *   经扩展页 chrome.scripting 进入隔离世界读取与调用。截图尽力而为，判定只看状态断言。
@@ -79,6 +79,20 @@ try {
     } : null;
   }`);
 
+  // 竖排快捷按钮的几何：四颗按钮自上而下为设置 / 提炼 / 阅读 / 旋旋翻，连同猫、气泡、缩放胶囊的视口矩形。
+  const layout = () => petCall(`() => {
+    const host = document.querySelector('#roamcat-pet-host'), sr = host.shadowRoot;
+    const r = el => { const b = el.getBoundingClientRect(); return {l: Math.round(b.left), t: Math.round(b.top), r: Math.round(b.right), b: Math.round(b.bottom)}; };
+    return {cls: sr.querySelector('.roamcat-pet-widget').className, vh: innerHeight, host: r(host),
+      btns: ['#quick-options', '#quick-summary', '#quick-reading', '#roamcat-flip-btn'].map(s => r(sr.querySelector(s))),
+      bubble: r(sr.querySelector('#cat-speech')), zoom: r(sr.querySelector('#roamcat-zoom-controls'))};
+  }`);
+  const overlaps = (a, b) => a.l < b.r && b.l < a.r && a.t < b.b && b.t < a.b;
+  const oneColumn = l => Boolean(l) && l.btns.every(b => Math.abs(b.l - l.btns[0].l) <= 1);
+  const centerX = b => (b.l + b.r) / 2;
+  // 猫的画稿上方留白，耳尖约在挂件框顶下 0.38 处：竖列挂在猫头上方时最下面的按钮要在耳尖之上。
+  const earLine = l => l.host.t + 0.38 * (l.host.b - l.host.t);
+
   const isOpen = s => Boolean(s?.cls.includes('dock-open')) && s.expanded === 'true' && s.inert === false;
   const isClosed = s => Boolean(s) && !s.cls.includes('dock-open') && s.expanded === 'false' && s.inert === true;
   const isDocked = s => Boolean(s?.cls.includes('docked'));
@@ -105,7 +119,7 @@ try {
   check('伴读猫就绪', Boolean(initial), JSON.stringify(initial));
 
   // ---------- 1. 初始态 ----------
-  check('初始快捷坞收起', initial && !initial.cls.includes('dock-open') && initial.expanded === 'false' && initial.inert === true,
+  check('初始缩放胶囊收起', initial && !initial.cls.includes('dock-open') && initial.expanded === 'false' && initial.inert === true,
     JSON.stringify(initial));
   check('初始缩放 100%', initial?.zoom === '100%', `zoom=${initial?.zoom}`);
   // 默认 ambient 只规定开启后的工作方式，阅读引擎尚未加载时按钮必须保持关闭。
@@ -115,31 +129,35 @@ try {
   check('未开启页面时阅读按钮不误亮', initialReading?.btnActive === false && initialReading?.pressed === 'false', JSON.stringify(initialReading));
   check('未开启页面时阅读按钮提示开启', initialReading?.title === '阅读辅助已暂停 · 点击开启', JSON.stringify(initialReading));
 
-  // ---------- 2. 悬停预览：鼠标悬停猫身，卫星按钮即可交互 ----------
+  // ---------- 2. 常态显示：不悬停、不点猫，四颗竖排按钮也一直可见可点 ----------
   const avatarBox = await avatar.boundingBox();
   check('猫头可定位', Boolean(avatarBox), JSON.stringify(avatarBox));
-  const quickStyle = sel => tab.locator(sel).evaluate(el => { const s = getComputedStyle(el); return {opacity: s.opacity, pe: s.pointerEvents}; });
-  await tab.mouse.move(avatarBox.x + avatarBox.width / 2, avatarBox.y + avatarBox.height / 2);
-  const hoverReveal = await until(() => quickStyle('#quick-reading'), s => s.pe === 'auto' && Number(s.opacity) > 0.9);
-  check('悬停猫身显出快捷按钮', hoverReveal.pe === 'auto' && Number(hoverReveal.opacity) > 0.9, JSON.stringify(hoverReveal));
+  const quickStyle = sel => tab.locator(sel).evaluate(el => { const s = getComputedStyle(el); return {opacity: s.opacity, pe: s.pointerEvents, vis: s.visibility}; });
+  const shown = s => s.pe === 'auto' && s.vis === 'visible' && Number(s.opacity) > 0.9;
+  await tab.mouse.move(720, 500);
+  const idleShown = await Promise.all(['#quick-options', '#quick-summary', '#quick-reading', '.roamcat-flip-btn'].map(sel => until(() => quickStyle(sel), shown)));
+  check('快捷按钮常态显示（未悬停、未点猫）', idleShown.every(shown), JSON.stringify(idleShown));
 
-  // ---------- 3. 点击猫头开坞（dock-open 让按钮稳定可见，不依赖持续悬停） ----------
+  // ---------- 3. 点击猫头展开缩放胶囊（dock-open 只管胶囊，竖排按钮本来就常驻） ----------
   await avatar.click();
   const reacted = await avatar.evaluate(el => el.classList.contains('action-jelly')).catch(() => false)
     || await tab.locator('.cat-particle').count() > 0;
   let st = await waitPet(isOpen);
-  check('点击猫头展开快捷坞', st?.cls.includes('dock-open') && st.expanded === 'true' && st.inert === false,
+  check('点击猫头展开缩放胶囊', st?.cls.includes('dock-open') && st.expanded === 'true' && st.inert === false,
     JSON.stringify({cls: st?.cls, expanded: st?.expanded, inert: st?.inert}));
   check('点击有果冻/粒子反馈', reacted);
   await shot('dock-open');
-  // 快捷按钮 2×2 方阵：上下两排按列对齐（贴右缘时右侧列离猫最近）
-  const grid = await petCall(`() => {
-    const sr = document.querySelector('#roamcat-pet-host').shadowRoot;
-    const r = sel => { const b = sr.querySelector(sel).getBoundingClientRect(); return {x: Math.round(b.x), y: Math.round(b.y)}; };
-    return {sum: r('#quick-summary'), opt: r('#quick-options'), flip: r('#roamcat-flip-btn'), read: r('#quick-reading')};
-  }`);
-  check('快捷按钮 2×2 方阵列对齐', grid && Math.abs(grid.sum.x - grid.flip.x) <= 1 && Math.abs(grid.opt.x - grid.read.x) <= 1
-    && grid.sum.y < grid.flip.y, JSON.stringify(grid));
+  // 竖排快捷按钮（参照陪读蛙）：收在一条竖胶囊工具栏里，居中立在猫头上方，旋旋翻离猫最近；
+  // 缩放胶囊在猫朝页面内侧一边，不压按钮。
+  const column = await until(layout, l => oneColumn(l) && !overlaps(l.zoom, l.btns[3]));
+  const gaps = column ? column.btns.slice(1).map((b, i) => b.t - column.btns[i].b) : [];
+  check('快捷按钮竖排一列、自上而下设置/提炼/阅读/旋旋翻', oneColumn(column) && gaps.length === 3 && gaps.every(g => g >= 0 && g <= 4),
+    JSON.stringify({btns: column?.btns, gaps}));
+  check('竖排工具栏与猫居中对齐', Boolean(column) && column.btns.every(b => Math.abs(centerX(b) - centerX(column.host)) <= 1), JSON.stringify(column));
+  check('竖列挂在猫头上方', Boolean(column) && column.btns[3].b <= earLine(column) && column.btns[0].t >= 0 && !column.cls.includes('dock-below'),
+    JSON.stringify(column));
+  check('缩放胶囊在猫朝页面内侧一边', Boolean(column) && column.zoom.r <= column.host.l && column.btns.every(b => !overlaps(b, column.zoom)),
+    JSON.stringify(column));
 
   // ---------- 4. 悬停播报：三个按钮 + 旋旋翻各播一条气泡 ----------
   const hoverCases = [
@@ -156,6 +174,10 @@ try {
     const st = await until(petState, s => s?.speech === expectText && s.speechCls.includes('speaking'));
     check(`悬停播报 ${sel}`, st?.speech === expectText && st.speechCls.includes('speaking'),
       `speech=${st?.speech} cls=${st?.speechCls}`);
+    // 气泡让到竖列内侧：与按钮、缩放胶囊都不重叠（按钮不再另弹提示条，气泡就是说明）。
+    const lay = await until(layout, l => l.bubble.r <= l.btns[0].l && !overlaps(l.bubble, l.zoom));
+    check(`悬停气泡不压竖排按钮 ${sel}`, lay.bubble.r <= lay.btns[0].l && lay.btns.every(b => !overlaps(b, lay.bubble)) && !overlaps(lay.bubble, lay.zoom),
+      JSON.stringify({bubble: lay.bubble, btns: lay.btns, zoom: lay.zoom}));
   }
   // 移出按钮 → 气泡收回并复位默认文案
   await tab.mouse.move(720, 500);
@@ -166,45 +188,41 @@ try {
   // ---------- 5. 再点猫头收坞 ----------
   await avatar.click();
   st = await waitPet(isClosed);
-  check('再点猫头收起快捷坞', st && !st.cls.includes('dock-open') && st.expanded === 'false' && st.inert === true,
+  check('再点猫头收起缩放胶囊', st && !st.cls.includes('dock-open') && st.expanded === 'false' && st.inert === true,
     JSON.stringify({cls: st?.cls, expanded: st?.expanded}));
 
   // ---------- 6. 键盘开合：Enter 开坞，Esc 关坞 ----------
   await avatar.focus();
   await tab.keyboard.press('Enter');
   st = await waitPet(isOpen);
-  check('Enter 键展开快捷坞', st?.cls.includes('dock-open'), `cls=${st?.cls}`);
+  check('Enter 键展开缩放胶囊', st?.cls.includes('dock-open'), `cls=${st?.cls}`);
   await tab.keyboard.press('Escape');
   st = await waitPet(isClosed);
-  check('Esc 收起快捷坞', st && !st.cls.includes('dock-open'), `cls=${st?.cls}`);
+  check('Esc 收起缩放胶囊', st && !st.cls.includes('dock-open'), `cls=${st?.cls}`);
 
   // ---------- 7. 点击页面空白处关坞 ----------
   await avatar.click();
   await waitPet(isOpen);
   await tab.mouse.click(30, 30);
   st = await waitPet(isClosed);
-  check('点击页外收起快捷坞', st && !st.cls.includes('dock-open'), `cls=${st?.cls}`);
+  check('点击页外收起缩放胶囊', st && !st.cls.includes('dock-open'), `cls=${st?.cls}`);
 
-  // ---------- 8. 快捷坞收起时按钮退出 Tab 序（可及性） ----------
-  const focusableWhenClosed = await petCall(`() => {
+  // ---------- 8. 常驻的竖排按钮一直在 Tab 序里（可及性）；缩放胶囊收起时仍 inert ----------
+  const tabOrder = await petCall(`() => {
     const btns = [...document.querySelector('#roamcat-pet-host').shadowRoot.querySelector('.roamcat-quick-dock').children];
     return btns.map(b => ({id: b.id || b.className, tabIndex: b.tabIndex}));
   }`);
-  const stillTabbable = (focusableWhenClosed || []).filter(b => b.tabIndex >= 0);
-  check('收起态卫星按钮退出 Tab 序', stillTabbable.length === 0, JSON.stringify(stillTabbable));
-  // 展开后回到 Tab 序
-  await avatar.click();
-  await waitPet(isOpen);
-  const focusableWhenOpen = await petCall(`() => {
-    const btns = [...document.querySelector('#roamcat-pet-host').shadowRoot.querySelector('.roamcat-quick-dock').children];
-    return btns.map(b => ({id: b.id || b.className, tabIndex: b.tabIndex}));
-  }`);
-  const untabbableWhenOpen = (focusableWhenOpen || []).filter(b => b.tabIndex < 0);
-  check('展开态卫星按钮回到 Tab 序', untabbableWhenOpen.length === 0, JSON.stringify(untabbableWhenOpen));
-  await avatar.click();
-  await waitPet(isClosed);
+  check('四颗竖排按钮常驻 Tab 序', tabOrder?.length === 4 && tabOrder.every(b => b.tabIndex >= 0), JSON.stringify(tabOrder));
+  // 从猫头 Shift+Tab 先到离猫最近的旋旋翻，再往上依次是阅读、提炼、设置。
+  const focusId = () => petCall(`() => document.querySelector('#roamcat-pet-host').shadowRoot.activeElement?.id || ''`);
+  await avatar.focus();
+  const reverseTab = [];
+  for (let i = 0; i < 4; i++) { await tab.keyboard.press('Shift+Tab'); reverseTab.push(await focusId()); }
+  check('从猫头 Shift+Tab 依次经过旋旋翻、阅读、提炼、设置', reverseTab.join() === 'roamcat-flip-btn,quick-reading,quick-summary,quick-options',
+    JSON.stringify(reverseTab));
+  await tab.mouse.click(30, 30);
 
-  // ---------- 9. 阅读辅助开关（快捷坞保持展开，方向自适应） ----------
+  // ---------- 9. 阅读辅助开关（缩放胶囊保持展开，方向自适应） ----------
   // setManualEnabled 要等 rebuild() 全量完成才回写按钮态：轮询 is-active 而非定时盲采
   const waitReadingBtn = (active) => tab.waitForFunction(
     a => document.querySelector('#roamcat-pet-host')?.shadowRoot
@@ -219,7 +237,7 @@ try {
     && afterReading?.paused === false && afterReading?.btnActive === true && afterReading?.pressed === 'true', JSON.stringify(afterReading));
   check('阅读辅助标题随状态更新', afterReading?.title === '阅读辅助进行中 · 点击暂停',
     `title=${afterReading?.title}`);
-  check('切换后快捷坞保持展开', afterReading?.dockOpen === true);
+  check('切换后缩放胶囊保持展开', afterReading?.dockOpen === true);
   // 再点复原
   await tab.locator('#quick-reading').click();
   const landed2 = await waitReadingBtn(false);
@@ -230,7 +248,7 @@ try {
   if (!landed1 || !landed2) {
     warn('体验问题：阅读辅助开关缺少 pending 反馈，rebuild 期间按钮态滞后于实际状态');
   }
-  // 弹窗和快捷键通过同一消息切换页面；快捷坞开着时按钮也要跟随实际状态。
+  // 弹窗和快捷键通过同一消息切换页面；按钮常驻显示，也要跟随实际状态。
   const readingTabId = await tabIdOf(extPage, `${fixtureBase}/*`);
   for (const enabled of [true, false]) {
     const response = await extPage.evaluate(async ({tabId, enabled}) =>
@@ -265,7 +283,7 @@ try {
   await tab.locator('#quick-summary').click();
   await until(summaryOpen, n => n === 1);
   st = await waitPet(s => s && !s.cls.includes('dock-open'));
-  check('提炼收起快捷坞并开窗', st && !st.cls.includes('dock-open')
+  check('提炼收起缩放胶囊并开窗', st && !st.cls.includes('dock-open')
     && await tab.locator('.roamcat-summary-window.open').count() === 1,
     `dock=${st?.cls} open=${await tab.locator('.roamcat-summary-window.open').count()}`);
   const sawLoading = await tab.locator('#summary-content .summary-loading').count() > 0
@@ -338,16 +356,16 @@ try {
   const peekBox = await until(() => widget.boundingBox(), b => b && Math.abs(b.x + b.width - 1440) <= 1);
   check('贴边探头贴住右缘', Boolean(peekBox) && Math.abs(peekBox.x + peekBox.width - 1440) <= 1,
     `right=${peekBox ? Math.round(peekBox.x + peekBox.width) : 'n/a'}`);
-  // 贴边态悬停只探头，不弹快捷按钮方阵
+  // 贴边态整条工具栏收起，悬停也只探头、不弹按钮
   const pb = await avatar.boundingBox();
   await tab.mouse.move(pb.x + pb.width / 2, pb.y + pb.height / 2);
   // 观察窗口：这里断言的是贴边悬停「不会」弹出按钮，只能给悬停留出生效时间再看。
   await tab.waitForTimeout(450);
-  const dockedHover = await tab.locator('#quick-reading').evaluate(el => {
+  const dockedHover = await tab.locator('.roamcat-quick-dock').evaluate(el => {
     const s = getComputedStyle(el);
-    return {opacity: s.opacity, pe: s.pointerEvents};
+    return {opacity: s.opacity, vis: s.visibility};
   });
-  check('贴边悬停不弹快捷按钮', dockedHover.pe === 'none' && Number(dockedHover.opacity) < 0.1, JSON.stringify(dockedHover));
+  check('贴边时竖排工具栏收起、悬停不弹', dockedHover.vis === 'hidden' && Number(dockedHover.opacity) < 0.1, JSON.stringify(dockedHover));
   await shot('docked-hover');
   // 贴边标签仅作键盘入口：平时透明且不占命中区
   await tab.mouse.move(30, 30);
@@ -391,14 +409,48 @@ try {
   // ---------- 13. 拖拽位移并抑制误触 ----------
   const before = await tab.locator('#roamcat-pet-host').boundingBox();
   const ax = before.x + before.width / 2, ay = before.y + before.height / 2;
+  const readBefore = await tab.locator('#quick-reading').boundingBox();
   await tab.mouse.move(ax, ay);
   await tab.mouse.down();
   await tab.mouse.move(ax - 60, ay - 40, {steps: 5});
+  // 按钮常驻：拖动途中也不隐藏，整列跟着猫走。
+  const readMid = await until(() => tab.locator('#quick-reading').boundingBox(), b => b && Math.abs(b.x - (readBefore.x - 60)) <= 2 && Math.abs(b.y - (readBefore.y - 40)) <= 2);
+  const midDrag = await quickStyle('#quick-reading');
+  check('拖动途中竖排按钮保持显示并跟着猫走', shown(midDrag) && Math.abs(readMid.x - (readBefore.x - 60)) <= 2 && Math.abs(readMid.y - (readBefore.y - 40)) <= 2,
+    JSON.stringify({midDrag, readBefore, readMid}));
   await tab.mouse.up();
   const after = await until(() => tab.locator('#roamcat-pet-host').boundingBox(), b => b && Math.abs(b.x - before.x) > 30);
   st = await petState();
   check('拖拽移动伴读猫', Boolean(after) && Math.abs(after.x - before.x) > 30, `x ${before.x}→${after?.x}`);
-  check('拖拽不触发快捷坞', st && !st.cls.includes('dock-open'), `cls=${st?.cls}`);
+  check('拖拽不展开缩放胶囊', st && !st.cls.includes('dock-open'), `cls=${st?.cls}`);
+
+  // ---------- 13b. 竖列随位置换边：拖到视口顶部改挂猫脚下，拖到左半屏贴猫左缘 ----------
+  const dragPetTo = async (x, y) => {
+    const b = await avatar.boundingBox();
+    await tab.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+    await tab.mouse.down();
+    await tab.mouse.move(x, y, {steps: 6});
+    await tab.mouse.up();
+    await until(() => avatar.boundingBox(), nb => nb && Math.abs(nb.x + nb.width / 2 - x) < 12 && Math.abs(nb.y + nb.height / 2 - y) < 12);
+  };
+  await dragPetTo(1100, 70);
+  let lay = await until(layout, l => l?.cls.includes('dock-below'));
+  check('猫在视口顶部时竖列改挂到猫脚下、旋旋翻仍离猫最近', lay.cls.includes('dock-below') && oneColumn(lay)
+    && lay.btns[3].t >= lay.host.b && lay.btns[3].t < lay.btns[2].t && lay.btns[0].b <= lay.vh, JSON.stringify(lay));
+  const readBox = await tab.locator('#quick-reading').boundingBox();
+  await tab.mouse.move(readBox.x + readBox.width / 2, readBox.y + readBox.height / 2);
+  lay = await until(layout, l => l.bubble.t >= 0 && l.btns.every(b => !overlaps(b, l.bubble)));
+  check('猫在视口顶部时悬停气泡在视口内且不压按钮', lay.bubble.t >= 0 && lay.btns.every(b => !overlaps(b, lay.bubble)), JSON.stringify(lay));
+  await dragPetTo(300, 600);
+  lay = await until(layout, l => l?.cls.includes('is-left') && !l.cls.includes('dock-below'));
+  check('猫在左半屏时工具栏仍与猫居中', lay.cls.includes('is-left') && oneColumn(lay) && lay.btns.every(b => Math.abs(centerX(b) - centerX(lay.host)) <= 1)
+    && lay.btns[3].b <= earLine(lay), JSON.stringify(lay));
+  const sumBox = await tab.locator('#quick-summary').boundingBox();
+  await tab.mouse.move(sumBox.x + sumBox.width / 2, sumBox.y + sumBox.height / 2);
+  lay = await until(layout, l => l.bubble.l >= l.btns[0].r);
+  check('猫在左半屏时悬停气泡在竖列右侧', lay.bubble.l >= lay.btns[0].r && lay.btns.every(b => !overlaps(b, lay.bubble)), JSON.stringify(lay));
+  await shot('left-half-hover');
+  await dragPetTo(ax, ay);
 
   // ---------- 14. 缩放按钮 ----------
   await avatar.click();
@@ -419,6 +471,8 @@ try {
       `zoom=${st?.zoom} scale=${st?.scale}`);
   }
   check('缩放写入 --pet-scale', st?.scale === '1.6', `scale=${st?.scale}`);
+  const big = await until(layout, l => l.btns[3].b <= earLine(l));
+  check('160% 时竖列仍在耳尖之上、胶囊不压猫', big.btns[3].b <= earLine(big) && big.zoom.r <= big.host.l, JSON.stringify(big));
   await shot('zoom-160');
   // 复位 100%（1.6→1.4→1.2→1.0 三步）
   for (const label of ['140%', '120%', '100%']) { await tab.locator('#zoom-out').click(); await waitPet(s => s?.zoom === label); }
@@ -439,7 +493,7 @@ try {
   check('猫贴右边时缩放胶囊不出界', edge && edge.hostRight >= edge.vw - 4 && edge.left >= 0 && edge.right <= edge.vw, JSON.stringify(edge));
 
   // ---------- 15. 气泡 × 关闭（忙碌态 → 成功微反馈） ----------
-  // 鼠标先移出挂件区域再直达关闭钮，避免路过卫星按钮触发其 pointerleave 清掉忙碌气泡
+  // 鼠标先移出挂件区域再直达关闭钮，避免路过竖排按钮触发其 pointerleave 清掉忙碌气泡
   await tab.mouse.move(760, 60);
   await petCall(`() => { document.querySelector('#roamcat-pet-host').pet.speakStatus('正在解构正文 喵~', {busy: true}); return true; }`);
   st = await waitPet(s => s?.speechCls.includes('speaking') && s.speechCls.includes('is-busy'));
@@ -478,7 +532,7 @@ try {
   check('设置按钮拉起 options 页', optionsVisible === 'visible', `visibility=${optionsVisible}`);
   await tab.bringToFront();
   st = await waitPet(s => s && !s.cls.includes('dock-open'));
-  check('点设置后快捷坞已收起', st && !st.cls.includes('dock-open'), `cls=${st?.cls}`);
+  check('点设置后缩放胶囊已收起', st && !st.cls.includes('dock-open'), `cls=${st?.cls}`);
 
   await tab.pump();
 } catch (error) {

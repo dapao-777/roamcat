@@ -1,7 +1,7 @@
 /**
  * @file extension/floating-pet.js
  * 文件职责：伴读猫挂件（classic script，禁 ESM 语法）——每页一只的 Shadow DOM 悬浮入口，承载 SVG 形象、
- *   拖拽贴边、菜单、文章摘要、状态气泡与左侧快捷按钮行，以及全局快捷键分发。
+ *   拖拽贴边、菜单、文章摘要、状态气泡与猫头上方的竖排快捷按钮，以及全局快捷键分发。
  * 主要内容：顶层主框架单例挂载与 MutationObserver 看护、bindGlobalEvents 一次注册、
  *   petShortcutBlocked 输入框抢键防护、位置持久化（FLOATING_PET_POSITION_SET）、翻译进度气泡。
  *   辅助函数/样式/SVG/语录气泡/摘要窗拆在 floating-pet-{helpers,styles,svg,quote-bubble,summary}.js，
@@ -232,8 +232,8 @@
 
       this.flipBtn?.addEventListener('pointerleave', () => this.restoreSpeechAfterHover());
 
-      // 左侧快捷按钮行：悬停播报 + 点击执行（与旋旋翻一致的反馈模式）。
-      // closeDock 标记的动作执行后收起快捷坞；阅读辅助/双语开关保持展开。
+      // 竖排快捷按钮：悬停播报 + 点击执行（与旋旋翻一致的反馈模式）。气泡兼做按钮说明，按钮不再另弹提示条。
+      // closeDock 标记的动作执行后收起缩放胶囊；阅读辅助/双语开关保持展开。
       const quickActions = [
         {id: '#quick-reading', hover: T('fp.hover.read'), run: () => this.toggleReadingMode()},
         {id: '#quick-summary', hover: T('fp.hover.sum'), closeDock: true, run: () => this.requestArticleSummary()},
@@ -309,7 +309,7 @@
         this.toggleDock();
       });
 
-      // Single click on cat avatar toggles the quick dock (or undocks when docked)
+      // Single click on cat avatar toggles the zoom capsule (or undocks when docked)
       this.avatarWrap.addEventListener('click', (e) => {
         if (dragMoved) return;
         if (isDocked) {
@@ -322,7 +322,7 @@
         this.toggleQuickDock();
       });
 
-      // 键盘可达：Enter / Space 同样开合快捷坞；贴边态下与单击一致，直接唤醒
+      // 键盘可达：Enter / Space 同样开合缩放胶囊；贴边态下与单击一致，直接唤醒
       this.avatarWrap.addEventListener('keydown', (e) => {
         if (e.key !== 'Enter' && e.key !== ' ') return;
         e.preventDefault();
@@ -392,7 +392,7 @@
         if (!gazeRaf) gazeRaf = requestAnimationFrame(applyGaze);
       }, { signal, passive: true });
 
-      // Click outside to dismiss the quick dock
+      // Click outside to dismiss the zoom capsule
       window.addEventListener('click', (e) => {
         if (!isDockOpen) return;
         if (!e.composedPath().includes(this.container)) {
@@ -617,6 +617,8 @@
         this.clampPosition();
         this.savePosition();
         this.syncTheme();
+        // 换了位置要重新判断气泡是否贴顶、是否出界，否则拖到顶部后悬停气泡会被裁掉。
+        this.fitSpeechBubble();
       }
     }
 
@@ -642,6 +644,13 @@
         hostEl.style.right = `${shownRight}px`;
         hostEl.style.bottom = `${currentBottom}px`;
       }
+
+      // 竖排工具栏默认立在猫头上方；猫被拖到视口顶部附近、上方放不下时改挂到猫脚下（下方更宽裕才换）。
+      // 工具栏底边落在头顶上方 4px，头顶在挂件框顶下 30px × scale（见样式表 .roamcat-quick-dock）；
+      // offsetHeight 不受收起态的 visibility/scale 影响；再留 8px 视口边距。
+      const roomAbove = window.innerHeight - currentBottom - petH;
+      const dockNeed = (this.quickDock?.offsetHeight || 0) + 4 - 30 * petScale + 8;
+      this.container.classList.toggle('dock-below', roomAbove < dockNeed && currentBottom > roomAbove);
 
       // Adaptive summary window positioning (keeps it anchored near the pet and fully on-screen)
       if (isSummaryOpen && this.summaryWindow) {
@@ -677,14 +686,13 @@
       }
     }
 
+    // 快捷坞的开合现在只管缩放胶囊：竖排快捷按钮常驻显示、一直在 Tab 序里，
+    // 贴边探头时由 dock() 加 inert 立即退出焦点顺序。
     openQuickDock() {
       if (isDocked || !this.container) return;
       isDockOpen = true;
       this.container.classList.add('dock-open');
       this.zoomControls?.removeAttribute('inert');
-      // 卫星按钮与猫身上的提炼/设置随坞展开回到 Tab 序。
-      for (const btn of this.quickDock?.children || []) btn.removeAttribute('tabindex');
-      for (const btn of this.shadowQuery('#roamcat-cat-menu')?.querySelectorAll('button') || []) btn.removeAttribute('tabindex');
       this.avatarWrap?.setAttribute('aria-expanded', 'true');
       this.updateReadingStatus();
       this.fitSpeechBubble();
@@ -695,25 +703,24 @@
       isDockOpen = false;
       this.container?.classList.remove('dock-open');
       this.zoomControls?.setAttribute('inert', '');
-      for (const btn of this.quickDock?.children || []) btn.setAttribute('tabindex', '-1');
-      for (const btn of this.shadowQuery('#roamcat-cat-menu')?.querySelectorAll('button') || []) btn.setAttribute('tabindex', '-1');
       this.avatarWrap?.setAttribute('aria-expanded', 'false');
       this.fitSpeechBubble();
     }
 
-    // 缩放胶囊居中在猫上方且比猫宽：猫贴着视口左右边时水平收进 8px 边距，避免被裁掉。
-    // 用 offsetWidth 而非 getBoundingClientRect：展开动画的 scale 会让后者偏小。
+    // 缩放胶囊挂在猫朝页面内侧的一边：视口窄到放不下时水平收进 8px 边距，避免被裁掉。
+    // 用 offsetLeft/offsetWidth 而非 getBoundingClientRect：展开动画的 scale 会让后者偏小。
     fitZoomControls() {
       const zoom = this.zoomControls, anchor = zoom?.offsetParent;
       if (!zoom || !anchor) return;
-      const box = anchor.getBoundingClientRect(), half = zoom.offsetWidth / 2, center = box.left + box.width / 2, margin = 8;
+      const box = anchor.getBoundingClientRect(), left = box.left + zoom.offsetLeft, right = left + zoom.offsetWidth, margin = 8;
       let shift = 0;
-      if (center - half < margin) shift = margin - (center - half);
-      else if (center + half > window.innerWidth - margin) shift = window.innerWidth - margin - (center + half);
+      if (left < margin) shift = margin - left;
+      else if (right > window.innerWidth - margin) shift = window.innerWidth - margin - right;
       zoom.style.setProperty('--zoom-shift-x', `${Math.round(shift)}px`);
     }
 
-    // 语音气泡视口自适配：水平收进 8px 边距、尾巴始终指向猫、贴顶翻转到猫下方。
+    // 语音气泡视口自适配：水平收进 8px 边距、尾巴尽量指向猫、贴顶翻转到猫下方。
+    // 气泡让在竖排按钮内侧（见 floating-pet-styles.js 的 --bubble-lane），尾巴钳在气泡靠猫一端。
     fitSpeechBubble() {
       this.fitZoomControls();
       const bubble = this.shadowQuery('#cat-speech');
@@ -722,18 +729,22 @@
       bubble.style.setProperty('--bubble-shift-x', '0px');
       bubble.classList.remove('below');
       const rect = bubble.getBoundingClientRect();
+      // 气泡在 avatar-wrap 里，猫身悬停的 scale(1.08) 过渡没走完时量到的矩形偏大：
+      // 写回的偏移与尾巴位置按 k 换算回气泡自身坐标（offsetWidth 不受变换影响）。
+      const width = bubble.offsetWidth || rect.width;
+      const k = rect.width / width || 1;
       const margin = 8;
       let shift = 0;
       if (rect.left < margin) shift = margin - rect.left;
       else if (rect.right > window.innerWidth - margin) shift = (window.innerWidth - margin) - rect.right;
-      if (shift !== 0) bubble.style.setProperty('--bubble-shift-x', `${Math.round(shift)}px`);
-      // 贴顶（含 dock-open 抬高后的位置）→ 翻到猫下方
+      if (shift !== 0) bubble.style.setProperty('--bubble-shift-x', `${Math.round(shift / k)}px`);
+      // 贴顶 → 翻到猫下方
       if (rect.top < margin) {
         bubble.classList.add('below');
       }
       // 尾巴对齐猫身水平中心，钳在气泡内 12px 缓冲区
       const catCenterX = hostRect.left + hostRect.width / 2;
-      const tailX = Math.max(12, Math.min(rect.width - 12, catCenterX - rect.left - shift));
+      const tailX = Math.max(12, Math.min(width - 12, (catCenterX - rect.left - shift) / k));
       bubble.style.setProperty('--bubble-tail-x', `${Math.round(tailX)}px`);
     }
 
@@ -847,6 +858,8 @@
       isDocked = true;
       this.closeQuickDock();
       this.container?.classList.add('docked');
+      // 工具栏淡出约 160ms，期间仍可见；inert 让它立即退出焦点顺序，否则 Tab 会落到正在消失的按钮上、随即丢焦。
+      this.quickDock?.setAttribute('inert', '');
       if (side === 'left') {
         currentRight = Math.max(0, window.innerWidth - Math.round(64 * petScale));
         this.container?.classList.add('is-left');
@@ -865,6 +878,7 @@
       if (!isDocked) return;
       isDocked = false;
       this.container?.classList.remove('docked');
+      this.quickDock?.removeAttribute('inert');
       if (this.avatarWrap) {
         this.avatarWrap.title = T('pet.avatarTitle');
       }
@@ -1134,17 +1148,15 @@
         this.flipBtn.classList.toggle('is-translating', isTranslating);
         this.flipBtn.setAttribute('aria-pressed', String(isActive));
 
-        const tooltip = this.shadowQuery('#flip-tooltip');
-        if (tooltip) {
-          if (isTranslating) {
-            tooltip.textContent = T('fp.tipBusy',{done:status.completed,total:status.total || '?'});
-          } else if (isActive && status.phase === 'error' && status.error) {
-            tooltip.textContent = T('fp.tipNoSvc');
-          } else if (isActive) {
-            tooltip.textContent = T('fp.tipOn',{done:status.completed});
-          } else {
-            tooltip.textContent = T('fp.tipIdle');
-          }
+        // 进度与快捷键写在 title 里：悬停时气泡先播报用途，停留片刻浏览器提示框再给出进度。
+        if (isTranslating) {
+          this.flipBtn.title = T('fp.tipBusy',{done:status.completed,total:status.total || '?'});
+        } else if (isActive && status.phase === 'error' && status.error) {
+          this.flipBtn.title = T('fp.tipNoSvc');
+        } else if (isActive) {
+          this.flipBtn.title = T('fp.tipOn',{done:status.completed});
+        } else {
+          this.flipBtn.title = T('fp.tipIdle');
         }
       }
 
