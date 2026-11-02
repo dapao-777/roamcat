@@ -3,7 +3,8 @@
  * 文件职责：三订阅端口管理——请求响应映射、超时与进度转发。
  * 主要内容：assist/翻译/总结120s其余45s；端口单例，断开拒全部在途。
  *   probe 在端口还在时只查状态，不拆连接；没有端口时才走 refresh。
- *   优先连本机常驻服务（握手带经浏览器连接器取得的配对令牌），连不上改用 connectNative。
+ *   优先连本机常驻服务：用经浏览器连接器取得的配对令牌与服务做挑战—应答双向认证，核对服务的证明通过后才发请求；
+ *   连不上、拿不到令牌或核对失败改用 connectNative（核对失败另写一条 SERVICE_AUTH 诊断）。
  * 模块边界：应用层；CONNECTOR_KINDS与message-protocol镜像一致（单测 guard）。
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -51,24 +52,52 @@ export async function syncNativeDiagnostics(payload,kind){
 }
 
 // 本机常驻连接服务（connector/service.mjs）：优先经 WebSocket 连它，不依赖浏览器的 NativeMessaging 注册；
-// 没装、没运行或拒绝本扩展时立刻改用 connectNative，并在 SERVICE_RETRY_MS 内直接走浏览器连接器，不反复试探。
+// 没装、没运行、拒绝本扩展或证明不了身份时立刻改用 connectNative，并在 SERVICE_RETRY_MS 内直接走浏览器连接器，不反复试探。
 export const SERVICE_URL = 'ws://127.0.0.1:47821/v1/connect?backend=';
 const SERVICE_OPEN_TIMEOUT_MS = 1500;
 const SERVICE_RETRY_MS = 60000;
 let serviceDownUntil = 0;
 
-// 配对令牌（协议名与 connector/pairing.mjs 镜像，单测对齐）：Origin 头本机任何进程都能伪造，服务握手另要安装时生成的令牌，
-// 放在 Sec-WebSocket-Protocol 里（不进 URL，连接失败的报错里也就不带令牌）。令牌文件只有当前系统用户读得到，
-// 扩展向本通道的浏览器连接器要一次，缓存在 chrome.storage.session（浏览器会话内有效、只对扩展页面可见）。
-// 空串表示这个连接器给不了（旧版连接器、没装常驻服务）：按旧握手直连，旧服务照常接受，也不再反复去要。
-// 握手失败就清掉缓存，下次重新要——重装连接器会换新令牌。
-export const SERVICE_PROTOCOL = 'roamcat.v1';
-export const SERVICE_TOKEN_PREFIX = 'roamcat.token.';
+// 配对令牌（协议名与证明算法与 connector/pairing.mjs 镜像，单测对齐）：47821 端口谁都能先占，服务没运行时
+// 冒牌程序就能收到页面文本、返回伪造结果，所以扩展先认服务、再发数据。令牌只当 HMAC 密钥，从不上线：
+//   1. 握手子协议 `roamcat.v2, roamcat.nonce.<扩展随机数>`（不进 URL）；
+//   2. 服务先发 {event:'hello', data:{nonce, proof}}，proof = HMAC(令牌, 协议名/service/后端/扩展随机数/服务随机数)；
+//   3. 扩展核对通过才回 {type:'auth', payload:{proof}}（角色名换成 extension），服务核对后回 {event:'ready'}，此后才发请求。
+// 令牌文件只有当前系统用户读得到，扩展向本通道的浏览器连接器要一次，缓存在 chrome.storage.session（浏览器会话内有效、
+// 只对扩展页面可见）。连接器给不了令牌（旧版连接器、本浏览器没注册）时无从核对，不连服务，直接走浏览器连接器。
+// 核对失败（冒牌服务，或重装连接器换了令牌）清掉缓存，下次重新要。
+export const SERVICE_PROTOCOL = 'roamcat.v2';
+export const SERVICE_NONCE_PREFIX = 'roamcat.nonce.';
 export const SERVICE_PAIRING_KEY = 'connectorServicePairing';
+// 服务确认后端未安装时用的关闭码：认证已通过，只是这条通道不归服务管，照常改走浏览器连接器。
+const SERVICE_BACKEND_MISSING = 4404;
 const PAIRING_TIMEOUT_MS = 3000;
 let pairingCache;
 let pairingRequest = null;
 const validPairingToken = value => typeof value === 'string' && /^[0-9a-f]{64}$/.test(value);
+const validProof = value => typeof value === 'string' && /^[0-9a-f]{64}$/.test(value);
+const validNonce = value => typeof value === 'string' && /^[0-9a-f]{32}$/.test(value);
+const hexBytes = hex => Uint8Array.from(hex.match(/../g), byte => parseInt(byte, 16));
+const bytesHex = bytes => Array.from(new Uint8Array(bytes), byte => byte.toString(16).padStart(2, '0')).join('');
+const canVerifyService = () => typeof WebSocket === 'function' && typeof globalThis.crypto?.subtle?.importKey === 'function' && typeof globalThis.crypto?.getRandomValues === 'function';
+
+export function createServiceNonce() {
+  return bytesHex(globalThis.crypto.getRandomValues(new Uint8Array(16)));
+}
+
+// 与 connector/pairing.mjs 的 pairingProof 同一算法：密钥是令牌的 32 字节原值，正文按行拼接。
+async function proofKey(token) {
+  return globalThis.crypto.subtle.importKey('raw', hexBytes(token), {name:'HMAC', hash:'SHA-256'}, false, ['sign','verify']);
+}
+const proofTranscript = (role, {backend, clientNonce, serviceNonce}) => new TextEncoder().encode([SERVICE_PROTOCOL, role, backend, clientNonce, serviceNonce].join('\n'));
+export async function serviceProof(token, role, transcript) {
+  return bytesHex(await globalThis.crypto.subtle.sign('HMAC', await proofKey(token), proofTranscript(role, transcript)));
+}
+// subtle.verify 自带常量时间比较。
+export async function verifyServiceProof(token, proof, transcript) {
+  if (!validPairingToken(token) || !validProof(proof)) return false;
+  return globalThis.crypto.subtle.verify('HMAC', await proofKey(token), hexBytes(proof), proofTranscript('service', transcript));
+}
 
 function askPairingToken(host) {
   return new Promise(resolve => {
@@ -92,17 +121,18 @@ function askPairingToken(host) {
   });
 }
 
+// 只缓存有效令牌；要不到时返回空串、不缓存，由调用方进重试窗口，过后再要（期间可能刚装好连接器）。
 function servicePairingToken(host) {
   if (pairingCache !== undefined) return Promise.resolve(pairingCache);
   pairingRequest ??= (async () => {
     try {
       const stored = (await chrome.storage?.session?.get(SERVICE_PAIRING_KEY))?.[SERVICE_PAIRING_KEY];
-      if (stored === '' || validPairingToken(stored)) return stored;
+      if (validPairingToken(stored)) return stored;
     } catch { /* 会话存储不可用：照常向连接器要 */ }
     const token = await askPairingToken(host);
-    try { await chrome.storage?.session?.set({[SERVICE_PAIRING_KEY]:token}); } catch { /* 只留内存副本 */ }
+    if (token) try { await chrome.storage?.session?.set({[SERVICE_PAIRING_KEY]:token}); } catch { /* 只留内存副本 */ }
     return token;
-  })().then(token => { pairingCache = token; return token; }).finally(() => { pairingRequest = null; });
+  })().then(token => { if (token) pairingCache = token; return token; }).finally(() => { pairingRequest = null; });
   return pairingRequest;
 }
 
@@ -138,39 +168,80 @@ export function openTransport(kind, host) {
     active = {post: message => native.postMessage(message), close: () => native.disconnect()};
     for (const message of queue.splice(0)) native.postMessage(message);
   };
-  // 浏览器的 WebSocket 看不到握手的 HTTP 状态：401（令牌不符）、没运行、超时一律按连不上处理。
+  const skipService = () => { serviceDownUntil = Date.now() + SERVICE_RETRY_MS; if (!done) useNative(); };
+  // phase：connecting（还没握手成功）→ hello（等服务证明）→ verifying（核对中）→ auth（已回证明，等 ready）→ ready；
+  // 放弃时为 closed。ready 之前排队的请求一条也不发给对端。浏览器的 WebSocket 看不到握手的 HTTP 状态，
+  // 没运行、401（旧版服务不认 roamcat.v2）、握手超时都按连不上处理。
   const useService = token => {
-    const giveUp = () => { forgetPairingToken(token); serviceDownUntil = Date.now() + SERVICE_RETRY_MS; if (!done) useNative(); };
-    const url = SERVICE_URL + encodeURIComponent(kind);
-    let socket;
-    try { socket = token ? new WebSocket(url, [SERVICE_PROTOCOL, SERVICE_TOKEN_PREFIX + token]) : new WebSocket(url); }
-    catch { giveUp(); return; }
-    let opened = false;
-    const timer = setTimeout(() => {
-      if (opened) return;
+    const transcript = {backend: kind, clientNonce: createServiceNonce(), serviceNonce: ''};
+    let socket = null, phase = 'connecting';
+    const close = () => {
+      phase = 'closed';
+      clearTimeout(timer);
+      if (!socket) return;
       socket.onclose = socket.onerror = socket.onopen = socket.onmessage = null;
       try { socket.close(); } catch { /* 还没连上 */ }
-      giveUp();
-    }, SERVICE_OPEN_TIMEOUT_MS);
-    socket.onopen = () => {
-      opened = true;
-      clearTimeout(timer);
-      if (done) { socket.close(); return; }
-      port.transport = 'service';
-      active = {post: message => socket.send(JSON.stringify(message)), close: () => socket.close()};
-      for (const message of queue.splice(0)) socket.send(JSON.stringify(message));
     };
-    socket.onmessage = event => { let message; try { message = JSON.parse(event.data); } catch { return; } emit(message); };
+    const unavailable = () => { close(); skipService(); };
+    // 对端接了 roamcat.v2 握手却证明不了自己（冒牌服务，或重装后令牌已换）：清掉令牌、写诊断、改走浏览器连接器。
+    const reject = () => {
+      if (phase === 'closed') return;
+      close();
+      forgetPairingToken(token);
+      const record = sanitizeDiagnostic({operation:'CONNECTION', stage:'connection', status:'error', code:'SERVICE_AUTH', provider:kind});
+      if (record) for (const listener of diagnosticListeners) listener(record);
+      skipService();
+    };
+    const timer = setTimeout(() => { if (phase === 'connecting') unavailable(); else reject(); }, SERVICE_OPEN_TIMEOUT_MS);
+    try { socket = new WebSocket(SERVICE_URL + encodeURIComponent(kind), [SERVICE_PROTOCOL, SERVICE_NONCE_PREFIX + transcript.clientNonce]); }
+    catch { unavailable(); return; }
+    const parse = data => { try { return JSON.parse(data); } catch { return null; } };
+    const answer = async proof => {
+      if (!await verifyServiceProof(token, proof, transcript)) { reject(); return; }
+      const reply = await serviceProof(token, 'extension', transcript);
+      if (phase !== 'verifying') return;
+      phase = 'auth';
+      socket.send(JSON.stringify({type:'auth', payload:{proof:reply}}));
+    };
+    socket.onopen = () => {
+      if (done) { close(); return; }
+      if (socket.protocol !== SERVICE_PROTOCOL) { reject(); return; }
+      phase = 'hello';
+    };
+    socket.onmessage = event => {
+      const message = parse(event.data);
+      if (phase === 'ready') { if (message) emit(message); return; }
+      if (phase === 'hello' && message?.event === 'hello' && validNonce(message.data?.nonce) && validProof(message.data?.proof)) {
+        phase = 'verifying';
+        transcript.serviceNonce = message.data.nonce;
+        answer(message.data.proof).catch(reject);
+        return;
+      }
+      if (phase === 'auth' && message?.event === 'ready') {
+        clearTimeout(timer);
+        if (done) { close(); return; }
+        phase = 'ready';
+        port.transport = 'service';
+        active = {post: message => socket.send(JSON.stringify(message)), close: () => socket.close()};
+        for (const message of queue.splice(0)) socket.send(JSON.stringify(message));
+        return;
+      }
+      // 核对完成前对端多发、乱发都不认。
+      reject();
+    };
     socket.onerror = () => {};
     socket.onclose = event => {
-      clearTimeout(timer);
-      if (!opened) { giveUp(); return; }
-      fail(`local service closed (${event.code})`);
+      if (phase === 'ready') { fail(`local service closed (${event.code})`); return; }
+      if (phase === 'connecting' || (phase === 'auth' && event.code === SERVICE_BACKEND_MISSING)) unavailable();
+      else reject();
     };
   };
-  if (typeof WebSocket !== 'function' || Date.now() < serviceDownUntil) { useNative(); return port; }
-  // 令牌异步取得：取到之前 postMessage 先进 queue，连上哪条通道再一并发出。
-  servicePairingToken(host).then(token => { if (!done) useService(token); }, () => { if (!done) useNative(); });
+  if (!canVerifyService() || Date.now() < serviceDownUntil) { useNative(); return port; }
+  // 令牌异步取得：取到之前 postMessage 先进 queue，认证通过（或改走浏览器连接器）后再一并发出。
+  servicePairingToken(host).then(token => {
+    if (done) return;
+    if (token) useService(token); else skipService();
+  }, () => { if (!done) useNative(); });
   return port;
 }
 

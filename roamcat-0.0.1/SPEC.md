@@ -61,7 +61,7 @@
 ├────────────────────────────────────────────────────────────┤
 │ 本机连接器（Node.js 20+，Native Messaging stdio）            │
 │   host.mjs + codex.mjs / grok.mjs / antigravity.mjs          │
-│   service.mjs：常驻服务 ws://127.0.0.1:47821（配对令牌握手）  │
+│   service.mjs：常驻服务 ws://127.0.0.1:47821（令牌双向认证）  │
 └────────────────────────────────────────────────────────────┘
 ```
 
@@ -309,7 +309,7 @@
 - 启动参数：`--config <path> <origin>`（Chrome 传入调用方 origin），额外仅允许 `--parent-window=N`。
 - 来源校验：config 内 `extensionOrigin` 白名单 + `chrome-extension://<32 位 a–p>` 形态校验；两侧 origin 的结尾斜杠先归一化再比较（调用方与安装白名单可能一个带一个不带），空 pathname 与 `/` 均为合法形态（Node 的 URL 对不带路径的 chrome-extension URL 返回空 pathname）。帧协议与来源校验由 `tools/unit/connector-frame.test.mjs` 覆盖。
 - 请求类型（14 种）：`sentenceGroups status login cancel logout models classify supportBatch assist emergencyTranslate historyModel summarize diagnostics transcribe`。`transcribe` 只有 Google（Antigravity）客户端实现，旧连接器会回「不支持的连接器请求」，扩展提示重新安装连接器。
-- 宿主另有一种只在 NativeMessaging 下处理的 `pairingToken`：读 config 的 `serviceTokenFile`，回 `{token}`（没登记或读不出时报“请重新运行安装命令”）。它不进 `dispatchRequest`，常驻服务不处理、不经 WebSocket 下发令牌。
+- 宿主另有一种只在 NativeMessaging 下处理的 `pairingToken`：读 config 的 `serviceTokenFile`，回 `{token}`（没登记或读不出时报“请重新运行安装命令”）。它不进 `dispatchRequest`，常驻服务不处理、不经 WebSocket 下发令牌（常驻服务那边令牌只当 HMAC 密钥，见 8.4）。
 - CLI 在第一条业务请求到达时才启动（`pairingToken` 不拉起 Codex / Grok / agy）。
 
 ### 8.3 隔离与权限
@@ -319,19 +319,25 @@
 - 上游错误只映射为分类码 + 中文可读信息，**不回显上游原文**（可能含选区文本或密钥）。
 
 ### 8.4 本机常驻连接服务（`connector/service.mjs`）
-- 只监听 `127.0.0.1:47821`；扩展经 `ws://127.0.0.1:47821/v1/connect?backend=<kind>` 优先连它，连不上（没运行、被拒、1.5 秒内没握手成功）就改用 `connectNative`，并在 60 秒内直接走浏览器连接器。浏览器的 WebSocket 看不到握手的 HTTP 状态，401 与没运行同样处理。
-- 握手校验依次为：路径 → Host 为本机（防 DNS 重绑定）→ Origin 在 `service.json` 的 `allowedOrigins` 白名单 → WebSocket 头 → **配对令牌** → 后端已安装。令牌在查后端之前校验，未配对的连接探不出装了哪些通道。
-- **配对令牌**（`connector/pairing.mjs`）：Origin 头本机任何进程都能伪造，令牌挡住的是本机其他系统账户和受限进程（同一用户的恶意进程本来就能读 CLI 登录态，不在防护范围内）。
+- 只监听 `127.0.0.1:47821`；扩展经 `ws://127.0.0.1:47821/v1/connect?backend=<kind>` 优先连它。连不上（没运行、被拒、1.5 秒内没完成认证）、拿不到配对令牌或服务证明不了身份时改用 `connectNative`，并在 60 秒内直接走浏览器连接器。浏览器的 WebSocket 看不到握手的 HTTP 状态，401 与没运行同样处理。
+- **双向认证**：Origin 头本机任何进程都能伪造，所以服务要认扩展；47821 端口谁都能先占（服务没运行时，本机其他账户的程序就能监听它），所以扩展也要认服务——认之前不发任何请求，页面文本到不了冒牌服务，冒牌服务也没机会返回伪造结果。双方凭安装时生成的配对令牌互证，令牌只当 HMAC 密钥，**从不上线**。防护对象是本机其他系统账户和受限进程（同一用户的恶意进程本来就能读 CLI 登录态与令牌文件，不在防护范围内）。
+- 握手（HTTP）校验依次为：路径与后端名在固定清单（`chatgpt` / `grok` / `antigravity`）里 → Host 为本机（防 DNS 重绑定）→ Origin 在 `service.json` 的 `allowedOrigins` 白名单 → WebSocket 头 → 子协议含 `roamcat.v2` 且恰好一个 `roamcat.nonce.<扩展随机数>`（16 字节，32 位十六进制）；不满足的回 403 / 404 / 400 / 401。服务只回 `Sec-WebSocket-Protocol: roamcat.v2`。
+- 认证（WebSocket 帧，`connector/pairing.mjs`；扩展侧 `subscription.js` 用 WebCrypto 镜像同一算法，单测逐字节对齐）：
+  1. 服务连上即发 `{event:'hello', data:{protocol:'roamcat.v2', nonce:<服务随机数>, proof}}`，`proof = HMAC-SHA256(令牌的 32 字节原值, "roamcat.v2\nservice\n<后端>\n<扩展随机数>\n<服务随机数>")`，64 位十六进制。
+  2. 扩展用 `crypto.subtle.verify`（常量时间）核对；通过才回 `{type:'auth', payload:{proof}}`，角色名换成 `extension`。核对不过、hello 之前收到别的消息、连上就断或没选回 `roamcat.v2`，一律判为身份核对失败。
+  3. 服务用 `timingSafeEqual` 核对扩展证明：第一条消息不是 `auth` 或证明不符以 `4401` 关闭；5 秒内没收到认证以 `4408` 关闭；通过后若该后端没装以 `4404` 关闭，否则回 `{event:'ready'}`，此后才收发业务请求、拉起后端 CLI。
+  - 两边证明用不同角色名，一方的证明不能拿来冒充另一方；每条连接双方各出新随机数，录下的证明不能重放。后端是否安装要等认证之后才说，未配对的连接探不出装了哪些通道。
+  - 没做信道加密：认证防的是「端口被冒牌程序占着」（真服务没运行时冒牌程序拿不出证明）；能在回环上劫持同一地址端口、一边截住扩展的连接一边转发给正在运行的真服务的中间人不在防护范围内。
+- **配对令牌**：
   - 安装：`service-install.mjs` 每次安装生成新的 32 字节随机令牌（64 位十六进制），写入服务目录的 `pairing-token`（目录 `0700`、文件 `0600`；Windows 靠 `%LOCALAPPDATA%` 的用户 ACL），`service.json` 的 `tokenFile` 指向它；`install.mjs` 在各通道 `config.json` 写 `serviceTokenFile` 指向同一文件（`--no-service` 时也写，先前装过的服务照常可用）。
-  - 传递：扩展向本通道的浏览器连接器发 `pairingToken` 要一次，缓存在 `chrome.storage.session` 的 `connectorServicePairing`（浏览器会话内有效，只对扩展页面可见）；握手时以 `Sec-WebSocket-Protocol: roamcat.v1, roamcat.token.<令牌>` 带上，不进 URL（连接失败的报错里也就没有令牌）。服务只回 `Sec-WebSocket-Protocol: roamcat.v1`，不回显令牌。
-  - 校验：两侧各取 SHA-256 摘要后 `timingSafeEqual`；缺 `roamcat.v1`、缺令牌或不符一律 `401 Unauthorized`，不拉起后端。
-  - 失效：握手失败时扩展清掉这份缓存，下次重新向浏览器连接器要；重装连接器换新令牌后约 1 分钟内（重试窗口）先走浏览器连接器，之后自动改连服务。
-- 兼容：
-  - 旧安装的 `service.json` 没有 `tokenFile`：服务只校验 Host / Origin，与改版前一致，启动时在 `service.log` 记一条“未配置配对令牌”；客户端提了 `roamcat.v1` 时照样选回。
-  - 登记了 `tokenFile` 却读不出或内容无效：服务拒绝启动（不退回只校验来源），扩展改用浏览器连接器。
-  - 旧版连接器不认 `pairingToken`、或本通道没注册浏览器连接器：扩展缓存空串，按旧握手（不带子协议）直连；之后握手失败才清掉重新要，不在每次连接时反复拉起连接器。
-  - 浏览器连接器是令牌的唯一来源：没有为该浏览器注册浏览器连接器时，扩展连不上已启用令牌的服务（安装器默认为 Chrome、Edge 注册，Windows 上装了 ego lite 时一并注册）。
-- 门禁：`tools/unit/connector-service.test.mjs`（令牌正确 / 错误 / 缺失三种握手结果与旧安装放行）、`tools/unit/connector-pairing.test.mjs`（令牌文件、比对、宿主下发且不拉起 CLI）、`tools/unit/subscription-service.test.mjs`（扩展取令牌、缓存、失败清缓存回退）；`npm run verify:service` 在真实浏览器里走一遍缺令牌 / 错令牌 / 正确令牌 / 服务停掉。
+  - 传递：扩展向本通道的浏览器连接器发 `pairingToken` 要一次，缓存在 `chrome.storage.session` 的 `connectorServicePairing`（浏览器会话内有效，只对扩展页面可见）。只缓存有效令牌；要不到（旧版连接器不认 `pairingToken`、本浏览器没注册浏览器连接器）时无从核对服务，不连服务、直接走浏览器连接器，60 秒重试窗口过后再要。
+  - 失效：身份核对失败时扩展清掉这份缓存，并写一条诊断（`CONNECTION` / `connection` / `error`，代码 `SERVICE_AUTH`，带通道名，不含令牌与随机数；设置页诊断里显示为「常驻服务未通过身份核对」）。冒牌服务与「重装连接器换了令牌、缓存还是旧的」走的是同一条路：约 1 分钟内（重试窗口）先走浏览器连接器，之后重新要令牌、自动改连服务。服务没运行或认证后报后端未安装（`4404`）不清令牌、不写诊断。
+- 兼容（扩展与连接器要一起升级；只升级其中一方时一律改走浏览器连接器，功能不受影响，只是不走常驻服务）：
+  - 新扩展 + 未升级的服务（v0.5–v0.7.1 只认 `roamcat.v1` 明文令牌握手，更早的不认任何子协议）：旧服务回 401，或不选回子协议（浏览器判握手失败），扩展按连不上处理；新扩展从不发 `roamcat.v1`，令牌不会明文交给旧服务或冒牌服务。重新运行连接器安装命令升级服务后自动改连。
+  - 旧扩展 + 新服务：旧扩展的 `roamcat.v1` 明文令牌握手或不带子协议的握手一律 401，旧扩展改走浏览器连接器。
+  - `service.json` 没登记 `tokenFile`（早于配对令牌的安装），或登记了却读不出、内容无效：服务拒绝启动（不再有只校验来源的模式），扩展改用浏览器连接器。安装器每次都会写 `tokenFile`，重新运行安装命令即可。
+  - 浏览器连接器是令牌的唯一来源：没有为该浏览器注册浏览器连接器时，扩展不连常驻服务（安装器默认为 Chrome、Edge 注册，Windows 上装了 ego lite 时一并注册）。
+- 门禁：`tools/unit/connector-service.test.mjs`（服务先证明、任何一帧不含令牌；旧握手与缺随机数 401；证明错误 / 反射 / 先发请求 4401；认证超时 4408；未装后端认证后 4404；没令牌不启动）、`tools/unit/connector-pairing.test.mjs`（令牌文件、随机数解析、证明各输入敏感、WebCrypto 与 node:crypto 逐字节一致、宿主下发且不拉起 CLI）、`tools/unit/subscription-service.test.mjs`（扩展核对通过才回证明、ready 后才发请求；七种冒牌服务一条数据也收不到、清令牌写诊断回退；没运行与 4404 回退但保留令牌；拿不到令牌不连服务）；`npm run verify:service` 在真实浏览器里先对着冒牌服务（不回证明 / 伪造证明）断言不发数据、令牌不出现在握手里、清缓存、写诊断、回退，再对着真服务走一遍缺令牌 / 错令牌 / 正确令牌 / 服务停掉。
 
 ---
 
@@ -354,7 +360,7 @@
 | `readingCleanup` | 清理进度标记（崩溃恢复用） |
 
 ### 9.2 `chrome.storage.session`（会话，≤10MB，可丢失）
-`supportCache`（≤512，TTL 7 天）、`sentenceGroupCache`（≤512，TTL 24h）、`domainCache`（≤128，TTL 4h）、`pageDomain:<tabId>`、`offeredSupport:` / `pendingAssists:` / `assistResultCache:<tabId>`、`emergencySession:<tabId>`、`sentenceGroupsMode:<tabId>`、`automationPaused:<tabId>`、`bilingualPopupIntent`、`readingHistorySessions`、`diagnosticReceipts`、`diagnosticNativeClear`、`connectorServicePairing`（常驻服务配对令牌；空串表示浏览器连接器给不了，见 8.4）。
+`supportCache`（≤512，TTL 7 天）、`sentenceGroupCache`（≤512，TTL 24h）、`domainCache`（≤128，TTL 4h）、`pageDomain:<tabId>`、`offeredSupport:` / `pendingAssists:` / `assistResultCache:<tabId>`、`emergencySession:<tabId>`、`sentenceGroupsMode:<tabId>`、`automationPaused:<tabId>`、`bilingualPopupIntent`、`readingHistorySessions`、`diagnosticReceipts`、`diagnosticNativeClear`、`connectorServicePairing`（常驻服务配对令牌，只存有效令牌；见 8.4）。
 > 约束：缓存写入失败（如配额）不得中断阅读请求；缓存条目不存整篇正文。
 
 ### 9.3 IndexedDB（`roamcat-reading-history`，v2）
@@ -372,7 +378,7 @@
 5. **请求元数据**：载荷不含页面 URL；遥测/诊断不含正文与密钥。
 6. **权限最小化**：`chrome.permissions.remove` 在服务/网站规则移除后回收；provider 与站点模式分离保护。
 7. **XSS 面**：扩展页面无内联脚本；`innerHTML` 仅用于静态模板或经 `escapeHtml` 的模型文本；Shadow DOM 隔离样式。
-8. **本机连接服务**：只监听回环地址；握手要 Host 为本机、Origin 在白名单、并带安装时生成的配对令牌（只有当前系统用户读得到，经浏览器连接器交给扩展）。令牌不进 URL、不进诊断，服务不回显（见 8.4）。
+8. **本机连接服务**：只监听回环地址；握手要 Host 为本机、Origin 在白名单，连上后双方凭安装时生成的配对令牌（只有当前系统用户读得到，经浏览器连接器交给扩展）做挑战—应答双向认证，扩展核对服务的证明通过前不发任何请求。令牌只当 HMAC 密钥，不上线、不进诊断（见 8.4）。
 
 ---
 

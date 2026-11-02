@@ -16,7 +16,7 @@
 | `npm run verify:all` | 一键跑全部门禁（`tools/run-gates.mjs`）：静态检查（单测/模块图/字典/死代码）失败即停 → 构建一次 → 浏览器门禁 → 生产构建门禁，打印汇总表，日志写 `preview/gates/logs/`、汇总写 `preview/gates/summary.json`；`-- --quick` 跳过站点与生产构建门禁且性能门禁不等休眠，`-- --only=video,livechat` / `-- --skip=sites`，`-- --jobs=2` 浏览器门禁两路并行，`-- --keep-going` 静态失败也继续 |
 | `npm run verify` | 模块图静态门禁（R1–R12，约 1 秒；R11 语法检查在单个子进程里用 vm 只编译不执行；R1–R11 只扫 `roamcat-0.0.1/extension` 与 `connector`，R12 字号档位另扫 `src/`） |
 | `npm run verify:sites` | 站点档案端到端：fixture 按真实 URL 路由进浏览器断言 inspect()（加 `--live` 复核真站） |
-| `npm run verify:service` | 本机常驻连接服务端到端：先断言扩展内置服务地址端口 = 47821，再在 127.0.0.1 空闲端口起带假后端的 `connector/service.mjs`（要求配对令牌；测试副本改这一处地址、缩短重试窗口，并把浏览器连接器宿主名换成不存在的名字——回退立刻报「未找到」，不拉起本机真实安装的连接器、不占用真实服务的 47821），浏览器加载 `dist/extension`，预置 `chrome.storage.session` 令牌缓存，断言缺令牌 / 错令牌回退浏览器连接器、正确令牌经 WebSocket 连上、服务停掉后回退 → `preview/connector-service.json`（先跑 `npm run build`） |
+| `npm run verify:service` | 本机常驻连接服务端到端：先断言扩展内置服务地址端口 = 47821，测试副本把这一处地址改到 127.0.0.1 的空闲端口、缩短重试窗口，并把浏览器连接器宿主名换成不存在的名字（回退立刻报「未找到」，不拉起本机真实安装的连接器、不占用真实服务的 47821），浏览器加载 `dist/extension`，预置 `chrome.storage.session` 令牌缓存。先在该端口起冒牌服务（接受 roamcat.v2 握手、拿不出证明）：不回证明 / 伪造证明时断言扩展回退、冒牌服务收不到任何一帧、令牌不出现在握手里、清掉令牌缓存并写 `SERVICE_AUTH` 诊断；再换成带假后端的真 `connector/service.mjs`：缺令牌不连服务、错令牌核对失败回退且不拉起后端、正确令牌双向认证后经 WebSocket 连上、服务停掉后回退 → `preview/connector-service.json`（先跑 `npm run build`；在 Claude 的沙箱里会卡住，要在终端面板里跑） |
 | `npm run verify:grok-lockdown` | Grok 连接器锁定门禁（`tools/verify-grok-lockdown.mjs`）：本机真实 Grok CLI + 连接器真实命令行与环境，后端换成 127.0.0.1 假 xAI 接口，断言请求里没有 tools、仍带 json_schema、用户主目录里的金丝雀技能不进提示词，并用改动前的命令行做对照组 → `preview/gates/`（需本机装 Grok CLI，找不到时跳过；不耗订阅额度；不并入 `verify:all`，Grok CLI 升级后重跑） |
 | `npm test` | 单元测试：`tools/run-unit-tests.mjs` 列出 `tools/unit/*.test.mjs` 再交给 `node --test`（Node 20 不展开通配符，故不直接传 glob） |
 | `npm run verify:build` | 构建产物门禁：字节比对 + 浏览器实际加载 `dist/extension` 冒烟 |
@@ -56,7 +56,7 @@
 - 阅读解构成分颜色统一经 `RoamCatDesign.structureColor(role, theme)`（`build/gen-design-tokens.mjs` 生成）按文字所在底色取：解构卡传卡片宿主的 `data-theme`（创建时按 `pageTheme()` 设定：伴读猫在时用它的判断，否则用 content-ui 的 `RoamCatContentUI.pageTheme()` 按网页本身明暗，判断不出才跟随系统；伴读猫的 `detectPageTheme` 也复用其中的 `pageThemeHint()`），网页内高亮传正文明暗；不要再按网页正文给卡片里的标签取色。
 - dev 构建的扩展 ID 固定为 `build/extension-key.json` 中的 `id`（当前 `afpeggkplomdjjiemgajjgcajieincng`）；改加载目录不影响 ID。连接器订阅服务若绑定旧路径 ID，需重装连接器。
 - CSP `script-src 'self'`：产物 HTML 禁止内联脚本与 `on*=` 属性。
-- 订阅连接：扩展优先连本机常驻服务（`roamcat-0.0.1/connector/service.mjs`，`ws://127.0.0.1:47821`，握手校验 Host、扩展 Origin 与配对令牌：令牌由安装器写进服务目录的 `pairing-token`，扩展经 NativeMessaging 宿主的 `pairingToken` 请求取得，放在 `Sec-WebSocket-Protocol` 里，见 SPEC 8.4），连不上才用 NativeMessaging；`roamcat-0.0.1/connector/install.mjs` 默认一并装服务与登录自启（`--no-service` 跳过）。在 Claude 的 Bash/PowerShell 沙箱里装的连接器只存在于沙箱视图，要装到用户真实环境须在终端面板里运行。
+- 订阅连接：扩展优先连本机常驻服务（`roamcat-0.0.1/connector/service.mjs`，`ws://127.0.0.1:47821`，握手校验 Host、扩展 Origin 与 `roamcat.v2` 子协议里的扩展随机数，连上后双方凭配对令牌做挑战—应答双向认证：服务先发 hello 证明、扩展用 WebCrypto 核对通过才回 auth 证明、服务回 ready 后才收发请求；令牌由安装器写进服务目录的 `pairing-token`，扩展经 NativeMessaging 宿主的 `pairingToken` 请求取得，只当 HMAC 密钥、从不上线，证明算法 `connector/pairing.mjs` 与 `subscription.js` 两边镜像、单测对齐，见 SPEC 8.4），连不上、拿不到令牌或服务证明不了身份才用 NativeMessaging（核对失败写 `SERVICE_AUTH` 诊断）；`roamcat-0.0.1/connector/install.mjs` 默认一并装服务与登录自启（`--no-service` 跳过）。在 Claude 的 Bash/PowerShell 沙箱里装的连接器只存在于沙箱视图，要装到用户真实环境须在终端面板里运行。
 - Vite 8 用 `rolldownOptions`（`rollupOptions` 已弃用）；HTML 中 `@ext/` 别名只对 `<script type="module">` 与 `<link rel="stylesheet">` 生效，`img/link[icon]` 需用相对路径。
 
 ## 界面多语言（i18n）

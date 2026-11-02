@@ -3,8 +3,9 @@
  * @file connector/service.mjs
  * 文件职责：本机常驻连接服务——只监听 127.0.0.1，扩展经 WebSocket 连接，不依赖浏览器的 NativeMessaging 注册。
  * 主要内容：最小 WebSocket 服务端（RFC 6455 文本帧、分片、ping/close，单条上限 1MB）；握手校验 Host 为本机、
- *   Origin 在安装时登记的扩展白名单内、Sec-WebSocket-Protocol 带着安装时生成的配对令牌（pairing.mjs；缺失或不符回 401，
- *   service.json 没登记令牌的旧安装只校验 Host/Origin 并记一条诊断）；每个订阅后端常驻一个客户端（ChatGPT / Grok / Google），多个连接共享，
+ *   Origin 在安装时登记的扩展白名单内、Sec-WebSocket-Protocol 为 roamcat.v2 并带扩展随机数（否则 401）；连上后与扩展
+ *   用安装时生成的配对令牌做挑战—应答双向认证（pairing.mjs：服务先发 hello 证明，扩展核对后回 auth 证明，服务核对后回 ready），
+ *   认证前不收业务请求、不拉起后端，service.json 没登记令牌时不启动；每个订阅后端常驻一个客户端（ChatGPT / Grok / Google），多个连接共享，
  *   状态与诊断广播给该后端的全部连接，请求响应与进度只回给发起的连接；无连接 30 分钟后收起后端 CLI。
  *   请求分发与 NativeMessaging 宿主共用 host.mjs 的 dispatchRequest。
  * 模块边界：Node 侧入口；`node service.mjs --config service.json`；/v1/health 返回服务与后端概况。
@@ -20,7 +21,10 @@ import { readFile, rm, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { DiagnosticStore } from "./diagnostics.mjs";
-import { PAIRING_PROTOCOL, offeredProtocols, pairingTokenMatches, readPairingToken } from "./pairing.mjs";
+import {
+  PAIRING_PROTOCOL, PROOF_ROLES, createPairingNonce, offeredNonce, offeredProtocols, pairingProof, pairingProofMatches,
+  readPairingToken, validPairingToken,
+} from "./pairing.mjs";
 import {
   MAX_NATIVE_MESSAGE_BYTES, createBackendClient, dispatchRequest, failureResponse,
   loadBackendConfiguration, validateExtensionOrigin, validateRequest,
@@ -31,6 +35,8 @@ export const DEFAULT_SERVICE_PORT = 47821;
 export const SERVICE_BACKENDS = Object.freeze(["chatgpt", "grok", "antigravity"]);
 const WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 const DEFAULT_IDLE_MS = 30 * 60000;
+// 连上后多久内没收到扩展的认证就关掉：扩展本机往返只要几毫秒，留足余量即可。
+const DEFAULT_AUTH_TIMEOUT_MS = 5000;
 
 // ---------- WebSocket 帧 ----------
 
@@ -214,12 +220,12 @@ class ServiceSocket {
 
 // ---------- 服务 ----------
 
-// pairingToken 为空时是旧安装（service.json 没有 tokenFile）：只校验 Host / Origin，与改版前一致。
+// 没有有效令牌就不启动：令牌既用来认扩展，也是扩展认服务的唯一凭据，没有它扩展不会把请求交给本服务。
 export async function startService({
   port = DEFAULT_SERVICE_PORT, host = "127.0.0.1", allowedOrigins = [], backends = {}, pairingToken = null,
-  clientFactory, idleMs = DEFAULT_IDLE_MS, log = () => {},
+  clientFactory, idleMs = DEFAULT_IDLE_MS, authTimeoutMs = DEFAULT_AUTH_TIMEOUT_MS, log = () => {},
 } = {}) {
-  if (!pairingToken) log("未配置配对令牌：握手只校验 Host 与扩展来源，本机其他账户可伪造来源连入。重新运行连接器安装命令即可启用令牌。");
+  if (!validPairingToken(pairingToken)) throw new Error("常驻服务缺少有效的配对令牌，请重新运行安装命令。");
   const sessions = new Map();
   for (const kind of SERVICE_BACKENDS) {
     if (typeof backends[kind] === "string" && backends[kind]) {
@@ -245,32 +251,44 @@ export async function startService({
     try {
       const url = new URL(request.url, `http://127.0.0.1:${boundPort}`);
       const kind = url.searchParams.get("backend");
-      if (url.pathname !== "/v1/connect") return reject("404 Not Found");
+      // 只按固定的后端清单拒绝未知名字；某个后端装没装要等认证之后才说（没配对的连接探不出装了哪些通道）。
+      if (url.pathname !== "/v1/connect" || !SERVICE_BACKENDS.includes(kind)) return reject("404 Not Found");
       if (!validHost(request.headers.host, boundPort)) return reject("403 Forbidden");
       if (!validateExtensionOrigin(allowedOrigins, request.headers.origin)) return reject("403 Forbidden");
       if (request.headers.upgrade?.toLowerCase() !== "websocket" || request.headers["sec-websocket-version"] !== "13") return reject("400 Bad Request");
       const key = request.headers["sec-websocket-key"];
       if (typeof key !== "string" || Buffer.from(key, "base64").length !== 16) return reject("400 Bad Request");
-      // 令牌在查后端之前校验：没配对的连接不该探出装了哪些订阅通道。
+      // 只认 roamcat.v2 + 扩展随机数。旧扩展的 roamcat.v1 握手把令牌明文放在子协议里，一律 401，让它改走浏览器连接器。
       const protocols = offeredProtocols(request.headers["sec-websocket-protocol"]);
-      if (pairingToken && (!protocols.includes(PAIRING_PROTOCOL) || !pairingTokenMatches(pairingToken, protocols))) return reject("401 Unauthorized");
-      const session = sessions.get(kind);
-      if (!session) return reject("404 Not Found");
-      // 客户端提了子协议就必须选回一个，否则浏览器判握手失败；只回协议名，令牌不回显。
-      const selected = protocols.includes(PAIRING_PROTOCOL) ? `Sec-WebSocket-Protocol: ${PAIRING_PROTOCOL}\r\n` : "";
-      socket.write(`HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ${acceptKey(key)}\r\n${selected}\r\n`);
+      const clientNonce = offeredNonce(protocols);
+      if (!protocols.includes(PAIRING_PROTOCOL) || !clientNonce) return reject("401 Unauthorized");
+      socket.write(`HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ${acceptKey(key)}\r\nSec-WebSocket-Protocol: ${PAIRING_PROTOCOL}\r\n\r\n`);
       socket.setNoDelay(true);
+      const transcript = { backend: kind, clientNonce, serviceNonce: createPairingNonce() };
+      let session = null;
+      const authTimer = setTimeout(() => connection.close(4408, "authentication timeout"), authTimeoutMs);
+      authTimer.unref?.();
       const connection = new ServiceSocket(socket, {
         onText: text => {
           let message;
           try { message = JSON.parse(text); } catch { connection.close(1007, "invalid json"); return; }
-          void session.handle(connection, message);
+          if (session) { void session.handle(connection, message); return; }
+          // 认证前只收一条 auth：证明不符或不是 auth 一律 4401 关闭，不拉起后端。
+          clearTimeout(authTimer);
+          const expected = pairingProof(pairingToken, PROOF_ROLES.extension, transcript);
+          if (message?.type !== "auth" || !pairingProofMatches(expected, message.payload?.proof)) { connection.close(4401, "unauthorized"); return; }
+          const found = sessions.get(kind);
+          if (!found) { connection.close(4404, "backend not installed"); return; }
+          session = found;
+          connection.send({ event: "ready" });
+          session.attach(connection);
+          // 先把后端拉起来：扩展连上后第一时间会问 status，此时 CLI 已在启动。
+          void session.ensure().catch(error => log(`[${kind}] 配置无效：${error?.message || error}`));
         },
-        onClose: () => session.detach(connection),
+        onClose: () => { clearTimeout(authTimer); session?.detach(connection); },
       });
-      session.attach(connection);
-      // 先把后端拉起来：扩展连上后第一时间会问 status，此时 CLI 已在启动。
-      void session.ensure().catch(error => log(`[${kind}] 配置无效：${error?.message || error}`));
+      // 服务先证明自己持有令牌（扩展核对通过前不会发任何请求）；令牌本身不出现在任何一帧里。
+      connection.send({ event: "hello", data: { protocol: PAIRING_PROTOCOL, nonce: transcript.serviceNonce, proof: pairingProof(pairingToken, PROOF_ROLES.service, transcript) } });
     } catch {
       reject("400 Bad Request");
     }
@@ -300,8 +318,8 @@ async function main() {
   const config = JSON.parse(await readFile(configPath, "utf8"));
   const pidPath = typeof config.pidFile === "string" ? config.pidFile : null;
   const log = message => process.stderr.write(`${new Date().toISOString()} ${message}\n`);
-  // 登记了令牌文件却读不出来时不启动（不退回只校验来源）；扩展连不上会自动改用浏览器连接器。
-  const pairingToken = config.tokenFile === undefined ? null : await readPairingToken(config.tokenFile);
+  // 没登记令牌文件（早于配对令牌的旧 service.json）或读不出来时不启动；扩展连不上会自动改用浏览器连接器。
+  const pairingToken = await readPairingToken(config.tokenFile);
   const service = await startService({
     port: Number.isInteger(config.port) ? config.port : DEFAULT_SERVICE_PORT,
     allowedOrigins: config.allowedOrigins,

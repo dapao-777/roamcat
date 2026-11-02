@@ -64,7 +64,7 @@ Choose the Ollama provider (default endpoint http://localhost:11434). It needs n
 
 ### Subscription connector (optional)
 
-A local connector reuses the official command-line tools the user is already signed in to: Codex CLI (ChatGPT), Grok CLI (SuperGrok / X Premium+) and Antigravity agy (Google AI Pro / Ultra). No API key is needed. It consists of a Native Messaging host and a local service that listens only on 127.0.0.1:47821, accepts only this extension's origin and requires a pairing token that the installer writes to a directory only the operating-system user can read. It needs Node.js 20+ and the CLI installed; it is installed separately from the browser extension (see the README quick start). ChatGPT, Grok and Google names are trademarks of their owners; RoamCat is not affiliated with or endorsed by them.
+A local connector reuses the official command-line tools the user is already signed in to: Codex CLI (ChatGPT), Grok CLI (SuperGrok / X Premium+) and Antigravity agy (Google AI Pro / Ultra). No API key is needed. It consists of a Native Messaging host and a local service that listens only on 127.0.0.1:47821, accepts only this extension's origin, and authenticates both ways with a pairing token that the installer writes to a directory only the operating-system user can read: the service must prove it holds the token before the extension sends it anything, and the token itself never goes over the connection. It needs Node.js 20+ and the CLI installed; it is installed separately from the browser extension (see the README quick start). ChatGPT, Grok and Google names are trademarks of their owners; RoamCat is not affiliated with or endorsed by them.
 
 ### Bundled offline model
 
