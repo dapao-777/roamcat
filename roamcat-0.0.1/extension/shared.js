@@ -106,10 +106,12 @@ export async function request(type, payload = {}) {
     const response = await Promise.race([
       chrome.runtime.sendMessage({type,...payload}),
       new Promise((_,reject) => {
-        timer = setTimeout(() => reject(new Error(M('请求超时，后台可能正忙或已被浏览器回收，请重试。','Request timed out; the background may be busy or was reclaimed by the browser. Please retry.'))), timeoutMs);
+        timer = setTimeout(() => reject(Object.assign(new Error(M('请求超时，后台可能正忙或已被浏览器回收，请重试。','Request timed out; the background may be busy or was reclaimed by the browser. Please retry.')), {code: 'TIMEOUT'})), timeoutMs);
       }),
     ]);
-    if (!response?.ok) throw new Error(response?.error || M('插件连接已断开，请刷新页面后重试。','The extension connection dropped; refresh the page and retry.'));
+    // 带上后台给的错误码（鉴权、额度、限流等），调用方据此决定停下还是重试。
+    if (!response) throw Object.assign(new Error(M('插件连接已断开，请刷新页面后重试。','The extension connection dropped; refresh the page and retry.')), {code: 'DISCONNECTED'});
+    if (!response.ok) throw Object.assign(new Error(response.error || M('插件连接已断开，请刷新页面后重试。','The extension connection dropped; refresh the page and retry.')), typeof response.code === 'string' ? {code: response.code} : {});
     return response.data;
   } finally {
     clearTimeout(timer);

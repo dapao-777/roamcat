@@ -125,6 +125,7 @@
 | `api-providers.mjs` / `api-transport.mjs` | 33 家服务商目录、8 种协议适配、结构化输出能力探测、模型列表、各协议 usage 抽取（`onUsage` 回调） | HTTPS only（本机回环除外）；同源重定向禁止；密钥不进内容脚本 |
 | `thinking-levels.mjs` | 按「服务商 + 模型」声明思考档位（官方档位名、默认档、请求参数），供设置页与请求层共用 | 只收录官方文档写明的模型；未收录模型返回 null，请求沿用关闭思考参数 |
 | `rate-window.mjs` | 按键计数的滑动时间窗限额 `createRateWindow({limit,windowMs})`（`take`/`forget`） | 纯函数领域模块；计数只在内存，SW 重启归零——只作防失控上限，不承担正确性 |
+| `work-lanes.mjs` | 后台批量工作的场景分道 `createWorkLanes({check,busy,waiterLimit})`（`run`/`prune`/`snapshot`）与按服务计的并发闸门 `createServiceGates()`（`acquire`/`release`，urgent 插队、名额直接交接） | 纯调度领域模块，不触碰 chrome；工作内容、过期校验与繁忙错误由 background 注入；状态只在内存，SW 回收后从零开始 |
 | `usage-stats.mjs` | 模型用量统计：调用事件规范化、按日/按服务×模型聚合（保留约 62 天、≤60 组合）、`summarizeUsage` UI 汇总 | 纯函数领域模块；只存计数与模型/服务标识，不存正文、密钥或网址；写串行化在 `background.js` |
 | `gloss.mjs` | 提示词、JSON Schema、响应校验/纠正（扩展与连接器共享） | `SUPPORT_POLICY_VERSION` 变更即使全部缓存失效 |
 | `sentence-groups.mjs` / `assistance-stream.mjs` / `personalization.mjs` | 解构协议与修复、流式进度解析、个性化策略机 | 共享文件被连接器安装副本引用，改动需双边同步 |
@@ -212,7 +213,7 @@
 
 ### 6.1 自动支持（SUPPORT_BATCH）
 1. content 侧：视口附近区块 → 本地 `ANALYZE`（词频/术语/历史/词形）提名候选 → 每句最多 3 个候选 → 批次 ≤8 句、≤8000 字符。
-2. background 侧：候选过滤（已掌握词剔除）→ 读者证据（近 12 条查询/少提示词）→ 缓存命中（key = 策略版本+个性化+服务+页面+句子+候选，TTL 7 天，≤512 条）→ 未命中按背景槽位（并发 2，队列 16）分批请求 → `requestSupportWithCorrection`（一次纠正重试，仅文本类字段可纠正）→ 结果校验 → 缓存与「已提供」登记。
+2. background 侧：候选过滤（已掌握词剔除）→ 读者证据（近 12 条查询/少提示词）→ 缓存命中（key = 策略版本+个性化+服务+页面+句子+候选，TTL 7 天，≤512 条）→ 未命中进后台「释义」场景道（同时放行数取所用服务的并发设置，见 7.3）分批请求 → `requestSupportWithCorrection`（一次纠正重试，仅文本类字段可纠正）→ 结果校验 → 缓存与「已提供」登记。
 3. 呈现：每区块最多 2 条显著提示（个性化 sparse 时 1 条），阶段 `hint/mark/quiet` 由渐退状态机决定。
 
 ### 6.2 查词（ASSIST）
@@ -228,8 +229,8 @@
 
 ### 6.4 本页双语翻译（EMERGENCY_*）
 - 授权：`EMERGENCY_BEGIN` 签发 token（tab+url+代数+服务指纹绑定，session 存储）。
-- 扫描：会话锚定 `document.body`，`emergencyBlocks` 全区域提取英文单元（跳过 `SKIP_HARD`：pre/code/输入框/表单/控件/媒体等），按句切分 ≤4000 字符；表格单元格带入表头上下文。单元按所在区域打 `zone`：`article`（正文容器）、`content`（正文外一般区域）、`chrome`（nav/aside/header/footer 等页面构件，`SKIP_CHROME`）。chrome 单元按规范化文本做会话级去重复用译文。
-- 调度：仅视口 ±600px 内单元，就绪排序为可见性 → zone 权重（article > content > chrome）→ 距离 → 文档序；每批 ≤8 项、源文合计 ≤8000 字符；同一段的连续切片可以放进同一批。附近最多同时在飞 2 批，不预译整篇。模型一边返回，已完成的段落先画上。一批失败只标这一批，服务未连接时停住等待，滚动不会自动重发；连上服务或在弹窗里点「继续翻译」后再译，不把整页停掉。批次带 title/heading(≤160)/before/after(≤400) 封闭上下文。单段切片上限仍是 4000 字符。
+- 扫描：会话锚定 `document.body`，`emergencyBlocks` 全区域提取英文单元（跳过 `SKIP_HARD`：pre/code/输入框/表单/控件/媒体等），按句切分 ≤4000 字符；表格单元格带入表头上下文（每张表扫一遍建列位置→表头索引，不逐格回扫前面的行）。增量扫描时单元原样留下、变动处也不含标题或表头（网页只换了 class/style）就沿用原顺序、不重建上下文；发送前与回包后仍逐单元核对上下文。单元按所在区域打 `zone`：`article`（正文容器）、`content`（正文外一般区域）、`chrome`（nav/aside/header/footer 等页面构件，`SKIP_CHROME`）。chrome 单元按规范化文本做会话级去重复用译文。
+- 调度：仅视口 ±600px 内单元，就绪排序为可见性 → zone 权重（article > content > chrome）→ 距离 → 文档序；每批 ≤8 项、源文合计 ≤8000 字符；同一段的连续切片可以放进同一批。附近最多同时在飞 2 批，不预译整篇。模型一边返回，已完成的段落先画上：流式进度是本批的累积快照，按条目并进下一帧统一绘制，文字没变的片段不再校验、不重写页面；整批结果一到即丢弃未绘的旧快照。一批失败只标这一批，服务未连接时停住等待，滚动不会自动重发；连上服务或在弹窗里点「继续翻译」后再译，不把整页停掉。批次带 title/heading(≤160)/before/after(≤400) 封闭上下文。单段切片上限仍是 4000 字符。
 - 渲染：article/content 单元在原文下插块级译文行；chrome 单元用 `data-zone="chrome"` 走内联译文（跟在原文后、弱化样式），避免撑破导航与侧栏布局；flex/grid 容器的直接文本子节点仍按 `skipped` 跳过。
 - 失败：段落级失败可单独重试；成功译文仅入 5 分钟/256 项内存缓存；返回英文只移除扩展插入物。
 - 显示方式：设置 `pageTranslationDisplay` ∈ `bilingual`（默认，原文 + 译文）| `translation`（仅译文）。网页左下角的「双语 / 仅译文」切换（本页有译文时出现，清除后消失）与弹窗「本页双语翻译」里的同名分段按钮都走 `PAGE_TRANSLATION_DISPLAY_SET`（网页仅主框架），后台只改这一项并以 `SS_PAGE_TRANSLATION_DISPLAY` 同步各标签页，不触发 `SS_REFRESH` 重建。仅译文不改写网页节点：段落加 `data-roamcat-original-hidden`，样式把原文文字透明、行高归零并隐藏行内元素（字号不动，按 em 写的段距与行宽照旧），译文容器移到原文之前、按原文字号字重显示；样式以 `:has(>译文)` 兜底，译文被移除时原文自动恢复。只处理一段一译、全部译完、无图片/表单/按钮且链接文字不足六成的段落；chrome 区域、部分失败或原样抄回的段落保持双语。
@@ -292,7 +293,9 @@
 | 订阅请求（扩展侧） | assist / emergencyTranslate / summarize / transcribe 120s；其余 45s |
 | Codex RPC | 30s/次；任务总超时 90s；并发 ≤3 |
 | Grok/Antigravity | 任务 90s；并发 ≤3；Grok 仅格式类错误重试（≤3 次）；Antigravity 只对启动期瞬时错误（`TRANSIENT_FAILURE`：eligibility 检查失败 / EOF / ECONNRESET / 502 / 503）重试一次，听写在 25 秒内的一般失败（`NATIVE_RPC` / `OUTPUT_INVALID`）再重放一次，超时、限额、登录错误不重试 |
-| 背景槽位 | 并发 2，队列 16，超限即 `NOT_READY` |
+| 后台分道（`work-lanes.mjs`） | 批量工作按场景分道排队：page / passage / reader / video / liveChat / support / groups / domain 各一道，互不阻塞；每道同时放行数 = 这批工作所用服务的并发设置（自备 API 1–10、默认 2；机翻按该服务上限；订阅 2），每道至多再排 16 条，超限即 `NOT_READY` |
+| 服务闸门 | 按服务计的 FIFO 信号量：自备 API 每服务 1–10（默认 2）、机翻每服务按上限（每次 HTTP/本机调用各占一个名额，含 MyMemory 内部拆包）、后台订阅调用合计 2（连接器 3 个工作位留 1 个给查词等主动请求）；多个场景、多个标签页共用同一服务时在途合计不超过设置。video / liveChat / passage 与查词、摘要等主动请求排到队首，page 与 reader 批量排在后面；按最新上限预留后唤醒等待者，下调时先让已有请求自然结束。订阅闸门放行后重新检查代际与消费者 |
+| 阅读器翻译 | 两路按文档顺序取批；完整且校验通过的机翻条目经带 requestId 的运行时消息提前显示，换书/卸载清理旧监听；`AUTH` / `QUOTA` / `NOT_READY` 等服务级错误立即停下整本书；只有结果格式、条目对不上类错误才拆成单条重试，限流、超时、网络错误按批记失败；连续三批无译文停止 |
 
 ---
 

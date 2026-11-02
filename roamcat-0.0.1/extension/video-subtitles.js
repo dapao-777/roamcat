@@ -1313,7 +1313,18 @@
       try {
         const payload = remote.map(item => ({id: item.id, text: item.text, context: translationContext(item.group)}));
         const started = performance.now();
-        const result = await currentCallbacks.onTranslate(payload);
+        const result = await currentCallbacks.onTranslate(payload,items=>{
+          if(destroyed||generation!==sourceGeneration||!Array.isArray(items))return;
+          let changed=false;
+          for(const value of items){
+            const item=remote.find(item=>item.id===value?.id);
+            if(!item||!acceptableTranslation(item.text,value.translation))continue;
+            const key=groupKey(item.group),text=value.translation.trim();
+            if(translations.get(key)?.text===text)continue;
+            translations.set(key,{status:'ok',text});changed=true;
+          }
+          if(changed){renderOverlay(true);refreshTranscriptTranslations();}
+        });
         const elapsed = performance.now() - started;
         observedTranslateMs = observedTranslateMs ? observedTranslateMs * 0.6 + elapsed * 0.4 : elapsed;
         // 关闭双语只停止新任务；同一字幕源的在途结果仍可缓存，重开时不能留下永久 pending。
@@ -1327,7 +1338,7 @@
         hideTranslateFailure();
       } catch (error) {
         if (destroyed || generation !== sourceGeneration) return;
-        for (const item of remote) translations.set(groupKey(item.group), failed(groupKey(item.group)));
+        for (const item of remote) if(translations.get(groupKey(item.group))?.status!=='ok')translations.set(groupKey(item.group), failed(groupKey(item.group)));
         showTranslateFailure(error);
       }
       renderOverlay(true);

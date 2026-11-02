@@ -113,6 +113,34 @@ try {
       assert.equal(result.earlier, 'Earlier translation');
     } finally { await page.evaluate(() => { chrome.runtime.sendMessage = readerFixture.send; }); }
   });
+  await gate.check('完整机翻进度先呈现正文，忽略无关请求与网页发送者，换书清理旧监听',async()=>{
+    const result=await page.evaluate(async()=>{
+      const {app,seed,send}=readerFixture;seed('Progress book');
+      const add=chrome.runtime.onMessage.addListener,remove=chrome.runtime.onMessage.removeListener;
+      let receive,release,pending,removed=false,requestId;
+      chrome.runtime.onMessage.addListener=listener=>{receive=listener;add.call(chrome.runtime.onMessage,listener);};
+      chrome.runtime.onMessage.removeListener=listener=>{if(listener===receive)removed=true;remove.call(chrome.runtime.onMessage,listener);};
+      chrome.runtime.sendMessage=message=>message.type==='READER_TRANSLATE'?new Promise(resolve=>{release=resolve;requestId=message.requestId;}):send.call(chrome.runtime,message);
+      try{
+        pending=app.translateAll();
+        const event=items=>({type:'SS_READER_TRANSLATION_PROGRESS',requestId,items});
+        receive(event([{id:'r0',translation:'先完成的完整译文。'}]),{id:chrome.runtime.id});
+        receive(event([{id:'r1',translation:'网页不能伪造译文。'}]),{id:chrome.runtime.id,tab:{id:1}});
+        receive({...event([{id:'r2',translation:'无关请求。'}]),requestId:'different'},{id:chrome.runtime.id});
+        receive(event([{id:'unplanned',translation:'不属于本批。'}]),{id:chrome.runtime.id});
+        await app.updateComplete;
+        const early={count:app.translations.size,busy:app.translating,text:app.querySelector('.reader-translation')?.textContent};
+        seed('New progress book');
+        receive(event([{id:'r1',translation:'换书后不能写入的旧进度。'}]),{id:chrome.runtime.id});
+        release({ok:true,data:{items:[{id:'r2',translation:'旧批次结束。'}]}});await pending;
+        return {early,late:app.translations.size,removed};
+      }finally{
+        release?.({ok:false,error:'fixture cleanup'});await pending;
+        chrome.runtime.sendMessage=send;chrome.runtime.onMessage.addListener=add;chrome.runtime.onMessage.removeListener=remove;
+      }
+    });
+    assert.deepEqual(result,{early:{count:1,busy:true,text:'先完成的完整译文。'},late:0,removed:true});
+  });
   for (const succeeds of [false, true]) await gate.check(`换书后旧批次${succeeds ? '成功结果不写入新书' : '失败不再拆条重试'}`, async () => {
     const result = await page.evaluate(async succeeds => {
       const {app, seed, send} = readerFixture;
@@ -159,6 +187,30 @@ try {
     assert.equal(result.translations, 0);
     assert.equal(result.visibleAfterScroll, true, '长文档滚到后面时也应看到错误');
     return {requests: result.calls, documentBlocks: 40};
+  });
+  // 回归：持续 401 时曾把每批拆成单条再发，40 段书发出 20 次请求才停。鉴权/额度错误一次就停，限流与超时也不拆条放大请求。
+  for (const [code, error, maxCalls] of [['AUTH', '服务拒绝访问，请检查 API Key、模型权限与账户状态。', 2], ['QUOTA', 'Insufficient quota for this key.', 2], ['RATE_LIMIT', 'Rate limited by provider.', 20]]) await gate.check(`整批返回 ${code} 时${maxCalls === 2 ? '立即停止' : '按批记失败'}，不拆成单条重试`, async () => {
+    const result = await page.evaluate(async ({code, error}) => {
+      const {app, seed, send} = readerFixture;
+      seed('Service failure ' + code);
+      app.blocks = Array.from({length: 40}, (_, i) => ({id: 'svc' + i, role: 'p', text: 'Careful readers compare evidence from reliable sources ' + i}));
+      const sizes = [];
+      chrome.runtime.sendMessage = message => {
+        if (message.type !== 'READER_TRANSLATE') return send.call(chrome.runtime, message);
+        sizes.push(message.items.length);
+        return Promise.resolve({ok: false, error, code});
+      };
+      try {
+        await app.translateAll();
+        await app.updateComplete;
+        return {sizes, error: app.error, busy: app.translating, alert: app.querySelector('[role="alert"]')?.textContent || ''};
+      } finally { chrome.runtime.sendMessage = send; }
+    }, {code, error});
+    assert.ok(result.sizes.length <= maxCalls, `${code} 发出了 ${result.sizes.length} 次请求`);
+    assert.ok(result.sizes.every(size => size > 1), `${code} 不应拆成单条请求：${result.sizes.join(',')}`);
+    assert.ok(result.error.includes(error) && result.alert.includes(error), '错误原因要显示给用户');
+    assert.equal(result.busy, false);
+    return {requests: result.sizes.length, documentBlocks: 40};
   });
   await gate.check('单条翻译失败仍继续其余正文，不提前放弃整本书', async () => {
     const result = await page.evaluate(async () => {

@@ -415,4 +415,43 @@ test('迁移后的 background.js 在 mock 浏览器中构造注册表并按信�
       assert.ok(manifest.content_scripts.some(item => item.matches.includes(pattern)), `${pattern} 不在静态注入范围内`);
     }
   });
+  await t.test('订阅名额等待期间切换模型：过期字幕不再发给连接器',async()=>{
+    const originalConnect=chrome.runtime.connectNative,calls=[],held=[];
+    const oldSettings=(await send({type:'STATE_GET'},trustedPopup(chrome))).data.settings;
+    chrome.runtime.connectNative=()=>{
+      const messages=[];
+      return {onMessage:{addListener:fn=>messages.push(fn)},onDisconnect:{addListener(){}},disconnect(){},postMessage(message){
+        const reply=data=>messages.forEach(fn=>fn({id:message.id,ok:true,data}));
+        if(message.type==='emergencyTranslate'){
+          const ids=message.payload.items.map(item=>item.id);
+          calls.push(ids);
+          const finish=()=>reply({items:message.payload.items.map(item=>({id:item.id,translation:'这是经过验证的中文译文。'}))});
+          if(ids[0].startsWith('held-'))held.push(finish);else queueMicrotask(finish);
+        }else queueMicrotask(()=>reply(message.type==='status'?{connected:true,authenticated:true}:{}));
+      }};
+    };
+    let first,second,video;
+    try{
+      assert.equal((await send({type:'SUBSCRIPTION_STATUS',kind:'chatgpt'},trustedPopup(chrome))).ok,true);
+      assert.equal((await send({type:'STATE_PATCH',patch:{providerKind:'chatgpt',subscriptionModel:'fixture-model',floatingPet:{enabled:false}}},trustedPopup(chrome))).ok,true);
+      const reader={id:chrome.runtime.id,url:chrome.runtime.getURL('ui/reader.html'),tab:{id:91}};
+      first=send({type:'READER_TRANSLATE',items:[{id:'held-one',text:'The first reader passage compares unique reliable evidence.'}]},reader);
+      second=send({type:'READER_TRANSLATE',items:[{id:'held-two',text:'The second reader passage compares unique reliable evidence.'}]},reader);
+      for(let i=0;i<100&&held.length<2;i++)await new Promise(resolve=>setTimeout(resolve,2));
+      assert.equal(held.length,2);
+      const page={...contentPage(chrome),tab:{id:92,url:'https://example.com/'}};
+      video=send({type:'VIDEO_CUE_TRANSLATE',items:[{id:'old-video',text:'This old caption should not be sent after changing models.'}]},page);
+      // 观察窗口：两个名额均被控制中的阅读器占用，旧字幕不会发给连接器，只能在共享闸门里等待。
+      await new Promise(resolve=>setTimeout(resolve,100));assert.equal(calls.length,2);
+      assert.equal((await send({type:'STATE_PATCH',patch:{subscriptionModel:'changed-fixture-model'}},trustedPopup(chrome))).ok,true);
+      held.shift()();
+      assert.equal((await video).code,'STALE');
+      assert.equal(calls.length,2,'换模型后旧字幕不应消耗订阅调用');
+    }finally{
+      for(const finish of held)finish();
+      await Promise.allSettled([first,second,video]);
+      await send({type:'STATE_PATCH',patch:oldSettings},trustedPopup(chrome));
+      chrome.runtime.connectNative=originalConnect;
+    }
+  });
 });

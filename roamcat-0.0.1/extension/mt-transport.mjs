@@ -1,7 +1,7 @@
 /**
  * @file extension/mt-transport.mjs
  * 文件职责：机器翻译传输层——把一批英文原文按各家协议译成简体中文，统一批量拆分、签名、错误归类与结果校验。
- * 主要内容：mtTranslate（按服务的条数/字符上限分包，逐包请求后按原顺序拼回）；各家请求：DeepL、Google Cloud、
+ * 主要内容：mtTranslate（按服务的条数/字符上限分包，按调用方给的并发发出子请求，每条译完即回调，最后按原顺序拼回）；各家请求：DeepL、Google Cloud、
  *   Azure、腾讯云 TC3、阿里云 RPC、百度 MD5、火山引擎 HMAC、有道 v3、小牛、MyMemory、Google 网页、微软 Edge、
  *   DeepLX、Chrome 本机（由调用方注入）；WebCrypto 签名原语与自带 MD5；行内代码占位 ⟦n⟧ 在支持 HTML/XML 的服务里
  *   包成不翻译标记，回来后规整；mtTranslationIssue 复用整页翻译的译文校验。
@@ -163,7 +163,7 @@ async function timedOperation(provider,ctx,operation) {
 }
 
 // ---------- 网络 ----------
-const call=(provider,fetchImpl,url,init,ctx)=>timedOperation(provider,ctx,signal=>readResponse(provider,fetchImpl,url,init,{signal}));
+const call=(provider,fetchImpl,url,init,ctx)=>ctx.run(()=>timedOperation(provider,ctx,signal=>readResponse(provider,fetchImpl,url,init,{signal})));
 async function readResponse(provider,fetchImpl,url,init,{signal}) {
   let response;
   try { response=await fetchImpl(url,{...init,signal,credentials:'omit',redirect:'error',cache:'no-store'}); }
@@ -252,7 +252,6 @@ const adapters={
     const groups=joined?[texts.join('\n')]:texts;
     const results=[];
     for (const [index,query] of groups.entries()) {
-      if (index) await ctx.pace();
       const salt=String(ctx.now())+String(index);
       const value=await callJson(provider,ctx.fetch,MT_ENDPOINTS.baidu,{method:'POST',headers:{'Content-Type':FORM},body:formBody({q:query,from:'en',to:'zh',appid:appId,salt,sign:md5Hex(appId+query+salt+secretKey)})},ctx);
       const code=value?.error_code===undefined?'52000':String(value.error_code);
@@ -289,10 +288,9 @@ const adapters={
   },
   async mymemory(provider,service,texts,ctx) {
     let translated='';
-    for (const [index,piece] of splitByBytes(texts[0]).entries()) {
+    for (const piece of splitByBytes(texts[0])) {
       const content=piece.trim();
       if (!content) { translated+=piece;continue; }
-      if (index) await ctx.pace();
       const url=new URL(MT_ENDPOINTS.mymemory);
       url.search=new URLSearchParams({q:content,langpair:'en|zh-CN',...(service.credentials.email?{de:service.credentials.email}:{})}).toString();
       const value=await callJson(provider,ctx.fetch,url.href,{method:'GET',headers:{Accept:'application/json'}},ctx);
@@ -329,8 +327,8 @@ const adapters={
   async chrome(provider,service,texts,ctx) {
     if (typeof ctx.local!=='function') throw mtError(provider,'NOT_READY');
     let result;
-    try { result=await timedOperation(provider,ctx,signal=>ctx.local(texts,{signal})); }
-    catch (error) { if (error?.name==='AbortError' || error?.code==='TIMEOUT' || ctx.signal?.aborted) throw error; throw mtError(provider,error?.code==='NOT_READY'?'NOT_READY':'OUTPUT_INVALID'); }
+    try { result=await ctx.run(()=>timedOperation(provider,ctx,signal=>ctx.local(texts,{signal}))); }
+    catch (error) { if (error?.name==='AbortError' || ['TIMEOUT','STALE','CANCELLED'].includes(error?.code) || ctx.signal?.aborted) throw error; throw mtError(provider,error?.code==='NOT_READY'?'NOT_READY':'OUTPUT_INVALID'); }
     return requireStrings(provider,result,texts.length);
   },
 };
@@ -372,8 +370,10 @@ export async function volcengineHeaders({accessKeyId,secretAccessKey,region,host
 /**
  * 把一批原文译成简体中文，返回与输入同序、同长的译文数组（已去首尾空白、规整 ⟦n⟧）。
  * options：signal、fetch（默认全局 fetch）、local（Chrome 本机翻译实现）、context（单条请求时 DeepL 可用的上下文）、
- *   pace（同一服务两次请求之间的等待，调用方按 qps 实现）、timeoutMs（单次请求，默认 15 秒）、now、uuid（测试注入）。
- * 某个后续请求失败时，error.partialTranslations 仅保留此前已完整完成的原条目；未完成项为 null。
+ *   pace（同一服务两次请求之间的等待，调用方按 qps 实现）、timeoutMs（单次请求，默认 15 秒）、now、uuid（测试注入）；
+ *   concurrency（同时在途的子请求数，默认 1 即逐包串行）、run（包住每次 HTTP/本机调用，含 adapter 内拆包；在里面占并发名额并限速）、
+ *   onItem(index, translation)（某条原文的全部分片译完就回调，不等整批）。
+ * 某个子请求失败后不再发起新的子请求，等已在途的结束：error.partialTranslations 保留已完整完成的原条目；未完成项为 null。
  */
 export async function mtTranslate(service,texts,options={}) {
   const provider=getMtProvider(service?.providerId);
@@ -381,24 +381,40 @@ export async function mtTranslate(service,texts,options={}) {
   if (!Array.isArray(texts) || !texts.length || texts.some(text=>typeof text!=='string' || !text.trim())) throw mtError(provider,'OUTPUT_INVALID');
   const adapter=adapters[provider.id];
   const ctx={signal:options.signal,fetch:options.fetch||((...args)=>globalThis.fetch(...args)),local:options.local,context:options.context||'',pace:options.pace||(async()=>{}),timeoutMs:options.timeoutMs??15000,now:options.now||Date.now,uuid:options.uuid||(()=>crypto.randomUUID())};
-  // 百度按 UTF-8 字节计量，单条原文也可能超过 6000 字节；拆开后按原条目重新合并。
+  let requests=0;
+  const schedule=options.run||(task=>task());
+  ctx.run=task=>schedule(async()=>{
+    if(requests++)await ctx.pace();
+    options.signal?.throwIfAborted();
+    return task();
+  });
+  // 百度按 UTF-8 字节计量，单条原文也可能超过 6000 字节；拆开后按原条目重新合并（同一条的分片在 inputs 里相邻）。
   const inputs=texts.flatMap((text,at)=>(provider.id==='baidu'?splitByBytes(text,5800):[text]).map(piece=>({text:piece,at})));
-  const results=Array.from({length:texts.length},()=>[]);
-  const counts=new Array(texts.length).fill(0);for(const item of inputs)counts[item.at]++;
+  const pieces=new Array(inputs.length),remaining=new Array(texts.length).fill(0),first=[],last=[];
+  inputs.forEach((item,index)=>{remaining[item.at]++;first[item.at]??=index;last[item.at]=index;});
+  const joined=at=>pieces.slice(first[at],last[at]+1).join('\n');
   // 百度不能合并的多行/超字节条目提前拆成独立请求，才能在后续请求失败时保住前一条结果。
   const chunks=chunkTexts(inputs.map(item=>item.text),provider.batch).flatMap(chunk=>provider.id==='baidu'&&(chunk.some(at=>/[\r\n]/.test(inputs[at].text))||encoder.encode(chunk.map(at=>inputs[at].text).join('\n')).length>6000)?chunk.map(at=>[at]):[chunk]);
-  try {
-    for (const [index,chunk] of chunks.entries()) {
-      options.signal?.throwIfAborted();
-      if (index) await ctx.pace();
-      options.signal?.throwIfAborted();
-      const out=await adapter(provider,service,chunk.map(at=>inputs[at].text),ctx);
-      chunk.forEach((at,position)=>{results[inputs[at].at].push(normalizeMarkers(out[position]).trim());});
+  let next=0,failure=null;
+  const worker=async()=>{
+    while (!failure && next<chunks.length) {
+      const chunk=chunks[next++];
+      try {
+        options.signal?.throwIfAborted();
+        const out=await adapter(provider,service,chunk.map(at=>inputs[at].text),ctx);
+        for(const [position,at]of chunk.entries()){
+          pieces[at]=normalizeMarkers(out[position]).trim();
+          if (--remaining[inputs[at].at]===0) await options.onItem?.(inputs[at].at,joined(inputs[at].at));
+        }
+      } catch(error) { failure??=error; }
     }
-  } catch(error) {
-    const partial=results.map((pieces,at)=>pieces.length===counts[at]?pieces.join('\n'):null);
-    if(!options.signal?.aborted && partial.some(value=>value!==null))error.partialTranslations=partial;
-    throw error;
+  };
+  const concurrency=Number.isInteger(options.concurrency)?Math.min(Math.max(options.concurrency,1),chunks.length):1;
+  await Promise.all(Array.from({length:concurrency},worker));
+  if (failure) {
+    const partial=texts.map((_,at)=>remaining[at]===0?joined(at):null);
+    if(!options.signal?.aborted && partial.some(value=>value!==null))failure.partialTranslations=partial;
+    throw failure;
   }
-  return results.map(pieces=>pieces.join('\n'));
+  return texts.map((_,at)=>joined(at));
 }

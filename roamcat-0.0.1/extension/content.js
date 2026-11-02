@@ -2430,6 +2430,7 @@ const LIMIT_ERROR = T('c.limit');
     document.documentElement.append(host);
     const bounds=host.getBoundingClientRect();host.style.left=Math.max(8,Math.min(rect.left,innerWidth-bounds.width-8))+'px';host.style.top=Math.max(8,Math.min(rect.bottom+6,innerHeight-bounds.height-8))+'px';state.selectionTool=host;
   }
+  const videoTranslationFlights=new Map();
   function mountVideoTool() {
     if(!state.videoAllowed || state.paused){globalThis.RoamCatVideoSubtitles?.unmount();return;}
     globalThis.RoamCatVideoSubtitles?.mount({settings:state.settings.video,onAssist:target=>{
@@ -2439,7 +2440,12 @@ const LIMIT_ERROR = T('c.limit');
     },onSettingsChange:async patch=>{const result=await request('VIDEO_SETTINGS_PATCH',{patch});state.settings.video=result.video;return result;},
     onPrepareBridge:()=>request('YOUTUBE_CAPTIONS_BRIDGE',{}),
     onFetchCaption:async url=>{const result=await request('YOUTUBE_CAPTION_FETCH',{url});return typeof result?.text==='string'?result.text:'';},
-    onTranslate:async items=>request('VIDEO_CUE_TRANSLATE',{requestId:'cap-'+crypto.randomUUID(),items}),
+    onTranslate:async(items,onProgress)=>{
+      const requestId='cap-'+crypto.randomUUID();
+      if(typeof onProgress==='function')videoTranslationFlights.set(requestId,onProgress);
+      try{return await request('VIDEO_CUE_TRANSLATE',{requestId,items});}
+      finally{videoTranslationFlights.delete(requestId);}
+    },
     onTranscribe:payload=>request('VIDEO_AUDIO_TRANSCRIBE',payload),
     // 视频页常常还没判定过领域（state.domain 为 null），这时不传 domain，交给后台按设置推断；传 null 会被判为不支持的领域。
     onAnalyze:async text=>request('ANALYZE',state.domain?{text,domain:state.domain}:{text})});
@@ -2785,7 +2791,11 @@ const LIMIT_ERROR = T('c.limit');
     return nodes;
   }
   function renderEmergencyChunk(item,translation,session) {
-    const unit=item.unit;if(!validEmergencyUnit(unit,session)||unit.version!==item.version)return;
+    const unit=item.unit;
+    // 流式快照每次都带着本批已有的全部译文：文字没变的片段已经在页面上，不再校验原文、不再重建节点。
+    if(unit.version===item.version&&unit.translations?.get(item.index)===translation&&(session.containers.get(unit)?.parts.has(item.index)||sameAsSource(translation,unit.chunks[item.index]))){session.metrics.unchangedRenders++;return;}
+    if(!validEmergencyUnit(unit,session)||unit.version!==item.version)return;
+    session.metrics.renders++;
     // 原样抄回的译文不显示，免得同一段英文在页面上出现两遍；记下来算作已完成。
     if(sameAsSource(translation,unit.chunks[item.index])){
       (unit.translations??=new Map()).set(item.index,translation);
@@ -2814,12 +2824,20 @@ const LIMIT_ERROR = T('c.limit');
     entry.container.replaceChildren(...[...entry.parts].sort((a, b) => a[0] - b[0]).map(([, node]) => node));
   }
   const emergencyFlights=new Set();
+  // 流式进度按条目并进待绘表，下一帧统一落到页面：同一帧里到达的多份快照只绘一次。整批结果一到（settled）就丢弃未绘的旧快照。
   function paintEmergencyProgress(pending,rows){
-    if(!pending||pending.cancelled||!Array.isArray(rows))return;
-    for(const row of rows){
-      const item=pending.batch.find(entry=>entry.id===row?.id);
-      if(!item||item.unit.version!==item.version||typeof row.translation!=='string'||!row.translation.trim())continue;
-      renderEmergencyChunk(item,row.translation,pending.session);
+    if(!pending||pending.cancelled||pending.settled||!Array.isArray(rows))return;
+    pending.progress??=new Map();
+    for(const row of rows)if(typeof row?.translation==='string')pending.progress.set(row.id,row.translation);
+    if(!pending.progressFrame)pending.progressFrame=requestAnimationFrame(()=>flushEmergencyProgress(pending));
+  }
+  function flushEmergencyProgress(pending){
+    const rows=pending.progress;pending.progressFrame=0;pending.progress=null;
+    if(!rows||pending.cancelled||pending.settled)return;
+    for(const [id,translation]of rows){
+      const item=pending.batch.find(entry=>entry.id===id);
+      if(!item||item.unit.version!==item.version||!translation.trim())continue;
+      renderEmergencyChunk(item,translation,pending.session);
     }
     updateEmergencyStatus(pending.session);
   }
@@ -2828,27 +2846,31 @@ const LIMIT_ERROR = T('c.limit');
   }
   const zoneRank=zone=>zone==='article'?0:zone==='chrome'?2:1;
   const emergencyUnitKey=text=>text.replace(/\s+/g,' ').trim();
-  function emergencyTableHeaders(cell,session){
-    const table=cell.closest('table');if(cell.tagName==='TH'||!table||!containsDeep(session.root,table))return [];
+  // 每张表只扫一遍：按列位置累积此前各行覆盖该列的列表头，再接上同一行左侧的行表头（结果与顺序同逐格回扫一致，
+  // 列位置照旧只按 colSpan 累加、不计 rowSpan）。逐格回扫前面所有行是近似平方复杂度，1000 行表一次上下文重建约 1 秒。
+  function emergencyTableIndex(table,session){
+    if(!containsDeep(session.root,table))return null;
+    const cells=new Map(),columns=new Map(),usable=new Map();
+    const visible=header=>{if(!usable.has(header))usable.set(header,!header.closest(SKIP_HARD)&&isVisible(header));return usable.get(header);};
+    for(const row of table.rows){
+      let start=0;const left=[],spans=[];
+      for(const cell of row.cells){
+        const end=start+cell.colSpan;
+        if(cell.tagName!=='TH')cells.set(cell,[...(columns.get(start)||[]),...left]);
+        else if(visible(cell)){if(cell.scope!=='col')left.push(cell);if(cell.scope!=='row')spans.push([cell,start,end]);}
+        start=end;
+      }
+      for(const [header,from,to]of spans)for(let column=from;column<to;column++){if(!columns.has(column))columns.set(column,[]);columns.get(column).push(header);}
+    }
+    return cells;
+  }
+  function emergencyTableHeaders(cell,session,tables=new Map()){
+    const table=cell.closest('table');if(cell.tagName==='TH'||!table)return [];
+    if(!tables.has(table))tables.set(table,emergencyTableIndex(table,session));
+    const index=tables.get(table);if(!index)return [];
     const visible=header=>header?.tagName==='TH'&&header.closest('table')===table&&!header.closest(SKIP_HARD)&&isVisible(header);
     if(cell.headers){const explicit=cell.headers.split(/\s+/).map(id=>document.getElementById(id)).filter(visible);if(explicit.length)return explicit;}
-    const column=[...cell.parentElement.cells].slice(0,cell.cellIndex).reduce((sum,item)=>sum+item.colSpan,0),headers=[];
-    for (const row of table.rows) {
-      let start = 0;
-      for (const candidate of row.cells) {
-        if (candidate === cell) break;
-        const end = start + candidate.colSpan;
-        if (
-          visible(candidate) &&
-          ((row === cell.parentElement && candidate.scope !== 'col') ||
-            (row !== cell.parentElement && candidate.scope !== 'row' && start <= column && column < end))
-        )
-          headers.push(candidate);
-        start = end;
-      }
-      if (row === cell.parentElement) break;
-    }
-    return headers;
+    return index.get(cell)||[];
   }
   function validEmergencyContext(unit,session){
     const refs=unit.contextSources;if(!refs)return true;
@@ -2873,12 +2895,13 @@ const LIMIT_ERROR = T('c.limit');
   }
   function updateEmergencyContexts(session){
     const headings=[...queryAllDeep(session.root,'h1,h2,h3,h4,h5,h6')].filter(node=>isVisible(node)&&!composedClosest(node,SKIP)&&!composedClosest(node,'['+OWN+']')),headingTexts=new Map(headings.map(node=>[node,emergencySlice(emergencyText(node),160)]));
-    let index=0,heading=null;const dependencies=new Map();const depend=(node,unit)=>{if(!node)return;if(!dependencies.has(node))dependencies.set(node,new Set());dependencies.get(node).add(unit);};
+    let index=0,heading=null;const dependencies=new Map(),tables=new Map();const depend=(node,unit)=>{if(!node)return;if(!dependencies.has(node))dependencies.set(node,new Set());dependencies.get(node).add(unit);};
+    session.metrics.contextRebuilds++;
     for(const unit of session.units){while(index<headings.length&&(headings[index]===unit.parent||headings[index].compareDocumentPosition(unit.nodes[0])&Node.DOCUMENT_POSITION_FOLLOWING))heading=headings[index++];unit.section=heading;}
     for(let i=0;i<session.units.length;i++){
       const unit=session.units[i],before=session.units[i-1],after=session.units[i+1],cell=unit.parent.closest('td,th');let beforeText='',afterText='';unit.contextSources={heading:unit.section};depend(unit.section,unit);
       if (cell) {
-        const headers = emergencyTableHeaders(cell, session);
+        const headers = emergencyTableHeaders(cell, session, tables);
         unit.contextSources.headers = headers;
         beforeText = headers.map(header => emergencyText(header)).join(' · ');
         for (const header of headers) depend(header, unit);
@@ -3018,7 +3041,7 @@ const LIMIT_ERROR = T('c.limit');
     const task=(async()=>{
       let result;
       try{
-        result=await request('EMERGENCY_TRANSLATE',{token:pending.token,requestSeq:pending.seq,items:batch.map(({id,text,context})=>({id,text,context}))});
+        result=await request('EMERGENCY_TRANSLATE',{token:pending.token,requestSeq:pending.seq,items:batch.map(({id,text,context})=>({id,text,context}))}).finally(()=>{pending.settled=true;cancelAnimationFrame(pending.progressFrame);pending.progressFrame=0;pending.progress=null;});
         if(!session.active||state.emergency!==session||generation!==session.generation||pending.cancelled){reportResult(result,'cancelled');return;}
         if(batch.some(item=>item.unit.version!==item.version||!validEmergencyUnit(item.unit,session)||!validEmergencyContext(item.unit,session))){cancelEmergencyFlight(pending);reportResult(result,'cancelled');return;}
         if(!result||!Array.isArray(result.items)||!Array.isArray(result.errors))throw new Error(T('c.em.proto'));
@@ -3080,20 +3103,28 @@ const LIMIT_ERROR = T('c.limit');
       else{const current=state.emergency;if(current?.active&&current!==session)scheduleEmergency(current);}
     }
   }
+  const EMERGENCY_CONTEXT_SOURCES='h1,h2,h3,h4,h5,h6,th';
   function scanEmergency(session,roots=[session.root]){
     if(state.emergency!==session)return 0;if(!sameArticle(session.source,location.href)||!session.root.isConnected){finishEmergency(true,true);return 0;}
+    const begin=performance.now();
     roots=roots.filter(root=>root.isConnected&&containsDeep(session.root,root));roots=roots.filter((root,index)=>!roots.some((other,otherIndex)=>index!==otherIndex&&containsDeep(other,root)));
-    const previous=session.units,affected=previous.filter(unit=>!unit.parent.isConnected||roots.some(root=>containsDeep(root,unit.parent))),next=previous.filter(unit=>!affected.includes(unit));let added=0;
+    const previous=session.units,affected=previous.filter(unit=>!unit.parent.isConnected||roots.some(root=>containsDeep(root,unit.parent))),kept=new Set();let next=previous.filter(unit=>!affected.includes(unit)),added=0;
     for(const root of roots)for(const descriptor of emergencyBlocks(root)){
       let unit=affected.find(value=>!value.invalid&&value.parent===descriptor.parent&&value.nodes.length===descriptor.nodes.length&&value.nodes.every((node,index)=>node===descriptor.nodes[index])&&value.text===descriptor.text&&value.skipped===descriptor.skipped&&value.zone===descriptor.zone);
-      if(!unit){unit={...descriptor,version:++session.version,chunks:splitEmergencyText(descriptor.send),done:new Set(),autoRetries:0,retryAt:0,state:descriptor.skipped?'skipped':'deferred'};added++;}next.push(unit);
+      if(!unit){unit={...descriptor,version:++session.version,chunks:splitEmergencyText(descriptor.send),done:new Set(),autoRetries:0,retryAt:0,state:descriptor.skipped?'skipped':'deferred'};added++;}else kept.add(unit);next.push(unit);
     }
-    for(const unit of affected)if(!next.includes(unit))invalidateEmergencyUnit(unit,session);
-    next.sort((a,b)=>a===b?0:a.nodes[0].compareDocumentPosition(b.nodes[0])&Node.DOCUMENT_POSITION_FOLLOWING?-1:1);session.units=next;next.forEach((unit,index)=>unit.order=index);
+    // 单元原样留下（网页只切换了 class/style 之类）：沿用原顺序；变动处也不含标题或表头时，邻段、所属标题与表头都没变，不重建上下文。
+    const unchanged=!added&&kept.size===affected.length;
+    if(unchanged)next=previous;
+    else{for(const unit of affected)if(!kept.has(unit))invalidateEmergencyUnit(unit,session);next.sort((a,b)=>a===b?0:a.nodes[0].compareDocumentPosition(b.nodes[0])&Node.DOCUMENT_POSITION_FOLLOWING?-1:1);session.units=next;next.forEach((unit,index)=>unit.order=index);}
     const byParent=new Map();for(const unit of next){if(!byParent.has(unit.parent))byParent.set(unit.parent,new Set());byParent.get(unit.parent).add(unit);}
     for(const parent of session.byParent.keys())if(!byParent.has(parent)){session.intersections?.unobserve(parent);session.near.delete(parent);}
     for(const parent of byParent.keys())if(!session.byParent.has(parent)){session.intersections?.observe(parent);const rect=parent.getBoundingClientRect();if(rect.bottom>=-600&&rect.top<=innerHeight+600)session.near.add(parent);}
-    session.byParent=byParent;updateEmergencyContexts(session);emergencyReady(session);updateEmergencyStatus(session);observeEmergencyShadows(session);if(session.active)void runEmergency(session);return added;
+    session.byParent=byParent;
+    if(!unchanged||roots.some(root=>root===session.root||root.matches(EMERGENCY_CONTEXT_SOURCES)||queryAllDeep(root,EMERGENCY_CONTEXT_SOURCES).length))updateEmergencyContexts(session);
+    emergencyReady(session);updateEmergencyStatus(session);observeEmergencyShadows(session);
+    const metrics=session.metrics,ms=performance.now()-begin;metrics.scans++;metrics.lastScanMs=ms;metrics.maxScanMs=Math.max(metrics.maxScanMs,ms);
+    if(session.active)void runEmergency(session);return added;
   }
   function observeEmergencyContent(session){
     session.intersections = new IntersectionObserver(
@@ -3245,7 +3276,8 @@ const LIMIT_ERROR = T('c.limit');
       scanTimer: 0,
       retryTimer: 0,
       cooldownUntil: 0,
-      cooldownTimer: 0
+      cooldownTimer: 0,
+      metrics: { scans: 0, contextRebuilds: 0, lastScanMs: 0, maxScanMs: 0, renders: 0, unchangedRenders: 0 }
     };
     state.emergency = session;
     stopSentenceGroups(false);
@@ -3457,6 +3489,10 @@ const LIMIT_ERROR = T('c.limit');
     };
   }
   function onRuntimeMessage(message,_sender,respond){
+   if(message?.type==='SS_VIDEO_TRANSLATION_PROGRESS'){
+     if(_sender.id===runtime.id&&Array.isArray(message.items))videoTranslationFlights.get(message.requestId)?.(message.items);
+     respond({ok:true,data:null});return false;
+   }
    if(message?.type==='SS_PAGE_TRANSLATION_PROGRESS'){
      if(_sender.id===runtime.id)for(const pending of emergencyFlights)if(pending.token===message.token&&pending.seq===message.requestSeq)paintEmergencyProgress(pending,message.items);
      respond({ok:true,data:null});return false;
@@ -3552,6 +3588,7 @@ const LIMIT_ERROR = T('c.limit');
     disable();
     stopSentenceGroups(true);
     disposed = true;
+    videoTranslationFlights.clear();
     clearTimeout(readingIndex.attrTimer);readingIndex.observer?.disconnect();readingIndex.viewport?.disconnect();readingIndex.facts.clear();readingIndex.containers.clear();readingIndex.near.clear();readingIndex.scopes.clear();readingIndex.elements.clear();readingIndex.subtrees.clear();cancelAnimationFrame(scrollFrame);
     window.__ROAMCAT_CONTENT_BOOTING__ = false;
     clearTimeout(lookup.idleTimer);
@@ -3659,7 +3696,7 @@ const LIMIT_ERROR = T('c.limit');
     getArticleSummarySource,
     toggleEmergencyTranslation,
     toggleEmergencyShortcut,
-    stats(){return {rebuilds:state.rebuilds,articleEpoch:state.articleEpoch,noReadingRoot:state.noReadingRoot,indexedBlocks:readingIndex.facts.size,measuredBlocks:readingIndex.measured};},
+    stats(){return {rebuilds:state.rebuilds,articleEpoch:state.articleEpoch,noReadingRoot:state.noReadingRoot,indexedBlocks:readingIndex.facts.size,measuredBlocks:readingIndex.measured,emergency:state.emergency?{units:state.emergency.units.length,...state.emergency.metrics}:null};},
     inspect(limit=300,textLimit=100){
       const describe = el => {
         if (!el || el.nodeType !== 1) return null;

@@ -23,6 +23,12 @@ import {t, onUiLangChange} from '../../i18n-runtime.js';
 const ENGLISH_RE = /[A-Za-z]/u;
 const PAGE_BLOCKS=80,MAX_FILE_BYTES=64*1024*1024;
 const MAX_FAILED_BATCHES = 3;
+// 鉴权失败、额度用完、服务没连上：换哪一批都一样失败，整本书立即停下，提示检查密钥或登录。
+const STOP_CODES = new Set(['AUTH', 'QUOTA', 'NOT_READY', 'SERVICE_AUTH', 'STDERR_AUTH']);
+// 只有结果格式、条目对不上这类问题才拆成单条重试（模型偶发漏条、夹杂格式）；限流、超时、网络故障拆开只会多发请求，按批记失败。
+const SPLIT_CODES = new Set(['UNKNOWN', 'OUTPUT_INVALID', 'JSON_INVALID', 'BATCH_SHAPE', 'BATCH_COUNT', 'ITEM_FIELDS', 'ITEM_ID', 'ITEM_DUPLICATE', 'TRANSLATION_TYPE', 'TRANSLATION_EMPTY', 'TRANSLATION_WHITESPACE', 'TRANSLATION_LENGTH', 'TRANSLATION_NO_HAN']);
+const stopsTranslation = error => STOP_CODES.has(error?.code);
+const splitsBatch = error => !error?.code || SPLIT_CODES.has(error.code);
 
 export class RoamcatReader extends LitElement {
   static properties = {
@@ -116,10 +122,10 @@ export class RoamcatReader extends LitElement {
     }
   }
 
-  beginOpen(){this._loadController?.abort();this._loadController=new AbortController();this._translationParts.clear();this.translating=false;this.parsing=true;this.pageIndex=0;this.error='';this.remoteUrl='';this.remoteStatus=null;return {id:++this._openId,signal:this._loadController.signal};}
+  beginOpen(){this._translationProgressCleanup?.();this._loadController?.abort();this._loadController=new AbortController();this._translationParts.clear();this.translating=false;this.parsing=true;this.pageIndex=0;this.error='';this.remoteUrl='';this.remoteStatus=null;return {id:++this._openId,signal:this._loadController.signal};}
   // 在别的扩展页切换语言：按新语言重渲染，不重载，已打开的文档与译文保留。
   connectedCallback(){super.connectedCallback();this._offLang=onUiLangChange(()=>this.requestUpdate());}
-  disconnectedCallback(){this._loadController?.abort();this._openId++;this._offLang?.();super.disconnectedCallback();}
+  disconnectedCallback(){this._translationProgressCleanup?.();this._loadController?.abort();this._openId++;this._offLang?.();super.disconnectedCallback();}
   async openData(data, name,opening=this.beginOpen()) {
     this.blocks = [];
     this.translations = new Map();
@@ -196,46 +202,71 @@ export class RoamcatReader extends LitElement {
     this.error = '';
     this.translating = true;
     let done = 0;
+    const accept=items=>{
+      if(opening!==this._openId)return;
+      let changed=false;
+      for(const item of items){
+        const blockId=owners.get(item?.id);
+        if(!blockId||this.translations.has(blockId)||typeof item.translation!=='string'||!item.translation.trim())continue;
+        if(this._translationParts.get(item.id)===item.translation)continue;
+        this._translationParts.set(item.id,item.translation);changed=true;
+        const parts=groups.get(blockId);
+        if(parts.every(id=>this._translationParts.has(id))){
+          this.translations.set(blockId,joinTranslationParts(parts.map(id=>this._translationParts.get(id))));
+          for(const id of parts)this._translationParts.delete(id);
+        }
+      }
+      if(changed)this.requestUpdate();
+    };
+    const flights=new Map();
+    const receive=(message,sender)=>{
+      if(sender.id!==chrome.runtime.id||sender.tab||message?.type!=='SS_READER_TRANSLATION_PROGRESS'||!Array.isArray(message.items))return;
+      const ids=flights.get(message.requestId);
+      if(ids)accept(message.items.filter(item=>ids.has(item?.id)));
+    };
+    chrome.runtime.onMessage.addListener(receive);
+    const cleanup=()=>{chrome.runtime.onMessage.removeListener(receive);flights.clear();if(this._translationProgressCleanup===cleanup)this._translationProgressCleanup=null;};
+    this._translationProgressCleanup=cleanup;
+    const translate=async items=>{
+      const requestId='reader-'+crypto.randomUUID();
+      flights.set(requestId,new Set(items.map(item=>item.id)));
+      try{return await request('READER_TRANSLATE',{requestId,items});}
+      finally{flights.delete(requestId);}
+    };
     try {
       // 两路并发：与后台每个服务默认的 2 个并发名额对齐，按文档顺序取批。
-      // 单批失败继续；连续三批没有得到任何译文时停止，避免服务不可用时整本书反复请求。
+      // 单批失败继续；连续三批没有得到任何译文时停止，避免服务不可用时整本书反复请求；鉴权/额度类错误一次就停。
       // 结束后再报错，再点一次只补翻没译出的段落。
-      let next = 0, failed = null, failuresWithoutProgress = 0;
+      let next = 0, failed = null, failuresWithoutProgress = 0, stopped = false;
       this.progress = t('rd.translating',{done,total:batches.length});
       const worker = async () => {
-        while (next < batches.length&&opening===this._openId&&failuresWithoutProgress<MAX_FAILED_BATCHES) {
+        while (next < batches.length&&opening===this._openId&&!stopped&&failuresWithoutProgress<MAX_FAILED_BATCHES) {
           const batch = batches[next++];
           try {
             // 模型偶发漏条/夹杂格式时整批被校验拒收：拆成单条逐个重试，一条坏数据不拖累同批其余段落。
             const payload = batch.map(({id, text}) => ({id, text}));
             let items;
             try {
-              const result = await request('READER_TRANSLATE', {items: payload});
+              const result = await translate(payload);
               items = result.items || [];
             } catch (error) {
-              if (batch.length === 1 || opening !== this._openId) throw error;
-              const singles = await Promise.allSettled(payload.map(item => request('READER_TRANSLATE', {items: [item]})));
+              if (batch.length === 1 || opening !== this._openId || stopped || !splitsBatch(error)) throw error;
+              const singles = await Promise.allSettled(payload.map(item => translate([item])));
               const ok = singles.filter(single => single.status === 'fulfilled').flatMap(single => single.value.items || []);
-              if (ok.length < batch.length) failed ??= singles.find(single => single.status === 'rejected')?.reason || error;
+              const rejected = singles.filter(single => single.status === 'rejected').map(single => single.reason);
+              const fatal = rejected.find(stopsTranslation);
+              if (fatal) { stopped = true; failed = fatal; }
+              else if (ok.length < batch.length) failed ??= rejected[0] || error;
               items = ok;
             }
             if(opening!==this._openId)return;
             failuresWithoutProgress = items.length ? 0 : failuresWithoutProgress + 1;
-            for (const item of items) {
-              const blockId = owners.get(item.id);
-              if (!blockId) continue;
-              this._translationParts.set(item.id, item.translation);
-              const parts = groups.get(blockId);
-              if (parts.every(id => this._translationParts.has(id))) {
-                this.translations.set(blockId, joinTranslationParts(parts.map(id => this._translationParts.get(id))));
-                for (const id of parts) this._translationParts.delete(id);
-              }
-            }
-            this.requestUpdate();
+            accept(items);
             done += 1;
             this.progress = t('rd.translating',{done,total:batches.length});
           } catch (error) {
-            failed ??= error;
+            if (stopsTranslation(error)) { if (!stopped) failed = error; stopped = true; }
+            else failed ??= error;
             failuresWithoutProgress++;
           }
         }
@@ -249,6 +280,7 @@ export class RoamcatReader extends LitElement {
       this.progress = '';
       this.error = t('rd.transFail',{err:error?.message || error});
     } finally {
+      cleanup();
       if(opening===this._openId){this.translating = false;
       setTimeout(() => { if (opening===this._openId&&this.progress === t('rd.transDone')) this.progress = ''; }, 2000);}
     }

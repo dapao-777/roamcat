@@ -124,6 +124,56 @@ test('后续请求失败时保留已完整完成的条目，长条目的一半�
   });
 });
 
+// 回归：单条接口的服务（DeepLX 等）曾把一批逐条串行往返，第一条早已译完也要等整批结束才交出。
+test('子请求按给定并发并行发出，每条译完立即回调，结果仍按原顺序',async()=>{
+  const ids=['A','B','C','D','E','F','G','H'],releases=[],order=[];let active=0,peak=0,wrapped=0;
+  const pending=mtTranslate(fixtureService('deeplx'),ids.map(id=>`Item ${id} compares evidence.`),{
+    concurrency:3,run:task=>{wrapped++;return task();},onItem:(index,text)=>order.push([index,text]),
+    fetch:async(_,init)=>{const id=JSON.parse(init.body).text.split(' ')[1];active++;peak=Math.max(peak,active);await new Promise(resolve=>releases.push(()=>resolve()));active--;return json({data:'译文'+id});}
+  });
+  const settle=async()=>{for(let i=0;i<5;i++)await new Promise(resolve=>setImmediate(resolve));};
+  await settle();assert.equal(releases.length,3);assert.deepEqual(order,[]);
+  releases[1]();await settle();
+  assert.deepEqual(order,[[1,'译文B']],'第二条先回来就先交出，不等第一条');
+  for(let i=0;i<ids.length;i++){releases[i]?.();await settle();}
+  for(const release of releases)release();
+  assert.deepEqual(await pending,ids.map(id=>'译文'+id));
+  assert.equal(peak,3);assert.equal(wrapped,8);assert.equal(order.length,8);
+});
+
+test('MyMemory 长文本的内部拆包每次都经过服务闸门与限速，全部完成后才交付原条目',async()=>{
+  let calls=0,runs=0,paced=0;const shown=[];
+  const result=await mtTranslate(fixtureService('mymemory'),['Evidence '.repeat(180)],{
+    run:async task=>{runs++;return task();},pace:async()=>{paced++;},onItem:(index,text)=>shown.push({index,text,calls}),
+    fetch:async()=>{calls++;return json({responseStatus:200,responseData:{translatedText:'完整译文'}});}
+  });
+  assert.equal(calls,4);assert.equal(runs,calls);assert.equal(paced,calls-1);
+  assert.equal(shown.length,1);assert.equal(shown[0].calls,calls);assert.equal(shown[0].text,result[0]);
+});
+
+test('本机翻译在服务闸门校验失败时保留过期错误，不启动本机模型',async()=>{
+  let calls=0;
+  await assert.rejects(mtTranslate(fixtureService('chrome'),[source],{
+    run:async()=>{throw Object.assign(new Error('stale consumer'),{code:'STALE'});},
+    local:async()=>{calls++;return [translation];}
+  }),{code:'STALE'});
+  assert.equal(calls,0);
+});
+
+test('并发时某个子请求失败：不再发新请求，等在途的结束，已完成的照样保留',async()=>{
+  let started=0;
+  await assert.rejects(mtTranslate(fixtureService('deeplx'),['One fails here.','Two finishes later.','Three never starts.','Four never starts.'],{concurrency:2,fetch:async(_,init)=>{
+    started++;const text=JSON.parse(init.body).text;
+    if(text.startsWith('One'))return new Response('limited',{status:429});
+    await new Promise(resolve=>setTimeout(resolve,20));return json({data:translation});
+  }}),error=>{assert.equal(error.code,'RATE_LIMIT');assert.deepEqual(error.partialTranslations,[null,translation,null,null]);return true;});
+  assert.equal(started,2);
+  // 百度长条目的分片并行时先后回来，仍按分片顺序拼回原条目。
+  let calls=0;
+  const pieces=await mtTranslate(fixtureService('baidu'),['é'.repeat(4000)],{concurrency:2,fetch:async()=>{const n=++calls;await new Promise(resolve=>setTimeout(resolve,n===1?30:0));return json({trans_result:[{dst:'片'+n}]});}});
+  assert.deepEqual(pieces,['片1\n片2']);
+});
+
 test('超时按单次请求计算，让速等待和多包总耗时不占下一包的时间',{timeout:1500},async()=>{
   let calls=0;
   const result=await mtTranslate(fixtureService('deeplx'),[source,source],{timeoutMs:40,pace:async()=>new Promise(resolve=>setTimeout(resolve,60)),fetch:async()=>{calls++;return json({data:translation});}});

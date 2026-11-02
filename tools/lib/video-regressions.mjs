@@ -90,8 +90,8 @@ export async function verifyVideoRegressions(gate) {
       await page.evaluate(() => {
         window.callbacks = {settings: persisted, onAssist() {}, onPrepareBridge: async () => {},
           onSettingsChange: async patch => { persisted = {...persisted, ...patch}; return {video: persisted}; },
-          onTranslate: items => {
-            requests.push({videoId: new URL(location.href).searchParams.get('v'), items});
+          onTranslate: (items,onProgress) => {
+            requests.push({videoId: new URL(location.href).searchParams.get('v'), items,onProgress});
             return new Promise(resolve => pending.push(text => resolve({items: items.map(item => ({id: item.id, translation: text || '正确的测试译文。'}))})));
           }};
         RoamCatVideoSubtitles.mount(callbacks);
@@ -120,6 +120,27 @@ export async function verifyVideoRegressions(gate) {
       await page.evaluate(() => find('button.bilingual')[0].click());
       await page.waitForFunction(() => translationText() === '正确的测试译文。');
       assert.equal(await page.evaluate(() => requests.length), 1);
+    });
+    await gate.check('完整机翻进度先显示字幕，整批结束前可读，换视频后的旧进度被丢弃',async()=>{
+      await mount('progress-old');await page.waitForFunction(()=>requests.length===1);
+      await page.evaluate(()=>requests[0].onProgress([{id:requests[0].items[0].id,translation:'提前完成的字幕译文。'}]));
+      await page.waitForFunction(()=>translationText()==='提前完成的字幕译文。');
+      assert.equal(await page.evaluate(()=>requests.length),1);
+      await page.evaluate(()=>{
+        history.pushState({},'','/watch?v=progress-new');document.querySelector('video').dispatchEvent(new Event('loadedmetadata'));
+      });
+      await page.waitForFunction(()=>requests.length===2);
+      await page.evaluate(()=>requests[1].onProgress([{id:requests[1].items[0].id,translation:'新视频的提前译文。'}]));
+      await page.waitForFunction(()=>translationText()==='新视频的提前译文。');
+      await page.evaluate(async()=>{
+        requests[0].onProgress([{id:requests[0].items[0].id,translation:'旧视频过期进度。'}]);
+        pending[0]('旧视频过期结果。');await new Promise(resolve=>requestAnimationFrame(resolve));
+      });
+      assert.equal(await page.evaluate(()=>translationText()),'新视频的提前译文。');
+      await page.evaluate(async()=>{
+        RoamCatVideoSubtitles.unmount();requests[1].onProgress([{id:requests[1].items[0].id,translation:'卸载后的过期进度。'}]);pending[1]();await new Promise(resolve=>requestAnimationFrame(resolve));
+      });
+      assert.equal(await page.locator('[data-roamcat-ui="video-subtitles"]').count(),0);
     });
     for (const mode of ['native-translated', 'native-asr']) await gate.check(mode === 'native-translated' ? '原生自动翻译不污染英文原文，临时取原文后还原目标语言' : '同语言的自动/人工字幕缓存互相隔离', async () => {
       await mount(mode, mode);
