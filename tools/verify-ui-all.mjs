@@ -331,6 +331,21 @@ try {
           const heights=await extPage.evaluate(()=>[...document.querySelectorAll('#translation-engines .route-row')].map(el=>Math.round(el.getBoundingClientRect().height)));
           check(`机翻场景行保持紧凑[${theme}/${width}px]`,heights.length===5&&Math.max(...heights)<=100,JSON.stringify(heights));
           await shot(extPage,`options-mt-${theme}-${width}`);
+          // 任务分配是服务目录下方的全局卡片：两组分配都在里面、不在单个服务的详情里，每行左标签右下拉框，不再留出大段空白。
+          const tasks=await extPage.evaluate(()=>{
+            const card=document.querySelector('#task-assignment');
+            const rows=[...document.querySelectorAll('#task-assignment .route-row')];
+            return {
+              global:Boolean(card&&!card.closest('.service-detail')&&card.querySelector('#translation-engines')&&card.querySelector('#api-routing')),
+              visible:Boolean(card&&card.getClientRects().length&&!document.querySelector('#api-routing').hidden),
+              rows:rows.length,
+              tallest:Math.max(0,...rows.map(row=>Math.round(row.getBoundingClientRect().height))),
+              usageInDiagnostics:Boolean(document.querySelector('#diagnostics #usage-stats-totals'))&&!document.querySelector('#service #usage-stats-totals'),
+            };
+          });
+          check(`任务分配合成一张全局卡，行内紧凑[${theme}/${width}px]`,tasks.global&&tasks.visible&&tasks.rows===10&&tasks.tallest<=100&&tasks.usageInDiagnostics,JSON.stringify(tasks));
+          if(width===1440)await extPage.locator('#task-assignment').evaluate(el=>el.scrollIntoView({block:'start'}));
+          if(width===1440){await settled(extPage);await shot(extPage,`options-task-assignment-${theme}`);}
         }
       }
       check(`机器翻译全部表单版式[${theme}/${width}px]`,dirty.length===0,JSON.stringify(dirty).slice(0,800));

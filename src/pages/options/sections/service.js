@@ -272,47 +272,6 @@ export const serviceSection = html`
 </details>
 <p id="provider-result" class="inline-message" aria-live="polite">
 </p>
-          <fieldset id="api-routing" class="task-routing" hidden="">
-<legend>${t('sec.svc.routing')}</legend>
-<p class="field-help">${t('sec.svc.routingNote')}</p>
-<label class="field route-row">
-<span>${t('sec.svc.routeAssist')}</span>
-<select id="route-assist"></select>
-</label>
-<label class="field route-row">
-<span>${t('sec.svc.routeSupport')}</span>
-<select id="route-support"></select>
-</label>
-<label class="field route-row">
-<span>${t('sec.svc.routeGroups')}</span>
-<select id="route-groups"></select>
-</label>
-<label class="field route-row">
-<span>${t('sec.svc.routeTranslate')}</span>
-<select id="route-translate"></select>
-</label>
-<label class="field route-row">
-<span>${t('sec.svc.routeSummary')}</span>
-<select id="route-summary"></select>
-</label>
-          </fieldset>
-          <fieldset class="task-routing usage-stats">
-<legend>${t('sec.svc.usageTitle')}</legend>
-<p class="field-help">${t('sec.svc.usageNote')}</p>
-<div id="usage-stats-totals" class="usage-totals"></div>
-<p id="usage-stats-empty" class="field-help" hidden="">${t('sec.svc.usageEmpty')}</p>
-<div id="usage-stats-wrap" class="usage-table-wrap" hidden="">
-<table class="usage-table">
-<thead><tr><th>${t('sec.svc.usageColService')}</th><th>${t('sec.svc.usageColModel')}</th><th>${t('sec.svc.usageColRequests')}</th><th>${t('sec.svc.usageColIn')}</th><th>${t('sec.svc.usageColOut')}</th><th>${t('sec.svc.usageColFail')}</th></tr></thead>
-<tbody id="usage-stats-body"></tbody>
-</table>
-</div>
-<div class="provider-actions">
-<button id="usage-stats-refresh" class="secondary-button" type="button">${t('sec.svc.usageRefresh')}</button>
-<button id="usage-stats-clear" class="danger-button" type="button">${t('sec.svc.usageClear')}</button>
-</div>
-<p id="usage-stats-result" class="inline-message" aria-live="polite"></p>
-          </fieldset>
         </div>
       </div>
       <!-- 机器翻译：凭据表单由 options-mt.js 按 mt-providers.mjs 的字段声明渲染，场景引擎与回退开关对全部机翻服务共用 -->
@@ -330,6 +289,26 @@ export const serviceSection = html`
             </div>
           </form>
           <p id="mt-result" class="inline-message" aria-live="polite"></p>
+        </div>
+      </div>
+      <aside class="privacy-note">
+<b>${t('sec.svc.sentWhat')}</b>
+<p>${t('sec.svc.sentDesc')}</p>
+<details class="calculation-note">
+<summary>${t('sec.svc.bilingualScope')}</summary>
+<p>${t('sec.svc.bilingualDesc')}</p>
+</details>
+</aside>
+            </div> <!-- /.detail-content-body -->
+          </section> <!-- /.service-detail -->
+        </div> <!-- /.catalog-layout -->
+        <!-- 任务分配：全局设置，不随左侧选中的服务变化。先按场景选翻译引擎，用大模型的任务再选由哪个自备 API 服务处理。 -->
+        <section id="task-assignment" class="paper-card task-assignment" aria-labelledby="task-assignment-title">
+          <div class="task-assignment-head">
+            <h3 id="task-assignment-title">${t('sec.svc.taskTitle')}</h3>
+            <p class="field-help">${t('sec.svc.taskNote')}</p>
+          </div>
+          <div class="task-assignment-groups">
           <fieldset id="translation-engines" class="task-routing">
 <legend>${t('sec.svc.mt.engines')}</legend>
 <p class="field-help">${t('sec.svc.mt.enginesNote')}</p>
@@ -358,19 +337,33 @@ export const serviceSection = html`
 <label class="switch"><input id="mt-fallback" type="checkbox"><span aria-hidden="true"></span><span class="sr-only">${t('sec.svc.mt.fallback')}</span></label>
 </div>
           </fieldset>
-        </div>
-      </div>
-      <aside class="privacy-note">
-<b>${t('sec.svc.sentWhat')}</b>
-<p>${t('sec.svc.sentDesc')}</p>
-<details class="calculation-note">
-<summary>${t('sec.svc.bilingualScope')}</summary>
-<p>${t('sec.svc.bilingualDesc')}</p>
-</details>
-</aside>
-            </div> <!-- /.detail-content-body -->
-          </section> <!-- /.service-detail -->
-        </div> <!-- /.catalog-layout -->
+          <fieldset id="api-routing" class="task-routing">
+<legend>${t('sec.svc.routing')}</legend>
+<p class="field-help">${t('sec.svc.routingNote')}</p>
+<p id="api-routing-empty" class="field-help task-routing-empty" hidden="">${t('sec.svc.routingEmpty')}</p>
+<label class="field route-row">
+<span>${t('sec.svc.routeAssist')}</span>
+<select id="route-assist"></select>
+</label>
+<label class="field route-row">
+<span>${t('sec.svc.routeSupport')}</span>
+<select id="route-support"></select>
+</label>
+<label class="field route-row">
+<span>${t('sec.svc.routeGroups')}</span>
+<select id="route-groups"></select>
+</label>
+<label class="field route-row">
+<span>${t('sec.svc.routeSummary')}</span>
+<select id="route-summary"></select>
+</label>
+<label class="field route-row">
+<span>${t('sec.svc.routeTranslate')}</span>
+<select id="route-translate"></select>
+</label>
+          </fieldset>
+          </div>
+        </section>
       </div> <!-- /.service-catalog-workspace -->
     </section>
 

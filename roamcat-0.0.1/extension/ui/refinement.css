@@ -386,22 +386,14 @@ button, input, select, textarea { font-family: var(--font-sans); }
   font-size: var(--fs-1);
   color: var(--color-text-dim);
 }
-.options-body .task-routing .route-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
+/* 行内排版（左标签、右下拉框）在 options.css 的「任务分配」段，这里只留字号与颜色。 */
 .options-body .task-routing .route-row > span {
-  flex: 0 0 130px;
   font-size: var(--fs-2);
   color: var(--color-text-primary);
 }
-.options-body .task-routing .route-row select {
-  flex: 1;
-  min-width: 0;
-}
+.options-body .task-routing .route-row select { min-width: 0; }
 
-/* 模型用量统计：沿用 task-routing 卡片边框；汇总芯片 + 明细表 */
+/* 模型用量统计（运行诊断分区）：汇总芯片 + 明细表 */
 .options-body .usage-stats .usage-totals {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

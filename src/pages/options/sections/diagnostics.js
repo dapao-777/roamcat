@@ -59,6 +59,28 @@ export const diagnosticsSection = html`
           </div>
         </details>
       </div>
+      <!-- 模型用量：本机聚合的请求与 token 统计，和请求诊断放在一起看；数据与按钮由 options-controller.js 渲染。 -->
+      <div class="opt-group usage-stats" id="usage-stats">
+        <div class="opt-group-head"><h2>${t('sec.svc.usageTitle')}</h2></div>
+        <div class="opt-card">
+          <div class="opt-row opt-row-stack">
+<p class="opt-row-desc">${t('sec.svc.usageNote')}</p>
+<div id="usage-stats-totals" class="usage-totals"></div>
+<p id="usage-stats-empty" class="field-help" hidden="">${t('sec.svc.usageEmpty')}</p>
+<div id="usage-stats-wrap" class="usage-table-wrap" hidden="">
+<table class="usage-table">
+<thead><tr><th>${t('sec.svc.usageColService')}</th><th>${t('sec.svc.usageColModel')}</th><th>${t('sec.svc.usageColRequests')}</th><th>${t('sec.svc.usageColIn')}</th><th>${t('sec.svc.usageColOut')}</th><th>${t('sec.svc.usageColFail')}</th></tr></thead>
+<tbody id="usage-stats-body"></tbody>
+</table>
+</div>
+<div class="provider-actions">
+<button id="usage-stats-refresh" class="secondary-button" type="button">${t('sec.svc.usageRefresh')}</button>
+<button id="usage-stats-clear" class="danger-button" type="button">${t('sec.svc.usageClear')}</button>
+</div>
+<p id="usage-stats-result" class="inline-message" aria-live="polite"></p>
+          </div>
+        </div>
+      </div>
       <div class="opt-group">
         <div class="opt-group-head"><h2>${t('sec.diag.gActions')}</h2></div>
         <div class="opt-card">

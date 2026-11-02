@@ -599,13 +599,25 @@ body[data-group="reading"] .now-status { margin-bottom: var(--rc-space-4); }
 /* 名称完整换行（英文名比中文长，单行会截掉「Subscription」）；描述最多两行，完整内容在卡片的悬停提示里。 */
 .options-document .options-body #service .service-name { display: block; overflow-wrap: anywhere; }
 .options-document .options-body #service .service-desc { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
-/* 机翻按场景选引擎：独立列网格，避免 .field 的纵向 flex 把旧路由标签的 130px 基准变成行高。 */
-.options-document .options-body #translation-engines { container: mt-routing / inline-size; }
-.options-document .options-body #translation-engines .route-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); align-items: center; gap: var(--rc-space-3); }
-.options-document .options-body #translation-engines .route-row > span { text-align: start; }
-@container mt-routing (max-width: 480px) {
-  .options-document .options-body #translation-engines .route-row { grid-template-columns: minmax(0, 1fr); gap: var(--rc-space-2); }
+/* 任务分配：服务目录下方的全局卡片（不随左侧选中的服务变化），翻译引擎与大模型任务两组在宽容器里并排、窄了上下排。 */
+.options-document .options-body .task-assignment { container: task-assign / inline-size; margin-top: var(--rc-space-4); padding: var(--rc-space-4); }
+.options-document .options-body .task-assignment-head h3 { margin: 0; font-size: var(--fs-3); font-weight: 600; }
+.options-document .options-body .task-assignment-head .field-help { margin: var(--rc-space-1) 0 0; }
+.options-document .options-body .task-assignment-groups { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: var(--rc-space-3); margin-top: var(--rc-space-3); }
+@container task-assign (min-width: 760px) {
+  .options-document .options-body .task-assignment-groups { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+/* 每行左标签、右下拉框：独立列网格，避免 .field 的纵向 flex 把旧路由标签的 130px 基准变成行高（标签下会空出一大段）。 */
+.options-document .options-body .task-routing { container: task-routing / inline-size; margin-top: 0; }
+.options-document .options-body .task-routing .route-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); align-items: center; gap: var(--rc-space-3); }
+.options-document .options-body .task-routing .route-row > span { flex: none; text-align: start; }
+@container task-routing (max-width: 420px) {
+  .options-document .options-body .task-routing .route-row { grid-template-columns: minmax(0, 1fr); gap: var(--rc-space-2); }
+}
+/* 模型用量（运行诊断分区）：说明、三格汇总、明细表、按钮上下排，不跟着改版后的横排 .opt-row-stack 挤在一行。 */
+.options-document .options-body .usage-stats .opt-row { flex-direction: column; align-items: stretch; gap: var(--rc-space-3); }
+.options-document .options-body .usage-stats .opt-row > * { min-width: 0; }
+.options-document .options-body .usage-stats .opt-row-desc { margin: 0; }
 @media (max-width: 900px) { .options-document .options-body #service .directory-items { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .options-document .options-body #service .directory-items { grid-template-columns: minmax(0, 1fr); } }
 
