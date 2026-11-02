@@ -163,7 +163,7 @@ try{
         status:Boolean(status.panel&&status.indicator&&status.label&&status.count&&status.more&&status.detail&&status.collapse&&status.close),
         detail:Boolean(detail.panel&&detail.tree&&detail.close),
         toast:Boolean(toast.panel&&toast.message&&toast.undo),
-        pet:Boolean(pet.container&&pet.edgeTab&&pet.flipBtn&&pet.quickDock&&pet.avatarWrap&&pet.zoomControls&&pet.summaryWindow&&petIds&&menuDomainSvg),
+        pet:Boolean(pet.container&&pet.edgeTab&&pet.flipBtn&&pet.toolbar&&pet.avatarWrap&&pet.zoomControls&&pet.summaryWindow&&petIds&&menuDomainSvg),
       };
     });
     assert.deepEqual(probes,{rerender:true,card:true,status:true,detail:true,toast:true,pet:true},'content-ui 工厂返回引用不完整');
