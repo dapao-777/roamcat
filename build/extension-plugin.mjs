@@ -59,7 +59,7 @@ export function roamcatExtension({mode}) {
           if(/^[ \t]*(?:import|export)[\s({'"]/m.test(code))continue;
           const result=await minify(name,code,{module:false});
           if(result.errors.length)throw new Error(`classic 压缩失败 ${name}: ${result.errors.join('; ')}`);
-          writeFileSync(path.join(outDir,name),'/*! MPL-2.0; RoamCat https://github.com/dapao-777/roamcat */\n'+result.code);
+          writeFileSync(path.join(outDir,name),'/*! MPL-2.0; RoamCat https://github.com/roamcat-dev/roamcat */\n'+result.code);
         }
       }
       const manifest = JSON.parse(readFileSync(path.join(EXTENSION_SOURCE, 'manifest.json'), 'utf8'));

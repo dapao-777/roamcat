@@ -15,7 +15,7 @@
 
 <p align="center">
   <a href="LICENSE"><img alt="License: MPL-2.0" src="https://img.shields.io/badge/license-MPL--2.0-blue"></a>
-  <a href="https://github.com/dapao-777/roamcat/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/dapao-777/roamcat/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/roamcat-dev/roamcat/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/roamcat-dev/roamcat/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="Version 0.7.2" src="https://img.shields.io/badge/version-0.7.2-blue">
   <img alt="Chrome / Edge 125+" src="https://img.shields.io/badge/Chrome%20%2F%20Edge-125%2B-green">
   <img alt="Manifest V3" src="https://img.shields.io/badge/manifest-V3-blueviolet">
@@ -27,7 +27,7 @@
   <a href="#-model-services">Model services</a> ·
   <a href="#-faq">FAQ</a> ·
   <a href="#-docs">Docs</a> ·
-  <a href="https://dapao-777.github.io/roamcat/">Website</a> ·
+  <a href="https://roamcat-dev.github.io/roamcat/">Website</a> ·
   <a href="README.md">中文</a>
 </p>
 
@@ -39,16 +39,16 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/dapao-777/roamcat/blob/main/.github/assets/roamcat-intro.mp4" title="Watch the 34-second intro film — with music">
+  <a href="https://github.com/roamcat-dev/roamcat/blob/main/.github/assets/roamcat-intro.mp4" title="Watch the 34-second intro film — with music">
     <img src=".github/assets/promo-teaser.gif" alt="RoamCat intro animation — click to play the full film with music" width="94%">
   </a><br>
   <sub>▶ 34-second intro film · click the clip for the full video with music</sub>
 </p>
 
-**RoamCat** (随心阅) is a free, open-source browser extension for **Chrome and Edge** that helps Chinese-speaking readers read English websites. It translates pages in place into **bilingual Chinese–English text**, or keeps the page in English and adds **sparse hints that fade as you improve**; it also covers **PDF/EPUB files**, **YouTube bilingual captions** and opt-in **Twitch chat translation**. It is **local-first with no telemetry**, and the AI is yours to choose: **33 bring-your-own API providers**, a local Ollama model, or your existing **ChatGPT / Grok / Google subscription**. More on the [website](https://dapao-777.github.io/roamcat/), and an [llms.txt](https://dapao-777.github.io/roamcat/llms.txt) for AI assistants.
+**RoamCat** (随心阅) is a free, open-source browser extension for **Chrome and Edge** that helps Chinese-speaking readers read English websites. It translates pages in place into **bilingual Chinese–English text**, or keeps the page in English and adds **sparse hints that fade as you improve**; it also covers **PDF/EPUB files**, **YouTube bilingual captions** and opt-in **Twitch chat translation**. It is **local-first with no telemetry**, and the AI is yours to choose: **33 bring-your-own API providers**, a local Ollama model, or your existing **ChatGPT / Grok / Google subscription**. More on the [website](https://roamcat-dev.github.io/roamcat/), and an [llms.txt](https://roamcat-dev.github.io/roamcat/llms.txt) for AI assistants.
 
 > [!NOTE]
-> **0.7.2 — the extension and the local service now authenticate each other, so nothing is sent until the extension knows it is talking to the real RoamCat service (update the extension and the connector together).** Download the package from [Releases](https://github.com/dapao-777/roamcat/releases/latest) or build from source, then load it in developer mode (see [Quick start](#-quick-start)); it is not on any extension store yet. RoamCat rebuilds, optimizes and repairs the open-source [RelyLess](https://github.com/rockythink/relyless) — see [Acknowledgements](#-acknowledgements).
+> **0.7.2 — the extension and the local service now authenticate each other, so nothing is sent until the extension knows it is talking to the real RoamCat service (update the extension and the connector together).** Download the package from [Releases](https://github.com/roamcat-dev/roamcat/releases/latest) or build from source, then load it in developer mode (see [Quick start](#-quick-start)); it is not on any extension store yet. RoamCat rebuilds, optimizes and repairs the open-source [RelyLess](https://github.com/rockythink/relyless) — see [Acknowledgements](#-acknowledgements).
 
 ## ✨ Highlights
 
@@ -126,12 +126,12 @@ Failed passages retry on a graded backoff (2.5s → 6s → 14s, classified by er
 
 Requires **Chrome or Edge 125+**.
 
-**Option A — Release package.** Download `roamcat-0.7.2-extension.zip` from [Releases](https://github.com/dapao-777/roamcat/releases/latest) and unzip it. Open `chrome://extensions` (or `edge://extensions`), turn on **Developer mode**, choose **Load unpacked** and pick the unzipped **`roamcat-0.7.2/extension`** folder. For the subscription connector, run `node roamcat-0.7.2/connector/install.mjs` from the directory containing `roamcat-0.7.2/` (Node.js 20+); it works out the extension ID from that folder, so rerun it if you move the folder.
+**Option A — Release package.** Download `roamcat-0.7.2-extension.zip` from [Releases](https://github.com/roamcat-dev/roamcat/releases/latest) and unzip it. Open `chrome://extensions` (or `edge://extensions`), turn on **Developer mode**, choose **Load unpacked** and pick the unzipped **`roamcat-0.7.2/extension`** folder. For the subscription connector, run `node roamcat-0.7.2/connector/install.mjs` from the directory containing `roamcat-0.7.2/` (Node.js 20+); it works out the extension ID from that folder, so rerun it if you move the folder.
 
 **Option B — build from source** (Node.js 22.13+; Node 24 verified):
 
 ```sh
-git clone https://github.com/dapao-777/roamcat.git
+git clone https://github.com/roamcat-dev/roamcat.git
 cd roamcat
 npm ci
 npm run build      # → dist/extension

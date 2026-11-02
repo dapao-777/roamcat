@@ -16,7 +16,7 @@ RoamCat 是一个面向英语阅读的 Chrome / Edge 扩展，按双模式组织
 
 两个模式共用同一条本地优先的模型链路与同一套数据边界。自动辅助只面向能可靠识别的主要阅读区域；划词、选段翻译与查词卡片在全页（含侧栏与导航）可用，输入框、表单、代码块与交互控件不处理；结果仍取决于所选模型，可能超时、失败或不完整。
 
-> 当前版本见 [GitHub Releases](https://github.com/dapao-777/roamcat/releases/latest)（0.x，开发者模式安装）。尚未发布到 Chrome Web Store 或 Microsoft Edge Add-ons。
+> 当前版本见 [GitHub Releases](https://github.com/roamcat-dev/roamcat/releases/latest)（0.x，开发者模式安装）。尚未发布到 Chrome Web Store 或 Microsoft Edge Add-ons。
 
 ## 产品理念
 
@@ -76,7 +76,7 @@ RoamCat 是一个面向英语阅读的 Chrome / Edge 扩展，按双模式组织
 
 ### 从 Release 安装
 
-免构建安装包 `roamcat-<版本>-extension.zip` 附在 [GitHub Releases](https://github.com/dapao-777/roamcat/releases) 中：
+免构建安装包 `roamcat-<版本>-extension.zip` 附在 [GitHub Releases](https://github.com/roamcat-dev/roamcat/releases) 中：
 
 1. 从 GitHub Releases 下载安装包（附 `SHA256SUMS` 可校验）并解压，得到与安装包版本一致的 `roamcat-<版本>/` 目录，其中包含 `extension/`（`npm run build:release` 产物）、`connector/`（订阅连接器）、`README.md`、`LICENSE` 与 `NOTICE.txt`。
 2. 打开扩展管理页：
@@ -228,7 +228,7 @@ ChatGPT 订阅是否包含可用 Codex 权益、可选模型和调用额度由 O
 项目构建与验证要求 Node.js **22.13 或更新版本**（Node 24 已验证）；本机连接器可单独使用 Node.js 20+。单元测试需先安装项目依赖；浏览器加载请先构建：
 
 ```sh
-git clone https://github.com/dapao-777/roamcat.git
+git clone https://github.com/roamcat-dev/roamcat.git
 cd roamcat
 npm ci
 npm run build         # Vite 构建 → dist/extension（dev 注入固定 key，扩展 ID 固定）

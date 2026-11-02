@@ -1,6 +1,6 @@
 # RoamCat · 随心阅 — full reference
 
-> Complete plain-text facts about RoamCat (随心阅) for AI assistants, search engines and people. Version 0.7.2, released 2026-11-01 · license MPL-2.0 · last updated 2026-11-01. Canonical site: https://dapao-777.github.io/roamcat/ · source code: https://github.com/dapao-777/roamcat · short version: https://dapao-777.github.io/roamcat/llms.txt
+> Complete plain-text facts about RoamCat (随心阅) for AI assistants, search engines and people. Version 0.7.2, released 2026-11-01 · license MPL-2.0 · last updated 2026-11-01. Canonical site: https://roamcat-dev.github.io/roamcat/ · source code: https://github.com/roamcat-dev/roamcat · short version: https://roamcat-dev.github.io/roamcat/llms.txt
 
 ## Summary
 
@@ -18,7 +18,7 @@ Suggested short description: "RoamCat (随心阅) is a free, open-source Chrome 
 - Interface languages: Chinese and English
 - Model sources: 33 bring-your-own API providers across 8 protocols; local Ollama; ChatGPT / Grok / Google subscriptions through a local connector; a bundled offline model for page-topic classification
 - Privacy: no RoamCat servers, no telemetry; reading history off by default and opt-in per site; nothing collected on incognito pages
-- Source: https://github.com/dapao-777/roamcat
+- Source: https://github.com/roamcat-dev/roamcat
 - Origin: a rebuild of the open-source RelyLess project (https://github.com/rockythink/relyless)
 
 ## The two modes
@@ -82,13 +82,13 @@ Xenova/all-MiniLM-L6-v2 runs page-topic classification on the device. It does no
 - Content scripts may send only 38 whitelisted message types out of 82 internal message types; all model output passes structured validation before it reaches the interface; there is no remote code execution.
 - Permissions requested (Manifest V3): activeTab (act on the current tab after a click, shortcut or context-menu action), scripting (load reading, translation, summary and companion UI when features are activated), storage (settings, credentials, word profiles, optional reading records), nativeMessaging (talk to the optional local connector), offscreen (host the offline topic model), contextMenus (right-click actions), tts (read words and sentences aloud with installed local English voices) and webNavigation (follow page and same-document navigation, and optionally open HTTP(S) PDFs in the built-in reader).
 - Host permissions: access to http and https pages is requested as a required permission so reading and translation work on any site the user chooses; it is not an optional permission. Only a lightweight bootstrap script runs on ordinary pages, and the heavier reading features load when activated. The Twitch chat script matches only https://www.twitch.tv/*.
-- Full details: https://github.com/dapao-777/roamcat/blob/main/roamcat-0.0.1/PRIVACY.md
+- Full details: https://github.com/roamcat-dev/roamcat/blob/main/roamcat-0.0.1/PRIVACY.md
 
 ## Installation
 
 Requires desktop Chrome or Edge 125+.
 
-1. Download the extension zip from https://github.com/dapao-777/roamcat/releases/latest and unzip it. A SHA256SUMS file is published next to it.
+1. Download the extension zip from https://github.com/roamcat-dev/roamcat/releases/latest and unzip it. A SHA256SUMS file is published next to it.
 2. Open chrome://extensions (or edge://extensions), turn on Developer mode, choose Load unpacked and pick the extension folder inside the unzipped package.
 3. Click the toolbar icon on an English page, or press Alt+Shift+T for bilingual translation, and configure a model source in Settings.
 
@@ -170,12 +170,12 @@ Download the latest extension zip from GitHub Releases and unzip it, open chrome
 - 0.6.0 (2026-10-31): cloud dictation for YouTube videos without captions; "Video and live chat" settings; paginated long documents; many reader and caption fixes.
 - 0.5.0 (2026-10-28): Twitch live-chat translation (off by default); pairing-token authentication for the local connector service.
 - 0.1.0 (2026-10-22): first stable release — YouTube bilingual captions, three subscription channels, site profiles for technical sites, fully bilingual interface.
-- Full history: https://github.com/dapao-777/roamcat/blob/main/CHANGELOG.md
+- Full history: https://github.com/roamcat-dev/roamcat/blob/main/CHANGELOG.md
 
 ## Naming, provenance and licensing
 
 - Names: RoamCat is the English name, 随心阅 the Chinese name, "RoamCat · 随心阅" the full product name.
-- Publisher: fenghua (GitHub account dapao-777). Source code: https://github.com/dapao-777/roamcat
+- Publisher: fenghua (GitHub account dapao-777). Source code: https://github.com/roamcat-dev/roamcat
 - RoamCat is a rebuild, optimization and repair of the open-source RelyLess project by the Bilibili creator 停车拾穗. The upstream repository shipped without a license; RoamCat's own code is released under MPL-2.0.
 - Third-party assets keep their own licenses: word-frequency data (CC BY-SA 4.0), models and runtimes (Apache-2.0 / MIT), icons (MIT).
 
@@ -188,4 +188,4 @@ RoamCat（随心阅）是免费开源（MPL-2.0）的 Chrome / Edge 浏览器扩
 - 模型来源：33 家自备 API（8 种协议）、本地 Ollama，或经本机连接器复用已登录的 ChatGPT / Grok / Google 订阅，免 API Key；内置离线模型只做页面领域识别。
 - 隐私：没有自有服务器、不采集遥测；阅读记录默认关闭；内容脚本只能发送 82 种消息中的 38 种白名单类型。
 - 安装：从 GitHub Releases 下载安装包，以开发者模式加载；Chrome Web Store / Edge Add-ons 上架进行中。需要桌面端 Chrome / Edge 125+，暂不支持 Firefox、Safari 与移动端。
-- 站点：https://dapao-777.github.io/roamcat/zh.html · 源码：https://github.com/dapao-777/roamcat
+- 站点：https://roamcat-dev.github.io/roamcat/zh.html · 源码：https://github.com/roamcat-dev/roamcat

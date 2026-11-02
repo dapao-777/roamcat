@@ -1,9 +1,9 @@
-# RoamCat · 随心阅 — https://dapao-777.github.io/roamcat/
+# RoamCat · 随心阅 — https://roamcat-dev.github.io/roamcat/
 # 站点内容是 MPL-2.0 开源项目的文档，欢迎所有搜索引擎与 AI 抓取器（含用户发起的实时抓取）。
 #
 # 注意：GitHub Pages 项目站（/roamcat/）里的本文件不会被爬虫读取——爬虫只认主机根目录的
-# /robots.txt（https://dapao-777.github.io/robots.txt，目前是 404，等于不设限）。本文件随站点发布，
-# 绑定自定义域名、或把同样内容放进 dapao-777.github.io 用户站仓库的根目录后才对爬虫生效；
+# /robots.txt（https://roamcat-dev.github.io/robots.txt，目前是 404，等于不设限）。本文件随站点发布，
+# 绑定自定义域名、或把同样内容放进 roamcat-dev.github.io 组织站仓库的根目录后才对爬虫生效；
 # 在那之前请直接在 Google Search Console / Bing Webmaster Tools 里提交 sitemap.xml。
 
 User-agent: *
@@ -37,4 +37,4 @@ User-agent: Bytespider
 User-agent: Baiduspider
 Allow: /
 
-Sitemap: https://dapao-777.github.io/roamcat/sitemap.xml
+Sitemap: https://roamcat-dev.github.io/roamcat/sitemap.xml

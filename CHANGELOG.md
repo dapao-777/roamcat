@@ -8,6 +8,7 @@
 - 接入 14 种机器翻译服务，支持整页、字幕、直播聊天、阅读器与选段分别选择引擎；默认跟随大模型，失败条目可按设置回退。新增凭据表单、连接检查、Chrome 本机语言包准备与机翻用量统计。密钥不进网页、诊断或导出；行内代码标记丢失或重复会触发回退。详情见机器翻译接入说明。
 
 ### 改进
+- 项目仓库迁移到 `roamcat-dev/roamcat`，同步更新下载、文档与落地页地址；旧落地页由独立跳转站承接。
 - **伴读猫的快捷按钮参照陪读蛙（Read Frog）的悬浮按钮重新摆放**：原来猫左边一组 2×2 方阵，改成一条竖着的胶囊工具栏，居中立在猫头上方、离耳尖留 8px，自上而下是设置、提炼、阅读开关、旋旋翻（离猫最近）。四颗按钮收在同一条半透明磨砂胶囊里，不再各带描边和投影；图标平时用次级墨色，悬停或键盘聚焦时才换强调色，阅读辅助、双语开启时用主色淡底加细环标出，不再是实心色块；横向只占一颗按钮宽，不再压住猫左边的正文。旋旋翻的「中/En」字样撑出了圆钮，改成与其余三颗同款的翻译线条图标。猫被拖到视口顶部附近、上方放不下时，工具栏改挂到猫脚下，顺序倒过来，旋旋翻仍然离猫最近。
 - **伴读猫举着工具栏**：猫长出两只小臂，从耳朵外侧举过头顶，用圆爪托住工具栏底边两角，和猫身同色、同样的边缘光。工具栏每次出现（打开网页、从屏幕边唤醒、从猫脚下换回头顶）时，猫先蹲一下再弹起、眯眼用力，双爪伸上去，工具栏同时升起；举着的时候工具栏和爪子跟着猫的呼吸节奏轻轻起伏。贴边或工具栏挂到猫脚下时双爪放下。拖动途中不换边、不做托举，松手再判断。系统开了「减弱动态效果」时只淡入淡出，爪子直接停在举起的位置。
 - **伴读猫的快捷按钮常驻显示**：以前要悬停猫身或点一下猫头才展开，现在一直显示，拖动时跟着猫走，也一直能用 Tab 键聚焦。只有贴边探头时才和猫一起收起，唤醒后从猫头升回来。点猫头现在只开合缩放胶囊（猫的提示文字已同步改写）。
@@ -276,16 +277,16 @@ Twitch 直播聊天实时翻译；本机常驻连接服务改为配对令牌认�
 - `host_permissions` 仍为宽泛的 `http(s)://*/*`，计划改为 `optional_host_permissions` 按需申请。
 - 未上架商店；扩展仅支持开发者模式加载（直接加载 `roamcat-0.0.1/extension` 时 ID 与目录路径绑定；`npm run build` 产物 ID 固定）。
 
-[Unreleased]: https://github.com/dapao-777/roamcat/compare/v0.7.2...HEAD
-[0.7.2]: https://github.com/dapao-777/roamcat/releases/tag/v0.7.2
-[0.7.1]: https://github.com/dapao-777/roamcat/releases/tag/v0.7.1
-[0.7.0]: https://github.com/dapao-777/roamcat/releases/tag/v0.7.0
-[0.6.1]: https://github.com/dapao-777/roamcat/releases/tag/v0.6.1
-[0.6.0]: https://github.com/dapao-777/roamcat/releases/tag/v0.6.0
-[0.5.0]: https://github.com/dapao-777/roamcat/releases/tag/v0.5.0
-[0.4.0]: https://github.com/dapao-777/roamcat/releases/tag/v0.4.0
-[0.3.1]: https://github.com/dapao-777/roamcat/releases/tag/v0.3.1
-[0.3.0]: https://github.com/dapao-777/roamcat/releases/tag/v0.3.0
-[0.2.0]: https://github.com/dapao-777/roamcat/releases/tag/v0.2.0
-[0.1.0]: https://github.com/dapao-777/roamcat/releases/tag/v0.1.0
-[0.0.1]: https://github.com/dapao-777/roamcat/tree/v0.0.1
+[Unreleased]: https://github.com/roamcat-dev/roamcat/compare/v0.7.2...HEAD
+[0.7.2]: https://github.com/roamcat-dev/roamcat/releases/tag/v0.7.2
+[0.7.1]: https://github.com/roamcat-dev/roamcat/releases/tag/v0.7.1
+[0.7.0]: https://github.com/roamcat-dev/roamcat/releases/tag/v0.7.0
+[0.6.1]: https://github.com/roamcat-dev/roamcat/releases/tag/v0.6.1
+[0.6.0]: https://github.com/roamcat-dev/roamcat/releases/tag/v0.6.0
+[0.5.0]: https://github.com/roamcat-dev/roamcat/releases/tag/v0.5.0
+[0.4.0]: https://github.com/roamcat-dev/roamcat/releases/tag/v0.4.0
+[0.3.1]: https://github.com/roamcat-dev/roamcat/releases/tag/v0.3.1
+[0.3.0]: https://github.com/roamcat-dev/roamcat/releases/tag/v0.3.0
+[0.2.0]: https://github.com/roamcat-dev/roamcat/releases/tag/v0.2.0
+[0.1.0]: https://github.com/roamcat-dev/roamcat/releases/tag/v0.1.0
+[0.0.1]: https://github.com/roamcat-dev/roamcat/tree/v0.0.1

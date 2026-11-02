@@ -5,7 +5,7 @@
   "version": "0.7.2",
   "description": "__MSG_extDescription__",
   "default_locale": "zh_CN",
-  "homepage_url": "https://github.com/dapao-777/roamcat",
+  "homepage_url": "https://github.com/roamcat-dev/roamcat",
   "minimum_chrome_version": "125",
   "icons": {"16":"icons/icon-16.png","32":"icons/icon-32.png","48":"icons/icon-48.png","128":"icons/icon-128.png"},
   "permissions": ["activeTab", "scripting", "storage", "nativeMessaging", "offscreen", "contextMenus", "tts", "webNavigation"],

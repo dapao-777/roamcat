@@ -10,7 +10,7 @@
 - 浏览器门禁（`verify:build`/`verify:ui`/`verify:pet`/`verify:audit` 等）只用本机 [ego lite](https://lite.ego.app/)，需 Node.js 22+：`tools/lib/ego.mjs` 以临时配置另起无头 ego 并经 CDP 驱动，不碰你日常的 ego；装在别处时设 `ROAMCAT_EGO` 指向 `ego.exe`，`ROAMCAT_HEADED=1` 开窗观察。
 
 ```sh
-git clone https://github.com/dapao-777/roamcat.git
+git clone https://github.com/roamcat-dev/roamcat.git
 cd roamcat
 npm ci
 npm run build         # Vite 构建 → dist/extension（dev 注入固定 key）

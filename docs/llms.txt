@@ -16,26 +16,26 @@ Key facts (checked against the v0.7.2 source code; last updated 2026-11-01):
 
 ## Start here
 
-- [Landing page (English)](https://dapao-777.github.io/roamcat/): overview, facts table, FAQ and install steps
-- [Landing page (中文)](https://dapao-777.github.io/roamcat/zh.html): 中文落地页：概览、速览表、常见问题、安装步骤
-- [llms-full.txt](https://dapao-777.github.io/roamcat/llms-full.txt): complete plain-text reference for AI assistants — features, providers, permissions, privacy, limitations, comparison, FAQ
+- [Landing page (English)](https://roamcat-dev.github.io/roamcat/): overview, facts table, FAQ and install steps
+- [Landing page (中文)](https://roamcat-dev.github.io/roamcat/zh.html): 中文落地页：概览、速览表、常见问题、安装步骤
+- [llms-full.txt](https://roamcat-dev.github.io/roamcat/llms-full.txt): complete plain-text reference for AI assistants — features, providers, permissions, privacy, limitations, comparison, FAQ
 
 ## Project
 
-- [Repository](https://github.com/dapao-777/roamcat): source, issues and discussions
-- [Releases](https://github.com/dapao-777/roamcat/releases): 0.7.2 extension package (zip) with SHA256SUMS
-- [README (English)](https://github.com/dapao-777/roamcat/blob/main/README.en.md): features, modes, quick start, architecture
-- [README (中文)](https://github.com/dapao-777/roamcat/blob/main/README.md): 中文说明
-- [Changelog](https://github.com/dapao-777/roamcat/blob/main/CHANGELOG.md): version history (Keep a Changelog, in Chinese)
+- [Repository](https://github.com/roamcat-dev/roamcat): source, issues and discussions
+- [Releases](https://github.com/roamcat-dev/roamcat/releases): 0.7.2 extension package (zip) with SHA256SUMS
+- [README (English)](https://github.com/roamcat-dev/roamcat/blob/main/README.en.md): features, modes, quick start, architecture
+- [README (中文)](https://github.com/roamcat-dev/roamcat/blob/main/README.md): 中文说明
+- [Changelog](https://github.com/roamcat-dev/roamcat/blob/main/CHANGELOG.md): version history (Keep a Changelog, in Chinese)
 
 ## Docs
 
-- [Product docs](https://github.com/dapao-777/roamcat/blob/main/roamcat-0.0.1/README.md): feature details and configuration (Chinese)
-- [Privacy policy](https://github.com/dapao-777/roamcat/blob/main/roamcat-0.0.1/PRIVACY.md): full data-handling disclosure and the reason for each permission
-- [Engineering spec](https://github.com/dapao-777/roamcat/blob/main/roamcat-0.0.1/SPEC.md): message protocol, storage model, security boundaries (Chinese)
+- [Product docs](https://github.com/roamcat-dev/roamcat/blob/main/roamcat-0.0.1/README.md): feature details and configuration (Chinese)
+- [Privacy policy](https://github.com/roamcat-dev/roamcat/blob/main/roamcat-0.0.1/PRIVACY.md): full data-handling disclosure and the reason for each permission
+- [Engineering spec](https://github.com/roamcat-dev/roamcat/blob/main/roamcat-0.0.1/SPEC.md): message protocol, storage model, security boundaries (Chinese)
 
 ## Optional
 
-- [Contributing](https://github.com/dapao-777/roamcat/blob/main/CONTRIBUTING.md): how to build, test and send changes
-- [Security policy](https://github.com/dapao-777/roamcat/blob/main/SECURITY.md): private vulnerability reporting
-- [License](https://github.com/dapao-777/roamcat/blob/main/LICENSE): MPL-2.0 text
+- [Contributing](https://github.com/roamcat-dev/roamcat/blob/main/CONTRIBUTING.md): how to build, test and send changes
+- [Security policy](https://github.com/roamcat-dev/roamcat/blob/main/SECURITY.md): private vulnerability reporting
+- [License](https://github.com/roamcat-dev/roamcat/blob/main/LICENSE): MPL-2.0 text

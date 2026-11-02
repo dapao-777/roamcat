@@ -23,8 +23,8 @@ import {extractTokenSections} from '../../build/gen-design-tokens.mjs';
 const root =path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const docs = path.join(root, 'docs');
 const read = relative => readFileSync(path.join(root, relative), 'utf8');
-const ORIGIN = 'https://dapao-777.github.io/roamcat/';
-const REPO_BLOB = 'https://github.com/dapao-777/roamcat/blob/main/';
+const ORIGIN = 'https://roamcat-dev.github.io/roamcat/';
+const REPO_BLOB = 'https://github.com/roamcat-dev/roamcat/blob/main/';
 const HREFLANG = {en: ORIGIN, 'zh-CN': `${ORIGIN}zh.html`, 'x-default': ORIGIN};
 
 const PAGES = [
@@ -142,7 +142,7 @@ for (const page of PAGES) {
     assert.equal(software.isAccessibleForFree, true);
     assert.equal(software.offers.price, '0');
     assert.ok(software.featureList.length >= 8, 'featureList 至少 8 条');
-    assert.ok(software.downloadUrl.startsWith('https://github.com/dapao-777/roamcat/releases'));
+    assert.ok(software.downloadUrl.startsWith('https://github.com/roamcat-dev/roamcat/releases'));
     for (const shot of software.screenshot) {
       const file = localFile(shot.url);
       assert.ok(file && existsSync(file), `screenshot 文件不存在：${shot.url}`);
@@ -199,14 +199,14 @@ test('sitemap.xml：覆盖全部可索引页面、hreflang 与页面一致、不
 test('404.html：noindex，且图片与站内链接可达', () => {
   const html = read('docs/404.html');
   assert.match(metaContent(html, 'robots'), /noindex/);
-  for (const link of html.matchAll(/href="(https:\/\/dapao-777\.github\.io\/roamcat\/[^"]*)"/g)) {
+  for (const link of html.matchAll(/href="(https:\/\/roamcat-dev\.github\.io\/roamcat\/[^"]*)"/g)) {
     assert.ok(existsSync(localFile(link[1])), `404.html 链接的站内文件不存在：${link[1]}`);
   }
 });
 
 test('robots.txt：放行、声明 sitemap、不屏蔽任何路径', () => {
   const robots = read('docs/robots.txt');
-  assert.match(robots, /^Sitemap: https:\/\/dapao-777\.github\.io\/roamcat\/sitemap\.xml$/m);
+  assert.match(robots, /^Sitemap: https:\/\/roamcat-dev\.github\.io\/roamcat\/sitemap\.xml$/m);
   assert.ok(!/^Disallow:\s*\/\s*$/m.test(robots), 'robots.txt 不应屏蔽整站');
   const agents = [...robots.matchAll(/^User-agent:\s*(.+)$/gim)].map(match => match[1].trim());
   for (const agent of ['*', 'Googlebot', 'Bingbot', 'GPTBot', 'OAI-SearchBot', 'ChatGPT-User', 'ClaudeBot', 'Claude-SearchBot', 'PerplexityBot', 'Google-Extended']) {

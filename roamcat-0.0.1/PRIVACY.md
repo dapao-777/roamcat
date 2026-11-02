@@ -3,7 +3,7 @@
 Last updated: 2026-11-02
 
 > 用途：本文是 RoamCat · 随心阅 的隐私政策正文。当前公开 URL：
-> https://github.com/dapao-777/roamcat/blob/main/roamcat-0.0.1/PRIVACY.md
+> https://github.com/roamcat-dev/roamcat/blob/main/roamcat-0.0.1/PRIVACY.md
 > （Chrome Web Store 提交时引用此地址；若改用 GitHub Pages 等托管地址，以实际 URL 为准）。
 > 本文件不随 Release ZIP 发布。
 
@@ -72,4 +72,4 @@ API Key、访问密钥、应用密钥、可选 MyMemory 邮箱和 DeepLX 令牌�
 
 ## Contact
 
-隐私相关问题：https://github.com/dapao-777/roamcat/issues
+隐私相关问题：https://github.com/roamcat-dev/roamcat/issues

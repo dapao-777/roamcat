@@ -15,7 +15,7 @@
 
 <p align="center">
   <a href="LICENSE"><img alt="License: MPL-2.0" src="https://img.shields.io/badge/license-MPL--2.0-blue"></a>
-  <a href="https://github.com/dapao-777/roamcat/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/dapao-777/roamcat/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/roamcat-dev/roamcat/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/roamcat-dev/roamcat/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="版本 0.7.2" src="https://img.shields.io/badge/version-0.7.2-blue">
   <img alt="Chrome / Edge 125+" src="https://img.shields.io/badge/Chrome%20%2F%20Edge-125%2B-green">
   <img alt="Manifest V3" src="https://img.shields.io/badge/manifest-V3-blueviolet">
@@ -27,7 +27,7 @@
   <a href="#-模型服务">模型服务</a> ·
   <a href="#-常见问题">常见问题</a> ·
   <a href="#-文档">文档</a> ·
-  <a href="https://dapao-777.github.io/roamcat/zh.html">官网</a> ·
+  <a href="https://roamcat-dev.github.io/roamcat/zh.html">官网</a> ·
   <a href="README.en.md">English</a>
 </p>
 
@@ -39,16 +39,16 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/dapao-777/roamcat/blob/main/.github/assets/roamcat-intro.mp4" title="观看 34 秒介绍短片（含配乐）">
+  <a href="https://github.com/roamcat-dev/roamcat/blob/main/.github/assets/roamcat-intro.mp4" title="观看 34 秒介绍短片（含配乐）">
     <img src=".github/assets/promo-teaser.gif" alt="RoamCat 介绍动画 —— 点击播放含配乐的完整版" width="94%">
   </a><br>
   <sub>▶ 34 秒介绍短片 · 点击片段观看完整版（带音乐）</sub>
 </p>
 
-**RoamCat（随心阅）**是免费开源的 **Chrome / Edge** 浏览器扩展，帮助中文读者阅读英文网站：把页面原位译成**中英双语对照**，或保留整页英文、只给随你进步而**渐退的稀疏提示**；还支持 **PDF / EPUB 文件**、**YouTube 双语字幕**和需手动开启的 **Twitch 直播聊天翻译**。**本地优先、无遥测**，AI 由你自己选：**33 家自备 API**、本地 Ollama 模型，或你已有的 **ChatGPT / Grok / Google 订阅**。更多见[官网](https://dapao-777.github.io/roamcat/zh.html)，给 AI 助手的摘要见 [llms.txt](https://dapao-777.github.io/roamcat/llms.txt)。
+**RoamCat（随心阅）**是免费开源的 **Chrome / Edge** 浏览器扩展，帮助中文读者阅读英文网站：把页面原位译成**中英双语对照**，或保留整页英文、只给随你进步而**渐退的稀疏提示**；还支持 **PDF / EPUB 文件**、**YouTube 双语字幕**和需手动开启的 **Twitch 直播聊天翻译**。**本地优先、无遥测**，AI 由你自己选：**33 家自备 API**、本地 Ollama 模型，或你已有的 **ChatGPT / Grok / Google 订阅**。更多见[官网](https://roamcat-dev.github.io/roamcat/zh.html)，给 AI 助手的摘要见 [llms.txt](https://roamcat-dev.github.io/roamcat/llms.txt)。
 
 > [!NOTE]
-> **0.7.2：扩展与本机常驻服务改为双向认证，先确认对面是真服务再发请求（扩展和连接器需一起升级）**。从 [Releases](https://github.com/dapao-777/roamcat/releases/latest) 下载安装包或从源码构建，再以开发者模式加载（见[快速开始](#-快速开始)），尚未上架扩展商店。本项目是对开源项目 [RelyLess](https://github.com/rockythink/relyless) 的重构、优化与修复，详见[致谢](#-致谢)。
+> **0.7.2：扩展与本机常驻服务改为双向认证，先确认对面是真服务再发请求（扩展和连接器需一起升级）**。从 [Releases](https://github.com/roamcat-dev/roamcat/releases/latest) 下载安装包或从源码构建，再以开发者模式加载（见[快速开始](#-快速开始)），尚未上架扩展商店。本项目是对开源项目 [RelyLess](https://github.com/rockythink/relyless) 的重构、优化与修复，详见[致谢](#-致谢)。
 
 ## ✨ 亮点
 
@@ -126,12 +126,12 @@
 
 需要 **Chrome 或 Edge 125+**。
 
-**方式 A：Release 安装包。** 从 [Releases](https://github.com/dapao-777/roamcat/releases/latest) 下载 `roamcat-0.7.2-extension.zip` 并解压。打开 `chrome://extensions`（或 `edge://extensions`），开启**开发者模式**，点**加载已解压的扩展**，选择解压出的 **`roamcat-0.7.2/extension`** 文件夹。要用订阅连接器，在包含 `roamcat-0.7.2/` 的目录里运行 `node roamcat-0.7.2/connector/install.mjs`（需要 Node.js 20+）；它会按这个文件夹算出扩展 ID，移动文件夹后要重新运行。
+**方式 A：Release 安装包。** 从 [Releases](https://github.com/roamcat-dev/roamcat/releases/latest) 下载 `roamcat-0.7.2-extension.zip` 并解压。打开 `chrome://extensions`（或 `edge://extensions`），开启**开发者模式**，点**加载已解压的扩展**，选择解压出的 **`roamcat-0.7.2/extension`** 文件夹。要用订阅连接器，在包含 `roamcat-0.7.2/` 的目录里运行 `node roamcat-0.7.2/connector/install.mjs`（需要 Node.js 20+）；它会按这个文件夹算出扩展 ID，移动文件夹后要重新运行。
 
 **方式 B：从源码构建**（需要 Node.js 22.13+；Node 24 已验证）：
 
 ```sh
-git clone https://github.com/dapao-777/roamcat.git
+git clone https://github.com/roamcat-dev/roamcat.git
 cd roamcat
 npm ci
 npm run build      # → dist/extension

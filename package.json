@@ -38,12 +38,12 @@
   "license": "MPL-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/dapao-777/roamcat.git"
+    "url": "https://github.com/roamcat-dev/roamcat.git"
   },
   "bugs": {
-    "url": "https://github.com/dapao-777/roamcat/issues"
+    "url": "https://github.com/roamcat-dev/roamcat/issues"
   },
-  "homepage": "https://github.com/dapao-777/roamcat",
+  "homepage": "https://github.com/roamcat-dev/roamcat",
   "engines": {
     "node": ">=22.13.0"
   },

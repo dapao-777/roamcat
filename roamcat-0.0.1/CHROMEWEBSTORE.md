@@ -87,7 +87,7 @@ Roam the English web like a cat: bilingual page translation plus reading aids wi
 • API Key 只保存在浏览器本机存储中
 
 支持
-问题与建议：https://github.com/dapao-777/roamcat/issues
+问题与建议：https://github.com/roamcat-dev/roamcat/issues
 
 当前版本 0.7.2；首次商店提交尚未完成。
 ```
@@ -127,7 +127,7 @@ Privacy
   there is no relay server, and no analytics or telemetry
 • API keys are stored only in your browser's local storage
 
-Support: https://github.com/dapao-777/roamcat/issues
+Support: https://github.com/roamcat-dev/roamcat/issues
 ```
 
 **Category** [REQUIRED]
@@ -228,7 +228,7 @@ Chinese (Simplified)
 ## Privacy Policy
 
 **Privacy Policy URL** [REQUIRED]
-`https://github.com/dapao-777/roamcat/blob/main/roamcat-0.0.1/PRIVACY.md`
+`https://github.com/roamcat-dev/roamcat/blob/main/roamcat-0.0.1/PRIVACY.md`
 政策正文在 `roamcat-0.0.1/PRIVACY.md`。2026-10-31 已用浏览器打开上述 URL，页面展示更新日期 2026-10-31 与政策正文；此后政策正文于 2026-11-01 补充了披露（远程领域识别与 Jev、本页双语翻译的处理范围），推送到远端后需重新核验；最终提交前仍需以无登录状态复核公开可访问性，并确认远端包含最终的数据实践更新。若将来改用 GitHub Pages，先发布并核验新页面，再回填实际地址。
 
 ---
@@ -247,10 +247,10 @@ fenghua
 ⬜ 待填写（须为常用邮箱；Google 的重要通知发往此地址）
 
 **Support URL / Email** [RECOMMENDED]
-https://github.com/dapao-777/roamcat/issues
+https://github.com/roamcat-dev/roamcat/issues
 
 **Homepage URL** [RECOMMENDED]
-https://github.com/dapao-777/roamcat
+https://github.com/roamcat-dev/roamcat
 
 ---
 
