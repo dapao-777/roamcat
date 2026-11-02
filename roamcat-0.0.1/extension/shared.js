@@ -18,7 +18,7 @@ const M=(zh,en)=>globalThis.RoamCatI18n?.lang?.()==='en'?en:zh;
 
 export const DOMAINS = {auto:'自动识别',general:'通用阅读',tech:'软件与 AI',data:'数据工程',finance:'金融与商业',medical:'医学与生命科学',legal:'法律',design:'设计与产品'};
 export const API_TASKS = Object.freeze(['assist','support','groups','translate','summary']);
-export const DEFAULT_SETTINGS = {assistanceMode:'ambient',rememberSupport:true,helpLanguage:'zh',lookupKey:'D',lookupDisplay:'card',pageTranslationDisplay:'bilingual',readingStyle:globalThis.RoamCatReadingStyle.defaults,domain:'auto',providerKind:'chatgpt',subscriptionModel:'',apiServices:[],activeApiServiceId:'',apiRouting:{assist:'',support:'',groups:'',translate:'',summary:''},mtServices:[],translationEngines:{page:'',video:'',liveChat:'',reader:'',passage:''},mtFallback:true,domainRules:[],domainDetection:{mode:'local',subscriptionModel:'',apiModel:'',useTranslationApi:true,api:{baseUrl:'https://api.openai.com/v1',apiKey:''},jevModel:'typesafe/jev-1.13.0',jevApiKey:'',jevBaseUrl:'https://router.requesty.ai/v1'},customTerms:[],automation:{allSites:false,sentenceGroupsAllSites:false,sites:[],videoSites:false},video:{fontSize:20,theme:'auto',bilingual:false,display:'bilingual',translationFirst:true,translationColor:'white',blur:false,offset:-1,karaoke:true,liveChat:false},complexSentenceAssist:true,formulaAssist:true,pdfReader:true,floatingPet:{enabled:true,position:{right:24,bottom:84},themeMode:'auto',scale:1,quotes:{enabled:true,intervalMin:15}}};
+export const DEFAULT_SETTINGS = {assistanceMode:'ambient',rememberSupport:true,helpLanguage:'zh',lookupKey:'D',lookupDisplay:'card',pageTranslationDisplay:'bilingual',readingStyle:globalThis.RoamCatReadingStyle.defaults,domain:'auto',providerKind:'chatgpt',subscriptionModel:'',apiServices:[],activeApiServiceId:'',apiRouting:{assist:'',support:'',groups:'',translate:'',summary:''},mtServices:[],translationEngines:{page:'',video:'',liveChat:'',reader:'',passage:''},mtFallback:true,domainRules:[],domainDetection:{mode:'local',subscriptionModel:'',apiModel:'',useTranslationApi:true,api:{baseUrl:'https://api.openai.com/v1',apiKey:''},jevModel:'typesafe/jev-1.13.0',jevApiKey:'',jevBaseUrl:'https://router.requesty.ai/v1'},customTerms:[],automation:{allSites:false,sentenceGroupsAllSites:false,sites:[],videoSites:false},video:{fontSize:20,theme:'auto',bilingual:false,display:'bilingual',translationFirst:true,translationColor:'white',blur:false,offset:-1,karaoke:true,liveChat:false},complexSentenceAssist:true,formulaAssist:true,pdfReader:true,floatingPet:{enabled:true,position:{right:24,bottom:84},toolbar:{side:'right',top:0.5},themeMode:'auto',scale:1,quotes:{enabled:true,intervalMin:15}}};
 // Removed settings must not revive through a spread of an older configuration.
 export function normalizeSettings(value = {}) {
   const pick = (defaults, source) => Object.fromEntries(Object.entries(defaults).map(([key, fallback]) => [key, source?.[key] ?? fallback]));
@@ -75,6 +75,11 @@ export function normalizeSettings(value = {}) {
     position: {
       right: typeof fp?.position?.right === 'number' && Number.isFinite(fp.position.right) ? Math.max(0, fp.position.right) : 24,
       bottom: typeof fp?.position?.bottom === 'number' && Number.isFinite(fp.position.bottom) ? Math.max(0, fp.position.bottom) : 84,
+    },
+    // 竖排快捷工具栏与猫分开记忆：贴哪一侧、上沿占视口高度的比例。
+    toolbar: {
+      side: fp?.toolbar?.side === 'left' ? 'left' : 'right',
+      top: typeof fp?.toolbar?.top === 'number' && Number.isFinite(fp.toolbar.top) ? Math.min(1, Math.max(0, fp.toolbar.top)) : 0.5,
     },
     themeMode: ['auto', 'dark', 'light'].includes(fp?.themeMode) ? fp.themeMode : 'auto',
     scale: [0.8, 1, 1.2, 1.4, 1.6].includes(fp?.scale) ? fp.scale : 1,

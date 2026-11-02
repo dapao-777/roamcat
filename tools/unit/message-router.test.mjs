@@ -26,7 +26,9 @@ import {
   parseDomainTest,
   parseFloatingPetPatch,
   parsePopupIntentTake,
+  validatePatch,
 } from '../../roamcat-0.0.1/extension/message-protocol.js';
+import {normalizeSettings} from '../../roamcat-0.0.1/extension/shared.js';
 
 const backgroundSource = readFileSync(fileURLToPath(new URL('../../roamcat-0.0.1/extension/background.js', import.meta.url)), 'utf8');
 
@@ -122,6 +124,23 @@ test('parseFloatingPetPatch 要求位置与主题至少一项且位置形状合�
   assert.throws(() => parseFloatingPetPatch({position: {right: 1}}), /伴读猫位置无效。/u);
   assert.throws(() => parseFloatingPetPatch({position: {right: 1, bottom: 2, left: 3}}), /伴读猫位置无效。/u);
   assert.throws(() => parseFloatingPetPatch({position: [1, 2]}), /伴读猫位置无效。/u);
+});
+
+test('竖排工具栏位置与猫分开记忆：只含 side/top，取值在 validatePatch 校验并保留其余伴读猫设置', () => {
+  assert.deepEqual(parseFloatingPetPatch({toolbar: {side: 'left', top: 0.3}}), {toolbar: {side: 'left', top: 0.3}});
+  assert.throws(() => parseFloatingPetPatch({toolbar: {side: 'left', top: 0.3, right: 0}}), /伴读猫工具栏位置无效。/u);
+  assert.throws(() => parseFloatingPetPatch({toolbar: ['left', 0.3]}), /伴读猫工具栏位置无效。/u);
+  const current = normalizeSettings({floatingPet: {position: {right: 40, bottom: 120}, scale: 1.4}});
+  assert.deepEqual(current.floatingPet.toolbar, {side: 'right', top: 0.5});
+  const patched = validatePatch({floatingPet: {toolbar: {side: 'left', top: 0.31234}}}, current).floatingPet;
+  assert.deepEqual(patched.toolbar, {side: 'left', top: 0.312});
+  assert.deepEqual(patched.position, {right: 40, bottom: 120});
+  assert.equal(patched.scale, 1.4);
+  const moved = validatePatch({floatingPet: {position: {right: 10, bottom: 20}}}, {...current, floatingPet: patched}).floatingPet;
+  assert.deepEqual(moved.toolbar, {side: 'left', top: 0.312}, '拖猫不改工具栏位置');
+  for (const toolbar of [{side: 'top', top: 0.5}, {side: 'right', top: 1.5}, {side: 'right', top: Number.NaN}]) {
+    assert.throws(() => validatePatch({floatingPet: {toolbar}}, current), /伴读猫工具栏位置无效。/u);
+  }
 });
 
 test('parsePopupIntentTake 校验标签页与网址', () => {

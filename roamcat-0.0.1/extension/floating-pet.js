@@ -1,7 +1,7 @@
 /**
  * @file extension/floating-pet.js
  * 文件职责：伴读猫挂件（classic script，禁 ESM 语法）——每页一只的 Shadow DOM 悬浮入口，承载 SVG 形象、
- *   拖拽贴边、菜单、文章摘要、状态气泡与猫头上方的竖排快捷按钮，以及全局快捷键分发。
+ *   拖拽贴边、菜单、文章摘要、状态气泡与提示，以及独立贴在屏幕边的竖排快捷工具栏和全局快捷键分发。
  * 主要内容：顶层主框架单例挂载与 MutationObserver 看护、bindGlobalEvents 一次注册、
  *   petShortcutBlocked 输入框抢键防护、位置持久化（FLOATING_PET_POSITION_SET）、翻译进度气泡。
  *   辅助函数/样式/SVG/语录气泡/摘要窗拆在 floating-pet-{helpers,styles,svg,quote-bubble,summary}.js，
@@ -46,6 +46,9 @@
   let petScale = 1;
   const PET_SCALE_STEPS = [0.8, 1, 1.2, 1.4, 1.6];
   let isDocked = false;
+  // 竖排快捷工具栏是猫之外的独立挂件：贴哪一侧、上沿占视口高度的比例（与猫的位置分开记忆），拖动中的状态。
+  let toolbarSide = 'right', toolbarTop = 0.5;
+  let toolbarDrag = null, toolbarJustDragged = false;
   let petState = 'idle'; // 'idle' | 'thinking' | 'success' | 'error'
   let cachedSummary = null;
   let cachedSummarySource = null;
@@ -53,7 +56,7 @@
   let detectedDomain = 'general';
 
   // 纯函数、样式与 SVG 拆在 floating-pet-*.js，与本文件同批注入且先于本文件执行。
-  const {domainName, petShortcutBlocked, getLuminance, getElementBg, hasKeepOut, keepOutRight, getPetStyles, renderPeekingCatSvg, renderCatSvg, renderPawsSvg} = globalThis.RoamCatPetParts;
+  const {domainName, petShortcutBlocked, getLuminance, getElementBg, hasKeepOut, keepOutRight, getPetStyles, renderPeekingCatSvg, renderCatSvg} = globalThis.RoamCatPetParts;
 
   function detectPageTheme() {
     try {
@@ -137,6 +140,7 @@
       currentBottom = initialBottom;
       this.setScale(currentSettings?.floatingPet?.scale ?? 1, { persist: false });
       this.clampPosition();
+      this.applyToolbarSettings(currentSettings?.floatingPet?.toolbar);
       this.updateReadingStatus();
       // 设置就绪后按 quotes.enabled 启停语录定时器（构造时按默认开启先跑起来了）。
       this.syncQuoteTicker();
@@ -162,13 +166,12 @@
 
       // DOM 骨架由 content-ui 渲染层构建（lit-html 模板）；id/类名与原实现一致，
       // 后续状态更新继续经 shadowQuery 命令式驱动。
-      const {container, edgeTab, flipBtn, quickDock, avatarWrap, zoomControls, summaryWindow} =
+      const {container, edgeTab, flipBtn, toolbar, avatarWrap, zoomControls, summaryWindow} =
         globalThis.RoamCatContentUI.petWidget(shadowRoot, {
           domainKey: detectedDomain,
           domainName: domainName(detectedDomain),
           catSvg: renderCatSvg(),
           peekingCatSvg: renderPeekingCatSvg(),
-          pawsSvg: renderPawsSvg(),
           onEdgeTabClick: () => this.undock(),
         });
 
@@ -197,34 +200,116 @@
       this.container = container;
       this.edgeTab = edgeTab;
       this.flipBtn = flipBtn;
-      this.quickDock = quickDock;
+      this.toolbar = toolbar;
       this.avatarWrap = avatarWrap;
       this.zoomControls = zoomControls;
       this.summaryWindow = summaryWindow;
       this.applyScaleVisuals();
       this.clampPosition();
-      // 挂上时先让工具栏与爪子处在放下状态，样式落定后再举起来：每次出现都放一遍托举动画。
-      container.classList.add('dock-lowered');
-      clearTimeout(this._raiseTimer);
-      this._raiseTimer = setTimeout(() => {
-        this.container?.classList.remove('dock-lowered');
-        this.liftToolbar();
-      }, 120);
+      this.placeToolbar();
     }
 
-    // 托举：工具栏从放下变为立在猫头上方时，猫先蹲一下再弹起、眯眼用力；爪子伸出与胶囊升起
-    // 由样式表的过渡完成（.roamcat-paws / .roamcat-quick-dock）。拖动中、贴边、挂到猫脚下、
-    // 跑车彩蛋或别的动作进行中不做；减弱动效时只由样式表淡入，不加形变。返回是否放了托举动作。
-    liftToolbar() {
-      const wrap = this.avatarWrap;
-      if (!wrap || isDocked || isDragging || this._driving) return false;
-      if (this.container?.classList.contains('dock-below')) return false;
-      if (matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
-      if ([...wrap.classList].some(cls => cls.startsWith('action-'))) return false;
-      wrap.classList.add('action-lift');
-      clearTimeout(this._liftTimer);
-      this._liftTimer = setTimeout(() => this.avatarWrap?.classList.remove('action-lift'), 650);
-      return true;
+    // 工具栏位置来自设置（floatingPet.toolbar）：缺省贴右边、上沿在视口一半处。拖动中不被别处同步打断。
+    applyToolbarSettings(toolbar) {
+      if (toolbarDrag?.active) return;
+      toolbarSide = toolbar?.side === 'left' ? 'left' : 'right';
+      toolbarTop = typeof toolbar?.top === 'number' && Number.isFinite(toolbar.top) ? Math.min(1, Math.max(0, toolbar.top)) : 0.5;
+      this.placeToolbar();
+    }
+
+    // 竖排工具栏贴在屏幕左/右边缘，不跟猫走：上沿按比例换算并留在视口内；有固定侧栏的站点
+    // （Twitch 聊天栏）贴右边时挪到侧栏左边（keepOutRight），离开屏幕边就改成完整圆角胶囊。
+    placeToolbar() {
+      const bar = this.toolbar;
+      if (!bar || toolbarDrag?.active) return;
+      const height = bar.offsetHeight || 0, width = bar.offsetWidth || 0;
+      const top = Math.round(Math.min(Math.max(8, toolbarTop * window.innerHeight), Math.max(8, window.innerHeight - height - 8)));
+      const right = toolbarSide === 'right' ? keepOutRight(0, window.innerHeight - top - height, width, height) : 0;
+      bar.classList.toggle('is-left', toolbarSide === 'left');
+      bar.classList.toggle('kept-out', right > 0);
+      bar.style.top = `${top}px`;
+      bar.style.left = toolbarSide === 'left' ? '0px' : 'auto';
+      bar.style.right = toolbarSide === 'left' ? 'auto' : `${right}px`;
+      this.positionSummaryWindow();
+    }
+
+    // 拖动工具栏：按住任意处（含按钮）移动超过 5px 才算拖，松手吸附到较近的一侧并记住上沿比例；
+    // 拖过的这次松手不触发按钮点击。工具栏很窄，指针一动就离开它，所以移动与松手在 window 上听
+    // （bindGlobalEvents 只注册一次）；不在按下时捕获指针，免得按钮的 click 改派给工具栏本身。
+    bindToolbarDrag() {
+      const bar = this.toolbar;
+      if (!bar) return;
+      bar.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0) return;
+        const rect = bar.getBoundingClientRect();
+        toolbarDrag = {id: e.pointerId, x: e.clientX, y: e.clientY, dx: e.clientX - rect.left, dy: e.clientY - rect.top, active: false};
+      });
+      bar.addEventListener('click', (e) => {
+        if (!toolbarJustDragged) return;
+        toolbarJustDragged = false;
+        e.preventDefault();
+        e.stopPropagation();
+      }, true);
+    }
+
+    onToolbarPointerMove(e) {
+      const drag = toolbarDrag, bar = this.toolbar;
+      if (!drag || !bar || drag.id !== e.pointerId) return;
+      if (!drag.active) {
+        if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) <= 5) return;
+        drag.active = true;
+        bar.classList.add('dragging');
+      }
+      e.preventDefault();
+      const left = Math.min(Math.max(0, e.clientX - drag.dx), Math.max(0, window.innerWidth - bar.offsetWidth));
+      const top = Math.min(Math.max(0, e.clientY - drag.dy), Math.max(0, window.innerHeight - bar.offsetHeight));
+      bar.style.left = `${Math.round(left)}px`;
+      bar.style.right = 'auto';
+      bar.style.top = `${Math.round(top)}px`;
+    }
+
+    endToolbarDrag(e, commit) {
+      const drag = toolbarDrag, bar = this.toolbar;
+      if (!drag || (e?.pointerId != null && drag.id !== e.pointerId)) return;
+      toolbarDrag = null;
+      if (!drag.active || !bar) return;
+      bar.classList.remove('dragging');
+      if (commit) {
+        const rect = bar.getBoundingClientRect();
+        toolbarSide = rect.left + rect.width / 2 < window.innerWidth / 2 ? 'left' : 'right';
+        toolbarTop = Math.round(Math.min(1, Math.max(0, rect.top / window.innerHeight)) * 1000) / 1000;
+        toolbarJustDragged = true;
+        setTimeout(() => { toolbarJustDragged = false; }, 0);
+        this.saveToolbarPosition();
+      }
+      this.placeToolbar();
+    }
+
+    async saveToolbarPosition() {
+      try {
+        const response = await chrome.runtime.sendMessage({type: 'FLOATING_PET_POSITION_SET', toolbar: {side: toolbarSide, top: toolbarTop}});
+        if (!response?.ok) throw new Error(response?.error || T('fp.posFail'));
+      } catch (err) {
+        console.warn('Failed to save toolbar position', err);
+      }
+    }
+
+    // 摘要窗由工具栏的「提炼」打开：挂在工具栏朝页面内侧的一边，上沿与工具栏对齐，整窗留在视口内。
+    positionSummaryWindow() {
+      const win = this.summaryWindow, bar = this.toolbar;
+      if (!isSummaryOpen || !win || !bar) return;
+      const rect = bar.getBoundingClientRect(), gap = 12, margin = 16;
+      const top = Math.max(margin, Math.min(rect.top, window.innerHeight - (win.offsetHeight || 0) - margin));
+      const room = Math.max(margin, window.innerWidth - (win.offsetWidth || 0) - margin);
+      if (toolbarSide === 'left') {
+        win.style.left = `${Math.round(Math.min(rect.right + gap, room))}px`;
+        win.style.right = 'auto';
+      } else {
+        win.style.right = `${Math.round(Math.min(window.innerWidth - rect.left + gap, room))}px`;
+        win.style.left = 'auto';
+      }
+      win.style.top = `${Math.round(top)}px`;
+      win.style.bottom = 'auto';
     }
 
     bindEvents() {
@@ -236,31 +321,12 @@
         this.toggleBilingual();
       });
 
-      this.flipBtn?.addEventListener('pointerenter', () => {
-        const bubble = this.shadowQuery('#cat-speech');
-        const speechEl = this.shadowQuery('#cat-speech .speech-text');
-        const st = window.__ROAMCAT_CONTENT__?.emergencyStatus?.();
-        const isActive = Boolean(st?.active || st?.displayed);
-        const isTranslating = st?.phase === 'translating';
-        let hoverText = T('fp.hover.flip.idle');
-        if (isTranslating) hoverText = T('fp.hover.flip.busy');
-        else if (isActive) hoverText = T('fp.hover.flip.on');
-        this.stashSpeechForHover(hoverText);
-        if (speechEl) speechEl.textContent = hoverText;
-        bubble?.classList.remove('quote');
-        bubble?.classList.add('speaking');
-        this.container?.classList.add('has-speech');
-        this.fitSpeechBubble();
-      });
-
-      this.flipBtn?.addEventListener('pointerleave', () => this.restoreSpeechAfterHover());
-
-      // 竖排快捷按钮：悬停播报 + 点击执行（与旋旋翻一致的反馈模式）。气泡兼做按钮说明，按钮不再另弹提示条。
-      // closeDock 标记的动作执行后收起缩放胶囊；阅读辅助/双语开关保持展开。
+      // 竖排快捷工具栏：按钮只管点击执行，用途说明是按钮自带的悬停提示（data-tip），不再借猫的气泡。
+      // closeDock 标记的动作执行后收起猫的缩放胶囊；阅读辅助/双语开关保持原状。
       const quickActions = [
-        {id: '#quick-reading', hover: T('fp.hover.read'), run: () => this.toggleReadingMode()},
-        {id: '#quick-summary', hover: T('fp.hover.sum'), closeDock: true, run: () => this.requestArticleSummary()},
-        {id: '#quick-options', hover: T('fp.hover.opt'), closeDock: true, run: () => chrome.runtime.sendMessage({ type: 'OPEN_OPTIONS' })},
+        {id: '#quick-reading', run: () => this.toggleReadingMode()},
+        {id: '#quick-summary', closeDock: true, run: () => this.requestArticleSummary()},
+        {id: '#quick-options', closeDock: true, run: () => chrome.runtime.sendMessage({ type: 'OPEN_OPTIONS' })},
       ];
       for (const action of quickActions) {
         const button = this.shadowQuery(action.id);
@@ -272,18 +338,8 @@
           if (action.closeDock) this.closeQuickDock();
           action.run();
         });
-        button.addEventListener('pointerenter', () => {
-          this.stashSpeechForHover(action.hover);
-          const bubble = this.shadowQuery('#cat-speech');
-          const speechEl = this.shadowQuery('#cat-speech .speech-text');
-          if (speechEl) speechEl.textContent = action.hover;
-          bubble?.classList.remove('quote');
-          bubble?.classList.add('speaking');
-          this.container?.classList.add('has-speech');
-          this.fitSpeechBubble();
-        });
-        button.addEventListener('pointerleave', () => this.restoreSpeechAfterHover());
       }
+      this.bindToolbarDrag();
 
       // 缩放控制：步进 80%–160%，持久化到设置
       this.shadowQuery('#zoom-out')?.addEventListener('click', (e) => {
@@ -391,6 +447,11 @@
       window.addEventListener('pointermove', (e) => this.onPointerMove(e), { signal });
       window.addEventListener('pointerup', (e) => this.onPointerUp(e), { signal });
       window.addEventListener('pointercancel', (e) => this.releaseDrag(e), { signal });
+      // 竖排工具栏的拖动（按下在工具栏上登记，移动与松手在这里接）
+      window.addEventListener('pointermove', (e) => this.onToolbarPointerMove(e), { signal });
+      window.addEventListener('pointerup', (e) => this.endToolbarDrag(e, true), { signal });
+      window.addEventListener('pointercancel', (e) => this.endToolbarDrag(e, false), { signal });
+      window.addEventListener('blur', () => this.endToolbarDrag(null, false), { signal });
       window.addEventListener('blur', () => this.releaseDrag(), { signal });
 
       // Gaze Tracking: 猫眼跟随光标（rAF 节流；减弱动效 / 睡眠 / 页面隐藏时静止）
@@ -457,12 +518,13 @@
       // Window resize bounds & theme check
       window.addEventListener('resize', () => {
         this.clampPosition();
+        this.placeToolbar();
         this.syncTheme();
         this.fitSpeechBubble();
       }, { signal });
       // 有固定侧栏的站点（Twitch）：侧栏是单页应用晚些才渲染、也会收起展开，定时重算一次避让位置。
       clearInterval(this._keepOutTimer);
-      if (hasKeepOut()) this._keepOutTimer = setInterval(() => { if (!isDragging && hostEl) this.clampPosition(); }, 1500);
+      if (hasKeepOut()) this._keepOutTimer = setInterval(() => { if (!isDragging && hostEl) { this.clampPosition(); this.placeToolbar(); } }, 1500);
 
       // Keep theme synced with document changes, system switches, or tab reactivation
       matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => this.syncTheme(), { signal });
@@ -668,34 +730,7 @@
         hostEl.style.bottom = `${currentBottom}px`;
       }
 
-      // 竖排工具栏默认由爪子举在猫头上方；猫被拖到视口顶部附近、上方放不下时改挂到猫脚下（下方更宽裕才换）。
-      // 工具栏底边离脚底 47px × scale（耳尖上方，见样式表 .roamcat-quick-dock），挂件框高 68px × scale；
-      // offsetHeight 不受收起态的 visibility/scale 影响；再留 8px 视口边距。
-      // 拖动途中不换边，松手再判定，免得一路举起又放下；从猫脚下换回头顶时补一次托举。
-      if (!isDragging) {
-        const roomAbove = window.innerHeight - currentBottom - petH;
-        const dockNeed = (this.quickDock?.offsetHeight || 0) - 21 * petScale + 8;
-        const wasBelow = this.container.classList.contains('dock-below');
-        const below = roomAbove < dockNeed && currentBottom > roomAbove;
-        this.container.classList.toggle('dock-below', below);
-        if (wasBelow && !below) this.liftToolbar();
-      }
-
-      // Adaptive summary window positioning (keeps it anchored near the pet and fully on-screen)
-      if (isSummaryOpen && this.summaryWindow) {
-        const sideGap = petW + 12;
-        if (isLeftSide) {
-          const summaryLeft = Math.max(16, Math.min((window.innerWidth - shownRight) + sideGap, window.innerWidth - 480));
-          this.summaryWindow.style.left = `${summaryLeft}px`;
-          this.summaryWindow.style.right = 'auto';
-        } else {
-          const summaryRight = Math.max(16, Math.min(shownRight + sideGap, window.innerWidth - 480));
-          this.summaryWindow.style.right = `${summaryRight}px`;
-          this.summaryWindow.style.left = 'auto';
-        }
-        const summaryBottom = Math.max(20, Math.min(currentBottom - 20, window.innerHeight - 560));
-        this.summaryWindow.style.bottom = `${summaryBottom}px`;
-      }
+      this.positionSummaryWindow();
     }
 
     async savePosition() {
@@ -715,8 +750,7 @@
       }
     }
 
-    // 快捷坞的开合现在只管缩放胶囊：竖排快捷按钮常驻显示、一直在 Tab 序里，
-    // 贴边探头时由 dock() 加 inert 立即退出焦点顺序。
+    // 点猫头开合的「快捷坞」现在只管猫的缩放胶囊；快捷按钮在独立的竖排工具栏里。
     openQuickDock() {
       if (isDocked || !this.container) return;
       isDockOpen = true;
@@ -749,7 +783,6 @@
     }
 
     // 语音气泡视口自适配：水平收进 8px 边距、尾巴尽量指向猫、贴顶翻转到猫下方。
-    // 气泡让在竖排按钮内侧（见 floating-pet-styles.js 的 --bubble-lane），尾巴钳在气泡靠猫一端。
     fitSpeechBubble() {
       this.fitZoomControls();
       const bubble = this.shadowQuery('#cat-speech');
@@ -887,8 +920,6 @@
       isDocked = true;
       this.closeQuickDock();
       this.container?.classList.add('docked');
-      // 工具栏淡出约 160ms，期间仍可见；inert 让它立即退出焦点顺序，否则 Tab 会落到正在消失的按钮上、随即丢焦。
-      this.quickDock?.setAttribute('inert', '');
       if (side === 'left') {
         currentRight = Math.max(0, window.innerWidth - Math.round(64 * petScale));
         this.container?.classList.add('is-left');
@@ -907,7 +938,6 @@
       if (!isDocked) return;
       isDocked = false;
       this.container?.classList.remove('docked');
-      this.quickDock?.removeAttribute('inert');
       if (this.avatarWrap) {
         this.avatarWrap.title = T('pet.avatarTitle');
       }
@@ -924,8 +954,7 @@
       }
       this.clampPosition();
       this.fitSpeechBubble();
-      // 唤醒后工具栏重新升起：放托举动作；举不了（挂到猫脚下、减弱动效等）就照旧弹一下果冻。
-      if (!this.liftToolbar()) this.triggerClickReaction();
+      this.triggerClickReaction();
     }
 
     toggleDock() {
@@ -1109,7 +1138,7 @@
       if (quickReading) {
         quickReading.classList.toggle('is-active', readingEnabled);
         quickReading.setAttribute('aria-pressed', String(readingEnabled));
-        quickReading.title = readingEnabled ? T('fp.readingOn') : T('fp.readingOff');
+        quickReading.dataset.tip = readingEnabled ? T('fp.readingOn') : T('fp.readingOff');
       }
     }
 
@@ -1178,15 +1207,15 @@
         this.flipBtn.classList.toggle('is-translating', isTranslating);
         this.flipBtn.setAttribute('aria-pressed', String(isActive));
 
-        // 进度与快捷键写在 title 里：悬停时气泡先播报用途，停留片刻浏览器提示框再给出进度。
+        // 进度与快捷键写进按钮自带的悬停提示（data-tip）。
         if (isTranslating) {
-          this.flipBtn.title = T('fp.tipBusy',{done:status.completed,total:status.total || '?'});
+          this.flipBtn.dataset.tip = T('fp.tipBusy',{done:status.completed,total:status.total || '?'});
         } else if (isActive && status.phase === 'error' && status.error) {
-          this.flipBtn.title = T('fp.tipNoSvc');
+          this.flipBtn.dataset.tip = T('fp.tipNoSvc');
         } else if (isActive) {
-          this.flipBtn.title = T('fp.tipOn',{done:status.completed});
+          this.flipBtn.dataset.tip = T('fp.tipOn',{done:status.completed});
         } else {
-          this.flipBtn.title = T('fp.tipIdle');
+          this.flipBtn.dataset.tip = T('fp.tipIdle');
         }
       }
 
@@ -1260,41 +1289,6 @@
       return this.speakStatus(text, options);
     }
 
-    // 悬停播报存档/恢复：进入前记下当前气泡，离开时若气泡仍停在本次悬停文案
-    // 就还原，避免路过快捷按钮把正在显示的状态/忙碌气泡清掉。
-    stashSpeechForHover(hoverText) {
-      if (this._hoverStash) { this._hoverStash.hoverText = hoverText; return; }
-      const bubble = this.shadowQuery('#cat-speech');
-      if (!bubble) return;
-      const speechEl = this.shadowQuery('#cat-speech .speech-text');
-      this._hoverStash = {
-        cls: bubble.className,
-        text: speechEl?.textContent || '',
-        hasSpeech: this.container?.classList.contains('has-speech') || false,
-        hoverText,
-      };
-    }
-
-    restoreSpeechAfterHover() {
-      const stash = this._hoverStash;
-      this._hoverStash = null;
-      const bubble = this.shadowQuery('#cat-speech');
-      const speechEl = this.shadowQuery('#cat-speech .speech-text');
-      if (!bubble) return;
-      // 悬停期间有别处播报接管气泡，不能覆盖回去
-      if (stash?.hoverText && speechEl && speechEl.textContent !== stash.hoverText) return;
-      if (stash && stash.cls.includes('speaking')) {
-        bubble.className = stash.cls;
-        if (speechEl) speechEl.textContent = stash.text;
-        this.container?.classList.toggle('has-speech', stash.hasSpeech);
-      } else {
-        bubble.classList.remove('speaking', 'quote');
-        this.container?.classList.remove('has-speech');
-        if (speechEl) speechEl.textContent = T('pet.speechDefault');
-      }
-      this.fitSpeechBubble();
-    }
-
     clearStatusSpeech(key = '') {
       clearTimeout(this._speechTimer);
       const bubble = this.shadowQuery('#cat-speech');
@@ -1335,8 +1329,6 @@
       clearTimeout(this._idleTimer);
       clearTimeout(this._glanceTimer);
       clearTimeout(this._glanceReset);
-      clearTimeout(this._raiseTimer);
-      clearTimeout(this._liftTimer);
       clearInterval(this._sleepWatchdogInterval);
       clearInterval(this._keepOutTimer);
       this.stopQuoteTicker();
@@ -1362,7 +1354,7 @@
       this.edgeTab = null;
       this.flipBtn = null;
       this.avatarWrap = null;
-      this.quickDock = null;
+      this.toolbar = null;
       this.zoomControls = null;
       this.summaryWindow = null;
       this._initialized = false;
@@ -1397,7 +1389,6 @@
         clearInterval(this._sleepWatchdogInterval);
         this._summaryRequest = null;
         this._summaryPending = false;
-        this._hoverStash = null;
         this._isSleeping = false;
         this._driving = false;
         this._capturedPointerId = null;
@@ -1412,7 +1403,7 @@
         this.edgeTab = null;
         this.flipBtn = null;
         this.avatarWrap = null;
-        this.quickDock = null;
+        this.toolbar = null;
         this.zoomControls = null;
         this.summaryWindow = null;
         isDragging = false;
@@ -1438,6 +1429,8 @@
           || (prevQuotes?.intervalMin ?? 15) !== (nextQuotes?.intervalMin ?? 15);
         if (quoteConfigChanged) this.syncQuoteTicker();
         if (hostEl) hostEl.style.display = '';
+        // 阅读脚本也会把它手里的设置推过来，那份不带伴读猫设置：没有工具栏位置就别动它。
+        if (currentSettings.floatingPet?.toolbar) this.applyToolbarSettings(currentSettings.floatingPet.toolbar);
         const scale = currentSettings.floatingPet?.scale;
         if (typeof scale === 'number' && scale !== petScale) {
           this.setScale(scale, { persist: false });

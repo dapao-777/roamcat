@@ -89,14 +89,16 @@ export function parseDomainTest(message) {
 export const PET_SCALE_STEPS = [0.8, 1, 1.2, 1.4, 1.6];
 
 /**
- * FLOATING_PET_POSITION_SET 载荷：位置、主题、缩放可单独出现，但至少出现一项；
- * 位置必须是只含 right/bottom 两个有限非负坐标键的对象，缩放必须落在档位内。
+ * FLOATING_PET_POSITION_SET 载荷：猫的位置、竖排工具栏位置、主题、缩放可单独出现，但至少出现一项；
+ * 位置必须是只含 right/bottom 两个有限非负坐标键的对象，工具栏位置只含 side/top 两键（取值由 validatePatch 校验），
+ * 缩放必须落在档位内。
  */
 export function parseFloatingPetPatch(message) {
   const hasPosition = Boolean(message?.position);
   const hasTheme = typeof message?.themeMode === 'string';
   const hasScale = message?.scale !== undefined;
-  if (!hasPosition && !hasTheme && !hasScale) throw new Error(M('伴读猫位置无效。','Invalid companion-pet position.'));
+  const hasToolbar = message?.toolbar !== undefined;
+  if (!hasPosition && !hasTheme && !hasScale && !hasToolbar) throw new Error(M('伴读猫位置无效。','Invalid companion-pet position.'));
   const floatingPet = {};
   if (hasPosition) {
     const position = message.position;
@@ -104,6 +106,12 @@ export function parseFloatingPetPatch(message) {
       || Object.keys(position).some(key => !['right', 'bottom'].includes(key))
       || !Object.hasOwn(position, 'right') || !Object.hasOwn(position, 'bottom')) throw new Error(M('伴读猫位置无效。','Invalid companion-pet position.'));
     floatingPet.position = position;
+  }
+  if (hasToolbar) {
+    const toolbar = message.toolbar;
+    if (!toolbar || typeof toolbar !== 'object' || Array.isArray(toolbar)
+      || Object.keys(toolbar).some(key => !['side', 'top'].includes(key))) throw new Error(M('伴读猫工具栏位置无效。','Invalid companion toolbar position.'));
+    floatingPet.toolbar = toolbar;
   }
   if (hasTheme) floatingPet.themeMode = message.themeMode;
   if (hasScale) {
@@ -236,6 +244,8 @@ export function validatePatch(patch, currentSettings) {
     const themeMode = ['auto', 'dark', 'light'].includes(fp.themeMode) ? fp.themeMode : (currentSettings.floatingPet?.themeMode || 'auto');
     if (fp.scale !== undefined && !PET_SCALE_STEPS.includes(fp.scale)) throw new Error(M('伴读猫缩放无效。','Invalid companion-pet scale.'));
     const scale = fp.scale ?? currentSettings.floatingPet?.scale ?? 1;
+    const toolbar = {side: 'right', top: 0.5, ...currentSettings.floatingPet?.toolbar, ...fp.toolbar};
+    if (!['left', 'right'].includes(toolbar.side) || typeof toolbar.top !== 'number' || !Number.isFinite(toolbar.top) || toolbar.top < 0 || toolbar.top > 1) throw new Error(M('伴读猫工具栏位置无效。','Invalid companion toolbar position.'));
     if (fp.quotes !== undefined) {
       const quotes = fp.quotes;
       if (!quotes || typeof quotes !== 'object' || Array.isArray(quotes)) throw new Error(M('无效的伴读猫语录设置。','Invalid companion-pet quote settings.'));
@@ -244,7 +254,7 @@ export function validatePatch(patch, currentSettings) {
     }
     const currentQuotes = currentSettings.floatingPet?.quotes ?? {enabled: true, intervalMin: 15};
     const quotes = {enabled: fp.quotes?.enabled ?? currentQuotes.enabled ?? true, intervalMin: fp.quotes?.intervalMin ?? currentQuotes.intervalMin ?? 15};
-    result.floatingPet = {enabled: fp.enabled ?? currentSettings.floatingPet?.enabled ?? true, position: {right: Math.round(right), bottom: Math.round(bottom)}, themeMode, scale, quotes};
+    result.floatingPet = {enabled: fp.enabled ?? currentSettings.floatingPet?.enabled ?? true, position: {right: Math.round(right), bottom: Math.round(bottom)}, toolbar: {side: toolbar.side, top: Math.round(toolbar.top * 1000) / 1000}, themeMode, scale, quotes};
   }
   if (patch.complexSentenceAssist !== undefined) { if (typeof patch.complexSentenceAssist !== 'boolean') throw new Error(M('无效的长难句高亮设置。','Invalid complex-sentence highlight setting.')); result.complexSentenceAssist = patch.complexSentenceAssist; }
   if (patch.formulaAssist !== undefined) { if (typeof patch.formulaAssist !== 'boolean') throw new Error(M('无效的公式识别设置。','Invalid formula-recognition setting.')); result.formulaAssist = patch.formulaAssist; }

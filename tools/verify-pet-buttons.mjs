@@ -1,6 +1,6 @@
 /**
  * @file tools/verify-pet-buttons.mjs
- * 文件职责：伴读猫悬浮按钮专项门禁（npm run verify:pet）——在 ego lite 的真实 content script 环境里，对猫头 / 竖排快捷工具栏（几何与换边） /
+ * 文件职责：伴读猫悬浮按钮专项门禁（npm run verify:pet）——在 ego lite 的真实 content script 环境里，对猫头 / 独立的竖排快捷工具栏（贴边、拖动吸附、位置记忆、悬停提示） /
  *   旋旋翻 / 缩放 / 贴边标签 / 气泡关闭 / 摘要窗做真实鼠标点击与键盘操作，断言状态变化与可及性。
  * 主要内容：本地 fixture 文章页（tools/fixtures/sites/devto-article.html）上挂载的伴读猫；伴读猫实例挂在隔离世界的宿主上，
  *   经扩展页 chrome.scripting 进入隔离世界读取与调用。截图尽力而为，判定只看状态断言。
@@ -79,30 +79,31 @@ try {
     } : null;
   }`);
 
-  // 竖排快捷按钮的几何：四颗按钮自上而下为设置 / 提炼 / 阅读 / 旋旋翻，连同猫、猫身（麻薯身体路径，
-  // 取头顶）、气泡、缩放胶囊的视口矩形。
+  // 几何：独立的竖排快捷工具栏（自上而下设置 / 提炼 / 阅读 / 旋旋翻）与猫、气泡、缩放胶囊、摘要窗的视口矩形。
   const layout = () => petCall(`() => {
     const host = document.querySelector('#roamcat-pet-host'), sr = host.shadowRoot;
     const r = el => { const b = el.getBoundingClientRect(); return {l: Math.round(b.left), t: Math.round(b.top), r: Math.round(b.right), b: Math.round(b.bottom)}; };
-    const body = [...sr.querySelectorAll('.cat-svg > path')].find(p => (p.getAttribute('fill') || 'none') !== 'none');
-    const arms = sr.querySelector('.roamcat-paws .paw-arms');
-    return {cls: sr.querySelector('.roamcat-pet-widget').className, vh: innerHeight, host: r(host), head: body ? r(body) : null,
-      btns: ['#quick-options', '#quick-summary', '#quick-reading', '#roamcat-flip-btn'].map(s => r(sr.querySelector(s))),
+    const bar = sr.querySelector('.roamcat-toolbar');
+    return {cls: sr.querySelector('.roamcat-pet-widget').className, barCls: bar.className, vw: innerWidth, vh: innerHeight, host: r(host),
+      bar: r(bar), btns: ['#quick-options', '#quick-summary', '#quick-reading', '#roamcat-flip-btn'].map(s => r(sr.querySelector(s))),
       bubble: r(sr.querySelector('#cat-speech')), zoom: r(sr.querySelector('#roamcat-zoom-controls')),
-      dock: r(sr.querySelector('.roamcat-quick-dock')), paws: ['.paw-left .paw-tip', '.paw-right .paw-tip'].map(s => r(sr.querySelector(s))),
-      pawsShown: Number(getComputedStyle(arms).opacity) * Number(getComputedStyle(sr.querySelector('.roamcat-paws')).opacity)};
+      summary: r(sr.querySelector('.roamcat-summary-window')), barVis: getComputedStyle(bar).visibility};
   }`);
   const overlaps = (a, b) => a.l < b.r && b.l < a.r && a.t < b.b && b.t < a.b;
   const oneColumn = l => Boolean(l) && l.btns.every(b => Math.abs(b.l - l.btns[0].l) <= 1);
-  const centerX = b => (b.l + b.r) / 2;
-  const centerY = b => (b.t + b.b) / 2;
-  // 工具栏立在猫头上方时，最下面的按钮不压到猫头（按实际画稿量，不写死比例）。
-  const aboveHead = l => Boolean(l?.head) && l.btns[3].b <= l.head.t;
-  // 托举：两只圆爪可见，爪心落在胶囊底边两角（左爪靠胶囊左缘、右爪靠右缘，略高于底边）。
-  const pawsHold = l => Boolean(l) && l.pawsShown > 0.9
-    && Math.abs(centerX(l.paws[0]) - (l.dock.l + 4)) <= 5 && Math.abs(centerX(l.paws[1]) - (l.dock.r - 4)) <= 5
-    && l.paws.every(p => centerY(p) >= l.dock.b - 14 && centerY(p) <= l.dock.b);
-  const pawsDown = l => Boolean(l) && l.pawsShown < 0.1;
+  const onRightEdge = l => Boolean(l) && l.bar.r === l.vw && !l.barCls.includes('is-left');
+  const onLeftEdge = l => Boolean(l) && l.bar.l === 0 && l.barCls.includes('is-left');
+  // 工具栏位置与猫分开存进设置：floatingPet.toolbar = {side, top}
+  const savedToolbar = () => petCall(`async () => (await chrome.runtime.sendMessage({type: 'STATE_GET'}))?.data?.settings?.floatingPet?.toolbar`);
+  // 拖工具栏：从顶端把手按下，经页面中部挪到目标点松手
+  const dragToolbarTo = async (x, y) => {
+    const grip = await tab.locator('.toolbar-grip').boundingBox();
+    await tab.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2);
+    await tab.mouse.down();
+    await tab.mouse.move(720, (grip.y + y) / 2, {steps: 6});
+    await tab.mouse.move(x, y, {steps: 6});
+    await tab.mouse.up();
+  };
 
   const isOpen = s => Boolean(s?.cls.includes('dock-open')) && s.expanded === 'true' && s.inert === false;
   const isClosed = s => Boolean(s) && !s.cls.includes('dock-open') && s.expanded === 'false' && s.inert === true;
@@ -122,7 +123,7 @@ try {
       paused: Boolean(status?.paused),
       btnActive: btn?.classList.contains('is-active'),
       pressed: btn?.getAttribute('aria-pressed'),
-      title: btn?.title,
+      tip: btn?.dataset.tip,
       dockOpen: pet?.container?.classList.contains('dock-open'),
     };
   }`);
@@ -138,9 +139,9 @@ try {
   const initialReading = await readingState();
   check('初始不加载阅读引擎', initialReading?.contentAlive === false, JSON.stringify(initialReading));
   check('未开启页面时阅读按钮不误亮', initialReading?.btnActive === false && initialReading?.pressed === 'false', JSON.stringify(initialReading));
-  check('未开启页面时阅读按钮提示开启', initialReading?.title === '阅读辅助已暂停 · 点击开启', JSON.stringify(initialReading));
+  check('未开启页面时阅读按钮提示开启', initialReading?.tip === '阅读辅助已暂停 · 点击开启', JSON.stringify(initialReading));
 
-  // ---------- 2. 常态显示：不悬停、不点猫，四颗竖排按钮也一直可见可点 ----------
+  // ---------- 2. 猫与工具栏分开：工具栏独立贴在屏幕右缘、常驻显示，不压猫 ----------
   const avatarBox = await avatar.boundingBox();
   check('猫头可定位', Boolean(avatarBox), JSON.stringify(avatarBox));
   const quickStyle = sel => tab.locator(sel).evaluate(el => { const s = getComputedStyle(el); return {opacity: s.opacity, pe: s.pointerEvents, vis: s.visibility}; });
@@ -148,8 +149,17 @@ try {
   await tab.mouse.move(720, 500);
   const idleShown = await Promise.all(['#quick-options', '#quick-summary', '#quick-reading', '.roamcat-flip-btn'].map(sel => until(() => quickStyle(sel), shown)));
   check('快捷按钮常态显示（未悬停、未点猫）', idleShown.every(shown), JSON.stringify(idleShown));
+  const home = await until(layout, l => onRightEdge(l) && oneColumn(l));
+  const gaps = home ? home.btns.slice(1).map((b, i) => b.t - home.btns[i].b) : [];
+  check('工具栏独立贴在屏幕右缘、上沿约在视口一半', onRightEdge(home) && Math.abs(home.bar.t - home.vh * 0.5) <= 2, JSON.stringify(home));
+  check('工具栏竖排一列、自上而下设置/提炼/阅读/旋旋翻', oneColumn(home) && gaps.length === 3 && gaps.every(g => g >= 0 && g <= 4)
+    && home.btns.every((b, i) => i === 0 || b.t > home.btns[i - 1].t), JSON.stringify({btns: home?.btns, gaps}));
+  check('工具栏不压猫', Boolean(home) && !overlaps(home.bar, home.host), JSON.stringify({bar: home?.bar, host: home?.host}));
+  const toolbarRole = await petCall(`() => { const bar = document.querySelector('#roamcat-pet-host').shadowRoot.querySelector('.roamcat-toolbar'); return {role: bar.getAttribute('role'), label: bar.getAttribute('aria-label'), labels: [...bar.querySelectorAll('button')].map(b => b.getAttribute('aria-label'))}; }`);
+  check('工具栏可及性：role=toolbar、每颗按钮有 aria-label', toolbarRole?.role === 'toolbar' && Boolean(toolbarRole.label)
+    && toolbarRole.labels.length === 4 && toolbarRole.labels.every(Boolean), JSON.stringify(toolbarRole));
 
-  // ---------- 3. 点击猫头展开缩放胶囊（dock-open 只管胶囊，竖排按钮本来就常驻） ----------
+  // ---------- 3. 点击猫头展开缩放胶囊（点猫只管猫自己的缩放，工具栏不动） ----------
   await avatar.click();
   const reacted = await avatar.evaluate(el => el.classList.contains('action-jelly')).catch(() => false)
     || await tab.locator('.cat-particle').count() > 0;
@@ -158,46 +168,36 @@ try {
     JSON.stringify({cls: st?.cls, expanded: st?.expanded, inert: st?.inert}));
   check('点击有果冻/粒子反馈', reacted);
   await shot('dock-open');
-  // 竖排快捷按钮（参照陪读蛙）：收在一条竖胶囊工具栏里，居中立在猫头上方，旋旋翻离猫最近；
-  // 缩放胶囊在猫朝页面内侧一边，不压按钮。
-  // 点猫会触发果冻反馈，猫身形变期间量不准：等猫回到常态再量。
-  const column = await until(layout, l => oneColumn(l) && aboveHead(l) && !overlaps(l.zoom, l.btns[3]), 5000);
-  const gaps = column ? column.btns.slice(1).map((b, i) => b.t - column.btns[i].b) : [];
-  check('快捷按钮竖排一列、自上而下设置/提炼/阅读/旋旋翻', oneColumn(column) && gaps.length === 3 && gaps.every(g => g >= 0 && g <= 4),
-    JSON.stringify({btns: column?.btns, gaps}));
-  check('竖排工具栏与猫居中对齐', Boolean(column) && column.btns.every(b => Math.abs(centerX(b) - centerX(column.host)) <= 1), JSON.stringify(column));
-  check('竖列挂在猫头上方', Boolean(column) && aboveHead(column) && column.btns[0].t >= 0 && !column.cls.includes('dock-below'),
-    JSON.stringify(column));
-  const held = await until(layout, pawsHold);
-  check('猫举着工具栏：两只圆爪托住胶囊底边两角', pawsHold(held), JSON.stringify({dock: held?.dock, paws: held?.paws, shown: held?.pawsShown}));
-  check('缩放胶囊在猫朝页面内侧一边', Boolean(column) && column.zoom.r <= column.host.l && column.btns.every(b => !overlaps(b, column.zoom)),
-    JSON.stringify(column));
+  const opened = await until(layout, l => l.zoom.r <= l.host.l);
+  check('缩放胶囊在猫朝页面内侧一边', opened.zoom.r <= opened.host.l, JSON.stringify(opened));
+  check('点猫不挪工具栏', JSON.stringify(opened.bar) === JSON.stringify(home?.bar), JSON.stringify({before: home?.bar, after: opened.bar}));
 
-  // ---------- 4. 悬停播报：三个按钮 + 旋旋翻各播一条气泡 ----------
+  // ---------- 4. 每颗按钮自带悬停提示；猫的气泡不再替按钮解释 ----------
+  const tipState = sel => tab.locator(sel).evaluate(el => {
+    const s = getComputedStyle(el, '::after');
+    return {tip: el.dataset.tip, label: el.getAttribute('aria-label'), content: s.content, opacity: Number(s.opacity), vis: s.visibility};
+  });
   const hoverCases = [
-    ['#quick-reading', '阅读辅助：点击开合本页提示 喵~'],
-    ['#quick-summary', '提炼整篇精华，喂我一下就好 喵~'],
-    ['#quick-options', '打开扩展偏好设置 喵~'],
-    ['.roamcat-flip-btn', '旋旋翻：一键双语对照 喵~'],
+    ['#quick-options', '扩展设置'],
+    ['#quick-summary', '提炼整篇精华'],
+    ['#quick-reading', '阅读辅助已暂停 · 点击开启'],
+    ['.roamcat-flip-btn', null],
   ];
-  for (const [sel, expectText] of hoverCases) {
+  for (const [sel, expectTip] of hoverCases) {
     const box = await tab.locator(sel).boundingBox();
     check(`悬停目标可见 ${sel}`, Boolean(box));
     if (!box) continue;
     await tab.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-    const st = await until(petState, s => s?.speech === expectText && s.speechCls.includes('speaking'));
-    check(`悬停播报 ${sel}`, st?.speech === expectText && st.speechCls.includes('speaking'),
-      `speech=${st?.speech} cls=${st?.speechCls}`);
-    // 气泡让到竖列内侧：与按钮、缩放胶囊都不重叠（按钮不再另弹提示条，气泡就是说明）。
-    const lay = await until(layout, l => l.bubble.r <= l.btns[0].l && !overlaps(l.bubble, l.zoom));
-    check(`悬停气泡不压竖排按钮 ${sel}`, lay.bubble.r <= lay.btns[0].l && lay.btns.every(b => !overlaps(b, lay.bubble)) && !overlaps(lay.bubble, lay.zoom),
-      JSON.stringify({bubble: lay.bubble, btns: lay.btns, zoom: lay.zoom}));
+    const tip = await until(() => tipState(sel), s => s.opacity > 0.9 && s.vis === 'visible');
+    check(`悬停显示按钮自带提示 ${sel}`, tip.opacity > 0.9 && tip.vis === 'visible' && Boolean(tip.tip) && tip.content === JSON.stringify(tip.tip)
+      && (expectTip === null || tip.tip === expectTip), JSON.stringify(tip));
+    const speech = await petState();
+    check(`悬停按钮不动猫的气泡 ${sel}`, Boolean(speech) && !speech.speechCls.includes('speaking') && speech.speech === '漫游伴读 喵~',
+      `speech=${speech?.speech} cls=${speech?.speechCls}`);
   }
-  // 移出按钮 → 气泡收回并复位默认文案
   await tab.mouse.move(720, 500);
-  const afterLeave = await until(petState, s => s && !s.speechCls.includes('speaking') && s.speech === '漫游伴读 喵~');
-  check('移开后气泡收回', afterLeave && !afterLeave.speechCls.includes('speaking') && afterLeave.speech === '漫游伴读 喵~',
-    `speech=${afterLeave?.speech} cls=${afterLeave?.speechCls}`);
+  const tipGone = await until(() => tipState('#quick-summary'), s => s.opacity < 0.1);
+  check('移开后提示收起', tipGone.opacity < 0.1, JSON.stringify(tipGone));
 
   // ---------- 5. 再点猫头收坞 ----------
   await avatar.click();
@@ -221,19 +221,20 @@ try {
   st = await waitPet(isClosed);
   check('点击页外收起缩放胶囊', st && !st.cls.includes('dock-open'), `cls=${st?.cls}`);
 
-  // ---------- 8. 常驻的竖排按钮一直在 Tab 序里（可及性）；缩放胶囊收起时仍 inert ----------
+  // ---------- 8. 工具栏按钮常驻 Tab 序（可及性），按键盘顺序紧跟在猫后面 ----------
   const tabOrder = await petCall(`() => {
-    const btns = [...document.querySelector('#roamcat-pet-host').shadowRoot.querySelector('.roamcat-quick-dock').children];
+    const btns = [...document.querySelector('#roamcat-pet-host').shadowRoot.querySelector('.roamcat-toolbar').querySelectorAll('button')];
     return btns.map(b => ({id: b.id || b.className, tabIndex: b.tabIndex}));
   }`);
-  check('四颗竖排按钮常驻 Tab 序', tabOrder?.length === 4 && tabOrder.every(b => b.tabIndex >= 0), JSON.stringify(tabOrder));
-  // 从猫头 Shift+Tab 先到离猫最近的旋旋翻，再往上依次是阅读、提炼、设置。
+  check('四颗工具栏按钮常驻 Tab 序', tabOrder?.length === 4 && tabOrder.every(b => b.tabIndex >= 0), JSON.stringify(tabOrder));
   const focusId = () => petCall(`() => document.querySelector('#roamcat-pet-host').shadowRoot.activeElement?.id || ''`);
   await avatar.focus();
-  const reverseTab = [];
-  for (let i = 0; i < 4; i++) { await tab.keyboard.press('Shift+Tab'); reverseTab.push(await focusId()); }
-  check('从猫头 Shift+Tab 依次经过旋旋翻、阅读、提炼、设置', reverseTab.join() === 'roamcat-flip-btn,quick-reading,quick-summary,quick-options',
-    JSON.stringify(reverseTab));
+  const forwardTab = [];
+  for (let i = 0; i < 4; i++) { await tab.keyboard.press('Tab'); forwardTab.push(await focusId()); }
+  check('从猫头 Tab 依次经过设置、提炼、阅读、旋旋翻', forwardTab.join() === 'quick-options,quick-summary,quick-reading,roamcat-flip-btn',
+    JSON.stringify(forwardTab));
+  const focusTip = await until(() => tipState('#roamcat-flip-btn'), s => s.opacity > 0.9 && s.vis === 'visible');
+  check('键盘聚焦也显示按钮提示', focusTip.opacity > 0.9 && focusTip.vis === 'visible', JSON.stringify(focusTip));
   await tab.mouse.click(30, 30);
 
   // ---------- 9. 阅读辅助开关（缩放胶囊保持展开，方向自适应） ----------
@@ -249,15 +250,15 @@ try {
   let afterReading = await readingState();
   check('首次点击加载并开启阅读辅助', landed1 && afterReading?.contentAlive === true && afterReading?.enabled === true
     && afterReading?.paused === false && afterReading?.btnActive === true && afterReading?.pressed === 'true', JSON.stringify(afterReading));
-  check('阅读辅助标题随状态更新', afterReading?.title === '阅读辅助进行中 · 点击暂停',
-    `title=${afterReading?.title}`);
+  check('阅读按钮的悬停提示随状态更新', afterReading?.tip === '阅读辅助进行中 · 点击暂停',
+    `tip=${afterReading?.tip}`);
   check('切换后缩放胶囊保持展开', afterReading?.dockOpen === true);
   // 再点复原
   await tab.locator('#quick-reading').click();
   const landed2 = await waitReadingBtn(false);
   afterReading = await readingState();
   check('再点阅读辅助关闭', landed2 && afterReading?.enabled === false && afterReading?.paused === true
-    && afterReading?.btnActive === false && afterReading?.pressed === 'false' && afterReading?.title === '阅读辅助已暂停 · 点击开启',
+    && afterReading?.btnActive === false && afterReading?.pressed === 'false' && afterReading?.tip === '阅读辅助已暂停 · 点击开启',
     JSON.stringify(afterReading));
   if (!landed1 || !landed2) {
     warn('体验问题：阅读辅助开关缺少 pending 反馈，rebuild 期间按钮态滞后于实际状态');
@@ -271,7 +272,7 @@ try {
     const state = await readingState();
     check(`弹窗切换后伴读猫同步${enabled ? '开启' : '关闭'}`, response?.ok && landed && state?.enabled === enabled
       && state?.btnActive === enabled && state?.pressed === String(enabled)
-      && state?.title === (enabled ? '阅读辅助进行中 · 点击暂停' : '阅读辅助已暂停 · 点击开启'), JSON.stringify(state));
+      && state?.tip === (enabled ? '阅读辅助进行中 · 点击暂停' : '阅读辅助已暂停 · 点击开启'), JSON.stringify(state));
   }
 
   // ---------- 10. 旋旋翻：无服务时走错误播报 ----------
@@ -308,6 +309,11 @@ try {
     .catch(() => report.failures.push('摘要未落入错误态（服务意外可用或卡住）'));
   const errVisible = await tab.locator('#summary-content .summary-error').isVisible().catch(() => false);
   check('无服务摘要报错误态', errVisible);
+  // 摘要窗由工具栏打开，就挂在工具栏朝页面内侧的一边、上沿与工具栏对齐。
+  const withSummary = await until(layout, l => l.summary.r <= l.bar.l && Math.abs(l.summary.t - Math.max(16, Math.min(l.bar.t, l.vh - (l.summary.b - l.summary.t) - 16))) <= 2);
+  check('摘要窗挂在工具栏内侧、与工具栏上沿对齐', withSummary.summary.r <= withSummary.bar.l && withSummary.bar.l - withSummary.summary.r <= 16
+    && Math.abs(withSummary.summary.t - Math.max(16, Math.min(withSummary.bar.t, withSummary.vh - (withSummary.summary.b - withSummary.summary.t) - 16))) <= 2,
+  JSON.stringify({summary: withSummary.summary, bar: withSummary.bar}));
   await shot('summary-error');
 
   // 窗内「重新尝试」按钮 → 再次进入加载
@@ -370,18 +376,14 @@ try {
   const peekBox = await until(() => widget.boundingBox(), b => b && Math.abs(b.x + b.width - 1440) <= 1);
   check('贴边探头贴住右缘', Boolean(peekBox) && Math.abs(peekBox.x + peekBox.width - 1440) <= 1,
     `right=${peekBox ? Math.round(peekBox.x + peekBox.width) : 'n/a'}`);
-  // 贴边态整条工具栏收起，悬停也只探头、不弹按钮
+  // 工具栏与猫分开：猫贴边探头时工具栏照常显示、位置不变，按钮照常可点
   const pb = await avatar.boundingBox();
   await tab.mouse.move(pb.x + pb.width / 2, pb.y + pb.height / 2);
-  // 观察窗口：这里断言的是贴边悬停「不会」弹出按钮，只能给悬停留出生效时间再看。
-  await tab.waitForTimeout(450);
-  const dockedHover = await tab.locator('.roamcat-quick-dock').evaluate(el => {
-    const s = getComputedStyle(el);
-    return {opacity: s.opacity, vis: s.visibility};
-  });
-  check('贴边时竖排工具栏收起、悬停不弹', dockedHover.vis === 'hidden' && Number(dockedHover.opacity) < 0.1, JSON.stringify(dockedHover));
-  const dockedPaws = await until(layout, pawsDown);
-  check('贴边时托举小爪放下', pawsDown(dockedPaws), `pawsShown=${dockedPaws?.pawsShown}`);
+  const dockedBar = await until(layout, l => l.barVis === 'visible' && onRightEdge(l));
+  check('猫贴边时工具栏照常显示在原位', dockedBar.barVis === 'visible' && JSON.stringify(dockedBar.bar) === JSON.stringify(home?.bar),
+    JSON.stringify({bar: dockedBar.bar, home: home?.bar, vis: dockedBar.barVis}));
+  const dockedBtn = await quickStyle('#quick-summary');
+  check('猫贴边时工具栏按钮仍可点', shown(dockedBtn), JSON.stringify(dockedBtn));
   await shot('docked-hover');
   // 贴边标签仅作键盘入口：平时透明且不占命中区
   await tab.mouse.move(30, 30);
@@ -422,94 +424,59 @@ try {
   st = await waitPet(awake);
   check('贴边态猫头 Enter 唤醒', st && !st.cls.includes('docked'), `cls=${st?.cls}`);
 
-  // ---------- 12b. 托举动画：唤醒时工具栏升起、猫举起双爪；减弱动效下只淡入 ----------
-  // 动效偏好显式模拟两种取值（无头 ego 默认跟随系统，Windows 关了「动画效果」时为 reduce）。
-  // motion 采样：唤醒后立刻收集影子根里的动画——托举形变 action-lift、带位移/缩放的过渡。
-  const wakeAndSampleMotion = () => petCall(`() => new Promise(resolve => {
-    const host = document.querySelector('#roamcat-pet-host'), pet = host.pet, sr = host.shadowRoot, wrap = pet.avatarWrap;
-    let lift = false;
-    const seen = new Set();
-    const sample = () => {
-      lift ||= wrap.classList.contains('action-lift');
-      for (const a of sr.getAnimations()) {
-        // 只看这次托举涉及的工具栏与爪子（猫身悬停放大等既有过渡不在此列）。
-        const own = a.effect?.target?.matches?.('.roamcat-quick-dock, .roamcat-paws, .paw-arms');
-        if (own && a.transitionProperty && /^(transform|translate|scale)$/.test(a.transitionProperty)) seen.add('transition:' + a.transitionProperty);
-        if (a.animationName && /^(cat-lift-anim|pet-hold-bob)/.test(a.animationName)) seen.add('animation:' + a.animationName);
-      }
-    };
-    pet.undock();
-    sample();
-    let n = 0;
-    const timer = setInterval(() => { sample(); if (++n >= 8) { clearInterval(timer); resolve({lift, motion: [...seen]}); } }, 50);
-  })`);
-  await tab.mouse.move(30, 30);
-  for (const reducedMotion of ['reduce', 'no-preference']) {
-    await tab.emulateMedia({reducedMotion});
-    await petCall(`() => { document.querySelector('#roamcat-pet-host').pet.dock('right'); return true; }`);
-    await waitPet(isDocked);
-    await until(layout, pawsDown);
-    const sampled = await wakeAndSampleMotion();
-    const lay = await until(layout, pawsHold);
-    if (reducedMotion === 'reduce') {
-      check('减弱动效：唤醒时不做托举形变、没有位移缩放动画', sampled && !sampled.lift && sampled.motion.length === 0, JSON.stringify(sampled));
-    } else {
-      check('唤醒时猫做托举动作、爪子与工具栏带位移升起', sampled?.lift === true && sampled.motion.some(m => m.startsWith('transition:'))
-        && sampled.motion.includes('animation:cat-lift-anim'), JSON.stringify(sampled));
-    }
-    check(`唤醒后两只圆爪托住工具栏（${reducedMotion}）`, pawsHold(lay), JSON.stringify({dock: lay?.dock, paws: lay?.paws, shown: lay?.pawsShown}));
-  }
-  await tab.emulateMedia({});
-
-  // ---------- 13. 拖拽位移并抑制误触 ----------
+  // ---------- 13. 拖猫：猫照常拖动、记住位置，工具栏不跟着走 ----------
   const before = await tab.locator('#roamcat-pet-host').boundingBox();
   const ax = before.x + before.width / 2, ay = before.y + before.height / 2;
-  const readBefore = await tab.locator('#quick-reading').boundingBox();
   await tab.mouse.move(ax, ay);
   await tab.mouse.down();
   await tab.mouse.move(ax - 60, ay - 40, {steps: 5});
-  // 按钮常驻：拖动途中也不隐藏，整列跟着猫走。
-  const readMid = await until(() => tab.locator('#quick-reading').boundingBox(), b => b && Math.abs(b.x - (readBefore.x - 60)) <= 2 && Math.abs(b.y - (readBefore.y - 40)) <= 2);
-  const midDrag = await quickStyle('#quick-reading');
-  check('拖动途中竖排按钮保持显示并跟着猫走', shown(midDrag) && Math.abs(readMid.x - (readBefore.x - 60)) <= 2 && Math.abs(readMid.y - (readBefore.y - 40)) <= 2,
-    JSON.stringify({midDrag, readBefore, readMid}));
+  const midCatDrag = await layout();
   await tab.mouse.up();
   const after = await until(() => tab.locator('#roamcat-pet-host').boundingBox(), b => b && Math.abs(b.x - before.x) > 30);
   st = await petState();
   check('拖拽移动伴读猫', Boolean(after) && Math.abs(after.x - before.x) > 30, `x ${before.x}→${after?.x}`);
   check('拖拽不展开缩放胶囊', st && !st.cls.includes('dock-open'), `cls=${st?.cls}`);
+  const afterCatDrag = await layout();
+  check('拖猫时工具栏原地不动', JSON.stringify(midCatDrag.bar) === JSON.stringify(home?.bar) && JSON.stringify(afterCatDrag.bar) === JSON.stringify(home?.bar),
+    JSON.stringify({home: home?.bar, mid: midCatDrag.bar, after: afterCatDrag.bar}));
+  const savedCat = await until(savedToolbar, Boolean);
+  check('拖猫不改工具栏记住的位置', savedCat?.side === 'right' && savedCat.top === 0.5, JSON.stringify(savedCat));
 
-  // ---------- 13b. 竖列随位置换边：拖到视口顶部改挂猫脚下，拖到左半屏贴猫左缘 ----------
-  const dragPetTo = async (x, y) => {
-    const b = await avatar.boundingBox();
-    await tab.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
-    await tab.mouse.down();
-    await tab.mouse.move(x, y, {steps: 6});
-    await tab.mouse.up();
-    await until(() => avatar.boundingBox(), nb => nb && Math.abs(nb.x + nb.width / 2 - x) < 12 && Math.abs(nb.y + nb.height / 2 - y) < 12);
-  };
-  await dragPetTo(1100, 70);
-  let lay = await until(layout, l => l?.cls.includes('dock-below'));
-  check('猫在视口顶部时竖列改挂到猫脚下、旋旋翻仍离猫最近', lay.cls.includes('dock-below') && oneColumn(lay)
-    && lay.btns[3].t >= lay.host.b && lay.btns[3].t < lay.btns[2].t && lay.btns[0].b <= lay.vh, JSON.stringify(lay));
-  const belowPaws = await until(layout, pawsDown);
-  check('工具栏挂到猫脚下时托举小爪放下', pawsDown(belowPaws), `pawsShown=${belowPaws?.pawsShown}`);
-  const readBox = await tab.locator('#quick-reading').boundingBox();
-  await tab.mouse.move(readBox.x + readBox.width / 2, readBox.y + readBox.height / 2);
-  lay = await until(layout, l => l.bubble.t >= 0 && l.btns.every(b => !overlaps(b, l.bubble)));
-  check('猫在视口顶部时悬停气泡在视口内且不压按钮', lay.bubble.t >= 0 && lay.btns.every(b => !overlaps(b, lay.bubble)), JSON.stringify(lay));
-  await dragPetTo(300, 600);
-  lay = await until(layout, l => l?.cls.includes('is-left') && !l.cls.includes('dock-below'));
-  check('猫在左半屏时工具栏仍与猫居中', lay.cls.includes('is-left') && oneColumn(lay) && lay.btns.every(b => Math.abs(centerX(b) - centerX(lay.host)) <= 1)
-    && aboveHead(lay), JSON.stringify(lay));
-  const reheld = await until(layout, pawsHold);
-  check('从猫脚下换回头顶后又举起工具栏', pawsHold(reheld), JSON.stringify({dock: reheld?.dock, paws: reheld?.paws, shown: reheld?.pawsShown}));
-  const sumBox = await tab.locator('#quick-summary').boundingBox();
-  await tab.mouse.move(sumBox.x + sumBox.width / 2, sumBox.y + sumBox.height / 2);
-  lay = await until(layout, l => l.bubble.l >= l.btns[0].r);
-  check('猫在左半屏时悬停气泡在竖列右侧', lay.bubble.l >= lay.btns[0].r && lay.btns.every(b => !overlaps(b, lay.bubble)), JSON.stringify(lay));
-  await shot('left-half-hover');
-  await dragPetTo(ax, ay);
+  // ---------- 13b. 拖工具栏：拖到左半屏吸附左缘、位置单独记忆、重载后照旧；从按钮上拖动不误触 ----------
+  await dragToolbarTo(80, 300);
+  let barLay = await until(layout, onLeftEdge);
+  check('工具栏拖到左半屏吸附左缘', onLeftEdge(barLay) && barLay.bar.t > 260 && barLay.bar.t < 310, JSON.stringify(barLay));
+  check('拖工具栏不动猫', JSON.stringify(barLay.host) === JSON.stringify(afterCatDrag.host), JSON.stringify({host: barLay.host, before: afterCatDrag.host}));
+  let saved = await until(savedToolbar, t => t?.side === 'left');
+  check('工具栏位置单独写进设置', saved?.side === 'left' && Math.abs(saved.top * barLay.vh - barLay.bar.t) <= 2, JSON.stringify({saved, top: barLay.bar.t}));
+  await shot('toolbar-left');
+  // 重载：工具栏回到记住的左缘位置，猫也在自己记住的位置
+  await tab.reload();
+  await tab.locator('#roamcat-pet-host').waitFor({state: 'attached', timeout: 10000});
+  await waitPet(Boolean, 8000);
+  const reloaded = await until(layout, l => onLeftEdge(l) && Math.abs(l.bar.t - barLay.bar.t) <= 2, 6000);
+  check('重载后工具栏回到记住的位置', onLeftEdge(reloaded) && Math.abs(reloaded.bar.t - barLay.bar.t) <= 2, JSON.stringify({bar: reloaded?.bar, expect: barLay.bar}));
+  check('重载后猫回到自己记住的位置', JSON.stringify(reloaded?.host) === JSON.stringify(afterCatDrag.host), JSON.stringify({host: reloaded?.host, expect: afterCatDrag.host}));
+  // 从「提炼」按钮上按住拖回右缘：吸附右缘，这次松手不打开摘要窗
+  const sumBtn = await tab.locator('#quick-summary').boundingBox();
+  await tab.mouse.move(sumBtn.x + sumBtn.width / 2, sumBtn.y + sumBtn.height / 2);
+  await tab.mouse.down();
+  await tab.mouse.move(720, 450, {steps: 6});
+  await tab.mouse.move(1400, 500, {steps: 6});
+  await tab.mouse.up();
+  barLay = await until(layout, onRightEdge);
+  check('从按钮上按住也能拖动、吸附回右缘', onRightEdge(barLay), JSON.stringify(barLay));
+  // 观察窗口：断言松手「不会」触发提炼，给点击留出派发时间再看。
+  await tab.waitForTimeout(400);
+  check('拖完松手不触发按钮', await summaryOpen() === 0, `summaryOpen=${await summaryOpen()}`);
+  saved = await until(savedToolbar, t => t?.side === 'right');
+  check('拖回右缘后记住新位置', saved?.side === 'right' && Math.abs(saved.top * barLay.vh - barLay.bar.t) <= 2, JSON.stringify({saved, top: barLay.bar.t}));
+  const clickAfterDrag = await tab.locator('#quick-summary').boundingBox();
+  await tab.mouse.click(clickAfterDrag.x + clickAfterDrag.width / 2, clickAfterDrag.y + clickAfterDrag.height / 2);
+  await until(summaryOpen, n => n === 1);
+  check('拖完后正常点按钮照常生效', await summaryOpen() === 1);
+  await tab.keyboard.press('Escape');
+  await until(summaryOpen, n => n === 0);
 
   // ---------- 14. 缩放按钮 ----------
   await avatar.click();
@@ -530,8 +497,9 @@ try {
       `zoom=${st?.zoom} scale=${st?.scale}`);
   }
   check('缩放写入 --pet-scale', st?.scale === '1.6', `scale=${st?.scale}`);
-  const big = await until(layout, aboveHead);
-  check('160% 时工具栏仍立在猫头之上、胶囊不压猫', aboveHead(big) && big.zoom.r <= big.host.l, JSON.stringify(big));
+  const big = await until(layout, l => l.zoom.r <= l.host.l);
+  const sameSize = (a, b) => a.r - a.l === b.r - b.l && a.b - a.t === b.b - b.t;
+  check('160% 时缩放胶囊不压猫、工具栏不随猫缩放', big.zoom.r <= big.host.l && sameSize(big.bar, home.bar), JSON.stringify({zoom: big.zoom, host: big.host, bar: big.bar}));
   await shot('zoom-160');
   // 复位 100%（1.6→1.4→1.2→1.0 三步）
   for (const label of ['140%', '120%', '100%']) { await tab.locator('#zoom-out').click(); await waitPet(s => s?.zoom === label); }
@@ -552,12 +520,12 @@ try {
   check('猫贴右边时缩放胶囊不出界', edge && edge.hostRight >= edge.vw - 4 && edge.left >= 0 && edge.right <= edge.vw, JSON.stringify(edge));
 
   // ---------- 15. 气泡 × 关闭（忙碌态 → 成功微反馈） ----------
-  // 鼠标先移出挂件区域再直达关闭钮，避免路过竖排按钮触发其 pointerleave 清掉忙碌气泡
+  // 鼠标先移出挂件区域再直达关闭钮
   await tab.mouse.move(760, 60);
   await petCall(`() => { document.querySelector('#roamcat-pet-host').pet.speakStatus('正在解构正文 喵~', {busy: true}); return true; }`);
   st = await waitPet(s => s?.speechCls.includes('speaking') && s.speechCls.includes('is-busy'));
   check('忙碌气泡显示', st?.speechCls.includes('speaking') && st.speechCls.includes('is-busy'), st?.speechCls);
-  // 悬停播报会清空进行中的状态气泡 —— 单独验证这一行为
+  // 悬停工具栏按钮不该碰猫的状态气泡 —— 单独验证这一行为
   const hoverClobber = await petCall(`() => new Promise(resolve => {
     const pet = document.querySelector('#roamcat-pet-host').pet;
     pet.speakStatus('忙碌中不应被打断', {busy: true});
@@ -569,7 +537,7 @@ try {
       text: pet.shadowQuery('#speech-text').textContent,
     }), 60);
   })`);
-  check('悬停播报不吞掉状态气泡', hoverClobber?.speaking === true && String(hoverClobber.text).includes('忙碌中不应被打断'),
+  check('悬停工具栏按钮不吞掉猫的状态气泡', hoverClobber?.speaking === true && String(hoverClobber.text).includes('忙碌中不应被打断'),
     JSON.stringify(hoverClobber));
   // 恢复忙碌气泡再测 ×
   await petCall(`() => { document.querySelector('#roamcat-pet-host').pet.speakStatus('正在解构正文 喵~', {busy: true}); return true; }`);

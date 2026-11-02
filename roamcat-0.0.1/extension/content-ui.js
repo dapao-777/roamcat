@@ -123,9 +123,9 @@ details.more>summary:focus-visible{outline:var(--focus-ring);outline-offset:var(
       </details>
       <p class="minor note" ${H(e=>{u.note=e})}></p>
       <p class="minor speech-notice" role="status" ${H(e=>{u.speechNotice=e})}></p>
-    </section>`,e),u.sentence?.addEventListener(`toggle`,()=>{let e=!!u.sentence?.open;u.sentenceToggle&&(u.sentenceToggle.textContent=Z(e?`ui.transClose`:`ui.transOpen`),u.sentenceToggle.setAttribute(`aria-expanded`,String(e)))}),u}function Fe(e,t=!1){e&&$(e,b`${K(t?`stop`:`volume`,{size:13})}`)}function Ie(e,t,n=``){let r=[{text:t,cls:`inline-term`,tag:`code`},{text:n,cls:`meaning-key`,tag:`strong`}].filter(e=>typeof e.text==`string`&&e.text.trim()&&e.text.length<=80).sort((e,t)=>t.text.length-e.text.length);if(!r.length)return[e];let i=r.map(e=>`(`+e.text.replace(/[.*+?^${}()|[\]\\]/g,`\\$&`)+`)`).join(`|`),a=[],o=0;for(let t of String(e).matchAll(new RegExp(i,`giu`))){let n=t.index,i=n+t[0].length;if(/[A-Za-z0-9_]/.test(t[0][0])&&/[A-Za-z0-9_]/.test(e[n-1]||``)||/[A-Za-z0-9_]/.test(t[0].at(-1))&&/[A-Za-z0-9_]/.test(e[i]||``))continue;n>o&&a.push(e.slice(o,n));let s=r[t.findIndex((e,t)=>t>0&&e!==void 0)-1];a.push(s.tag===`code`?b`<code class=${s.cls}>${t[0]}</code>`:b`<strong class=${s.cls}>${t[0]}</strong>`),o=i}return o<e.length&&a.push(e.slice(o)),a}function $(e,t){e&&(delete e._$litPart$,e.replaceChildren(),P(t,e))}function Le(e,t,n,r=``){$(e,b`${Ie(t,n,r)}`)}function Re(e){e&&(delete e._$litPart$,e.replaceChildren())}function ze(e,t){e&&(delete e._$litPart$,e.replaceChildren(...t))}function Be(e,t){$(e,b`${t.map(e=>b`<dt>${e.label}</dt><dd lang=${e.lang}>${Ie(e.text,e.word,e.definition)}</dd>`)}`)}function Ve(e,{domainKey:t=`general`,domainName:n=``,catSvg:r=``,peekingCatSvg:i=``,pawsSvg:a=``,onEdgeTabClick:o}={}){P(b`
+    </section>`,e),u.sentence?.addEventListener(`toggle`,()=>{let e=!!u.sentence?.open;u.sentenceToggle&&(u.sentenceToggle.textContent=Z(e?`ui.transClose`:`ui.transOpen`),u.sentenceToggle.setAttribute(`aria-expanded`,String(e)))}),u}function Fe(e,t=!1){e&&$(e,b`${K(t?`stop`:`volume`,{size:13})}`)}function Ie(e,t,n=``){let r=[{text:t,cls:`inline-term`,tag:`code`},{text:n,cls:`meaning-key`,tag:`strong`}].filter(e=>typeof e.text==`string`&&e.text.trim()&&e.text.length<=80).sort((e,t)=>t.text.length-e.text.length);if(!r.length)return[e];let i=r.map(e=>`(`+e.text.replace(/[.*+?^${}()|[\]\\]/g,`\\$&`)+`)`).join(`|`),a=[],o=0;for(let t of String(e).matchAll(new RegExp(i,`giu`))){let n=t.index,i=n+t[0].length;if(/[A-Za-z0-9_]/.test(t[0][0])&&/[A-Za-z0-9_]/.test(e[n-1]||``)||/[A-Za-z0-9_]/.test(t[0].at(-1))&&/[A-Za-z0-9_]/.test(e[i]||``))continue;n>o&&a.push(e.slice(o,n));let s=r[t.findIndex((e,t)=>t>0&&e!==void 0)-1];a.push(s.tag===`code`?b`<code class=${s.cls}>${t[0]}</code>`:b`<strong class=${s.cls}>${t[0]}</strong>`),o=i}return o<e.length&&a.push(e.slice(o)),a}function $(e,t){e&&(delete e._$litPart$,e.replaceChildren(),P(t,e))}function Le(e,t,n,r=``){$(e,b`${Ie(t,n,r)}`)}function Re(e){e&&(delete e._$litPart$,e.replaceChildren())}function ze(e,t){e&&(delete e._$litPart$,e.replaceChildren(...t))}function Be(e,t){$(e,b`${t.map(e=>b`<dt>${e.label}</dt><dd lang=${e.lang}>${Ie(e.text,e.word,e.definition)}</dd>`)}`)}function Ve(e,{domainKey:t=`general`,domainName:n=``,catSvg:r=``,peekingCatSvg:i=``,onEdgeTabClick:a}={}){P(b`
     <div class="roamcat-pet-widget">
-      <div class="roamcat-edge-tab" id="roamcat-edge-tab" role="button" tabindex="0" aria-label=${Z(`pet.edgeAria`)} title=${Z(`pet.edgeTitle`)} @click=${e=>{e.stopPropagation(),o?.()}} @keydown=${e=>{(e.key===`Enter`||e.key===` `)&&(e.preventDefault(),e.stopPropagation(),o?.())}}>
+      <div class="roamcat-edge-tab" id="roamcat-edge-tab" role="button" tabindex="0" aria-label=${Z(`pet.edgeAria`)} title=${Z(`pet.edgeTitle`)} @click=${e=>{e.stopPropagation(),a?.()}} @keydown=${e=>{(e.key===`Enter`||e.key===` `)&&(e.preventDefault(),e.stopPropagation(),a?.())}}>
         <div class="edge-tab-inner">
           <span class="edge-tab-paw">${K(`paw`,{size:14})}</span>
         </div>
@@ -135,25 +135,6 @@ details.more>summary:focus-visible{outline:var(--focus-ring);outline-offset:var(
         <span class="zoom-label" id="zoom-label">100%</span>
         <button type="button" class="zoom-btn" id="zoom-in" aria-label=${Z(`pet.zoomIn`)} title=${Z(`pet.zoomIn`)}>${K(`plus`,{size:12})}</button>
       </div>
-      <div class="roamcat-quick-dock">
-        <button type="button" class="roamcat-quick-btn" id="quick-options" aria-label=${Z(`pet.optAria`)} title=${Z(`pet.optTip`)}>
-          <span class="quick-glyph" aria-hidden="true">${K(`settings`,{size:15})}</span>
-        </button>
-        <button type="button" class="roamcat-quick-btn" id="quick-summary" aria-label=${Z(`pet.sumAria`)} title=${Z(`pet.sumTip`)}>
-          <span class="quick-glyph" aria-hidden="true">${K(`file-text`,{size:15})}</span>
-        </button>
-        <button type="button" class="roamcat-quick-btn" id="quick-reading" aria-label=${Z(`pet.readAria`)} title=${Z(`pet.readTip`)} aria-pressed="false">
-          <span class="quick-glyph" aria-hidden="true">${K(`book-open`,{size:15})}</span>
-        </button>
-        <button type="button" class="roamcat-quick-btn roamcat-flip-btn" id="roamcat-flip-btn" aria-label=${Z(`pet.flipAria`)} title=${Z(`pet.flipTip`)} aria-pressed="false">
-          <span class="quick-glyph" aria-hidden="true">${K(`languages`,{size:15})}</span>
-          <svg class="flip-orbit-ring" viewBox="0 0 34 34">
-            <circle class="orbit-bg" cx="17" cy="17" r="15" />
-            <circle class="orbit-active" cx="17" cy="17" r="15" />
-          </svg>
-        </button>
-      </div>
-      <div class="roamcat-paws" aria-hidden="true">${W(a)}</div>
       <div class="roamcat-avatar-wrap" role="button" tabindex="0" aria-expanded="false" aria-label=${Z(`pet.avatarAria`)} title=${Z(`pet.avatarTitle`)}>
         <div class="cat-speech-bubble" id="cat-speech">
           <span class="speech-spinner" id="speech-spinner"></span>
@@ -168,6 +149,25 @@ details.more>summary:focus-visible{outline:var(--focus-ring);outline-offset:var(
         <div class="cat-mode-roaming" id="cat-mode-roaming">${W(r)}</div>
         <div class="cat-mode-peeking" id="cat-mode-peeking">${W(i)}</div>
       </div>
+    </div>
+    <div class="roamcat-toolbar" role="toolbar" aria-orientation="vertical" aria-label=${Z(`pet.toolbarAria`)}>
+      <span class="toolbar-grip" aria-hidden="true"></span>
+      <button type="button" class="roamcat-quick-btn" id="quick-options" aria-label=${Z(`pet.optAria`)} data-tip=${Z(`pet.optTip`)}>
+        <span class="quick-glyph" aria-hidden="true">${K(`settings`,{size:15})}</span>
+      </button>
+      <button type="button" class="roamcat-quick-btn" id="quick-summary" aria-label=${Z(`pet.sumAria`)} data-tip=${Z(`pet.sumTip`)}>
+        <span class="quick-glyph" aria-hidden="true">${K(`file-text`,{size:15})}</span>
+      </button>
+      <button type="button" class="roamcat-quick-btn" id="quick-reading" aria-label=${Z(`pet.readAria`)} data-tip=${Z(`pet.readTip`)} aria-pressed="false">
+        <span class="quick-glyph" aria-hidden="true">${K(`book-open`,{size:15})}</span>
+      </button>
+      <button type="button" class="roamcat-quick-btn roamcat-flip-btn" id="roamcat-flip-btn" aria-label=${Z(`pet.flipAria`)} data-tip=${Z(`pet.flipTip`)} aria-pressed="false">
+        <span class="quick-glyph" aria-hidden="true">${K(`languages`,{size:15})}</span>
+        <svg class="flip-orbit-ring" viewBox="0 0 34 34">
+          <circle class="orbit-bg" cx="17" cy="17" r="15" />
+          <circle class="orbit-active" cx="17" cy="17" r="15" />
+        </svg>
+      </button>
     </div>
     <div class="roamcat-summary-window">
       <div class="summary-header">
@@ -192,7 +192,7 @@ details.more>summary:focus-visible{outline:var(--focus-ring);outline-offset:var(
         </div>
         <span class="summary-source-meta" id="summary-meta">${Z(`pet.sumMeta`)}</span>
       </div>
-    </div>`,e);let s=J(e),c=[s(`#summary-domain-badge`)].filter(Boolean);for(let e of c)He(e,{domainKey:t,domainName:n});return{container:s(`.roamcat-pet-widget`),edgeTab:s(`.roamcat-edge-tab`),flipBtn:s(`.roamcat-flip-btn`),quickDock:s(`.roamcat-quick-dock`),avatarWrap:s(`.roamcat-avatar-wrap`),zoomControls:s(`#roamcat-zoom-controls`),summaryWindow:s(`.roamcat-summary-window`)}}function He(e,{domainKey:t=`general`,domainName:n=``}={}){e&&$(e,b`${K(he(t),{size:12})}<span>${n}</span>`)}function Ue(e,t=`sparkles`){e&&$(e,b`${K(t,{size:14})}`)}function We(e){P(b`
+    </div>`,e);let o=J(e),s=[o(`#summary-domain-badge`)].filter(Boolean);for(let e of s)He(e,{domainKey:t,domainName:n});return{container:o(`.roamcat-pet-widget`),edgeTab:o(`.roamcat-edge-tab`),flipBtn:o(`.roamcat-flip-btn`),toolbar:o(`.roamcat-toolbar`),avatarWrap:o(`.roamcat-avatar-wrap`),zoomControls:o(`#roamcat-zoom-controls`),summaryWindow:o(`.roamcat-summary-window`)}}function He(e,{domainKey:t=`general`,domainName:n=``}={}){e&&$(e,b`${K(he(t),{size:12})}<span>${n}</span>`)}function Ue(e,t=`sparkles`){e&&$(e,b`${K(t,{size:14})}`)}function We(e){P(b`
     <div class="summary-loading">
       <div class="loading-cat-paws">${K(`paw`,{size:22})}</div>
       <div class="loading-text">${Z(`pet.sumLoading`)}</div>

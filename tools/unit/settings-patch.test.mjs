@@ -112,11 +112,11 @@ test('validatePatch 校验术语表与伴读猫设置', () => {
   assert.throws(() => validatePatch({customTerms: Array.from({length: 1001}, () => term)}, currentSettings), /术语表最多保存 1000 条/u);
 
   assert.deepEqual(validatePatch({floatingPet: {enabled: false}}, currentSettings).floatingPet, {
-    enabled: false, position: {right: 24, bottom: 84}, themeMode: 'auto', scale: 1,
+    enabled: false, position: {right: 24, bottom: 84}, toolbar: {side: 'right', top: 0.5}, themeMode: 'auto', scale: 1,
     quotes: {enabled: true, intervalMin: 15},
   });
   assert.deepEqual(validatePatch({floatingPet: {position: {right: 10, bottom: 20}, themeMode: 'dark'}}, currentSettings).floatingPet, {
-    enabled: true, position: {right: 10, bottom: 20}, themeMode: 'dark', scale: 1,
+    enabled: true, position: {right: 10, bottom: 20}, toolbar: {side: 'right', top: 0.5}, themeMode: 'dark', scale: 1,
     quotes: {enabled: true, intervalMin: 15},
   });
   // scale 档位校验：合法档位通过，非法值拒绝。
@@ -134,7 +134,7 @@ test('validatePatch 校验术语表与伴读猫设置', () => {
   const dark = normalizeSettings();
   dark.floatingPet = {enabled: true, position: {right: 5, bottom: 6}, themeMode: 'dark', scale: 1.2};
   assert.deepEqual(validatePatch({floatingPet: {position: {right: 30, bottom: 40}}}, dark).floatingPet, {
-    enabled: true, position: {right: 30, bottom: 40}, themeMode: 'dark', scale: 1.2,
+    enabled: true, position: {right: 30, bottom: 40}, toolbar: {side: 'right', top: 0.5}, themeMode: 'dark', scale: 1.2,
     quotes: {enabled: true, intervalMin: 15},
   });
   // 伴读猫语录：enabled 必须是布尔值、intervalMin 只收 15/30/60，缺省键回退到当前设置。

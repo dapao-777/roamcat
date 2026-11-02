@@ -427,6 +427,11 @@ function publicState(state,trusted) {
             right: Number.isFinite(source.floatingPet?.position?.right) ? source.floatingPet.position.right : 24,
             bottom: Number.isFinite(source.floatingPet?.position?.bottom) ? source.floatingPet.position.bottom : 84
           },
+          // 竖排快捷工具栏的位置与猫分开记忆，网页里的工具栏按它摆放。
+          toolbar: {
+            side: source.floatingPet?.toolbar?.side === 'left' ? 'left' : 'right',
+            top: Number.isFinite(source.floatingPet?.toolbar?.top) ? source.floatingPet.toolbar.top : 0.5
+          },
           themeMode: ['auto', 'dark', 'light'].includes(source.floatingPet?.themeMode)
             ? source.floatingPet.themeMode
             : 'auto',

@@ -4,7 +4,7 @@
  *   live-chat.js 与伴读猫辅助函数，用桩替代后台，断言「译」开关、排队圆点、译文、跳过规则、出错/限速提示与伴读猫避让。
  * 主要内容：开关插在聊天设置按钮左边且按设置显示为开启；新消息排队时只在末尾放圆点（不另起一行）、译文到后换成一行译文；
  *   单词梗与中文消息不送翻译；翻译出错在开关上方弹提示并留红点、恢复后撤掉；途中作废（STALE）的批次不提示；限速时提示上限；
- *   真实点击开关会关闭并保存（VIDEO_SETTINGS_PATCH）、清掉译文；keepOutRight 把落进聊天栏的猫挪到栏左、栏外不动。截图写 preview/live-chat/。
+ *   真实点击开关会关闭并保存（VIDEO_SETTINGS_PATCH）、清掉译文；keepOutRight 把落进聊天栏的猫和贴右缘的竖排工具栏挪到栏左、栏外不动。截图写 preview/live-chat/。
  * 模块边界：不加载扩展、不连模型；页面与脚本经请求拦截下发，不访问真实 Twitch。先 npm run build。
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -167,6 +167,17 @@ try {
     });
     assert.equal(result.inside, result.expected);
     assert.equal(result.outside, 600);
+    return result;
+  });
+  await gate.check('竖排工具栏贴右缘落进聊天栏时同样挪到栏左', async () => {
+    // 工具栏与猫分开：贴右缘（right=0），上沿在视口一半、高约 128px，placeToolbar 用同一个 keepOutRight 避让。
+    const result = await page.evaluate(() => {
+      const {keepOutRight} = globalThis.RoamCatPetParts;
+      const chat = document.querySelector('.chat-shell').getBoundingClientRect();
+      const top = Math.round(innerHeight * 0.5), height = 128;
+      return {shifted: keepOutRight(0, innerHeight - top - height, 34, height), expected: Math.round(innerWidth - chat.left + 8)};
+    });
+    assert.equal(result.shifted, result.expected);
     return result;
   });
   await gate.check('页面无脚本错误', async () => assert.deepEqual(errors, []));

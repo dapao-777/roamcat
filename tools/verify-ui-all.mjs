@@ -569,8 +569,8 @@ try {
     return b.left >= -0.5 && b.right <= innerWidth + 0.5 && b.top >= -0.5 && b.bottom <= innerHeight + 0.5;
   }`);
 
-  // 竖排快捷按钮常驻显示：不悬停、不点猫也可见可点（点猫只开合缩放胶囊）。
-  const idleQuick = await until(tab, () => execInTab(`() => [...document.querySelector('#roamcat-pet-host').shadowRoot.querySelector('.roamcat-quick-dock').children]
+  // 竖排快捷按钮常驻显示：不悬停、不点猫也可见可点（点猫只开合猫自己的缩放胶囊）。
+  const idleQuick = await until(tab, () => execInTab(`() => [...document.querySelector('#roamcat-pet-host').shadowRoot.querySelector('.roamcat-toolbar').querySelectorAll('button')]
     .map(b => { const s = getComputedStyle(b); return s.visibility === 'visible' && Number(s.opacity) > 0.9 && s.pointerEvents === 'auto'; })`), v => v?.length === 4 && v.every(Boolean));
   check('伴读猫快捷按钮常态显示（未点猫）', idleQuick?.length === 4 && idleQuick.every(Boolean), JSON.stringify(idleQuick));
   await execInTab(`() => globalThis.RoamCatPet.openQuickDock()`);
@@ -578,55 +578,40 @@ try {
   await settled(tab);
   check('伴读猫快捷坞展开', Boolean(dockOpen));
   await shot(tab, 'pet-dock-open');
-  // 竖排快捷按钮（参照陪读蛙）：一列挂在猫头上方、贴猫朝屏幕边的外缘；悬停播报的气泡与缩放胶囊让到竖列内侧。
-  // 双主题各截一张只含伴读猫的近景，供审查按钮、气泡、胶囊的相对位置。
+  // 猫与工具栏分开：工具栏是独立挂件、贴在屏幕右缘，猫在右下角只做提示；悬停按钮显示按钮自带提示，不动猫的气泡。
+  // 双主题各截一张近景（工具栏 + 悬停提示 + 猫），供审查两者的位置关系。
   const petLayout = () => execInTab(`() => {
     const host = document.querySelector('#roamcat-pet-host'), sr = host.shadowRoot;
     const r = el => { const b = el.getBoundingClientRect(); return {l: b.left, t: b.top, r: b.right, b: b.bottom}; };
-    const body = [...sr.querySelectorAll('.cat-svg > path')].find(p => (p.getAttribute('fill') || 'none') !== 'none');
-    return {host: r(host), head: r(body), btns: ['#quick-options', '#quick-summary', '#quick-reading', '#roamcat-flip-btn'].map(s => r(sr.querySelector(s))),
-      bubble: r(sr.querySelector('#cat-speech')), zoom: r(sr.querySelector('#roamcat-zoom-controls')), speaking: sr.querySelector('#cat-speech').classList.contains('speaking'),
-      dock: r(sr.querySelector('.roamcat-quick-dock')), paws: ['.paw-left .paw-tip', '.paw-right .paw-tip'].map(s => r(sr.querySelector(s))),
-      pawsShown: Number(getComputedStyle(sr.querySelector('.roamcat-paws .paw-arms')).opacity)};
+    const btn = sr.querySelector('#quick-summary'), tip = getComputedStyle(btn, '::after');
+    return {vw: innerWidth, vh: innerHeight, host: r(host), bar: r(sr.querySelector('.roamcat-toolbar')),
+      btns: ['#quick-options', '#quick-summary', '#quick-reading', '#roamcat-flip-btn'].map(s => r(sr.querySelector(s))),
+      zoom: r(sr.querySelector('#roamcat-zoom-controls')), speaking: sr.querySelector('#cat-speech').classList.contains('speaking'),
+      tip: {text: btn.dataset.tip, opacity: Number(tip.opacity)}, speech: sr.querySelector('#speech-text').textContent, bubbleCls: sr.querySelector('#cat-speech').className};
   }`);
   const boxesOverlap = (a, b) => a.l < b.r - 0.5 && b.l < a.r - 0.5 && a.t < b.b - 0.5 && b.t < a.b - 0.5;
-  const petCloseUp = async name => {
-    const g = await petLayout();
-    const boxes = [g.host, g.bubble, g.zoom, ...g.btns];
-    const x = Math.max(0, Math.min(...boxes.map(b => b.l)) - 24), y = Math.max(0, Math.min(...boxes.map(b => b.t)) - 24);
-    const clip = {x, y, width: Math.min(1440, Math.max(...boxes.map(b => b.r)) + 24) - x, height: Math.min(1000, Math.max(...boxes.map(b => b.b)) + 24) - y};
-    await tab.screenshot({path: path.join(out, name + '.png'), clip});
-  };
-  const hoverQuick = on => execInTab(`() => {
-    const btn = document.querySelector('#roamcat-pet-host').shadowRoot.querySelector('#quick-summary');
-    btn.dispatchEvent(new PointerEvent(${on ? "'pointerenter'" : "'pointerleave'"}));
-    return true;
-  }`);
-  const columnLayout = await petLayout();
-  check('伴读猫快捷按钮竖排一列、与猫居中立在猫头上方', columnLayout.btns.every((b, i) => Math.abs(b.l - columnLayout.btns[0].l) < 1
-      && Math.abs((b.l + b.r) / 2 - (columnLayout.host.l + columnLayout.host.r) / 2) < 1 && (i === 0 || b.t >= columnLayout.btns[i - 1].b))
-    && columnLayout.btns[3].b <= columnLayout.head.t
-    && Math.abs((columnLayout.head.l + columnLayout.head.r) / 2 - (columnLayout.host.l + columnLayout.host.r) / 2) < 1,
-  JSON.stringify(columnLayout));
-  // 猫举着工具栏：两只圆爪的爪心落在胶囊底边两角。
-  const pawMid = p => ({x: (p.l + p.r) / 2, y: (p.t + p.b) / 2});
-  check('伴读猫举着工具栏（双爪托住胶囊底边两角）', columnLayout.pawsShown > 0.9
-    && Math.abs(pawMid(columnLayout.paws[0]).x - (columnLayout.dock.l + 4)) <= 5 && Math.abs(pawMid(columnLayout.paws[1]).x - (columnLayout.dock.r - 4)) <= 5
-    && columnLayout.paws.every(p => pawMid(p).y >= columnLayout.dock.b - 14 && pawMid(p).y <= columnLayout.dock.b), JSON.stringify({dock: columnLayout.dock, paws: columnLayout.paws}));
-  check('伴读猫缩放胶囊在猫内侧且不压按钮', columnLayout.zoom.r <= columnLayout.host.l && columnLayout.btns.every(b => !boxesOverlap(b, columnLayout.zoom)), JSON.stringify(columnLayout));
-  await hoverQuick(true);
+  const toolbarLayout = await petLayout();
+  check('伴读猫与工具栏分开：工具栏独立贴在屏幕右缘、竖排一列、不压猫', Math.abs(toolbarLayout.bar.r - toolbarLayout.vw) < 1 && !boxesOverlap(toolbarLayout.bar, toolbarLayout.host)
+    && toolbarLayout.btns.every((b, i) => Math.abs(b.l - toolbarLayout.btns[0].l) < 1 && (i === 0 || b.t >= toolbarLayout.btns[i - 1].b)), JSON.stringify(toolbarLayout));
+  check('伴读猫缩放胶囊在猫内侧且不压工具栏', toolbarLayout.zoom.r <= toolbarLayout.host.l && !boxesOverlap(toolbarLayout.zoom, toolbarLayout.bar), JSON.stringify(toolbarLayout));
+  const sumBox = await tab.locator('#quick-summary').boundingBox();
   for (const theme of ['light', 'dark']) {
     if (theme === 'dark') {
       await tab.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
       await until(tab, () => execInTab(`() => document.querySelector('#roamcat-pet-host').getAttribute('data-theme')`), v => v === 'dark');
     }
-    const hovered = await until(tab, petLayout, g => g.speaking && g.bubble.r <= g.btns[0].l);
+    await tab.mouse.move(400, 400);
+    const beforeHover = await petLayout();
+    await tab.mouse.move(sumBox.x + sumBox.width / 2, sumBox.y + sumBox.height / 2);
+    const hovered = await until(tab, petLayout, g => g.tip.opacity > 0.9);
     await settled(tab);
-    check(`伴读猫悬停气泡让到竖列内侧（${theme}）`, hovered.speaking && hovered.bubble.r <= hovered.btns[0].l
-      && hovered.btns.every(b => !boxesOverlap(b, hovered.bubble)) && !boxesOverlap(hovered.bubble, hovered.zoom), JSON.stringify(hovered));
-    await petCloseUp(`pet-dock-${theme}`);
+    check(`工具栏按钮悬停显示自带提示、不动猫的气泡（${theme}）`, hovered.tip.opacity > 0.9 && hovered.tip.text === '提炼整篇精华'
+      && hovered.speech === beforeHover.speech && hovered.bubbleCls === beforeHover.bubbleCls,
+      JSON.stringify({tip: hovered.tip, speech: [beforeHover.speech, hovered.speech], cls: [beforeHover.bubbleCls, hovered.bubbleCls]}));
+    const x = Math.max(0, Math.min(hovered.host.l, hovered.bar.l) - 240), y = Math.max(0, hovered.bar.t - 40);
+    await tab.screenshot({path: path.join(out, `pet-toolbar-${theme}.png`), clip: {x, y, width: hovered.vw - x, height: Math.min(hovered.vh, hovered.host.b + 24) - y}});
   }
-  await hoverQuick(false);
+  await tab.mouse.move(400, 400);
   await tab.evaluate(() => document.documentElement.removeAttribute('data-theme'));
   await until(tab, () => execInTab(`() => document.querySelector('#roamcat-pet-host').getAttribute('data-theme')`), v => v === 'light');
 
@@ -737,11 +722,12 @@ try {
   await tab.locator('#roamcat-pet-host').waitFor({state: 'attached', timeout: 10000});
   const enPet = await until(tab, () => execInTab(`() => {
     const I = globalThis.RoamCatI18n;
-    const speech = document.querySelector('#roamcat-pet-host')?.shadowRoot?.querySelector('#speech-text')?.textContent || '';
-    return {lang: I?.lang(), hover: I?.t('fp.hover.sum'), speech};
+    const sr = document.querySelector('#roamcat-pet-host')?.shadowRoot;
+    const speech = sr?.querySelector('#speech-text')?.textContent || '';
+    return {lang: I?.lang(), tip: sr?.querySelector('#quick-summary')?.dataset.tip || '', speech};
   }`), v => v?.lang === 'en' && Boolean(v.speech) && !/[一-鿿]/.test(v.speech), 6000);
   await settled(tab);
-  check('content script 英文档生效', enPet?.lang === 'en' && enPet.hover === 'Distill the whole article — just feed me, meow~' && !/[一-鿿]/.test(enPet.speech), JSON.stringify(enPet));
+  check('content script 英文档生效', enPet?.lang === 'en' && enPet.tip === 'Summarize article' && !/[一-鿿]/.test(enPet.speech), JSON.stringify(enPet));
   await shot(tab, 'pet-en');
 
   for (const page of [extPage, tab]) await page.pump();

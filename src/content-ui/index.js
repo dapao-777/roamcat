@@ -406,9 +406,10 @@ export function renderMeaningRows(dl, rows) {
 
 // ---------- 伴读猫控件骨架（floating-pet.js 经 chrome.scripting 动态注册） ----------
 // 只迁移静态 DOM 骨架；状态更新仍由 floating-pet.js 经 shadowQuery 命令式驱动。
-// catSvg / peekingCatSvg / pawsSvg 为内部可信 SVG 标记，经 unsafeHTML 注入（数据内容一律走文本绑定）。
+// catSvg / peekingCatSvg 为内部可信 SVG 标记，经 unsafeHTML 注入（数据内容一律走文本绑定）。
+// 竖排快捷工具栏是猫之外的独立挂件（与摘要窗同级、各自 position:fixed），按钮的悬停提示走 data-tip。
 
-export function petWidget(shadow, {domainKey = 'general', domainName = '', catSvg = '', peekingCatSvg = '', pawsSvg = '', onEdgeTabClick} = {}) {
+export function petWidget(shadow, {domainKey = 'general', domainName = '', catSvg = '', peekingCatSvg = '', onEdgeTabClick} = {}) {
   render(html`
     <div class="roamcat-pet-widget">
       <div class="roamcat-edge-tab" id="roamcat-edge-tab" role="button" tabindex="0" aria-label=${T('pet.edgeAria')} title=${T('pet.edgeTitle')} @click=${event => { event.stopPropagation(); onEdgeTabClick?.(); }} @keydown=${event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); event.stopPropagation(); onEdgeTabClick?.(); } }}>
@@ -421,25 +422,6 @@ export function petWidget(shadow, {domainKey = 'general', domainName = '', catSv
         <span class="zoom-label" id="zoom-label">100%</span>
         <button type="button" class="zoom-btn" id="zoom-in" aria-label=${T('pet.zoomIn')} title=${T('pet.zoomIn')}>${icon('plus', {size: 12})}</button>
       </div>
-      <div class="roamcat-quick-dock">
-        <button type="button" class="roamcat-quick-btn" id="quick-options" aria-label=${T('pet.optAria')} title=${T('pet.optTip')}>
-          <span class="quick-glyph" aria-hidden="true">${icon('settings', {size: 15})}</span>
-        </button>
-        <button type="button" class="roamcat-quick-btn" id="quick-summary" aria-label=${T('pet.sumAria')} title=${T('pet.sumTip')}>
-          <span class="quick-glyph" aria-hidden="true">${icon('file-text', {size: 15})}</span>
-        </button>
-        <button type="button" class="roamcat-quick-btn" id="quick-reading" aria-label=${T('pet.readAria')} title=${T('pet.readTip')} aria-pressed="false">
-          <span class="quick-glyph" aria-hidden="true">${icon('book-open', {size: 15})}</span>
-        </button>
-        <button type="button" class="roamcat-quick-btn roamcat-flip-btn" id="roamcat-flip-btn" aria-label=${T('pet.flipAria')} title=${T('pet.flipTip')} aria-pressed="false">
-          <span class="quick-glyph" aria-hidden="true">${icon('languages', {size: 15})}</span>
-          <svg class="flip-orbit-ring" viewBox="0 0 34 34">
-            <circle class="orbit-bg" cx="17" cy="17" r="15" />
-            <circle class="orbit-active" cx="17" cy="17" r="15" />
-          </svg>
-        </button>
-      </div>
-      <div class="roamcat-paws" aria-hidden="true">${unsafeHTML(pawsSvg)}</div>
       <div class="roamcat-avatar-wrap" role="button" tabindex="0" aria-expanded="false" aria-label=${T('pet.avatarAria')} title=${T('pet.avatarTitle')}>
         <div class="cat-speech-bubble" id="cat-speech">
           <span class="speech-spinner" id="speech-spinner"></span>
@@ -454,6 +436,25 @@ export function petWidget(shadow, {domainKey = 'general', domainName = '', catSv
         <div class="cat-mode-roaming" id="cat-mode-roaming">${unsafeHTML(catSvg)}</div>
         <div class="cat-mode-peeking" id="cat-mode-peeking">${unsafeHTML(peekingCatSvg)}</div>
       </div>
+    </div>
+    <div class="roamcat-toolbar" role="toolbar" aria-orientation="vertical" aria-label=${T('pet.toolbarAria')}>
+      <span class="toolbar-grip" aria-hidden="true"></span>
+      <button type="button" class="roamcat-quick-btn" id="quick-options" aria-label=${T('pet.optAria')} data-tip=${T('pet.optTip')}>
+        <span class="quick-glyph" aria-hidden="true">${icon('settings', {size: 15})}</span>
+      </button>
+      <button type="button" class="roamcat-quick-btn" id="quick-summary" aria-label=${T('pet.sumAria')} data-tip=${T('pet.sumTip')}>
+        <span class="quick-glyph" aria-hidden="true">${icon('file-text', {size: 15})}</span>
+      </button>
+      <button type="button" class="roamcat-quick-btn" id="quick-reading" aria-label=${T('pet.readAria')} data-tip=${T('pet.readTip')} aria-pressed="false">
+        <span class="quick-glyph" aria-hidden="true">${icon('book-open', {size: 15})}</span>
+      </button>
+      <button type="button" class="roamcat-quick-btn roamcat-flip-btn" id="roamcat-flip-btn" aria-label=${T('pet.flipAria')} data-tip=${T('pet.flipTip')} aria-pressed="false">
+        <span class="quick-glyph" aria-hidden="true">${icon('languages', {size: 15})}</span>
+        <svg class="flip-orbit-ring" viewBox="0 0 34 34">
+          <circle class="orbit-bg" cx="17" cy="17" r="15" />
+          <circle class="orbit-active" cx="17" cy="17" r="15" />
+        </svg>
+      </button>
     </div>
     <div class="roamcat-summary-window">
       <div class="summary-header">
@@ -484,7 +485,7 @@ export function petWidget(shadow, {domainKey = 'general', domainName = '', catSv
   for (const domainEl of domainEls) renderPetDomainTag(domainEl, {domainKey, domainName});
   return {
     container: el('.roamcat-pet-widget'), edgeTab: el('.roamcat-edge-tab'),
-    flipBtn: el('.roamcat-flip-btn'), quickDock: el('.roamcat-quick-dock'),
+    flipBtn: el('.roamcat-flip-btn'), toolbar: el('.roamcat-toolbar'),
     avatarWrap: el('.roamcat-avatar-wrap'), zoomControls: el('#roamcat-zoom-controls'),
     summaryWindow: el('.roamcat-summary-window'),
   };
