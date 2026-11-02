@@ -153,7 +153,7 @@ roamcat-popup { display: contents; }
 .popup-body .feature-icon-badge { width: auto; height: auto; padding: 0; border: 0; background: none; box-shadow: none; color: var(--rc-ink-secondary); }
 .popup-body .service-provider-badge img { border-radius: 4px; }
 .popup-body .popup-master-btn { min-width: 112px; }
-.popup-body :is(.popup-emergency-btn, .popup-service-btn) { border-color: var(--rc-line); background: var(--rc-surface); box-shadow: none; }
+.popup-body :is(.popup-assist-btn, .popup-service-btn) { border-color: var(--rc-line); background: var(--rc-surface); box-shadow: none; }
 .popup-body .popup-footer { border-top: 1px solid var(--rc-line); background: transparent; color: var(--rc-ink-tertiary); font-family: var(--font-sans); }
 .popup-body .popup-footer-ver { font-family: var(--rc-mono); }
 .popup-body .popup-quick-link { border-radius: 10px; }
@@ -179,5 +179,11 @@ roamcat-popup { display: contents; }
 .popup-body .popup-footer { position: sticky; bottom: 0; z-index: 2; background: var(--rc-canvas); }
 /* 底栏上沿向上渐隐：下面还有内容时看得出能继续滚动，不会像被截掉一半。 */
 .popup-body .popup-footer::before { content: ""; position: absolute; left: 0; right: 0; bottom: 100%; height: 18px; background: linear-gradient(to bottom, transparent, var(--rc-canvas)); pointer-events: none; }
-.popup-body :is(.popup-emergency-btn, .popup-service-btn) { border-radius: 8px; border-color: var(--rc-line-mid); color: var(--rc-ink); }
+.popup-body :is(.popup-assist-btn, .popup-service-btn) { border-radius: 8px; border-color: var(--rc-line-mid); color: var(--rc-ink); }
 .popup-body .popup-master-btn { border-radius: 8px; }
+
+/* 主次模式：双语翻译在上，用卡片里唯一的实心主按钮；阅读辅助在下，描边按钮，标题后面跟状态小签。 */
+.popup-body .primary-mode { padding-bottom: var(--rc-space-3); }
+.popup-body .primary-mode > .activation-control-row { padding-bottom: 0; }
+.popup-body .assist-title-line { display: flex; flex-wrap: wrap; align-items: center; gap: var(--rc-space-2); min-width: 0; }
+.popup-body .assist-title-line h2 { margin: 0; }

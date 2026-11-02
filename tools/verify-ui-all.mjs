@@ -371,6 +371,17 @@ try {
     const popupLint = await layoutLint(pagePopup, 'roamcat-popup');
     check('popup 在普通网页上显示本页开关', popupHost.includes('127.0.0.1'), popupHost);
     check('popup 普通网页状态版式体检（说明不截断）', lintClean(popupLint), JSON.stringify(popupLint));
+    // 主次模式：双语翻译排在阅读辅助之前，卡片里唯一的实心主按钮是「翻译本页」，「开启本页」是描边按钮。
+    const modeOrder = await pagePopup.evaluate(() => {
+      const card = document.querySelector('.activation-panel');
+      const translate = document.querySelector('#emergency-panel'), assist = document.querySelector('.assist-panel');
+      return {
+        translateFirst: Boolean(translate && assist && translate.compareDocumentPosition(assist) & Node.DOCUMENT_POSITION_FOLLOWING),
+        primary: [...card.querySelectorAll('.primary-action:not([hidden])')].map(button => button.id),
+        assistButton: document.querySelector('#toggle-page')?.className || '',
+      };
+    });
+    check('popup 主模式双语翻译在上、副模式阅读辅助在下', modeOrder.translateFirst && modeOrder.primary.join() === 'emergency-open' && modeOrder.assistButton.includes('secondary-button'), JSON.stringify(modeOrder));
     await shot(pagePopup, 'popup-page', {minBytes: 1});
     // 「双语 / 仅译文」：默认双语；真实点击切到仅译文后后台设置跟着变，再切回双语。
     const displayChoice = () => pagePopup.evaluate(() => [...document.querySelectorAll('#emergency-display button')].map(button => `${button.dataset.display}:${button.getAttribute('aria-pressed')}`).join());

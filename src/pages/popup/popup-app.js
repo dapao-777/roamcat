@@ -503,36 +503,22 @@ class RoamcatPopup extends LitElement {
         <button type="button" class="popup-quick-link" @click=${() => this.#openOptions('terms')}>${icon('grid', {size: 16})}<span>${t('pop.openVocab')}</span>${icon('chevron-right', {size: 14})}</button>
       </nav>
 
-      <section class="popup-card activation-panel" aria-labelledby="activation-title" ?hidden=${!supported}>
+      <section class="popup-card activation-panel" aria-labelledby="site-hostname" ?hidden=${!supported}>
         <div class="page-context">
           <div class="site-host-wrap">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" class="site-host-icon"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
             <span id="site-hostname">${this.#hostname}</span>
           </div>
-          <span id="page-status" class=${classMap({'status-chip': true, active: this.#enabled})} aria-live="polite">${statusText}</span>
         </div>
 
-        <div class="activation-control-row">
+      <!-- 主模式：双语翻译，用卡片里唯一的实心主按钮；副模式阅读辅助排在下面，用描边按钮。 -->
+      <div id="emergency-panel" class="emergency-panel primary-mode" role="group" aria-labelledby="emergency-title" tabindex="-1">
+        <div class="emergency-heading activation-control-row">
           <div class="activation-heading">
-            <h2 id="activation-title">${t('pop.assistTitle')}</h2>
-            <p id="page-note" class="muted">${pageNote}</p>
+            <h2 id="emergency-title">${t('pop.emTitle')}</h2>
+            <p id="emergency-status" aria-live="polite">${this.#emergencyPhaseText()}</p>
           </div>
-          <button id="toggle-page" class="primary-action popup-master-btn" type="button" .disabled=${this.#busy || !supported} @click=${() => void this.#togglePage()}>
-            <span id="toggle-label">${toggleText}</span>
-          </button>
-        </div>
-        <p id="action-error" class="inline-message error" role="alert" ?hidden=${!this.#errors.action}>${this.#errors.action}</p>
-
-      <div id="emergency-panel" class="feature-row emergency-panel" role="group" aria-labelledby="emergency-title" tabindex="-1">
-        <div class="emergency-heading">
-          <div class="feature-card-title-wrap">
-            <div class="feature-icon-badge">${icon('languages', {size: 16})}</div>
-            <div>
-              <h2 id="emergency-title">${t('pop.emTitle')}</h2>
-              <p id="emergency-status" aria-live="polite">${this.#emergencyPhaseText()}</p>
-            </div>
-          </div>
-          <button id="emergency-open" class="secondary-button popup-emergency-btn" type="button"
+          <button id="emergency-open" class="primary-action popup-master-btn" type="button"
             ?hidden=${emergencyVisible} .disabled=${this.#busy || !supported}
             @click=${() => void this.#emergencyStart()}>${t('pop.emStart')}</button>
         </div>
@@ -564,6 +550,24 @@ class RoamcatPopup extends LitElement {
             .disabled=${this.#busy || !emergencyVisible} @click=${() => void this.#emergencyAction('SS_EMERGENCY_END')}>${t('pop.emEnd')}</button>
         </div>
         <p id="emergency-result" class=${classMap({'inline-message': true, error: this.#emergencyResult.error})} role="status" aria-live="polite" ?hidden=${!this.#emergencyResult.text}>${this.#emergencyResult.text}</p>
+      </div>
+
+      <div class="feature-row assist-panel" role="group" aria-labelledby="activation-title">
+        <div class="feature-card-header">
+          <div class="feature-card-title-wrap">
+            <div>
+              <div class="assist-title-line">
+                <h2 id="activation-title">${t('pop.assistTitle')}</h2>
+                <span id="page-status" class=${classMap({'status-chip': true, active: this.#enabled})} aria-live="polite">${statusText}</span>
+              </div>
+              <p id="page-note" class="muted">${pageNote}</p>
+            </div>
+          </div>
+          <button id="toggle-page" class="secondary-button popup-assist-btn" type="button" .disabled=${this.#busy || !supported} @click=${() => void this.#togglePage()}>
+            <span id="toggle-label">${toggleText}</span>
+          </button>
+        </div>
+        <p id="action-error" class="inline-message error" role="alert" ?hidden=${!this.#errors.action}>${this.#errors.action}</p>
       </div>
       <div class="feature-row sentence-groups-panel" role="group" aria-labelledby="sentence-groups-title">
         <div class="feature-card-header">

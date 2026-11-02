@@ -648,25 +648,6 @@ legend { padding: 0; margin-bottom: var(--space-3); font-size: var(--type-contro
   gap: 10px;
 }
 
-.popup-emergency-btn {
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-size: var(--fs-1);
-  font-weight: 500;
-  background: var(--color-card-inset, #1a1d26);
-  border: 1px solid var(--color-border-card, rgba(255, 255, 255, 0.1));
-  color: var(--color-text-secondary, #cbd5e1);
-  cursor: pointer;
-  flex-shrink: 0;
-  min-height: auto;
-  transition: all 0.15s ease;
-}
-
-.popup-emergency-btn:hover:not(:disabled) {
-  border-color: var(--color-brand-green, #161511);
-  color: var(--color-brand-green, #161511);
-}
-
 .emergency-progress {
   margin-top: 8px;
   padding: 7px 10px;
