@@ -404,7 +404,7 @@ async function installBackend(backend, cliPath, opts, ids) {
 async function main() {
   const opts = options(process.argv.slice(2));
   if (opts.help) {
-    console.log('RoamCat · 订阅连接器\n\n安装：node connector/install.mjs --extension-id ID\n  默认一次注册本机已安装的全部订阅通道：ChatGPT（codex）、Grok（grok）、Google（agy）；找不到的通道跳过，装好对应 CLI 后重跑即可补上。\n  只装一个通道：--backend chatgpt|grok|antigravity；指定 CLI 路径：--codex PATH / --grok PATH / --agy PATH\n浏览器：--browser chrome,edge（默认）；另支持 chromium、chrome-beta、chrome-testing、ego（ego lite，仅 Windows）（逗号分隔，仅注册显式指定的浏览器）\n扩展 ID：单个 32 位 a–p 字母，或逗号分隔的多个 ID（多开/多配置共用一个连接器）\n本机常驻服务：默认一并安装并设为登录自启（127.0.0.1:47821，只接受上面这些扩展 ID、且带着安装时生成的配对令牌的连接；扩展经浏览器连接器取令牌，每次安装换新）；扩展优先连它，没运行时自动改用浏览器连接器。不想装：--no-service\n卸载：node connector/install.mjs --uninstall [--backend chatgpt|grok|antigravity] [--browser chrome,edge]（不带 --backend 时卸载全部通道并移除常驻服务）\n\n需要 Node.js 20+；三个通道均支持 macOS / Linux / Windows（Windows 上 npm 全局安装的 codex.cmd 经 shell 启动）。\nGoogle 通道使用 Google AI Pro / Ultra 订阅权益，首次使用前需在终端运行 agy 登录。\n仅注册当前用户，不需要管理员权限。\n卸载只移除指定浏览器的连接器注册；保留本机登录数据。要退出账户，请先在插件中退出登录。');
+    console.log('RoamCat · 订阅连接器\n\n安装：node connector/install.mjs --extension-id ID\n  默认一次注册本机已安装的全部订阅通道：ChatGPT（codex）、Grok（grok）、Google（agy）；找不到的通道跳过，装好对应 CLI 后重跑即可补上。\n  只装一个通道：--backend chatgpt|grok|antigravity；指定 CLI 路径：--codex PATH / --grok PATH / --agy PATH\n浏览器：--browser chrome,edge（默认）；另支持 chromium、chrome-beta、chrome-testing、ego（ego lite，仅 Windows）（逗号分隔，仅注册显式指定的浏览器）\n扩展 ID：单个 32 位 a–p 字母，或逗号分隔的多个 ID（多开/多配置共用一个连接器）\n本机常驻服务：默认一并安装并设为登录自启（127.0.0.1:47821，只接受上面这些扩展 ID，双方再凭安装时生成的配对令牌互证身份，令牌不在连接里传；扩展经浏览器连接器取令牌，每次安装换新）；扩展优先连它，没运行时自动改用浏览器连接器。不想装：--no-service\n卸载：node connector/install.mjs --uninstall [--backend chatgpt|grok|antigravity] [--browser chrome,edge]（不带 --backend 时卸载全部通道并移除常驻服务）\n\n需要 Node.js 20+；三个通道均支持 macOS / Linux / Windows（Windows 上 npm 全局安装的 codex.cmd 经 shell 启动）。\nGoogle 通道使用 Google AI Pro / Ultra 订阅权益，首次使用前需在终端运行 agy 登录。\n仅注册当前用户，不需要管理员权限。\n卸载只移除指定浏览器的连接器注册；保留本机登录数据。要退出账户，请先在插件中退出登录。');
     return;
   }
   if (Number(process.versions.node.split('.')[0]) < 20) throw new Error('需要 Node.js 20 或更新版本。');
@@ -456,7 +456,7 @@ async function main() {
     try {
       const service = await installService({source, nodePath: process.execPath, origins: ids.map(id => `chrome-extension://${id}/`), backendRoots, port: SERVICE_PORT});
       console.log(service.running
-        ? `✓ 本机常驻服务：127.0.0.1:${service.port}（${service.backends.map(backend => BACKEND_LABEL[backend]).join('、')}）\n  ${service.autostart}\n  握手要带配对令牌（本次安装已换新），扩展经浏览器连接器自动取得；服务没运行或令牌不符时扩展自动改用浏览器连接器。\n`
+        ? `✓ 本机常驻服务：127.0.0.1:${service.port}（${service.backends.map(backend => BACKEND_LABEL[backend]).join('、')}）\n  ${service.autostart}\n  扩展与服务凭配对令牌双向认证（本次安装已换新），扩展经浏览器连接器自动取得；服务没运行或证明不了身份时扩展自动改用浏览器连接器。\n`
         : `· 本机常驻服务已安装但还没响应（${service.root}）；扩展会先用浏览器连接器，服务起来后自动切换。\n  ${service.autostart}\n`);
     } catch (error) {
       console.log(`· 本机常驻服务未安装：${error.message}；扩展继续使用浏览器连接器。\n`);
