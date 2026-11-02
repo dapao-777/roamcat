@@ -14,6 +14,7 @@ import {MT_PROVIDERS,MT_SCENES,normalizeMtService,normalizeMtServices,mergeMtCre
 import {mtTranslate,mtTranslationIssue,splitByBytes,decodeEntities,md5Hex,tencentAuthorization,alibabaSignedForm,volcengineHeaders,youdaoInput} from '../../roamcat-0.0.1/extension/mt-transport.mjs';
 import {normalizeSettings} from '../../roamcat-0.0.1/extension/shared.js';
 import {validatePatch,settingsPatchEffects,CONTENT_ALLOWED_TYPES} from '../../roamcat-0.0.1/extension/message-protocol.js';
+import {diagnosticError} from '../../roamcat-0.0.1/extension/diagnostics.mjs';
 
 const source='The database uses an index to find records quickly.';
 const translation='数据库用索引快速查找记录。';
@@ -106,6 +107,38 @@ test('批量拆分维持顺序、请求间让速且检查取消',async()=>{
   const result=await mtTranslate(fixtureService('deeplx'),[source,source],{pace:async()=>paced++,fetch:async()=>json({data:'译文'+(++calls)})});
   assert.deepEqual(result,['译文1','译文2']);assert.equal(paced,1);
   await assert.rejects(mtTranslate(fixtureService('deeplx'),[source],{signal:AbortSignal.abort()}),{name:'AbortError'});
+});
+
+test('后续请求失败时保留已完整完成的条目，长条目的一半不能冒充完整译文',async()=>{
+  let calls=0;
+  await assert.rejects(mtTranslate(fixtureService('deeplx'),[source,source],{fetch:async()=>++calls===1?json({data:translation}):new Response('limited',{status:429})}),error=>{
+    assert.equal(error.code,'RATE_LIMIT');assert.deepEqual(error.partialTranslations,[translation,null]);assert.ok(!JSON.stringify(diagnosticError(error)).includes(translation));return true;
+  });
+  calls=0;
+  await assert.rejects(mtTranslate(fixtureService('baidu'),['é'.repeat(4000)],{fetch:async()=>++calls===1?json({trans_result:[{dst:'前半段译文'}]}):new Response('limited',{status:429})}),error=>{
+    assert.equal(error.code,'RATE_LIMIT');assert.ok(!error.partialTranslations?.some(Boolean));return true;
+  });
+  calls=0;
+  await assert.rejects(mtTranslate(fixtureService('baidu'),['First line.\nSecond line.','The later item can fail.'],{fetch:async()=>++calls===1?json({trans_result:[{dst:translation}]}):new Response('limited',{status:429})}),error=>{
+    assert.deepEqual(error.partialTranslations,[translation,null]);return true;
+  });
+});
+
+test('超时按单次请求计算，让速等待和多包总耗时不占下一包的时间',{timeout:1500},async()=>{
+  let calls=0;
+  const result=await mtTranslate(fixtureService('deeplx'),[source,source],{timeoutMs:40,pace:async()=>new Promise(resolve=>setTimeout(resolve,60)),fetch:async()=>{calls++;return json({data:translation});}});
+  assert.equal(calls,2);assert.deepEqual(result,[translation,translation]);
+  await assert.rejects(mtTranslate(fixtureService('deeplx'),[source],{timeoutMs:20,fetch:async()=>new Promise(()=>{})}),{code:'TIMEOUT'});
+  await assert.rejects(mtTranslate(fixtureService('deeplx'),[source],{timeoutMs:20,fetch:async()=>new Response(new ReadableStream({start(){}}))}),{code:'TIMEOUT'});
+  await assert.rejects(mtTranslate(fixtureService('chrome'),[source],{timeoutMs:20,local:async()=>new Promise(()=>{})}),{code:'TIMEOUT'});
+  const cancelled=new AbortController(),reason=new DOMException('cancelled','AbortError');
+  const pending=mtTranslate(fixtureService('deeplx'),[source],{signal:cancelled.signal,fetch:async()=>new Promise(()=>{})});cancelled.abort(reason);
+  await assert.rejects(pending,error=>error===reason);
+});
+
+test('含句号及空白的多句英文不得被当作无需翻译的短标签',()=>{
+  for(const text of ['Alpha beta. Gamma delta','Alpha beta.\nGamma delta','Alpha beta! Gamma delta'])assert.equal(mtTranslationIssue(text,text),'TRANSLATION_NO_HAN');
+  for(const text of ['API reference','Release 2.3.1','example.com'])assert.equal(mtTranslationIssue(text,text),null);
 });
 
 test('传输错误只返回受控原因码，不泄露厂商消息、凭据或响应正文',async()=>{

@@ -346,6 +346,16 @@ test('本页翻译协议校验封闭上下文与部分失败', () => {
   assert.deepEqual(relabeled.items, [{id: 'one', translation: 'Pull requests'}]);
 });
 
+test('整页逐项错误兼容机翻限流与占位校验，同时拒绝厂商原始错误码和额外字段',()=>{
+  const context={title:'',heading:'',before:'',after:''};
+  const batch=[{id:'ok',text:'The first sentence translates successfully.',context},{id:'failed',text:'The second sentence can fail separately.',context}];
+  for(const code of ['OUTPUT_INVALID','AUTH','QUOTA','RATE_LIMIT','NETWORK','HTTP','TIMEOUT','NOT_READY']){
+    const result=normalizePageTranslationResult({items:[{id:'ok',translation:'第一句译文。'}],errors:[{id:'failed',code}]},batch);
+    assert.equal(result.items[0].id,'ok');assert.equal(result.errors[0].code,code);
+  }
+  for(const error of [{id:'failed',code:'vendor private details'},{id:'failed',code:'RATE_LIMIT',message:'private text'}])assert.throws(()=>normalizePageTranslationResult({items:[{id:'ok',translation:'第一句译文。'}],errors:[error]},batch),error=>error.code==='ITEM_FIELDS');
+});
+
 test('帮助请求规范化强制 context 包含 text 与段落限制', () => {
   const base = {text: 'index', context: 'The database uses an index.', domain: 'data', kind: 'word', level: 'hint', detail: 'brief'};
   assert.deepEqual(normalizeAssistanceRequest(base), base);

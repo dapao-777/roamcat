@@ -199,7 +199,7 @@ ChatGPT 订阅是否包含可用 Codex 权益、可选模型和调用额度由 O
 
 ### 机器翻译（下个版本）
 
-另有 **14 种机器翻译服务**：Chrome 本机翻译、DeepL、Google Cloud、Azure、腾讯云、阿里云、百度、火山、有道、小牛、MyMemory、Google 网页、微软 Edge、DeepLX 自建。设置 → 模型服务 → 机器翻译可按整页、字幕、聊天、阅读器、选段分别选择；默认跟随大模型，失败可回退。查词、解构、摘要继续用大模型。凭据只存本机，Chrome 翻译不上传原文；云端服务按各自规则处理文本。参见[接入说明](MACHINE_TRANSLATION.md)。
+另有 **14 种机器翻译服务**：Chrome 本机翻译、DeepL、Google Cloud、Azure、腾讯云、阿里云、百度、火山、有道、小牛、MyMemory、Google 网页、微软 Edge、DeepLX 自建。设置 → 模型服务 → 机器翻译可按整页、字幕、聊天、阅读器、选段分别选择；默认跟随大模型，失败可回退。查词、解构、摘要继续用大模型。凭据只存本机，Chrome 翻译不上传原文；云端服务按各自规则处理文本。参见[接入说明](https://github.com/roamcat-dev/roamcat/blob/main/roamcat-0.0.1/MACHINE_TRANSLATION.md)。
 
 ## 数据与隐私
 

@@ -442,7 +442,15 @@ async function runLive() {
           const url = await page.url();
           if (isBlockedPage({title, sample, url})) return `SKIP 墙/登录页 (${url})`;
             let inspect = await inspectTab(extPage, tabId);
-            if (!inspect) { await sleep(3000); inspect = await inspectTab(extPage, tabId); }
+            // Discourse 等 SPA 可能已返回 inspect() 对象，但正文尚未完成挂载；按正文状态轮询，不能只重试 null。
+            const deadline=Date.now()+10000;
+            while((!inspect||site.contentPage&&(!inspect.root||(inspect.blockCount||0)<3))&&Date.now()<deadline){
+              await sleep(100);inspect=await inspectTab(extPage,tabId);
+            }
+            if(!inspect||site.contentPage&&!inspect.root){
+              const latest=await page.evaluate(()=>({title:document.title,sample:document.body?.innerText?.slice(0,2000)||'',url:location.href}));
+              if(isBlockedPage(latest))return `SKIP 墙/登录页 (${latest.url})`;
+            }
             assert.ok(inspect, 'inspect() 无结果');
             const problem = [];
             if (site.contentPage) {

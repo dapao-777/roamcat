@@ -379,6 +379,9 @@ export function normalizePageTranslationItems(items) {
 }
 
 const translationFailures = {BATCH_SHAPE:M('顶层字段或条目数组不符','Top-level fields or items array mismatch'),BATCH_COUNT:M('返回条目数量不符','Returned item count mismatch'),ITEM_FIELDS:M('条目缺少字段或包含额外字段','An item is missing fields or has extra fields'),ITEM_ID:M('返回了非本批次的条目 ID','An out-of-batch item id was returned'),ITEM_DUPLICATE:M('返回了重复的条目 ID','A duplicate item id was returned'),TRANSLATION_TYPE:M('译文不是字符串','The translation is not a string'),TRANSLATION_EMPTY:M('译文为空','The translation is empty'),TRANSLATION_WHITESPACE:M('译文包含首尾空白','The translation has leading/trailing whitespace'),TRANSLATION_LENGTH:M('译文超过长度上限','The translation exceeds the length limit'),TRANSLATION_NO_HAN:M('译文未包含汉字（可能原样保留了英文名称）','The translation contains no Chinese characters (the English name may have been kept)')};
+// 整页可按条目失败：既允许译文校验错误，也允许机翻拆包后某一请求失败的受控原因码。
+const PAGE_TRANSLATION_ERROR_CODES=new Set([...Object.keys(translationFailures).filter(code=>code!=='BATCH_COUNT'),'OUTPUT_INVALID','AUTH','QUOTA','RATE_LIMIT','NETWORK','HTTP','TIMEOUT','NOT_READY']);
+export function pageTranslationErrorCode(code){return PAGE_TRANSLATION_ERROR_CODES.has(code)?code:'OUTPUT_INVALID';}
 function translationFailure(code,detail){const error=new Error(M('整页翻译校验失败：','Page translation validation failed: ')+translationFailures[code]+'。');error.code=code;error.detail=detail;throw error;}
 function jsonObject(text){
   try{const value=JSON.parse(text);if(value&&typeof value==='object'&&!Array.isArray(value))return value;}catch{/* 思考模型常在 JSON 前后夹说明或代码围栏 */}
@@ -407,7 +410,7 @@ function sourceNeedsChinese(text){
   const source=typeof text==='string'?text.trim():'';if(!source)return true;
   const words=source.split(/\s+/).filter(word=>/[A-Za-z]/.test(word));
   // 句末标点只认“字母紧跟 .!? 再接空白或结尾”：省略号、域名、版本号里的点不算成句。
-  if(words.length>=6||/[A-Za-z][.!?](?:s|$)/.test(source))return true;
+  if(words.length>=6||/[A-Za-z][.!?](?:\s|$)/.test(source))return true;
   if(words.length>=3&&/\b(?:the|a|an|is|are|was|were|be|to|of|for|and|or|with|from|that|this|in|on|by|as|if|when|while|not)\b/i.test(source))return true;
   return false;
 }
@@ -474,7 +477,7 @@ export function normalizePageTranslationResult(value,items){
     seen.add(item.id);translations.set(item.id,item.translation);
   }
   for(const error of value.errors){
-    if(!exactKeys(error,['id','code'])||!Object.hasOwn(translationFailures,error.code)||error.code==='BATCH_COUNT')translationFailure('ITEM_FIELDS',{});
+    if(!exactKeys(error,['id','code'])||!PAGE_TRANSLATION_ERROR_CODES.has(error.code))translationFailure('ITEM_FIELDS',{});
     if(!expected.has(error.id))translationFailure('ITEM_ID',{});
     if(seen.has(error.id))translationFailure('ITEM_DUPLICATE',{});
     seen.add(error.id);errors.set(error.id,error.code);

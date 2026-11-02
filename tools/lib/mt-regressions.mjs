@@ -13,6 +13,7 @@ import {extUrl,tabIdOf} from './ego.mjs';
 
 export async function verifyMtRegressions({run,control,request,check}) {
   let mode='ok',held,release,mtCalls=0,modelCalls=0;
+  const modelItemIds=[];
   const server=http.createServer(async(req,res)=>{
     if(req.method==='OPTIONS'){res.writeHead(204,{'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'*'}).end();return;}
     let body='';for await(const part of req)body+=part;
@@ -22,14 +23,14 @@ export async function verifyMtRegressions({run,control,request,check}) {
       assert.equal(req.headers.authorization,'Bearer fixture-mt-token');
       assert.equal(req.headers.cookie,undefined);
       if(mode==='held'){held?.();await new Promise(resolve=>{release=resolve;});}
-      if(mode==='rate'){res.writeHead(429).end('private vendor details fixture-mt-token');return;}
+      if(mode==='rate'||mode==='partial-rate'&&value.text.includes('fail-after-success')){res.writeHead(429).end('private vendor details fixture-mt-token');return;}
       const markers=mode==='markers'?'':(value.text.match(/⟦\d+⟧/g)||[]).join(' ');
       res.setHeader('Content-Type','application/json');res.end(JSON.stringify({code:200,data:'机翻译文。'+markers}));return;
     }
     if(req.url==='/v1/chat/completions'){
       const value=JSON.parse(body),raw=value.messages.at(-1).content,input=JSON.parse(raw.slice(raw.indexOf('{')));
       if(input.probe){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({choices:[{message:{content:JSON.stringify(input)},finish_reason:'stop'}]}));return;}
-      modelCalls++;
+      modelCalls++;modelItemIds.push(input.items.map(item=>item.id));
       const result={items:input.items.map(item=>({id:item.id,translation:'模型回退译文。'+(item.text.match(/⟦\d+⟧/g)||[]).join(' ')}))};
       res.setHeader('Content-Type','application/json');res.end(JSON.stringify({choices:[{message:{content:JSON.stringify(result)},finish_reason:'stop'}]}));return;
     }
@@ -122,6 +123,40 @@ export async function verifyMtRegressions({run,control,request,check}) {
       const result=await fromTab(articleId,'EMERGENCY_TRANSLATE',{token:begin.token,requestSeq:1,items});assert.ok(result.ok,result.error);
       assert.match(result.data.items.find(i=>i.id==='good').translation,/机翻/);assert.match(result.data.items.find(i=>i.id==='bad').translation,/模型回退/);assert.match(result.data.items.find(i=>i.id==='bad').translation,/⟦0⟧/);assert.equal(modelCalls,before+1);
       await request('EMERGENCY_END',{tabId:articleId,token:begin.token});mode='ok';
+    });
+    await check('MT later HTTP failures preserve earlier translations and retry only unfinished items',async()=>{
+      mode='partial-rate';const before=modelCalls;
+      const items=[item('complete','An earlier complete translation must remain available.'),item('unfinished','The fail-after-success item should be retried separately.')];
+      const start=()=>request('EMERGENCY_BEGIN',{tabId:articleId,url:origin+'/article'});
+      let begin;
+      try{
+      begin=await start();
+      let result=await fromTab(articleId,'EMERGENCY_TRANSLATE',{token:begin.token,requestSeq:1,items});assert.ok(result.ok,result.error);
+      assert.match(result.data.items.find(item=>item.id==='complete').translation,/机翻/);
+      assert.match(result.data.items.find(item=>item.id==='unfinished').translation,/模型回退/);
+      assert.equal(modelCalls,before+1);assert.deepEqual(modelItemIds.at(-1),['unfinished']);
+      await request('EMERGENCY_END',{tabId:articleId,token:begin.token});begin=null;
+      await patch({mtFallback:false});begin=await start();
+      result=await fromTab(articleId,'EMERGENCY_TRANSLATE',{token:begin.token,requestSeq:1,items});assert.ok(result.ok,result.error);
+      assert.equal(result.data.items.length,1);assert.equal(result.data.items[0].id,'complete');
+      assert.equal(result.data.errors[0].id,'unfinished');assert.equal(result.data.errors[0].code,'RATE_LIMIT');assert.equal(modelCalls,before+1);
+      await request('EMERGENCY_END',{tabId:articleId,token:begin.token});begin=null;
+      }finally{
+        if(begin)await request('EMERGENCY_END',{tabId:articleId,token:begin.token}).catch(()=>{});
+        mode='ok';await patch({mtFallback:false});await patch({mtFallback:true});
+      }
+    });
+    await check('MT invalid markers with fallback disabled keep valid sibling items',async()=>{
+      mode='markers';let begin;const before=modelCalls;
+      try{
+        await patch({mtFallback:false});
+        begin=await request('EMERGENCY_BEGIN',{tabId:articleId,url:origin+'/article'});
+        const result=await fromTab(articleId,'EMERGENCY_TRANSLATE',{token:begin.token,requestSeq:1,items:[item('valid','A valid sibling keeps its completed machine translation.'),item('broken','Use ⟦0⟧ to read the database safely.')]});
+        assert.ok(result.ok,result.error);assert.equal(result.data.items[0].id,'valid');assert.deepEqual(result.data.errors,[{id:'broken',code:'OUTPUT_INVALID'}]);assert.equal(modelCalls,before);
+      }finally{
+        if(begin)await request('EMERGENCY_END',{tabId:articleId,token:begin.token}).catch(()=>{});
+        mode='ok';await patch({mtFallback:true});
+      }
     });
     await check('MT rate limit falls back, cools down, and the fallback switch stops extra model requests',async()=>{
       mode='rate';const before=modelCalls;

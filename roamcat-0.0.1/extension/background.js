@@ -95,6 +95,7 @@ import {
   normalizePageTranslationItems,
   inspectPageTranslationResult,
   normalizePageTranslationResult,
+  pageTranslationErrorCode,
   PAGE_SUMMARY_INSTRUCTIONS,
   PAGE_SUMMARY_SCHEMA,
   normalizePageSummaryResult
@@ -867,7 +868,6 @@ async function apiModelsList(service) {
 }
 // 机器翻译：每种服务一个并发闸门（沿用 API 服务的 FIFO 信号量），同一服务的请求按每秒上限间隔起跑；
 // 限流/额度用完冷却 60 秒、鉴权失败冷却 120 秒，冷却期内直接走大模型回退（或报错）。状态只存在 SW 生命周期内。
-const MT_TIMEOUT_MS=15000;
 const MT_TEST_SOURCE='Machine translation keeps long pages readable.';
 const mtCooling=new Map(),mtNextStart=new Map();
 function mtCoolingCode(service){const entry=mtCooling.get(service.providerId);if(!entry)return null;if(entry.until<=Date.now()){mtCooling.delete(service.providerId);return null;}return entry.code;}
@@ -886,22 +886,21 @@ async function machineTranslate(service,texts,{trace,context='',urgent=false,sof
   await requireMtPermission(normalized);
   const slot={id:'mt:'+provider.id,maxConcurrency:mtConcurrency(normalized)};
   await acquireApiServiceSlot(slot,urgent);
-  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),MT_TIMEOUT_MS),startedAt=Date.now();
+  const startedAt=Date.now();
   let ok=false,charsOut=0;
   try{
     await beforeRequest?.();
     await mtPace(normalized);
-    controller.signal.throwIfAborted();
     await beforeRequest?.();
-    const pace=async()=>{await beforeRequest?.();await mtPace(normalized);controller.signal.throwIfAborted();await beforeRequest?.();};
-    const result=await diagnostics.provider(trace,'mt',provider.id,provider.id,()=>mtTranslate(normalized,texts,{signal:controller.signal,context,pace,local:translateLocal}),{softError});
+    const pace=async()=>{await beforeRequest?.();await mtPace(normalized);await beforeRequest?.();};
+    const result=await diagnostics.provider(trace,'mt',provider.id,provider.id,()=>mtTranslate(normalized,texts,{context,pace,local:translateLocal}),{softError});
     ok=true;charsOut=result.reduce((sum,text)=>sum+text.length,0);return result;
   }catch(error){
-    const reported=controller.signal.aborted||error?.name==='AbortError'?Object.assign(new Error(M(`${provider.name}：请求超过 ${MT_TIMEOUT_MS/1000} 秒。`,`${provider.name}: the request exceeded ${MT_TIMEOUT_MS/1000}s.`)),{code:'TIMEOUT'}):error;
-    if(['RATE_LIMIT','QUOTA','AUTH'].includes(reported.code))mtCooling.set(provider.id,{code:reported.code,until:Date.now()+(reported.code==='AUTH'?API_KEY_COOLDOWN.auth:API_KEY_COOLDOWN.rateLimit)});
-    throw reported;
+    charsOut=(error.partialTranslations||[]).reduce((sum,text)=>sum+(typeof text==='string'?text.length:0),0);
+    if(['RATE_LIMIT','QUOTA','AUTH'].includes(error.code))mtCooling.set(provider.id,{code:error.code,until:Date.now()+(error.code==='AUTH'?API_KEY_COOLDOWN.auth:API_KEY_COOLDOWN.rateLimit)});
+    throw error;
   }finally{
-    clearTimeout(timeout);releaseApiServiceSlot(slot);
+    releaseApiServiceSlot(slot);
     void trackModelUsage({at:startedAt,source:'mt',provider:provider.name,serviceId:'mt:'+provider.id,service:provider.name,model:M('机器翻译','Machine translation'),ok,ms:Date.now()-startedAt,charsIn:texts.reduce((sum,text)=>sum+text.length,0),charsOut});
   }
 }
@@ -1802,17 +1801,26 @@ async function translateItems(items,settings,trace,{scope,scene=scope,onProgress
       };
       const translateWithEngine=async()=>{
         const mapped=new Map();let pending=sourceItems,failure=null,itemFailure=false;
+        const accept=texts=>{
+          const shown=[];pending=[];itemFailure=true;
+          sourceItems.forEach((item,index)=>{const code=mtTranslationIssue(item.text,texts[index]);if(!code){mapped.set(idToKey.get(item.id),{translation:texts[index]});shown.push({id:item.id,translation:texts[index]});return;}pending.push(item);failure??=Object.assign(new Error(M('机器翻译结果未通过校验（译文为空或不含汉字）。','The machine translation failed validation (empty or no Chinese characters).')),{code});});
+          if(shown.length)progress({items:shown});
+        };
         const cooling=mtCoolingCode(engine);
         if(cooling)failure=Object.assign(new Error(M(`${getMtProvider(engine.providerId).name}：服务暂时冷却中，请稍后重试。`,`${getMtProvider(engine.providerId).name}: the service is cooling down; retry shortly.`)),{code:cooling});
         else try{
           const texts=await machineTranslate(engine,sourceItems.map(item=>item.text),{trace,softError:fallback,context:scope==='page'&&sourceItems.length===1?mtContext(sourceItems[0]):'',beforeRequest:()=>requireLiveConsumer(backgroundGuards.get(operation))});
           await requireLiveConsumer(backgroundGuards.get(operation));
           if(generation!==providerGeneration)throw staleWork();
-          const shown=[];pending=[];
-          sourceItems.forEach((item,index)=>{const code=mtTranslationIssue(item.text,texts[index]);if(!code){mapped.set(idToKey.get(item.id),{translation:texts[index]});shown.push({id:item.id,translation:texts[index]});return;}pending.push(item);itemFailure=true;failure??=Object.assign(new Error(M('机器翻译结果未通过校验（译文为空或不含汉字）。','The machine translation failed validation (empty or no Chinese characters).')),{code});});
-          if(shown.length)progress({items:shown});
+          accept(texts);
           if(!pending.length)await diagnostics.event(trace,'validation','ok');
-        }catch(error){if(generation!==providerGeneration)throw staleWork();failure=error;}
+        }catch(error){
+          if(generation!==providerGeneration)throw staleWork();failure=error;
+          if(Array.isArray(error.partialTranslations)){
+            await requireLiveConsumer(backgroundGuards.get(operation));
+            accept(error.partialTranslations);
+          }
+        }
         if(!pending.length)return mapped;
         if(fallback){
           await diagnostics.event(trace,'provider','ok',{code:'MT_FALLBACK',batchSize:pending.length});
@@ -1820,7 +1828,7 @@ async function translateItems(items,settings,trace,{scope,scene=scope,onProgress
           for(const [key,outcome]of await translateWithModel(pending))mapped.set(key,outcome);
           return mapped;
         }
-        if(scope==='page'&&itemFailure){for(const item of pending)mapped.set(idToKey.get(item.id),{error:failure.code});return mapped;}
+        if(scope==='page'&&itemFailure){for(const item of pending)mapped.set(idToKey.get(item.id),{error:pageTranslationErrorCode(failure?.code)});return mapped;}
         throw failure;
       };
       const mapped=engine?await translateWithEngine():await translateWithModel(sourceItems);

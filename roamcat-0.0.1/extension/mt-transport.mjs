@@ -148,8 +148,23 @@ export function splitByBytes(text,limit=500) {
   return pieces;
 }
 
+// 超时按一次 HTTP 往返（含响应体）或一次本机翻译计；让速等待不消耗后续请求的时限。
+// 同时竞争中断结果，避免不响应 AbortSignal 的接口把整个翻译队列一直占住。
+async function timedOperation(provider,ctx,operation) {
+  ctx.signal?.throwIfAborted();
+  const controller=new AbortController();
+  const relay=()=>controller.abort(ctx.signal.reason);
+  let stop;
+  const interrupted=new Promise((_,reject)=>{stop=()=>reject(controller.signal.reason);controller.signal.addEventListener('abort',stop,{once:true});});
+  ctx.signal?.addEventListener('abort',relay,{once:true});
+  const timer=setTimeout(()=>controller.abort(mtError(provider,'TIMEOUT')),ctx.timeoutMs);
+  try { return await Promise.race([operation(controller.signal),interrupted]); }
+  finally {clearTimeout(timer);ctx.signal?.removeEventListener('abort',relay);controller.signal.removeEventListener('abort',stop);}
+}
+
 // ---------- 网络 ----------
-async function call(provider,fetchImpl,url,init,{signal}) {
+const call=(provider,fetchImpl,url,init,ctx)=>timedOperation(provider,ctx,signal=>readResponse(provider,fetchImpl,url,init,{signal}));
+async function readResponse(provider,fetchImpl,url,init,{signal}) {
   let response;
   try { response=await fetchImpl(url,{...init,signal,credentials:'omit',redirect:'error',cache:'no-store'}); }
   catch (error) { if (error?.name==='AbortError') throw error; throw mtError(provider,'NETWORK'); }
@@ -314,8 +329,8 @@ const adapters={
   async chrome(provider,service,texts,ctx) {
     if (typeof ctx.local!=='function') throw mtError(provider,'NOT_READY');
     let result;
-    try { result=await ctx.local(texts,{signal:ctx.signal}); }
-    catch (error) { if (error?.name==='AbortError') throw error; throw mtError(provider,error?.code==='NOT_READY'?'NOT_READY':'OUTPUT_INVALID'); }
+    try { result=await timedOperation(provider,ctx,signal=>ctx.local(texts,{signal})); }
+    catch (error) { if (error?.name==='AbortError' || error?.code==='TIMEOUT' || ctx.signal?.aborted) throw error; throw mtError(provider,error?.code==='NOT_READY'?'NOT_READY':'OUTPUT_INVALID'); }
     return requireStrings(provider,result,texts.length);
   },
 };
@@ -357,22 +372,33 @@ export async function volcengineHeaders({accessKeyId,secretAccessKey,region,host
 /**
  * 把一批原文译成简体中文，返回与输入同序、同长的译文数组（已去首尾空白、规整 ⟦n⟧）。
  * options：signal、fetch（默认全局 fetch）、local（Chrome 本机翻译实现）、context（单条请求时 DeepL 可用的上下文）、
- *   pace（同一服务两次请求之间的等待，调用方按 qps 实现）、now、uuid（测试注入）。
+ *   pace（同一服务两次请求之间的等待，调用方按 qps 实现）、timeoutMs（单次请求，默认 15 秒）、now、uuid（测试注入）。
+ * 某个后续请求失败时，error.partialTranslations 仅保留此前已完整完成的原条目；未完成项为 null。
  */
 export async function mtTranslate(service,texts,options={}) {
   const provider=getMtProvider(service?.providerId);
   if (!provider) throw mtError(null,'OUTPUT_INVALID');
   if (!Array.isArray(texts) || !texts.length || texts.some(text=>typeof text!=='string' || !text.trim())) throw mtError(provider,'OUTPUT_INVALID');
   const adapter=adapters[provider.id];
-  const ctx={signal:options.signal,fetch:options.fetch||((...args)=>globalThis.fetch(...args)),local:options.local,context:options.context||'',pace:options.pace||(async()=>{}),now:options.now||Date.now,uuid:options.uuid||(()=>crypto.randomUUID())};
+  const ctx={signal:options.signal,fetch:options.fetch||((...args)=>globalThis.fetch(...args)),local:options.local,context:options.context||'',pace:options.pace||(async()=>{}),timeoutMs:options.timeoutMs??15000,now:options.now||Date.now,uuid:options.uuid||(()=>crypto.randomUUID())};
   // 百度按 UTF-8 字节计量，单条原文也可能超过 6000 字节；拆开后按原条目重新合并。
   const inputs=texts.flatMap((text,at)=>(provider.id==='baidu'?splitByBytes(text,5800):[text]).map(piece=>({text:piece,at})));
   const results=Array.from({length:texts.length},()=>[]);
-  for (const [index,chunk] of chunkTexts(inputs.map(item=>item.text),provider.batch).entries()) {
-    if (options.signal?.aborted) throw options.signal.reason||new DOMException('Aborted','AbortError');
-    if (index) await ctx.pace();
-    const out=await adapter(provider,service,chunk.map(at=>inputs[at].text),ctx);
-    chunk.forEach((at,position)=>{results[inputs[at].at].push(normalizeMarkers(out[position]).trim());});
+  const counts=new Array(texts.length).fill(0);for(const item of inputs)counts[item.at]++;
+  // 百度不能合并的多行/超字节条目提前拆成独立请求，才能在后续请求失败时保住前一条结果。
+  const chunks=chunkTexts(inputs.map(item=>item.text),provider.batch).flatMap(chunk=>provider.id==='baidu'&&(chunk.some(at=>/[\r\n]/.test(inputs[at].text))||encoder.encode(chunk.map(at=>inputs[at].text).join('\n')).length>6000)?chunk.map(at=>[at]):[chunk]);
+  try {
+    for (const [index,chunk] of chunks.entries()) {
+      options.signal?.throwIfAborted();
+      if (index) await ctx.pace();
+      options.signal?.throwIfAborted();
+      const out=await adapter(provider,service,chunk.map(at=>inputs[at].text),ctx);
+      chunk.forEach((at,position)=>{results[inputs[at].at].push(normalizeMarkers(out[position]).trim());});
+    }
+  } catch(error) {
+    const partial=results.map((pieces,at)=>pieces.length===counts[at]?pieces.join('\n'):null);
+    if(!options.signal?.aborted && partial.some(value=>value!==null))error.partialTranslations=partial;
+    throw error;
   }
   return results.map(pieces=>pieces.join('\n'));
 }
