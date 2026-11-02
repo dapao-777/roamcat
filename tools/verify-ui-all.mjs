@@ -557,7 +557,9 @@ try {
     const r = el => { const b = el.getBoundingClientRect(); return {l: b.left, t: b.top, r: b.right, b: b.bottom}; };
     const body = [...sr.querySelectorAll('.cat-svg > path')].find(p => (p.getAttribute('fill') || 'none') !== 'none');
     return {host: r(host), head: r(body), btns: ['#quick-options', '#quick-summary', '#quick-reading', '#roamcat-flip-btn'].map(s => r(sr.querySelector(s))),
-      bubble: r(sr.querySelector('#cat-speech')), zoom: r(sr.querySelector('#roamcat-zoom-controls')), speaking: sr.querySelector('#cat-speech').classList.contains('speaking')};
+      bubble: r(sr.querySelector('#cat-speech')), zoom: r(sr.querySelector('#roamcat-zoom-controls')), speaking: sr.querySelector('#cat-speech').classList.contains('speaking'),
+      dock: r(sr.querySelector('.roamcat-quick-dock')), paws: ['.paw-left .paw-tip', '.paw-right .paw-tip'].map(s => r(sr.querySelector(s))),
+      pawsShown: Number(getComputedStyle(sr.querySelector('.roamcat-paws .paw-arms')).opacity)};
   }`);
   const boxesOverlap = (a, b) => a.l < b.r - 0.5 && b.l < a.r - 0.5 && a.t < b.b - 0.5 && b.t < a.b - 0.5;
   const petCloseUp = async name => {
@@ -578,6 +580,11 @@ try {
     && columnLayout.btns[3].b <= columnLayout.head.t
     && Math.abs((columnLayout.head.l + columnLayout.head.r) / 2 - (columnLayout.host.l + columnLayout.host.r) / 2) < 1,
   JSON.stringify(columnLayout));
+  // 猫举着工具栏：两只圆爪的爪心落在胶囊底边两角。
+  const pawMid = p => ({x: (p.l + p.r) / 2, y: (p.t + p.b) / 2});
+  check('伴读猫举着工具栏（双爪托住胶囊底边两角）', columnLayout.pawsShown > 0.9
+    && Math.abs(pawMid(columnLayout.paws[0]).x - (columnLayout.dock.l + 4)) <= 5 && Math.abs(pawMid(columnLayout.paws[1]).x - (columnLayout.dock.r - 4)) <= 5
+    && columnLayout.paws.every(p => pawMid(p).y >= columnLayout.dock.b - 14 && pawMid(p).y <= columnLayout.dock.b), JSON.stringify({dock: columnLayout.dock, paws: columnLayout.paws}));
   check('伴读猫缩放胶囊在猫内侧且不压按钮', columnLayout.zoom.r <= columnLayout.host.l && columnLayout.btns.every(b => !boxesOverlap(b, columnLayout.zoom)), JSON.stringify(columnLayout));
   await hoverQuick(true);
   for (const theme of ['light', 'dark']) {

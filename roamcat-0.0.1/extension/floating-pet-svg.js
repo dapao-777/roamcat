@@ -1,7 +1,7 @@
 /**
  * @file extension/floating-pet-svg.js
- * 文件职责：伴读猫 SVG 形象（classic script，禁 ESM 语法）——坐姿与贴边探头两种姿态的矢量图与边缘光渐变。
- * 主要内容：globalThis.RoamCatPetParts 上的 renderCatSvg、renderPeekingCatSvg；配色走 --pet-cat-* 变量。
+ * 文件职责：伴读猫 SVG 形象（classic script，禁 ESM 语法）——坐姿与贴边探头两种姿态、托举工具栏的小爪的矢量图与边缘光渐变。
+ * 主要内容：globalThis.RoamCatPetParts 上的 renderCatSvg、renderPeekingCatSvg、renderPawsSvg；配色走 --pet-cat-* 变量。
  * 模块边界：只产出 SVG 字符串；品牌猫生成器 tools/make-brand-cat.mjs 与宣传片抽取 tools/promo/_extract.mjs
  *   依赖本文件的几何，改动须同步；须排在 floating-pet.js 之前注入；必须保持非 ESM（module-graph R1 强制）。
  *
@@ -166,5 +166,24 @@
     `;
   }
 
-  Object.assign(parts, {renderCatSvg, renderPeekingCatSvg});
+  // 托举小爪：两条小臂从肩头（耳朵外侧）举过头顶、张成 V 字，圆爪托住竖排工具栏底边两角；
+  // 与坐姿同一套 200×220 坐标、同色同边缘光（臂照小尾巴的画法：边缘光粗描边垫底、身体色描边
+  // 压上；爪是带边缘光的圆）。整张图由 .roamcat-paws 叠在猫身后面、与猫同尺寸同锚点，臂根藏进
+  // 身体、经过耳朵后面；爪心落在工具栏底边圆角上（y≈36，工具栏底边 y≈53）。
+  // 收起时 .paw-arms 整组由 CSS 往下平移缩回身体后面。
+  function renderPawsSvg() {
+    const arm = (x1, x2, cls) => `<g class="paw ${cls}">
+      <path d="M${x1} 128 L${x2} 38" fill="none" stroke="url(#rc-paw-rim)" stroke-width="23" stroke-linecap="round"/>
+      <path d="M${x1} 128 L${x2} 38" fill="none" stroke="${CAT_BODY}" stroke-width="18" stroke-linecap="round"/>
+      <circle class="paw-tip" cx="${x2}" cy="36" r="14" fill="${CAT_BODY}" stroke="url(#rc-paw-rim)" stroke-width="2.6"/>
+      </g>`;
+    return `
+      <svg class="cat-paws-svg" viewBox="0 0 200 220" aria-hidden="true" focusable="false">
+      <defs>${catGlowDefs('rc-paw', {x: 100, y: 200, r: 96})}</defs>
+      <g class="paw-arms">${arm(40, 54, 'paw-left')}${arm(160, 146, 'paw-right')}</g>
+      </svg>
+    `;
+  }
+
+  Object.assign(parts, {renderCatSvg, renderPeekingCatSvg, renderPawsSvg});
 })();

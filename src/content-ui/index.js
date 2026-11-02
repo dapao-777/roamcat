@@ -406,9 +406,9 @@ export function renderMeaningRows(dl, rows) {
 
 // ---------- 伴读猫控件骨架（floating-pet.js 经 chrome.scripting 动态注册） ----------
 // 只迁移静态 DOM 骨架；状态更新仍由 floating-pet.js 经 shadowQuery 命令式驱动。
-// catSvg / peekingCatSvg 为内部可信 SVG 标记，经 unsafeHTML 注入（数据内容一律走文本绑定）。
+// catSvg / peekingCatSvg / pawsSvg 为内部可信 SVG 标记，经 unsafeHTML 注入（数据内容一律走文本绑定）。
 
-export function petWidget(shadow, {domainKey = 'general', domainName = '', catSvg = '', peekingCatSvg = '', onEdgeTabClick} = {}) {
+export function petWidget(shadow, {domainKey = 'general', domainName = '', catSvg = '', peekingCatSvg = '', pawsSvg = '', onEdgeTabClick} = {}) {
   render(html`
     <div class="roamcat-pet-widget">
       <div class="roamcat-edge-tab" id="roamcat-edge-tab" role="button" tabindex="0" aria-label=${T('pet.edgeAria')} title=${T('pet.edgeTitle')} @click=${event => { event.stopPropagation(); onEdgeTabClick?.(); }} @keydown=${event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); event.stopPropagation(); onEdgeTabClick?.(); } }}>
@@ -439,6 +439,7 @@ export function petWidget(shadow, {domainKey = 'general', domainName = '', catSv
           </svg>
         </button>
       </div>
+      <div class="roamcat-paws" aria-hidden="true">${unsafeHTML(pawsSvg)}</div>
       <div class="roamcat-avatar-wrap" role="button" tabindex="0" aria-expanded="false" aria-label=${T('pet.avatarAria')} title=${T('pet.avatarTitle')}>
         <div class="cat-speech-bubble" id="cat-speech">
           <span class="speech-spinner" id="speech-spinner"></span>

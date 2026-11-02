@@ -360,7 +360,8 @@
          （离猫最近）。常驻显示（不等悬停或点猫），拖动时跟着猫走；上方放不下时
          （.dock-below，clampPosition 判定）改挂到猫脚下，顺序随之倒过来，旋旋翻
          仍离猫最近。猫的画稿（58×62，贴底居中）上方留白：耳尖离脚底约
-         39px × scale，胶囊底边留在耳尖上方 8px，不压耳朵，缩放猫时一起挪。只有
+         39px × scale，胶囊底边再高 8px（离脚底 47px × scale），由两只小爪从头后伸出托住
+         （.roamcat-paws），不压耳朵，缩放猫时一起挪。只有
          贴边探头时整条收起（点猫唤醒后从猫头升回来）。常驻但不抢戏：胶囊是
          半透明磨砂面（见下方 .roamcat-quick-dock, .roamcat-zoom-controls 共用规则），
          按钮平时用次级墨色，悬停/聚焦才换强调色。
@@ -368,7 +369,7 @@
       .roamcat-quick-dock {
         position: absolute;
         left: 50%;
-        bottom: calc(39px * var(--pet-scale, 1) + 8px);
+        bottom: calc(47px * var(--pet-scale, 1));
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -397,20 +398,74 @@
       }
 
       /* 竖排工具栏除贴边探头外一直显示；缩放胶囊仍由点猫头（dock-open）开合。 */
-      .roamcat-pet-widget:not(.docked) .roamcat-quick-dock {
+      .roamcat-pet-widget:not(.docked, .dock-lowered) .roamcat-quick-dock {
         visibility: visible;
         opacity: 1;
         translate: -50% 0;
         scale: 1;
+        /* 升起比猫的下蹲晚 80ms，与爪子同时到位。 */
         transition:
-          opacity 0.18s ease,
-          translate 0.32s cubic-bezier(0.34, 1.56, 0.64, 1),
-          scale 0.32s cubic-bezier(0.34, 1.56, 0.64, 1),
+          opacity 0.18s ease 0.08s,
+          translate 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) 0.08s,
+          scale 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) 0.08s,
           visibility 0s 0s;
       }
       .roamcat-pet-widget.dock-open .roamcat-zoom-controls {
         visibility: visible;
         transition-delay: 0s;
+      }
+
+      /* 托举小爪（renderPawsSvg）：与 .cat-mode-roaming 同尺寸同锚点——58×62 画稿贴底居中、
+         按 --pet-scale 从底边中点缩放——在 DOM 里排在猫前面，因而画在猫身后面，臂根藏在头顶后。
+         工具栏立在猫头上方时（非贴边、非挂到猫脚下、非初挂的放下态）两臂举起、圆爪托住胶囊底边两角；
+         其余时候整组往下缩回头后并淡出。举起比猫的下蹲晚 80ms、带回弹，放下 200ms。 */
+      .roamcat-paws {
+        position: absolute;
+        left: 50%;
+        bottom: 0;
+        width: 58px;
+        height: 62px;
+        margin-left: -29px;
+        transform: scale(var(--pet-scale, 1));
+        transform-origin: bottom center;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+      }
+      .cat-paws-svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+      }
+      .roamcat-paws .paw-arms {
+        transform: translateY(90px);
+        opacity: 0;
+        transition: transform 0.2s ease-in, opacity 0.16s ease-in;
+      }
+      .roamcat-pet-widget:not(.docked, .dock-below, .dock-lowered) .roamcat-paws .paw-arms {
+        transform: none;
+        opacity: 1;
+        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) 0.08s, opacity 0.12s ease 0.08s;
+      }
+      .roamcat-pet-widget:is(.docked, .pet-away) .roamcat-paws {
+        opacity: 0;
+      }
+
+      /* 举着的时候，胶囊与爪子一起很轻地起伏（1.5px，周期与猫的呼吸同为 3.6s），像猫在托着它。
+         胶囊的 translate/scale 留给显隐，起伏走 transform；爪子层的 transform 留给缩放，起伏走 translate。 */
+      .roamcat-pet-widget:not(.docked, .dock-below, .dock-lowered) .roamcat-quick-dock {
+        animation: pet-hold-bob 3.6s ease-in-out 0.4s infinite;
+      }
+      .roamcat-pet-widget:not(.docked, .dock-below, .dock-lowered) .roamcat-paws {
+        animation: pet-hold-bob-paws 3.6s ease-in-out 0.4s infinite;
+      }
+      @keyframes pet-hold-bob {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-1.5px); }
+      }
+      @keyframes pet-hold-bob-paws {
+        0%, 100% { translate: 0 0; }
+        50% { translate: 0 -1.5px; }
       }
 
       /* 工具栏与缩放胶囊共用的磨砂面：页面底色透出约三成并模糊，描边减弱，层级用 elev-2；
@@ -659,9 +714,9 @@
       /* Speech Bubble (Hover & Speaking Notification) */
       .cat-speech-bubble {
         position: absolute;
-        /* 以放大后的猫为基线（猫按 --pet-scale 从脚底放大）：漫游态 --bubble-rise 取耳尖
-           离脚底的 39px，气泡底边与工具栏底边齐平（都在耳尖上方 8px）、尾巴指向耳尖；贴边探头态取整框高 68px。 */
-        bottom: calc(var(--bubble-rise, 68px) * var(--pet-scale, 1) + 8px);
+        /* 以放大后的猫为基线（猫按 --pet-scale 从脚底放大）：漫游态 --bubble-rise 取工具栏
+           底边离脚底的 47px、不另加间距，气泡底边与工具栏底边齐平（耳尖上方 8px）、尾巴指向耳尖；贴边探头态取整框高 68px。 */
+        bottom: calc(var(--bubble-rise, 68px) * var(--pet-scale, 1) + var(--bubble-gap, 8px));
         left: 50%;
         transform: translateX(calc(-50% + var(--bubble-shift-x, 0px))) translateY(4px);
         background: var(--pet-surface-elevated, #ffffff);
@@ -724,7 +779,8 @@
          与缩放比例无关。贴边探头态没有工具栏，气泡仍贴猫外缘。 */
       .roamcat-pet-widget:not(.docked) {
         --bubble-lane: 55px;
-        --bubble-rise: 39px;
+        --bubble-rise: 47px;
+        --bubble-gap: 0px;
       }
 
       /* 针对右半屏或贴右边缘的对齐策略：气泡右对齐，向网页内侧展开，100% 避免超出视口！ */
@@ -1103,12 +1159,14 @@
 
       /* On Hover, Happy, or Sleeping: Switch to Happy Smile Squint Eyes */
       .roamcat-avatar-wrap:hover .cat-eyes-open,
+      .roamcat-avatar-wrap.action-lift .cat-eyes-open,
       .roamcat-avatar-wrap.state-happy .cat-eyes-open,
       .roamcat-avatar-wrap.state-sleeping .cat-eyes-open {
         opacity: 0;
         animation: none;
       }
       .roamcat-avatar-wrap:hover .cat-eyes-squint,
+      .roamcat-avatar-wrap.action-lift .cat-eyes-squint,
       .roamcat-avatar-wrap.state-happy .cat-eyes-squint,
       .roamcat-avatar-wrap.state-sleeping .cat-eyes-squint {
         opacity: 1;
@@ -1161,6 +1219,18 @@
       }
 
       /* 5. Click Jelly Bounce Feedback */
+      /* 托举（liftToolbar 加 .action-lift，约 650ms）：先蹲（约 80ms 压到 scaleY 0.95），
+         再回弹略拉长（scaleY 1.03）把工具栏顶上去，最后落回原样；期间眯眼用力（见上方眼睛规则）。 */
+      .roamcat-avatar-wrap.action-lift .cat-svg {
+        animation: cat-lift-anim 0.38s cubic-bezier(0.34, 1.3, 0.64, 1) !important;
+      }
+      @keyframes cat-lift-anim {
+        0% { transform: scale(1, 1); }
+        22% { transform: scale(1.03, 0.95); }
+        62% { transform: scale(0.985, 1.03); }
+        100% { transform: scale(1, 1); }
+      }
+
       .roamcat-avatar-wrap.action-jelly .cat-svg {
         animation: cat-jelly-anim 0.52s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
       }
@@ -1425,13 +1495,22 @@
         }
         /* 竖排工具栏显隐降级为纯透明度过渡：120ms、无位移缩放（保留居中用的 -50%） */
         .roamcat-quick-dock,
-        .roamcat-pet-widget:not(.docked) .roamcat-quick-dock {
+        .roamcat-pet-widget:not(.docked, .dock-lowered) .roamcat-quick-dock {
           translate: -50% 0;
           scale: none;
           transition: opacity 0.12s ease, visibility 0s 0.13s !important;
         }
-        .roamcat-pet-widget:not(.docked) .roamcat-quick-dock {
+        .roamcat-pet-widget:not(.docked, .dock-lowered) .roamcat-quick-dock {
           transition: opacity 0.12s ease, visibility 0s 0s !important;
+        }
+        /* 托举小爪不做位移：一直停在举起的位置，只淡入淡出；托举时的起伏也停掉 */
+        .roamcat-paws .paw-arms {
+          transform: none !important;
+          transition: opacity 0.12s ease !important;
+        }
+        .roamcat-quick-dock,
+        .roamcat-paws {
+          animation: none !important;
         }
         .roamcat-zoom-controls,
         .roamcat-pet-widget.dock-open .roamcat-zoom-controls {

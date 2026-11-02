@@ -583,8 +583,12 @@ export class Page {
     this.dpr = deviceScaleFactor;
     await this.send('Emulation.setDeviceMetricsOverride', {width, height, deviceScaleFactor, mobile: false});
   }
-  async emulateMedia({colorScheme} = {}) {
-    await this.send('Emulation.setEmulatedMedia', {features: colorScheme ? [{name: 'prefers-color-scheme', value: colorScheme}] : []});
+  // reducedMotion：'reduce' | 'no-preference'；不传则沿用系统设置（Windows 关了「动画效果」时无头 ego 报 reduce）。
+  async emulateMedia({colorScheme, reducedMotion} = {}) {
+    const features = [];
+    if (colorScheme) features.push({name: 'prefers-color-scheme', value: colorScheme});
+    if (reducedMotion) features.push({name: 'prefers-reduced-motion', value: reducedMotion});
+    await this.send('Emulation.setEmulatedMedia', {features});
   }
   async transparentBackground(on = true) {
     await this.send('Emulation.setDefaultBackgroundColorOverride', on ? {color: {r: 0, g: 0, b: 0, a: 0}} : {});

@@ -22,7 +22,7 @@
 | `npm run verify:build` | 构建产物门禁：字节比对 + 浏览器实际加载 `dist/extension` 冒烟 |
 | `npm run verify:release` | 生产构建门禁：先 `build:release` 拷到临时目录、随即恢复开发构建，再断言 manifest 无开发 key 且版本一致、全部脚本可编译、压缩后的源层脚本保留 MPL 头，无头 ego 加载生产版：弹窗/设置页无错、普通网页只有轻量引导、按需注入后阅读引擎可开启 → `preview/gates/release.json` |
 | `npm run verify:ui` | 全界面 UI 门禁：浏览器加载 `dist/extension`，遍历 popup/options 全分区/welcome/reader 与页内挂件（词卡 HUD/任务条/解构卡/toast/选区条/伴读猫全状态），双主题截图 + 断言 → `preview/ui-audit/`（先跑 `npm run build`） |
-| `npm run verify:pet` | 伴读猫按钮门禁：真实点击/键盘操作全部悬浮按钮（竖排快捷工具栏及其换边/旋旋翻/缩放/贴边探头/气泡/摘要窗），断言状态、几何与可及性 → `preview/pet-buttons/` |
+| `npm run verify:pet` | 伴读猫按钮门禁：真实点击/键盘操作全部悬浮按钮（竖排快捷工具栏及其换边与托举小爪/旋旋翻/缩放/贴边探头/气泡/摘要窗），断言状态、几何、动效偏好与可及性 → `preview/pet-buttons/` |
 | `npm run verify:performance` | 性能回归：2000 段无语义根页面的缓存与增量失效、开放 shadow root、历史可见词统计、正文元素反复切换 class 不触发自动辅助重建（隐藏正文块仍重排）、长难句/公式开关经真实后台同步、15000 段阅读器分页、真实 EPUB worker 与后台 40 秒空闲回收 → `preview/performance/`（先构建；`-- --skip-idle` 只跳过休眠等待） |
 | `npm run verify:reader` | 阅读器行为门禁：翻译失败可见、保留译文并重试、持续失败停止而单条失败继续、换书后旧请求不再重试或写入新书、远程文件名与体积限制、真实 EPUB worker 的转义路径与异常实体兼容 → `preview/gates/reader.json`（先构建） |
 | `npm run verify:dictation` | 无字幕视频云端听写门禁：YouTube 地址 fixture 上注入 `dist/extension` 的页内脚本，用真实 `captureStream`/MediaRecorder 录播放器音轨（假听写响应），断言暂停提交、续录、手动停止丢弃在途结果、停止后按原时间轴回看、拖动自动停止、播完时最后一段在途则取消 YouTube 自动连播（没在听写时不干预） → `preview/audio-probe/`（先跑 `npm run build`；`--speech-fixture=<音频>` 换成真实语音） |

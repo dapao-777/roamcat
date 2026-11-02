@@ -53,7 +53,7 @@
   let detectedDomain = 'general';
 
   // 纯函数、样式与 SVG 拆在 floating-pet-*.js，与本文件同批注入且先于本文件执行。
-  const {domainName, petShortcutBlocked, getLuminance, getElementBg, hasKeepOut, keepOutRight, getPetStyles, renderPeekingCatSvg, renderCatSvg} = globalThis.RoamCatPetParts;
+  const {domainName, petShortcutBlocked, getLuminance, getElementBg, hasKeepOut, keepOutRight, getPetStyles, renderPeekingCatSvg, renderCatSvg, renderPawsSvg} = globalThis.RoamCatPetParts;
 
   function detectPageTheme() {
     try {
@@ -168,6 +168,7 @@
           domainName: domainName(detectedDomain),
           catSvg: renderCatSvg(),
           peekingCatSvg: renderPeekingCatSvg(),
+          pawsSvg: renderPawsSvg(),
           onEdgeTabClick: () => this.undock(),
         });
 
@@ -202,6 +203,28 @@
       this.summaryWindow = summaryWindow;
       this.applyScaleVisuals();
       this.clampPosition();
+      // 挂上时先让工具栏与爪子处在放下状态，样式落定后再举起来：每次出现都放一遍托举动画。
+      container.classList.add('dock-lowered');
+      clearTimeout(this._raiseTimer);
+      this._raiseTimer = setTimeout(() => {
+        this.container?.classList.remove('dock-lowered');
+        this.liftToolbar();
+      }, 120);
+    }
+
+    // 托举：工具栏从放下变为立在猫头上方时，猫先蹲一下再弹起、眯眼用力；爪子伸出与胶囊升起
+    // 由样式表的过渡完成（.roamcat-paws / .roamcat-quick-dock）。拖动中、贴边、挂到猫脚下、
+    // 跑车彩蛋或别的动作进行中不做；减弱动效时只由样式表淡入，不加形变。返回是否放了托举动作。
+    liftToolbar() {
+      const wrap = this.avatarWrap;
+      if (!wrap || isDocked || isDragging || this._driving) return false;
+      if (this.container?.classList.contains('dock-below')) return false;
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+      if ([...wrap.classList].some(cls => cls.startsWith('action-'))) return false;
+      wrap.classList.add('action-lift');
+      clearTimeout(this._liftTimer);
+      this._liftTimer = setTimeout(() => this.avatarWrap?.classList.remove('action-lift'), 650);
+      return true;
     }
 
     bindEvents() {
@@ -645,12 +668,18 @@
         hostEl.style.bottom = `${currentBottom}px`;
       }
 
-      // 竖排工具栏默认立在猫头上方；猫被拖到视口顶部附近、上方放不下时改挂到猫脚下（下方更宽裕才换）。
-      // 工具栏底边留在耳尖上方 8px，耳尖在挂件框顶下约 29px × scale（见样式表 .roamcat-quick-dock）；
+      // 竖排工具栏默认由爪子举在猫头上方；猫被拖到视口顶部附近、上方放不下时改挂到猫脚下（下方更宽裕才换）。
+      // 工具栏底边离脚底 47px × scale（耳尖上方，见样式表 .roamcat-quick-dock），挂件框高 68px × scale；
       // offsetHeight 不受收起态的 visibility/scale 影响；再留 8px 视口边距。
-      const roomAbove = window.innerHeight - currentBottom - petH;
-      const dockNeed = (this.quickDock?.offsetHeight || 0) + 8 - 29 * petScale + 8;
-      this.container.classList.toggle('dock-below', roomAbove < dockNeed && currentBottom > roomAbove);
+      // 拖动途中不换边，松手再判定，免得一路举起又放下；从猫脚下换回头顶时补一次托举。
+      if (!isDragging) {
+        const roomAbove = window.innerHeight - currentBottom - petH;
+        const dockNeed = (this.quickDock?.offsetHeight || 0) - 21 * petScale + 8;
+        const wasBelow = this.container.classList.contains('dock-below');
+        const below = roomAbove < dockNeed && currentBottom > roomAbove;
+        this.container.classList.toggle('dock-below', below);
+        if (wasBelow && !below) this.liftToolbar();
+      }
 
       // Adaptive summary window positioning (keeps it anchored near the pet and fully on-screen)
       if (isSummaryOpen && this.summaryWindow) {
@@ -895,7 +924,8 @@
       }
       this.clampPosition();
       this.fitSpeechBubble();
-      this.triggerClickReaction();
+      // 唤醒后工具栏重新升起：放托举动作；举不了（挂到猫脚下、减弱动效等）就照旧弹一下果冻。
+      if (!this.liftToolbar()) this.triggerClickReaction();
     }
 
     toggleDock() {
@@ -1305,6 +1335,8 @@
       clearTimeout(this._idleTimer);
       clearTimeout(this._glanceTimer);
       clearTimeout(this._glanceReset);
+      clearTimeout(this._raiseTimer);
+      clearTimeout(this._liftTimer);
       clearInterval(this._sleepWatchdogInterval);
       clearInterval(this._keepOutTimer);
       this.stopQuoteTicker();

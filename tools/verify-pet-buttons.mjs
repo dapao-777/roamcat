@@ -85,15 +85,24 @@ try {
     const host = document.querySelector('#roamcat-pet-host'), sr = host.shadowRoot;
     const r = el => { const b = el.getBoundingClientRect(); return {l: Math.round(b.left), t: Math.round(b.top), r: Math.round(b.right), b: Math.round(b.bottom)}; };
     const body = [...sr.querySelectorAll('.cat-svg > path')].find(p => (p.getAttribute('fill') || 'none') !== 'none');
+    const arms = sr.querySelector('.roamcat-paws .paw-arms');
     return {cls: sr.querySelector('.roamcat-pet-widget').className, vh: innerHeight, host: r(host), head: body ? r(body) : null,
       btns: ['#quick-options', '#quick-summary', '#quick-reading', '#roamcat-flip-btn'].map(s => r(sr.querySelector(s))),
-      bubble: r(sr.querySelector('#cat-speech')), zoom: r(sr.querySelector('#roamcat-zoom-controls'))};
+      bubble: r(sr.querySelector('#cat-speech')), zoom: r(sr.querySelector('#roamcat-zoom-controls')),
+      dock: r(sr.querySelector('.roamcat-quick-dock')), paws: ['.paw-left .paw-tip', '.paw-right .paw-tip'].map(s => r(sr.querySelector(s))),
+      pawsShown: Number(getComputedStyle(arms).opacity) * Number(getComputedStyle(sr.querySelector('.roamcat-paws')).opacity)};
   }`);
   const overlaps = (a, b) => a.l < b.r && b.l < a.r && a.t < b.b && b.t < a.b;
   const oneColumn = l => Boolean(l) && l.btns.every(b => Math.abs(b.l - l.btns[0].l) <= 1);
   const centerX = b => (b.l + b.r) / 2;
+  const centerY = b => (b.t + b.b) / 2;
   // 工具栏立在猫头上方时，最下面的按钮不压到猫头（按实际画稿量，不写死比例）。
   const aboveHead = l => Boolean(l?.head) && l.btns[3].b <= l.head.t;
+  // 托举：两只圆爪可见，爪心落在胶囊底边两角（左爪靠胶囊左缘、右爪靠右缘，略高于底边）。
+  const pawsHold = l => Boolean(l) && l.pawsShown > 0.9
+    && Math.abs(centerX(l.paws[0]) - (l.dock.l + 4)) <= 5 && Math.abs(centerX(l.paws[1]) - (l.dock.r - 4)) <= 5
+    && l.paws.every(p => centerY(p) >= l.dock.b - 14 && centerY(p) <= l.dock.b);
+  const pawsDown = l => Boolean(l) && l.pawsShown < 0.1;
 
   const isOpen = s => Boolean(s?.cls.includes('dock-open')) && s.expanded === 'true' && s.inert === false;
   const isClosed = s => Boolean(s) && !s.cls.includes('dock-open') && s.expanded === 'false' && s.inert === true;
@@ -159,6 +168,8 @@ try {
   check('竖排工具栏与猫居中对齐', Boolean(column) && column.btns.every(b => Math.abs(centerX(b) - centerX(column.host)) <= 1), JSON.stringify(column));
   check('竖列挂在猫头上方', Boolean(column) && aboveHead(column) && column.btns[0].t >= 0 && !column.cls.includes('dock-below'),
     JSON.stringify(column));
+  const held = await until(layout, pawsHold);
+  check('猫举着工具栏：两只圆爪托住胶囊底边两角', pawsHold(held), JSON.stringify({dock: held?.dock, paws: held?.paws, shown: held?.pawsShown}));
   check('缩放胶囊在猫朝页面内侧一边', Boolean(column) && column.zoom.r <= column.host.l && column.btns.every(b => !overlaps(b, column.zoom)),
     JSON.stringify(column));
 
@@ -369,6 +380,8 @@ try {
     return {opacity: s.opacity, vis: s.visibility};
   });
   check('贴边时竖排工具栏收起、悬停不弹', dockedHover.vis === 'hidden' && Number(dockedHover.opacity) < 0.1, JSON.stringify(dockedHover));
+  const dockedPaws = await until(layout, pawsDown);
+  check('贴边时托举小爪放下', pawsDown(dockedPaws), `pawsShown=${dockedPaws?.pawsShown}`);
   await shot('docked-hover');
   // 贴边标签仅作键盘入口：平时透明且不占命中区
   await tab.mouse.move(30, 30);
@@ -409,6 +422,45 @@ try {
   st = await waitPet(awake);
   check('贴边态猫头 Enter 唤醒', st && !st.cls.includes('docked'), `cls=${st?.cls}`);
 
+  // ---------- 12b. 托举动画：唤醒时工具栏升起、猫举起双爪；减弱动效下只淡入 ----------
+  // 动效偏好显式模拟两种取值（无头 ego 默认跟随系统，Windows 关了「动画效果」时为 reduce）。
+  // motion 采样：唤醒后立刻收集影子根里的动画——托举形变 action-lift、带位移/缩放的过渡。
+  const wakeAndSampleMotion = () => petCall(`() => new Promise(resolve => {
+    const host = document.querySelector('#roamcat-pet-host'), pet = host.pet, sr = host.shadowRoot, wrap = pet.avatarWrap;
+    let lift = false;
+    const seen = new Set();
+    const sample = () => {
+      lift ||= wrap.classList.contains('action-lift');
+      for (const a of sr.getAnimations()) {
+        // 只看这次托举涉及的工具栏与爪子（猫身悬停放大等既有过渡不在此列）。
+        const own = a.effect?.target?.matches?.('.roamcat-quick-dock, .roamcat-paws, .paw-arms');
+        if (own && a.transitionProperty && /^(transform|translate|scale)$/.test(a.transitionProperty)) seen.add('transition:' + a.transitionProperty);
+        if (a.animationName && /^(cat-lift-anim|pet-hold-bob)/.test(a.animationName)) seen.add('animation:' + a.animationName);
+      }
+    };
+    pet.undock();
+    sample();
+    let n = 0;
+    const timer = setInterval(() => { sample(); if (++n >= 8) { clearInterval(timer); resolve({lift, motion: [...seen]}); } }, 50);
+  })`);
+  await tab.mouse.move(30, 30);
+  for (const reducedMotion of ['reduce', 'no-preference']) {
+    await tab.emulateMedia({reducedMotion});
+    await petCall(`() => { document.querySelector('#roamcat-pet-host').pet.dock('right'); return true; }`);
+    await waitPet(isDocked);
+    await until(layout, pawsDown);
+    const sampled = await wakeAndSampleMotion();
+    const lay = await until(layout, pawsHold);
+    if (reducedMotion === 'reduce') {
+      check('减弱动效：唤醒时不做托举形变、没有位移缩放动画', sampled && !sampled.lift && sampled.motion.length === 0, JSON.stringify(sampled));
+    } else {
+      check('唤醒时猫做托举动作、爪子与工具栏带位移升起', sampled?.lift === true && sampled.motion.some(m => m.startsWith('transition:'))
+        && sampled.motion.includes('animation:cat-lift-anim'), JSON.stringify(sampled));
+    }
+    check(`唤醒后两只圆爪托住工具栏（${reducedMotion}）`, pawsHold(lay), JSON.stringify({dock: lay?.dock, paws: lay?.paws, shown: lay?.pawsShown}));
+  }
+  await tab.emulateMedia({});
+
   // ---------- 13. 拖拽位移并抑制误触 ----------
   const before = await tab.locator('#roamcat-pet-host').boundingBox();
   const ax = before.x + before.width / 2, ay = before.y + before.height / 2;
@@ -440,6 +492,8 @@ try {
   let lay = await until(layout, l => l?.cls.includes('dock-below'));
   check('猫在视口顶部时竖列改挂到猫脚下、旋旋翻仍离猫最近', lay.cls.includes('dock-below') && oneColumn(lay)
     && lay.btns[3].t >= lay.host.b && lay.btns[3].t < lay.btns[2].t && lay.btns[0].b <= lay.vh, JSON.stringify(lay));
+  const belowPaws = await until(layout, pawsDown);
+  check('工具栏挂到猫脚下时托举小爪放下', pawsDown(belowPaws), `pawsShown=${belowPaws?.pawsShown}`);
   const readBox = await tab.locator('#quick-reading').boundingBox();
   await tab.mouse.move(readBox.x + readBox.width / 2, readBox.y + readBox.height / 2);
   lay = await until(layout, l => l.bubble.t >= 0 && l.btns.every(b => !overlaps(b, l.bubble)));
@@ -448,6 +502,8 @@ try {
   lay = await until(layout, l => l?.cls.includes('is-left') && !l.cls.includes('dock-below'));
   check('猫在左半屏时工具栏仍与猫居中', lay.cls.includes('is-left') && oneColumn(lay) && lay.btns.every(b => Math.abs(centerX(b) - centerX(lay.host)) <= 1)
     && aboveHead(lay), JSON.stringify(lay));
+  const reheld = await until(layout, pawsHold);
+  check('从猫脚下换回头顶后又举起工具栏', pawsHold(reheld), JSON.stringify({dock: reheld?.dock, paws: reheld?.paws, shown: reheld?.pawsShown}));
   const sumBox = await tab.locator('#quick-summary').boundingBox();
   await tab.mouse.move(sumBox.x + sumBox.width / 2, sumBox.y + sumBox.height / 2);
   lay = await until(layout, l => l.bubble.l >= l.btns[0].r);
