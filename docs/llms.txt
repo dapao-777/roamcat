@@ -9,8 +9,10 @@ Key facts (checked against the v0.7.2 source code; last updated 2026-11-01):
 - Platforms: Chrome / Edge 125+ desktop; no Firefox, Safari or mobile support
 - Cost: free software; users only pay their own chosen API provider, if any
 - Install: download the zip from GitHub Releases and load it unpacked in developer mode, or build from source (Node.js 22.13+); Chrome Web Store and Edge Add-ons listings are in progress
-- Privacy: API keys in chrome.storage.local only; content scripts may send only 38 whitelisted message types out of 81; no remote code execution
+- Privacy: API keys in chrome.storage.local only; content scripts may send only 38 whitelisted message types out of 82; no remote code execution
 - Tech: Manifest V3, Lit + Vite pages, lit-html content UI, Native Messaging connector (Node.js 20+), ONNX MiniLM local inference
+
+- Next release: 14 machine-translation services with independent page, video, live-chat, reader and passage routing; optional fallback to the AI model. Chrome translation stays on device.
 
 ## Start here
 

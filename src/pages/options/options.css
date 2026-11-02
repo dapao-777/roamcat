@@ -599,6 +599,13 @@ body[data-group="reading"] .now-status { margin-bottom: var(--rc-space-4); }
 /* 名称完整换行（英文名比中文长，单行会截掉「Subscription」）；描述最多两行，完整内容在卡片的悬停提示里。 */
 .options-document .options-body #service .service-name { display: block; overflow-wrap: anywhere; }
 .options-document .options-body #service .service-desc { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
+/* 机翻按场景选引擎：独立列网格，避免 .field 的纵向 flex 把旧路由标签的 130px 基准变成行高。 */
+.options-document .options-body #translation-engines { container: mt-routing / inline-size; }
+.options-document .options-body #translation-engines .route-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); align-items: center; gap: var(--rc-space-3); }
+.options-document .options-body #translation-engines .route-row > span { text-align: start; }
+@container mt-routing (max-width: 480px) {
+  .options-document .options-body #translation-engines .route-row { grid-template-columns: minmax(0, 1fr); gap: var(--rc-space-2); }
+}
 @media (max-width: 900px) { .options-document .options-body #service .directory-items { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .options-document .options-body #service .directory-items { grid-template-columns: minmax(0, 1fr); } }
 

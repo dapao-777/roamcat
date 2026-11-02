@@ -25,7 +25,8 @@ function mockChrome(){
     events.push(message);let data={};
     switch(message.type){
       case 'STATE_GET':data={settings:read(),subscription:{connected:false}};break;
-      case 'STATE_PATCH':{if(window.qa.failPatch)return {ok:false,error:'模拟配置保存失败'};const settings={...read(),...message.patch};localStorage.setItem('qa-settings',JSON.stringify(settings));data={settings,subscription:{connected:false}};break;}
+      case 'STATE_PATCH':{if(window.qa.failPatch)return {ok:false,error:'模拟配置保存失败'};const before=read(),settings={...before,...message.patch,translationEngines:{...before.translationEngines,...message.patch.translationEngines}};if(message.patch.mtServices)for(const [scene,id]of Object.entries(settings.translationEngines))if(id&&!['chrome','google-web','microsoft-edge','mymemory'].includes(id)&&!settings.mtServices.some(row=>row.providerId===id))settings.translationEngines[scene]='';localStorage.setItem('qa-settings',JSON.stringify(settings));data={settings,subscription:{connected:false}};break;}
+      case 'MT_TEST':data={translation:'机器翻译连接正常。',ms:12};break;
       case 'AUTOMATION_GET':data={automation:read().automation};break;
       case 'SUBSCRIPTION_STATUS':data={connected:false};break;
       case 'MODELS_LIST':data={models:[]};break;
@@ -135,6 +136,38 @@ try{
   await until(()=>window.optionsState.settings.domainDetection.jevBaseUrl==='https://second.example/v2');
   assert.equal(await page.evaluate(()=>window.optionsState.settings.domainDetection.jevApiKey),'new-origin-fake-key');
   report.checks.push('Changing a Jev endpoint origin requires a new key; changing only its path preserves the saved key');
+  await page.goto(base+'/ui/options.html#service');await ready();
+  await page.locator('#new-api-service').click();
+  await page.locator('[data-service-key="mt:deepl"]').click();
+  assert.equal(await page.locator('#mt-panel').isVisible(),true);
+  await page.locator('[data-mt-field="apiKey"]').fill('fixture-mt-secret');await page.locator('#mt-save').click();
+  await until(()=>window.optionsState.settings.mtServices?.some(row=>row.providerId==='deepl'));
+  await until(()=>!document.querySelector('#mt-save').disabled);
+  assert.equal(await page.locator('#mt-panel').isVisible(),true,'保存机翻时，保留的大模型草稿不应抢走面板');
+  assert.equal(await page.locator('[data-mt-field="apiKey"]').inputValue(),'');
+  await page.locator('#mt-save').click();await until(()=>!document.querySelector('#mt-save').disabled);
+  assert.equal(await page.evaluate(()=>window.optionsState.settings.mtServices.find(row=>row.providerId==='deepl').credentials.apiKey),'fixture-mt-secret');
+  await page.locator('#mt-test').click();await until(()=>document.querySelector('#mt-result').textContent.includes('连接正常'));
+  report.checks.push('MT credentials save, blank fields preserve secrets, keys are not echoed, and connection checks work');
+  await page.locator('#engine-video').selectOption('deepl');await until(()=>window.optionsState.settings.translationEngines.video==='deepl');await until(()=>!document.querySelector('#engine-video').disabled);
+  await page.locator('#engine-page').selectOption('google-web');await until(()=>window.optionsState.settings.translationEngines.page==='google-web');await until(()=>!document.querySelector('#engine-page').disabled);
+  assert.equal(await page.locator('#engine-video').inputValue(),'deepl');
+  await page.evaluate(()=>{qa.failPatch=true;});await page.locator('#engine-video').selectOption('google-web');await until(()=>!document.querySelector('#engine-video').disabled);
+  assert.equal(await page.locator('#engine-video').inputValue(),'deepl');
+  await page.locator('label:has(#mt-fallback)').click();await until(()=>!document.querySelector('#mt-fallback').disabled);assert.equal(await page.locator('#mt-fallback').isChecked(),true);
+  await page.evaluate(()=>{qa.failPatch=false;});await page.locator('label:has(#mt-fallback)').click();await until(()=>window.optionsState.settings.mtFallback===false);
+  await until(()=>!document.querySelector('#mt-delete').disabled);
+  // 紧凑表单滚到回退开关后，删除按钮可能处在粘性页头后面；先把它放到可见主区中央，再真实点击。
+  await page.locator('#mt-delete').evaluate(el=>el.scrollIntoView({block:'center'}));await page.settle();
+  page.once('dialog',dialog=>dialog.accept());await page.locator('#mt-delete').click();
+  await until(()=>!window.optionsState.settings.mtServices.some(row=>row.providerId==='deepl'));
+  assert.equal(await page.locator('#engine-video').inputValue(),'');assert.equal(await page.locator('#engine-page').inputValue(),'google-web');
+  report.checks.push('MT scenes save independently, failed engine/fallback saves roll back, and deletion clears only dependent routes');
+  await page.evaluate(()=>{window.Translator={availability:async()=> 'downloadable',create(options){window.qa.translatorGesture=navigator.userActivation.isActive;window.qa.translatorOptions=options;return Promise.resolve({destroy(){window.qa.translatorDestroyed=true;}});}};});
+  await page.locator('[data-service-key="mt:chrome"]').click();await page.locator('#mt-prepare').click();
+  await until(()=>document.querySelector('#mt-result').textContent.includes('已就绪'));
+  assert.equal(await page.evaluate(()=>qa.translatorGesture),true);assert.equal(await page.evaluate(()=>qa.translatorDestroyed),true);
+  report.checks.push('Chrome language-pack preparation starts in the real click gesture and releases its temporary translator');
   await page.pump();
   assert.deepEqual(report.errors,[],'页面脚本错误');
   fs.mkdirSync(previewPath(),{recursive:true});fs.writeFileSync(previewPath('verification.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));

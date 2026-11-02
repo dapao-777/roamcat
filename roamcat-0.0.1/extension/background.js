@@ -1,6 +1,6 @@
 /**
  * @file extension/background.js
- * 文件职责：Service Worker 总控——81 种消息的注册表派发、设置校验与迁移、API/三订阅链路编排、
+ * 文件职责：Service Worker 总控——82 种消息的注册表派发、设置校验与迁移、API/三订阅链路编排、
  *   缓存/并发/看门狗、订阅端口状态与诊断编排，是扩展侧所有业务的唯一入口。
  * 主要内容：messageHandlers 注册表（与 message-protocol.js MESSAGE_TYPES 一一对应）、STATE_PATCH 编排、
  *   SUPPORT_BATCH/ASSIST/解构/整页翻译/摘要装配、supportCache 等会话缓存、subscription 端口管理。
@@ -39,6 +39,9 @@ import {
 import {createMessageRouter} from './message-router.js';
 import {apiServiceOrigins,apiServiceReady,normalizeApiService,apiServiceKeys,apiKeyPoolPick,apiKeyPoolCool,getApiProvider} from './api-providers.mjs';
 import {listProviderModels,performProviderRequest,providerRequestTimeoutMs} from './api-transport.mjs';
+import {getMtProvider,mergeMtCredentials,mtConcurrency,mtEngineFor,mtEngineIdentity,mtRequestInterval,mtServiceOrigins,normalizeMtService} from './mt-providers.mjs';
+import {mtTranslate,mtTranslationIssue} from './mt-transport.mjs';
+import {translateLocal} from './local-translator.js';
 import { analyze, analyzeBatch, createLexiconContext, englishTokenStats, ensureLexicon, historyMatches, isKnownTerm, localReferenceFor, resolveCanonicalTerm } from './lexicon.js';
 import { encounter, interact, migrateSupportWord, normalizeKnownAt, normalizeSenseLabel, readingEvidence } from './reading.js';
 import {
@@ -267,7 +270,7 @@ function takePopupIntent(message) {
 async function emergencySession(tabId){await emergencyWrites;const key=emergencyKey(tabId);return (await chrome.storage.session.get(key))[key]||null;}
 function forgetEmergency(tabId){return changeEmergency(()=>chrome.storage.session.remove(emergencyKey(tabId)));}
 function clearEmergencySessions(){return changeEmergency(async()=>{const all=await chrome.storage.session.get(null),keys=Object.keys(all).filter(key=>key.startsWith('emergencySession:'));if(keys.length)await chrome.storage.session.remove(keys);});}
-async function emergencyProvider(settings){return hashValue(JSON.stringify([settings.providerKind,settings.providerKind==='api'?apiProviderForTask(settings,'translate'):settings.subscriptionModel]));}
+async function emergencyProvider(settings){return hashValue(JSON.stringify([settings.providerKind,settings.providerKind==='api'?apiProviderForTask(settings,'translate'):settings.subscriptionModel,mtEngineIdentity(settings,'page'),settings.mtFallback!==false]));}
 const injectedEmergencyPages=new Map();
 const workWaiters = [];
 const backgroundGuards = new WeakMap();
@@ -436,7 +439,9 @@ function publicState(state,trusted) {
         },
         readingHistory: readingHistory.publicConfig()
       };
-  return {settings,providerConfigured,providerError,uiLang:state.uiLang||'auto',...(trusted ? {subscription:isSubscriptionKind(source.providerKind)?subscriptionStatus(nativeKind(source)):subscriptionStatus('chatgpt'),dataProblem} : {})};
+  // 只配了机器翻译、没连大模型时整页翻译照样能用；内容脚本只拿到这个布尔值，拿不到机翻凭据。
+  const pageTranslationReady=providerConfigured||Boolean(mtEngineFor(source,'page'));
+  return {settings,providerConfigured,pageTranslationReady,providerError,uiLang:state.uiLang||'auto',...(trusted ? {subscription:isSubscriptionKind(source.providerKind)?subscriptionStatus(nativeKind(source)):subscriptionStatus('chatgpt'),dataProblem} : {})};
 }
 async function broadcast(){const state=await load(false).catch(()=>null);const snapshot=state?{...publicState(state,false)}:null;const tabs=await chrome.tabs.query({});await Promise.allSettled(tabs.map(tab=>chrome.tabs.sendMessage(tab.id,{type:'SS_REFRESH',snapshot})));}
 /* 界面语言变更经 storage.local 写入后广播到所有标签页——content script 侧
@@ -860,6 +865,48 @@ async function apiModelsList(service) {
     releaseApiServiceSlot(normalized);
   }
 }
+// 机器翻译：每种服务一个并发闸门（沿用 API 服务的 FIFO 信号量），同一服务的请求按每秒上限间隔起跑；
+// 限流/额度用完冷却 60 秒、鉴权失败冷却 120 秒，冷却期内直接走大模型回退（或报错）。状态只存在 SW 生命周期内。
+const MT_TIMEOUT_MS=15000;
+const MT_TEST_SOURCE='Machine translation keeps long pages readable.';
+const mtCooling=new Map(),mtNextStart=new Map();
+function mtCoolingCode(service){const entry=mtCooling.get(service.providerId);if(!entry)return null;if(entry.until<=Date.now()){mtCooling.delete(service.providerId);return null;}return entry.code;}
+async function mtPace(service){
+  const interval=mtRequestInterval(service);if(!interval)return;
+  const now=Date.now(),start=Math.max(now,mtNextStart.get(service.providerId)||0);
+  mtNextStart.set(service.providerId,start+interval);
+  if(start>now)await new Promise(resolve=>setTimeout(resolve,start-now));
+}
+async function requireMtPermission(service){
+  const origins=mtServiceOrigins(service).map(origin=>origin+'/*');
+  if(origins.length&&!await chrome.permissions.contains({origins}))throw Object.assign(new Error(M('尚未授权该机器翻译服务的网络访问。','Network access for this machine-translation service is not authorized.')),{code:'AUTH'});
+}
+async function machineTranslate(service,texts,{trace,context='',urgent=false,softError=false,beforeRequest}={}){
+  const provider=getMtProvider(service.providerId),normalized=normalizeMtService(service);
+  await requireMtPermission(normalized);
+  const slot={id:'mt:'+provider.id,maxConcurrency:mtConcurrency(normalized)};
+  await acquireApiServiceSlot(slot,urgent);
+  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),MT_TIMEOUT_MS),startedAt=Date.now();
+  let ok=false,charsOut=0;
+  try{
+    await beforeRequest?.();
+    await mtPace(normalized);
+    controller.signal.throwIfAborted();
+    await beforeRequest?.();
+    const pace=async()=>{await beforeRequest?.();await mtPace(normalized);controller.signal.throwIfAborted();await beforeRequest?.();};
+    const result=await diagnostics.provider(trace,'mt',provider.id,provider.id,()=>mtTranslate(normalized,texts,{signal:controller.signal,context,pace,local:translateLocal}),{softError});
+    ok=true;charsOut=result.reduce((sum,text)=>sum+text.length,0);return result;
+  }catch(error){
+    const reported=controller.signal.aborted||error?.name==='AbortError'?Object.assign(new Error(M(`${provider.name}：请求超过 ${MT_TIMEOUT_MS/1000} 秒。`,`${provider.name}: the request exceeded ${MT_TIMEOUT_MS/1000}s.`)),{code:'TIMEOUT'}):error;
+    if(['RATE_LIMIT','QUOTA','AUTH'].includes(reported.code))mtCooling.set(provider.id,{code:reported.code,until:Date.now()+(reported.code==='AUTH'?API_KEY_COOLDOWN.auth:API_KEY_COOLDOWN.rateLimit)});
+    throw reported;
+  }finally{
+    clearTimeout(timeout);releaseApiServiceSlot(slot);
+    void trackModelUsage({at:startedAt,source:'mt',provider:provider.name,serviceId:'mt:'+provider.id,service:provider.name,model:M('机器翻译','Machine translation'),ok,ms:Date.now()-startedAt,charsIn:texts.reduce((sum,text)=>sum+text.length,0),charsOut});
+  }
+}
+// 整页翻译的上下文只在单条请求时交给支持它的服务（DeepL 的 context 参数，不计费）。
+function mtContext(item){const context=item?.context;if(!context)return '';return [context.title,context.heading,context.before,context.after].filter(Boolean).join('\n').slice(0,2000);}
 async function providerOperation(operation, trace, model = '', provider = 'chatgpt', inputChars = 0) {
   const startedAt = Date.now();
   let outputChars = 0,
@@ -1664,12 +1711,16 @@ async function emergencyBegin(message, sender, trusted){
     await chrome.storage.session.set({[emergencyKey(tabId)]:{token,url,generation:state.supportDataGeneration,provider,cancelledThrough:0}});
     return {token};});
 }
-async function translateItems(items,settings,trace,{scope,onProgress,origin,sourceHash,guard}) {
+// scene 决定用哪个翻译引擎（MT_SCENES）：选了机器翻译就先走机翻，整批失败或个别条目不合格时，
+// 按「机翻失败时改用大模型」回退；大模型也没连上（或关了回退）时本页翻译逐条报错、其余直接抛出。
+async function translateItems(items,settings,trace,{scope,scene=scope,onProgress,origin,sourceHash,guard}) {
   if(!['page','passage'].includes(scope))throw new Error(M('无效的翻译范围。','Invalid translation scope.'));
-  await awaitAutoConnect(settings);
-  if(!configured(settings))throw serviceNotReady();
-  const service=settings.providerKind==='api'?apiProviderForTask(settings,'translate'):settings.subscriptionModel;
-  if(settings.providerKind==='api')await requireApiPermission(service);
+  const engine=mtEngineFor(settings,scene);
+  if(!engine)await awaitAutoConnect(settings);
+  const modelReady=configured(settings),fallback=modelReady&&settings.mtFallback!==false;
+  if(!engine&&!modelReady)throw serviceNotReady();
+  const service=modelReady?(settings.providerKind==='api'?apiProviderForTask(settings,'translate'):settings.subscriptionModel):null;
+  if(!engine&&settings.providerKind==='api')await requireApiPermission(service);
   const instructions=scope==='page'?PAGE_TRANSLATION_INSTRUCTIONS:EMERGENCY_INSTRUCTIONS;
   const personalization = readingHistory.policy()?.translation || null,
     generation = providerGeneration,
@@ -1679,6 +1730,8 @@ async function translateItems(items,settings,trace,{scope,onProgress,origin,sour
           JSON.stringify([
             scope,
             instructions,
+            mtEngineIdentity(settings, scene),
+            fallback,
             settings.providerKind,
             service,
             personalization,
@@ -1704,50 +1757,78 @@ async function translateItems(items,settings,trace,{scope,onProgress,origin,sour
     }
   }
   if(fresh.length){
-    const operation=withBackgroundSlot(async()=>{const sourceItems=fresh.map(value=>value.item),idToKey=new Map(fresh.map(value=>[value.item.id,value.key]));let raw;
+    const operation=withBackgroundSlot(async()=>{const sourceItems=fresh.map(value=>value.item),idToKey=new Map(fresh.map(value=>[value.item.id,value.key]));
       const progress=value=>{if(!onProgress||!value?.items)return;const byKey=new Map(value.items.map(item=>[idToKey.get(item.id),item.translation]));onProgress({items:items.flatMap((item,index)=>byKey.has(keys[index])?[{id:item.id,translation:byKey.get(keys[index])}]:[])});};
-      if (isSubscriptionKind(settings.providerKind))
-        raw = await providerOperation(
-          () =>
-            emergencyTranslateSubscription({
-              scope,
-              items: sourceItems,
-              model: settings.subscriptionModel,
-              traceId: trace?.traceId,
-              preferences: personalization,
-              onProgress: progress,
-              kind: nativeKind(settings)
-            }),
-          trace,
-          settings.subscriptionModel,
-          nativeKind(settings),
-          JSON.stringify(sourceItems).length
-        );
-      else
-        try {
-          raw = await apiRequest(service, { items: sourceItems }, instructions, EMERGENCY_SCHEMA, {
+      const translateWithModel=async modelItems=>{let raw;
+        if(settings.providerKind==='api')await requireApiPermission(service);
+        if (isSubscriptionKind(settings.providerKind))
+          raw = await providerOperation(
+            () =>
+              emergencyTranslateSubscription({
+                scope,
+                items: modelItems,
+                model: settings.subscriptionModel,
+                traceId: trace?.traceId,
+                preferences: personalization,
+                onProgress: progress,
+                kind: nativeKind(settings)
+              }),
             trace,
-            lenientJson: scope === 'page',
-            beforeRequest: () => requireLiveConsumer(backgroundGuards.get(operation)),
-            ...(onProgress ? { onContent: content => progress(translationProgress(content, sourceItems)) } : {})
-          });
-        } catch (error) {
-          if (scope !== 'page' || (error?.code !== 'INVALID_JSON' && diagnosticError(error).code !== 'JSON_INVALID'))
-            throw error;
-          providerError = '';
-          raw = '';
+            settings.subscriptionModel,
+            nativeKind(settings),
+            JSON.stringify(modelItems).length
+          );
+        else
+          try {
+            raw = await apiRequest(service, { items: modelItems }, instructions, EMERGENCY_SCHEMA, {
+              trace,
+              lenientJson: scope === 'page',
+              beforeRequest: () => requireLiveConsumer(backgroundGuards.get(operation)),
+              ...(onProgress ? { onContent: content => progress(translationProgress(content, modelItems)) } : {})
+            });
+          } catch (error) {
+            if (scope !== 'page' || (error?.code !== 'INVALID_JSON' && diagnosticError(error).code !== 'JSON_INVALID'))
+              throw error;
+            providerError = '';
+            raw = '';
+          }
+        try{
+          const result=scope==='page'?(isSubscriptionKind(settings.providerKind)?normalizePageTranslationResult(raw,modelItems):inspectPageTranslationResult(raw,modelItems)):normalizeEmergencyResult(raw,modelItems),mapped=new Map();
+          for(const value of result.items)mapped.set(idToKey.get(value.id),{translation:value.translation});
+          for(const value of result.errors||[])mapped.set(idToKey.get(value.id),{error:value.code});
+          await diagnostics.event(trace,'validation','ok');
+          return mapped;
+        }catch(error){await diagnostics.event(trace,'validation','error',diagnosticError(error));throw error;}
+      };
+      const translateWithEngine=async()=>{
+        const mapped=new Map();let pending=sourceItems,failure=null,itemFailure=false;
+        const cooling=mtCoolingCode(engine);
+        if(cooling)failure=Object.assign(new Error(M(`${getMtProvider(engine.providerId).name}：服务暂时冷却中，请稍后重试。`,`${getMtProvider(engine.providerId).name}: the service is cooling down; retry shortly.`)),{code:cooling});
+        else try{
+          const texts=await machineTranslate(engine,sourceItems.map(item=>item.text),{trace,softError:fallback,context:scope==='page'&&sourceItems.length===1?mtContext(sourceItems[0]):'',beforeRequest:()=>requireLiveConsumer(backgroundGuards.get(operation))});
+          await requireLiveConsumer(backgroundGuards.get(operation));
+          if(generation!==providerGeneration)throw staleWork();
+          const shown=[];pending=[];
+          sourceItems.forEach((item,index)=>{const code=mtTranslationIssue(item.text,texts[index]);if(!code){mapped.set(idToKey.get(item.id),{translation:texts[index]});shown.push({id:item.id,translation:texts[index]});return;}pending.push(item);itemFailure=true;failure??=Object.assign(new Error(M('机器翻译结果未通过校验（译文为空或不含汉字）。','The machine translation failed validation (empty or no Chinese characters).')),{code});});
+          if(shown.length)progress({items:shown});
+          if(!pending.length)await diagnostics.event(trace,'validation','ok');
+        }catch(error){if(generation!==providerGeneration)throw staleWork();failure=error;}
+        if(!pending.length)return mapped;
+        if(fallback){
+          await diagnostics.event(trace,'provider','ok',{code:'MT_FALLBACK',batchSize:pending.length});
+          await requireLiveConsumer(backgroundGuards.get(operation));
+          for(const [key,outcome]of await translateWithModel(pending))mapped.set(key,outcome);
+          return mapped;
         }
-      try{
-        const result=scope==='page'?(isSubscriptionKind(settings.providerKind)?normalizePageTranslationResult(raw,sourceItems):inspectPageTranslationResult(raw,sourceItems)):normalizeEmergencyResult(raw,sourceItems),mapped=new Map();
-        for(const value of result.items)mapped.set(idToKey.get(value.id),{translation:value.translation});
-        for(const value of result.errors||[])mapped.set(idToKey.get(value.id),{error:value.code});
-        await diagnostics.event(trace,'validation','ok');
-        await requireLiveConsumer(backgroundGuards.get(operation));
-        if(generation!==providerGeneration)throw staleWork();
-        const at=Date.now();for(const [key,outcome]of mapped)if(outcome.translation!==undefined){translationCache.delete(key);translationCache.set(key,{translation:outcome.translation,at});}
-        while(translationCache.size>TRANSLATION_CACHE_LIMIT)translationCache.delete(translationCache.keys().next().value);
-        return mapped;
-      }catch(error){await diagnostics.event(trace,'validation','error',diagnosticError(error));throw error;}},guard);
+        if(scope==='page'&&itemFailure){for(const item of pending)mapped.set(idToKey.get(item.id),{error:failure.code});return mapped;}
+        throw failure;
+      };
+      const mapped=engine?await translateWithEngine():await translateWithModel(sourceItems);
+      await requireLiveConsumer(backgroundGuards.get(operation));
+      if(generation!==providerGeneration)throw staleWork();
+      const at=Date.now();for(const [key,outcome]of mapped)if(outcome.translation!==undefined){translationCache.delete(key);translationCache.set(key,{translation:outcome.translation,at});}
+      while(translationCache.size>TRANSLATION_CACHE_LIMIT)translationCache.delete(translationCache.keys().next().value);
+      return mapped;},guard);
     for(const entry of fresh)translationInFlight.set(entry.key,operation);
     void operation.finally(()=>{for(const entry of fresh)if(translationInFlight.get(entry.key)===operation)translationInFlight.delete(entry.key);}).catch(()=>{});
   }
@@ -1891,12 +1972,14 @@ async function videoCueTranslate(message, sender) {
     const [latest, page] = await Promise.all([load(), readingSource(sender)]);
     if (generation !== providerGeneration || state.supportDataGeneration !== latest.supportDataGeneration || page.sourceHash !== source.sourceHash || !page.active || await tabPaused(source.tabId)) throw staleWork();
   };
-  return translateItems(items, state.settings, diagnostics.trace(message), {scope: withContext ? 'page' : 'passage', origin: new URL(source.url).origin, guard});
+  return translateItems(items, state.settings, diagnostics.trace(message), {scope: withContext ? 'page' : 'passage', scene: 'video', origin: new URL(source.url).origin, guard});
 }
 // API 通道一次往返只要一两秒，热门频道的聊天会不停地发请求、烧额度：按标签页每分钟至多 12 次（约 96 条消息）。
 // 订阅通道每次往返约 10 秒、页面至多 3 批并发，本来就到不了这个量，不限。
 const LIVE_CHAT_API_PER_MINUTE = 12;
 const liveChatRate = createRateWindow({limit: LIVE_CHAT_API_PER_MINUTE, windowMs: 60_000});
+const LIVE_CHAT_MT_PER_MINUTE = 30;
+const liveChatMtRate = createRateWindow({limit: LIVE_CHAT_MT_PER_MINUTE, windowMs: 60_000});
 // 直播聊天要跟得上滚动：Google 订阅默认的 gemini-3.8-flash-high 先思考，实测一分钟一条都没译出、随后请求失败；
 // 同系列 -low 档约 40 秒译出 12 条。与听写同一规则：模型列表里有同系列 -low 时改用它（结果按所选模型缓存十分钟）。
 let liveChatLowModel = {from: '', to: '', at: 0};
@@ -1920,9 +2003,11 @@ async function liveChatTranslate(message, sender) {
   const requestId = typeof message.requestId === 'string' ? message.requestId.slice(0, 80) : '';
   const state = await load();
   if (state.settings.video.liveChat !== true) throw new Error(M('直播聊天翻译已关闭。','Live-chat translation is off.'));
-  if (state.settings.providerKind === 'api') {
+  // 机器翻译单独限速（每分钟 30 批），省着用各家的免费额度；API 通道每分钟 12 批，订阅通道不限。
+  const liveChatEngine = mtEngineFor(state.settings, 'liveChat');
+  if (liveChatEngine || state.settings.providerKind === 'api') {
     // 超额不算失败：不发请求，告诉页面多久后再来，排队的消息由页面原样留着。
-    const slot = liveChatRate.take(source.tabId);
+    const slot = (liveChatEngine ? liveChatMtRate : liveChatRate).take(source.tabId);
     if (!slot.ok) return {items: [], throttled: true, retryAfterMs: slot.retryAfterMs};
   }
   const generation = providerGeneration;
@@ -1938,7 +2023,7 @@ async function liveChatTranslate(message, sender) {
     sent = key;
     void chrome.tabs.sendMessage(source.tabId, {type: 'SS_LIVE_CHAT_PROGRESS', requestId, items: progress.items}, {frameId: 0, ...(sender.documentId ? {documentId: sender.documentId} : {})}).catch(() => {});
   };
-  try { return await translateItems(items, await liveChatSettings(state.settings), diagnostics.trace(message), {scope: 'page', onProgress, origin: new URL(source.url).origin, sourceHash: source.sourceHash, guard}); }
+  try { return await translateItems(items, liveChatEngine ? state.settings : await liveChatSettings(state.settings), diagnostics.trace(message), {scope: 'page', scene: 'liveChat', onProgress, origin: new URL(source.url).origin, sourceHash: source.sourceHash, guard}); }
   finally { open = false; }
 }
 async function youtubeCaptionFetch(message, sender) {
@@ -1998,7 +2083,7 @@ async function readerTranslate(message,sender,trusted){
   if(!trusted)throw new Error(M('此操作不能从网页执行。','This action cannot be performed from a web page.'));
   const items=normalizeEmergencyItems(message.items),state=await load(),generation=providerGeneration;
   const guard=async()=>{const latest=await load();if(generation!==providerGeneration||state.supportDataGeneration!==latest.supportDataGeneration)throw staleWork();};
-  return translateItems(items,state.settings,diagnostics.trace(message),{scope:'passage',origin:new URL(sender.url).origin,guard});
+  return translateItems(items,state.settings,diagnostics.trace(message),{scope:'passage',scene:'reader',origin:new URL(sender.url).origin,guard});
 }
 async function emergencyEnd(message,sender,trusted){
   const tabId=trusted?message.tabId:sender.tab?.id;if(!Number.isInteger(tabId))throw new Error(M('无效的紧急翻译请求。','Invalid emergency-translation request.'));
@@ -2759,6 +2844,7 @@ function providerPermissionPatterns(settings) {
   const patterns = new Set();
   const add = service => { try { for(const origin of apiServiceOrigins(service))patterns.add(origin+'/*'); } catch {} };
   for (const service of settings.apiServices) add(service);
+  for (const service of settings.mtServices || []) { try { for (const origin of mtServiceOrigins(service)) patterns.add(origin + '/*'); } catch {} }
   if (settings.domainDetection?.mode === 'api' && settings.domainDetection?.api?.apiKey) add(customDetectionService(settings.domainDetection.api,settings.domainDetection.apiModel));
   if (settings.domainDetection?.jevApiKey) {
     try {
@@ -3317,12 +3403,15 @@ const messageHandlers = [
           if (effects.rememberChanged) state.supportDataGeneration++;
           if (
             effects.providerChanged ||
+            effects.translationChanged ||
             patch.customTerms ||
             patch.domainRules ||
             patch.domain ||
             patch.domainDetection
           )
             clearProviderState();
+          // 改了机翻凭据或引擎，之前因鉴权/限流进入的冷却不再有效。
+          if (effects.translationChanged) mtCooling.clear();
           if (effects.classificationChanged) invalidateClassification();
           return publicState(state, true);
         },
@@ -3343,6 +3432,7 @@ const messageHandlers = [
       if (
         effects.rememberChanged ||
         effects.providerChanged ||
+        effects.translationChanged ||
         patch.customTerms ||
         patch.domainRules ||
         patch.domain ||
@@ -3467,6 +3557,26 @@ const messageHandlers = [
         ).result;
       }
       return { hint: normalizeAssistanceResult(raw, request).hint };
+    }
+  },
+  {
+    type: 'MT_TEST',
+    handle: async (message, { sender }) => {
+      const optionsUrl = chrome.runtime.getURL('ui/options.html');
+      if (
+        sender.url !== optionsUrl &&
+        !sender.url?.startsWith(optionsUrl + '?') &&
+        !sender.url?.startsWith(optionsUrl + '#')
+      )
+        throw new Error(M('仅设置页可以检查机器翻译服务。', 'Only the settings page can check machine-translation services.'));
+      // 草稿里留空的密钥沿用已保存的值；检查连接不受冷却限制，也不写入任何设置。
+      const { settings } = await load(false);
+      const service = normalizeMtService(mergeMtCredentials(message.service, settings.mtServices));
+      const startedAt = Date.now();
+      const [translation] = await machineTranslate(service, [MT_TEST_SOURCE], { trace: diagnostics.trace(message), urgent: true });
+      if (mtTranslationIssue(MT_TEST_SOURCE, translation))
+        throw new Error(M('服务有响应，但返回的不是中文译文。', 'The service responded, but not with a Chinese translation.'));
+      return { translation, ms: Date.now() - startedAt };
     }
   },
   { type: 'ENCOUNTER', handle: (message, { sender, trusted }) => encounterOffered(message, sender) },

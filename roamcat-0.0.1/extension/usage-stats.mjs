@@ -20,7 +20,7 @@ export const USAGE_DAY_LIMIT = 62;
 export const USAGE_MODEL_LIMIT = 60;
 const COUNTERS = ['requests', 'failures', 'inputTokens', 'outputTokens', 'charsIn', 'charsOut', 'ms'];
 const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-const SOURCES = new Set(['api', 'chatgpt', 'grok', 'antigravity']);
+const SOURCES = new Set(['api', 'mt', 'chatgpt', 'grok', 'antigravity']);
 
 function count(value) { return Number.isFinite(value) && value > 0 ? Math.min(Math.floor(value), Number.MAX_SAFE_INTEGER) : 0; }
 function text(value, max) { return typeof value === 'string' ? value.trim().slice(0, max) : ''; }

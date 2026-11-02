@@ -4,7 +4,7 @@
  *   载荷解析规则，使注册表完整性、信任边界与输入校验脱离 background.js 后仍可被单测覆盖。
  * 主要内容：MESSAGE_TYPES（与 background.js 注册表一一对应的有序清单）、CONTENT_ALLOWED_TYPES
  *   （网页上下文可用的类型子集）、text/domain 校验器、validatePatch 设置补丁校验、
- *   settingsPatchEffects 副作用计划推导，以及 parseDomainTest / parseFloatingPetPatch /
+ *   settingsPatchEffects 副作用计划推导（含机器翻译设置变更信号），以及 parseDomainTest / parseFloatingPetPatch /
  *   parsePopupIntentTake / parsePageTranslationDisplay / parseAnalyze / parseHistoryRuleSet / parseHistoryRecordRef /
  *   parseHistorySummaryEdit 载荷解析器。
  * 模块边界：只依赖 shared.js、domain-routing.js、api-providers.mjs 等领域模块，不访问 chrome、
@@ -19,6 +19,7 @@
 import {DOMAINS, DEFAULT_SETTINGS, API_TASKS, wordId, activeApiProvider} from './shared.js';
 import {normalizeDomainRules} from './domain-routing.js';
 import {getApiProvider, normalizeApiService, apiServiceOrigins} from './api-providers.mjs';
+import {normalizeMtServices, normalizeTranslationEngines, mtServiceOrigins} from './mt-providers.mjs';
 import {normalizeAssistanceCommand} from './gloss.mjs';
 
 const M=(zh,en)=>globalThis.RoamCatI18n?.lang?.()==='en'?en:zh;
@@ -43,7 +44,7 @@ export const MESSAGE_TYPES = Object.freeze([
   'MODELS_LIST', 'API_MODELS_LIST', 'PAGE_DOMAIN_GET', 'PAGE_DOMAIN_SET', 'RESOLVE_DOMAIN', 'DOMAIN_TEST',
   'STATE_PATCH', 'ANALYZE', 'SUPPORT_BATCH', 'SENTENCE_GROUPS_BATCH', 'PREPARED_SUPPORT', 'PREPARED_ASSIST',
   'ASSIST_PREVIEW', 'EMERGENCY_BEGIN', 'PASSAGE_TRANSLATE', 'VIDEO_CUE_TRANSLATE', 'VIDEO_AUDIO_TRANSCRIBE', 'LIVE_CHAT_TRANSLATE', 'EMERGENCY_TRANSLATE', 'EMERGENCY_CANCEL_REQUEST',
-  'EMERGENCY_END', 'ASSIST', 'ASSIST_COMMIT', 'PROVIDER_TEST', 'ENCOUNTER', 'INTERACT', 'READING_ACTIVITY',
+  'EMERGENCY_END', 'ASSIST', 'ASSIST_COMMIT', 'PROVIDER_TEST', 'MT_TEST', 'ENCOUNTER', 'INTERACT', 'READING_ACTIVITY',
   'READING_DATA_EXPORT', 'ON_DEMAND_SUGGESTION', 'MEMORY_CLEAR', 'PAGE_SUMMARY', 'OPEN_OPTIONS',
   'READER_TRANSLATE', 'READER_OPEN_ORIGINAL',
 ]);
@@ -200,6 +201,20 @@ export function validatePatch(patch, currentSettings) {
     }
     result.apiRouting = normalized;
   }
+  // 机器翻译凭据每种服务至多一份；删掉被场景引用的服务时，没一并改场景的引用回落为「跟随大模型」。
+  if (patch.mtServices !== undefined) {
+    result.mtServices = normalizeMtServices(patch.mtServices, {strict: true});
+    for (const service of result.mtServices) mtServiceOrigins(service);
+  }
+  const mtServices = result.mtServices ?? currentSettings.mtServices ?? [];
+  if (patch.translationEngines !== undefined) {
+    normalizeTranslationEngines(patch.translationEngines, mtServices, {strict: true});
+    result.translationEngines = normalizeTranslationEngines({...currentSettings.translationEngines, ...patch.translationEngines}, mtServices);
+  } else if (result.mtServices) {
+    const engines = normalizeTranslationEngines(currentSettings.translationEngines, mtServices);
+    if (JSON.stringify(engines) !== JSON.stringify(currentSettings.translationEngines)) result.translationEngines = engines;
+  }
+  if (patch.mtFallback !== undefined) { if (typeof patch.mtFallback !== 'boolean') throw new Error(M('无效的机翻回退设置。','Invalid machine-translation fallback setting.')); result.mtFallback = patch.mtFallback; }
   if (patch.customTerms !== undefined) {
     if (!Array.isArray(patch.customTerms) || patch.customTerms.length > 1000) throw new Error(M('术语表最多保存 1000 条。','At most 1000 custom terms can be saved.'));
     const seen = new Set();
@@ -252,10 +267,12 @@ export function settingsPatchEffects(beforeSettings, patch) {
     || JSON.stringify(beforeProvider) !== JSON.stringify(afterProvider)
     || patch.apiRouting !== undefined && JSON.stringify({...beforeSettings.apiRouting, ...patch.apiRouting}) !== JSON.stringify(beforeSettings.apiRouting || {});
   const classificationChanged = providerChanged || patch.domainDetection !== undefined || patch.domainRules !== undefined || patch.domain !== undefined;
+  // 机器翻译凭据、场景引擎与回退开关改变时，译文缓存与整页翻译会话都要作废。
+  const translationChanged = ['mtServices', 'translationEngines', 'mtFallback'].some(key => patch[key] !== undefined && JSON.stringify(patch[key]) !== JSON.stringify(beforeSettings[key]));
   const genericChanged = Object.keys(patch).some(key => !['readingStyle', 'helpLanguage', 'apiServices', 'activeApiServiceId', 'apiRouting'].includes(key)) || providerChanged;
   // 伴读猫开关切换需要重跑 reconcileAutomation：注册/注销动态脚本并对已开标签补注入。
   const petEnabledChanged = patch.floatingPet !== undefined && (patch.floatingPet.enabled !== false) !== (beforeSettings.floatingPet?.enabled !== false);
-  return {nextSettings, rememberChanged, providerChanged, classificationChanged, genericChanged, petEnabledChanged};
+  return {nextSettings, rememberChanged, providerChanged, classificationChanged, genericChanged, petEnabledChanged, translationChanged};
 }
 
 /** ANALYZE 载荷：正文限长 20 万字符，领域可选。 */

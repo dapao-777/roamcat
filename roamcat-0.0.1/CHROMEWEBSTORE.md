@@ -174,7 +174,7 @@ Chinese (Simplified)
 | `scripting` | permissions | Loads the reading, translation, summary, and companion UI into permitted pages as features are activated. Reading extraction excludes form inputs and hidden content. |
 | `storage` | permissions | Saves model settings, API credentials, word profiles, optional reading records, and diagnostics on the device. Users can clear or export supported data. No Chrome account sync is used. |
 | `nativeMessaging` | permissions | Connects to an optional, separately installed program on the user's computer to use the user's signed-in CLI services and retrieve the local service pairing token. No publisher-operated relay is used. |
-| `offscreen` | permissions | Hosts the bundled offline topic-recognition worker. Its scripts, WebAssembly runtime, and model are packaged with the extension; remote model downloads are disabled. |
+| `offscreen` | permissions | Hosts the bundled offline topic-recognition worker. Its topic-classifier scripts, WebAssembly runtime, and model are packaged with the extension; remote classifier downloads are disabled. The same document runs the browser Translator API with prepared language packs; downloading those browser-managed packs requires a click in settings. |
 | `contextMenus` | permissions | Adds selected-text help, reading assistance, and page translation actions to the right-click menu. |
 | `tts` | permissions | Reads requested English words and sentences using installed local English voices. Remote voices and third-party extension voices are excluded. |
 | `webNavigation` | permissions | Detects page and same-document navigation to keep reading features aligned with the current article, and optionally opens HTTP(S) PDF navigations in the built-in reader. |
@@ -183,6 +183,10 @@ Chinese (Simplified)
 以上为当前实现的英文审核说明。不要把网站规则开关写成 `optional_host_permissions`；如要实现按站申请，需要先修改 Manifest、授权流程与相关回归。静态 Twitch 脚本只匹配其主框架；默认关闭的是聊天翻译功能，而非该脚本的加载。
 
 ---
+
+### Machine translation (next release)
+
+14 translation services can be selected per scene. Cloud translation sends source text directly to the selected provider (DeepL may also receive limited page context); Chrome on-device translation keeps text local after a user-initiated language-pack download. Google and Edge web endpoints are unofficial; DeepLX uses only a user-supplied deployment. Credentials and optional MyMemory email are stored locally, excluded from content scripts, diagnostics and exports. Optional AI fallback sends only failed items to the configured model. No new permissions are added. Authentication and website-content disclosures must include these providers and credentials.
 
 ## Privacy & Data Use
 

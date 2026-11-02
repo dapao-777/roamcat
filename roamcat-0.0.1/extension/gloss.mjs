@@ -412,7 +412,7 @@ function sourceNeedsChinese(text){
   return false;
 }
 // 译文内容校验，选段与本页共用；字段集合只在选段协议里严格检查（本页条目先经 pageTranslationItem 收窄）。
-function translationTextCode(translation,sourceText){
+export function translationTextCode(translation,sourceText){
   if(typeof translation!=='string')return 'TRANSLATION_TYPE';
   if(!translation.trim())return 'TRANSLATION_EMPTY';
   if(translation!==translation.trim())return 'TRANSLATION_WHITESPACE';

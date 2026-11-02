@@ -315,6 +315,51 @@ export const serviceSection = html`
           </fieldset>
         </div>
       </div>
+      <!-- 机器翻译：凭据表单由 options-mt.js 按 mt-providers.mjs 的字段声明渲染，场景引擎与回退开关对全部机翻服务共用 -->
+      <div id="mt-panel" class="provider-panel" hidden="">
+        <div class="paper-card form-stack api-service-card">
+          <p id="mt-kind-note" class="field-help"></p>
+          <form id="mt-form" class="form-stack" novalidate>
+            <div id="mt-fields" class="form-grid provider-fields"></div>
+            <small id="mt-key-state" class="field-help"></small>
+            <div class="provider-actions">
+              <button id="mt-save" class="primary-action narrow" type="submit">${t('sec.svc.mt.save')}</button>
+              <button id="mt-test" class="secondary-button" type="button">${t('sec.svc.mt.test')}</button>
+              <button id="mt-prepare" class="secondary-button" type="button" hidden="">${t('sec.svc.mt.prepare')}</button>
+              <button id="mt-delete" class="danger-button" type="button">${t('sec.svc.mt.delete')}</button>
+            </div>
+          </form>
+          <p id="mt-result" class="inline-message" aria-live="polite"></p>
+          <fieldset id="translation-engines" class="task-routing">
+<legend>${t('sec.svc.mt.engines')}</legend>
+<p class="field-help">${t('sec.svc.mt.enginesNote')}</p>
+<label class="field route-row">
+<span>${t('sec.svc.mt.scenePage')}</span>
+<select id="engine-page"></select>
+</label>
+<label class="field route-row">
+<span>${t('sec.svc.mt.sceneVideo')}</span>
+<select id="engine-video"></select>
+</label>
+<label class="field route-row">
+<span>${t('sec.svc.mt.sceneLiveChat')}</span>
+<select id="engine-liveChat"></select>
+</label>
+<label class="field route-row">
+<span>${t('sec.svc.mt.sceneReader')}</span>
+<select id="engine-reader"></select>
+</label>
+<label class="field route-row">
+<span>${t('sec.svc.mt.scenePassage')}</span>
+<select id="engine-passage"></select>
+</label>
+<div class="adaptive-setting">
+<div><b>${t('sec.svc.mt.fallback')}</b><p>${t('sec.svc.mt.fallbackNote')}</p></div>
+<label class="switch"><input id="mt-fallback" type="checkbox"><span aria-hidden="true"></span><span class="sr-only">${t('sec.svc.mt.fallback')}</span></label>
+</div>
+          </fieldset>
+        </div>
+      </div>
       <aside class="privacy-note">
 <b>${t('sec.svc.sentWhat')}</b>
 <p>${t('sec.svc.sentDesc')}</p>

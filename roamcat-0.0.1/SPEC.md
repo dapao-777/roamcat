@@ -52,7 +52,7 @@
 │   · auto-start.js：按站规则自动开启                           │
 ├────────────────────────────────────────────────────────────┤
 │ Service Worker（background.js，ES module）                   │
-│   · 81 种消息路由、设置校验、缓存、并发、诊断、订阅端口管理    │
+│   · 82 种消息路由、设置校验、缓存、并发、诊断、订阅端口管理    │
 │   · roamcat_ui_lang 变更经 storage.onChanged → SS_REFRESH 广播 │
 ├────────────────────────────────────────────────────────────┤
 │ 扩展页面：popup.html / options.html / welcome.html / reader.html │
@@ -111,7 +111,7 @@
 ### 4.1 Service Worker
 | 文件 | 职责 | 关键约束 |
 |---|---|---|
-| `background.js` | 消息路由（81 种，与 `MESSAGE_TYPES` 一一对应）、设置校验与迁移、四大模型链路编排、缓存/并发/看门狗、订阅端口状态、诊断编排 | 无跨调用内存态假设；所有写操作串行化（`writes` 链）；长操作必须带 `guard()`；自动开启对账分两档（见下） |
+| `background.js` | 消息路由（82 种，与 `MESSAGE_TYPES` 一一对应）、设置校验与迁移、四大模型链路编排、缓存/并发/看门狗、订阅端口状态、诊断编排 | 无跨调用内存态假设；所有写操作串行化（`writes` 链）；长操作必须带 `guard()`；自动开启对账分两档（见下） |
 | `subscription.js` | 三个连接器的端口、请求-响应映射、超时（assist / 翻译 / 总结 / 听写 120s，其余 45s）、进度事件转发 | 端口单例；断开时拒绝全部在途请求 |
 | `diagnostic-service.js` / `diagnostics.mjs` | traceId 贯穿、元数据脱敏、渲染回执、连接器镜像 | 只记录结构化元数据，不记录正文/密钥 |
 | `history-service.js` / `history-store.js` | 阅读记录（IndexedDB）、摘要/个性化引擎装配 | 记录默认关闭，需显式授权 origin |
@@ -121,7 +121,7 @@
 | `activation.js` / `auto-start.js` | 自动开启策略、动态注册 content script、SPA 导航检测；`pageOrigin`/`sitePattern`/`validateAutomation`/`validateVideo`/`registrationMatches`/`isManagedContentScript`/`contentScriptsInSync` 为纯函数（已纳入领域层 lint 与单测） | `registrationMatches()` 是权限/注册的唯一事实源；`contentScriptsInSync()` 判断已注册的内容脚本是否已与期望一致 |
 | `shared.js` | `DEFAULT_SETTINGS`、`normalizeSettings`、`wordId`、`request()` | 旧配置键不得通过 spread 复活 |
 | `message-router.js` | 类型化消息路由器：注册表构造、重复类型即失败、`parse`+`handle` 两段派发 | 泛型实现，不认识任何具体消息；未知类型抛「未知请求。」 |
-| `message-protocol.js` | 消息协议唯一事实源：`MESSAGE_TYPES`（81 种）、`CONTENT_ALLOWED_TYPES`、纯载荷解析器与自 `background.js` 下沉的 `validatePatch`（设置补丁校验）、`settingsPatchEffects`（STATE_PATCH 副作用计划）、`parseAssistRequest`/`parsePassageRequestRef`（请求身份）、`onDemandSuggestionDecision`（按需建议判定）、`text`/`domain`/`customDetectionService` | 只依赖 `shared.js`、`domain-routing.js`、`api-providers.mjs`、`gloss.mjs` 等领域/协议模块；新增类型必须同步注册表与第 5 节 |
+| `message-protocol.js` | 消息协议唯一事实源：`MESSAGE_TYPES`（82 种）、`CONTENT_ALLOWED_TYPES`、纯载荷解析器与自 `background.js` 下沉的 `validatePatch`（设置补丁校验）、`settingsPatchEffects`（STATE_PATCH 副作用计划）、`parseAssistRequest`/`parsePassageRequestRef`（请求身份）、`onDemandSuggestionDecision`（按需建议判定）、`text`/`domain`/`customDetectionService` | 只依赖 `shared.js`、`domain-routing.js`、`api-providers.mjs`、`gloss.mjs` 等领域/协议模块；新增类型必须同步注册表与第 5 节 |
 | `api-providers.mjs` / `api-transport.mjs` | 33 家服务商目录、8 种协议适配、结构化输出能力探测、模型列表、各协议 usage 抽取（`onUsage` 回调） | HTTPS only（本机回环除外）；同源重定向禁止；密钥不进内容脚本 |
 | `thinking-levels.mjs` | 按「服务商 + 模型」声明思考档位（官方档位名、默认档、请求参数），供设置页与请求层共用 | 只收录官方文档写明的模型；未收录模型返回 null，请求沿用关闭思考参数 |
 | `rate-window.mjs` | 按键计数的滑动时间窗限额 `createRateWindow({limit,windowMs})`（`take`/`forget`） | 纯函数领域模块；计数只在内存，SW 重启归零——只作防失控上限，不承担正确性 |
@@ -186,11 +186,11 @@
 - 内容脚本仅可用白名单（`contentAllowed`，38 种，以 `CONTENT_ALLOWED_TYPES` 为准）：状态读取、分析、支持批次、解构、求助、翻译、历史信号、诊断回执、伴读猫位置等。
 - 数据变更类消息进入 `activeDataRequests` 集合，供清理时排空（`clearReadingData`）。
 
-### 5.2 消息分组（81 种，与 `MESSAGE_TYPES` 顺序一致）
+### 5.2 消息分组（82 种，与 `MESSAGE_TYPES` 顺序一致）
 | 分组 | 类型 |
 |---|---|
 | 状态与设置（9） | `STATE_GET` `STATE_PATCH` `AUTOMATION_GET` `AUTOMATION_PATCH` `PAGE_ACTIVITY_SET` `VIDEO_SETTINGS_PATCH` `PAGE_TRANSLATION_DISPLAY_SET` `FLOATING_PET_POSITION_SET` `OPEN_OPTIONS` |
-| 模型服务（7） | `SUBSCRIPTION_STATUS` `SUBSCRIPTION_LOGIN` `SUBSCRIPTION_CANCEL` `SUBSCRIPTION_LOGOUT` `MODELS_LIST` `API_MODELS_LIST` `PROVIDER_TEST` |
+| 模型服务（8） | `SUBSCRIPTION_STATUS` `SUBSCRIPTION_LOGIN` `SUBSCRIPTION_CANCEL` `SUBSCRIPTION_LOGOUT` `MODELS_LIST` `API_MODELS_LIST` `PROVIDER_TEST` `MT_TEST` |
 | 领域识别（4） | `RESOLVE_DOMAIN` `PAGE_DOMAIN_GET` `PAGE_DOMAIN_SET` `DOMAIN_TEST` |
 | 阅读辅助（12） | `ANALYZE` `SUPPORT_BATCH` `ASSIST` `ASSIST_PREVIEW` `ASSIST_COMMIT` `PREPARED_SUPPORT` `PREPARED_ASSIST` `ENCOUNTER` `INTERACT` `READING_ACTIVITY` `WORD_PREFERENCE_SET` `ON_DEMAND_SUGGESTION` |
 | 阅读解构（5） | `SENTENCE_GROUPS_GET` `SENTENCE_GROUPS_SET` `SENTENCE_GROUPS_DENSITY_SET` `SENTENCE_GROUPS_LINE_STYLE_SET` `SENTENCE_GROUPS_BATCH` |
@@ -265,6 +265,10 @@
 - 连接器镜像：`diagnostics.jsonl`（≤256KB 轮转、7 天 TTL、0600 权限）。
 
 ---
+
+### 6.9 按场景机器翻译
+
+`mtServices` 单独保存 14 种机翻服务，`translationEngines` 为 page/video/liveChat/reader/passage 五场景路由，空串跟随大模型；`mtFallback` 默认 true。`mt-providers.mjs` 与 `mt-transport.mjs` 属领域层，前者仅配置和纯计算，后者按注入的 fetch/WebCrypto 适配协议；`local-translator.js` 是复用离屏文档的应用层网关。机翻配置不进入内容脚本快照，只有 `pageTranslationReady` 可用布尔值。`MT_TEST` 仅设置页可调用。缓存身份包含所选引擎，设置变化作废旧会话；失败条目可回退到大模型。详细协议、限额、用途、数据边界和核对来源见 [MACHINE_TRANSLATION.md](MACHINE_TRANSLATION.md)。
 
 ## 7. 模型服务层规范
 
@@ -411,7 +415,7 @@
 | R2 | 全部相对 import 必须解析到真实文件 |
 | R3 | extension 与 connector 全图无循环依赖 |
 | R4 | connector 的 import 闭包内的 extension 文件必须属于 §4.1 共享协议清单，且能在 Node 中安全 import（顶层不触碰浏览器 API） |
-| R5 | 共享协议文件只允许互相引用；领域层（`reading/lexicon/domain-routing/shared/api-providers/api-transport`）必须 import 安全且只依赖领域层、共享协议与静态资源 |
+| R5 | 共享协议文件只允许互相引用；领域层（`reading/lexicon/domain-routing/shared/api-providers/api-transport/mt-providers/mt-transport`）必须 import 安全且只依赖领域层、共享协议与静态资源 |
 | R6 | extension 不得反向 import connector |
 | R7 | 全部参检源文件必须以 `/** @file … */` 长注释开头（含职责/主要内容/模块边界）；`connector/host.mjs` 允许首行 shebang、`frequency/` 生成产物以 `// Generated by` 来源声明代替 |
 

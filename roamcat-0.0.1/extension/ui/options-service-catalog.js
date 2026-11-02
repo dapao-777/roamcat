@@ -1,7 +1,8 @@
 /**
  * @file options-service-catalog.js
  * RoamCat · 随心阅 - 模型服务目录化交互控制器
- * 参考 FluentRead Service Catalog 架构，实现左侧分组目录检索 + 右侧统一 Hero 详情卡片工作区
+ * 参考 FluentRead Service Catalog 架构，实现左侧分组目录检索 + 右侧统一 Hero 详情卡片工作区；
+ * 「机器翻译」分组（mt:<服务 id>）打开独立的机翻面板，不参与大模型默认服务的切换。
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -9,7 +10,12 @@
 
  */
 
+import {MT_PROVIDERS} from '../mt-providers.mjs';
+
 const M=(zh,en)=>globalThis.RoamCatI18n?.lang?.()==='en'?en:zh;
+// 机器翻译条目用 mt:<服务 id> 作键，和大模型服务商模板、已保存的 saved:<id> 互不冲突。
+export const isMtKey = key => typeof key === 'string' && key.startsWith('mt:');
+const MT_ICONS = {chrome:'google','google-cloud':'google','google-web':'google',azure:'azure','microsoft-edge':'azure',alibaba:'alibaba',volcengine:'volcengine'};
 
 export const CATALOG_CATEGORIES = [
   { id: 'subscription', get label(){return M('订阅通道','Subscription')}, get badge(){return M('免API Key','No API key')} },
@@ -18,6 +24,7 @@ export const CATALOG_CATEGORIES = [
   { id: 'opensource', get label(){return M('开源与推理','Open & inference')}, get badge(){return M('高性价比','Cost-effective')} },
   { id: 'cloud', get label(){return M('企业云服务','Enterprise cloud')}, get badge(){return M('稳定','Stable')} },
   { id: 'custom', get label(){return M('自定义 API','Custom API')}, get badge(){return M('自定义','Custom')} },
+  { id: 'mt', get label(){return M('机器翻译','Machine translation')}, get badge(){return M('按场景使用','Per scene')} },
 ];
 
 export const CATALOG_TEMPLATES = [
@@ -69,6 +76,8 @@ export const CATALOG_TEMPLATES = [
   { id: 'openai-compatible', get name(){return M('自定义 Chat Completions','Custom Chat Completions')}, category: 'custom', icon: 'custom-api', get desc(){return M('兼容任意遵循 OpenAI 标准格式的第三方或自建 API 端点','Works with any third-party or self-hosted OpenAI-format endpoint')}, website: '', keyOptional: false },
   { id: 'open-responses', get name(){return M('自定义 Responses API','Custom Responses API')}, category: 'custom', icon: 'custom-api', get desc(){return M('兼容 OpenAI Responses 格式的自定义端点','Works with endpoints in the OpenAI Responses format')}, website: '', keyOptional: false },
 ];
+
+export const MT_CATALOG_ITEMS = MT_PROVIDERS.map(provider => ({ id: 'mt:' + provider.id, mtId: provider.id, name: provider.name, category: 'mt', icon: MT_ICONS[provider.id] || 'custom-api', desc: provider.desc, website: provider.website }));
 
 export function iconUrlFor(iconName) {
   // providerId 可能来自用户保存的配置：只接受图标文件名字符，其余回落通用图标。
@@ -144,7 +153,8 @@ class ServiceCatalogController {
     const savedServices = settings.apiServices || [];
 
     // 合并用户自建的自定义服务到列表
-    const allItems = [...CATALOG_TEMPLATES];
+    const allItems = [...CATALOG_TEMPLATES, ...MT_CATALOG_ITEMS];
+    const mtServices = settings.mtServices || [], engines = Object.values(settings.translationEngines || {});
     savedServices.forEach(s => {
       const isTemplateMatch = CATALOG_TEMPLATES.some(t => t.id === s.providerId);
       if (!isTemplateMatch || savedServices.filter(item => item.providerId === s.providerId).length > 1) {
@@ -202,7 +212,9 @@ class ServiceCatalogController {
 
         // 判断是否为当前“默认使用”的服务
         let isDefault = false;
-        if (item.category === 'subscription') {
+        if (item.category === 'mt') {
+          isDefault = false;
+        } else if (item.category === 'subscription') {
           isDefault = currentKind === item.id;
         } else if (item.id.startsWith('saved:')) {
           isDefault = currentKind === 'api' && activeServiceId === item.savedInstance?.id;
@@ -214,7 +226,9 @@ class ServiceCatalogController {
 
         // 判断是否“已配置”
         let isConfigured = false;
-        if (item.category === 'subscription') {
+        if (item.category === 'mt') {
+          isConfigured = mtServices.some(row => row.providerId === item.mtId);
+        } else if (item.category === 'subscription') {
           isConfigured = false;
         } else if (item.id.startsWith('saved:')) {
           isConfigured = Boolean(item.savedInstance?.apiKey);
@@ -234,7 +248,9 @@ class ServiceCatalogController {
         const copy = el('div', 'service-copy');
         copy.append(el('strong', 'service-name', item.name), el('small', 'service-desc', item.desc));
         const statusCol = el('div', 'service-status-col');
-        if (isDefault) {
+        if (item.category === 'mt' && engines.includes(item.mtId)) {
+          statusCol.append(el('span', 'service-badge is-default', M('使用中','In use')));
+        } else if (isDefault) {
           statusCol.append(el('span', 'service-badge is-default', M('默认','Default')));
         } else if (isConfigured) {
           statusCol.append(el('span', 'service-badge is-configured', M('已配置','Configured')));
@@ -271,9 +287,15 @@ class ServiceCatalogController {
     const savedServices = settings.apiServices || [];
     const subPanel = document.querySelector('#subscription-panel');
     const apiPanel = document.querySelector('#api-panel');
+    const mtPanel = document.querySelector('#mt-panel');
+    if (mtPanel) mtPanel.hidden = !isMtKey(key);
 
-    // 订阅类服务通道
-    if (['chatgpt', 'grok', 'antigravity'].includes(key)) {
+    if (isMtKey(key)) {
+      // 机器翻译：独立面板，不动大模型的默认服务与编辑表单。
+      if (subPanel) subPanel.hidden = true;
+      if (apiPanel) apiPanel.hidden = true;
+      this.onMtSelect?.(key.slice(3));
+    } else if (['chatgpt', 'grok', 'antigravity'].includes(key)) {
       if (subPanel) subPanel.hidden = false;
       if (apiPanel) apiPanel.hidden = true;
     } else {
@@ -333,7 +355,7 @@ class ServiceCatalogController {
     const activeServiceId = settings.activeApiServiceId || '';
     const savedServices = settings.apiServices || [];
 
-    let item = CATALOG_TEMPLATES.find(t => t.id === key);
+    let item = CATALOG_TEMPLATES.find(t => t.id === key) || MT_CATALOG_ITEMS.find(t => t.id === key);
     if (!item && key.startsWith('saved:')) {
       const s = savedServices.find(s => s.id === key.replace('saved:', ''));
       if (s) {
@@ -367,11 +389,12 @@ class ServiceCatalogController {
       isDefault = currentKind === 'api' && match?.providerId === key;
     }
 
+    // 机器翻译不是「默认服务」：按场景在面板里选用，不显示默认徽标与「设为默认」。
     if (this.heroBadge) {
-      this.heroBadge.hidden = !isDefault;
+      this.heroBadge.hidden = !isDefault || isMtKey(key);
     }
     if (this.setDefaultBtn) {
-      this.setDefaultBtn.hidden = isDefault;
+      this.setDefaultBtn.hidden = isDefault || isMtKey(key);
     }
 
     // 官方说明与外链
@@ -379,7 +402,8 @@ class ServiceCatalogController {
       if (item.website) {
         this.docLink.href = item.website;
         // 订阅通道不需要 API Key，外链只叫「官方说明」，避免和「免 API Key」自相矛盾。
-        this.docLink.querySelector('span').textContent = item.category === 'subscription' ? M('官方说明','Official docs') : M('获取密钥 / 官方说明','Get key / official docs');
+        const keyless = item.category === 'subscription' || (item.category === 'mt' && !MT_PROVIDERS.find(provider => provider.id === item.mtId)?.fields.some(field => field.required));
+        this.docLink.querySelector('span').textContent = keyless ? M('官方说明','Official docs') : M('获取密钥 / 官方说明','Get key / official docs');
         this.docLink.hidden = false;
       } else {
         this.docLink.hidden = true;
@@ -450,7 +474,9 @@ class ServiceCatalogController {
     const spinIcon = this.checkConnBtn?.querySelector('.check-spin-icon');
     spinIcon?.classList.add('is-spinning');
 
-    if (['chatgpt', 'grok', 'antigravity'].includes(key)) {
+    if (isMtKey(key)) {
+      document.querySelector('#mt-test')?.click();
+    } else if (['chatgpt', 'grok', 'antigravity'].includes(key)) {
       const refreshBtn = document.querySelector('#refresh-subscription');
       refreshBtn?.click();
     } else {

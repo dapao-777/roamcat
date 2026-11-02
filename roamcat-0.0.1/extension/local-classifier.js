@@ -1,7 +1,7 @@
 /**
  * @file extension/local-classifier.js
  * 文件职责：本地分类网关——离屏文档生命周期管理与分类请求队列。
- * 主要内容：OFFSCREEN_URL按需创建、5分钟空闲销毁；网页不得直调。
+ * 主要内容：OFFSCREEN_URL按需创建、5分钟空闲销毁；网页不得直调；ensureOffscreenDocument 供 Chrome 本机翻译复用同一离屏文档。
  * 模块边界：应用层；经runtime消息走offscreen；被background调用。
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -31,12 +31,12 @@ async function hasOffscreenDocument() {
   return contexts.length > 0;
 }
 
-async function ensureOffscreenDocument() {
+export async function ensureOffscreenDocument() {
   if (await hasOffscreenDocument()) return;
   creatingDocument ??= chrome.offscreen.createDocument({
     url: OFFSCREEN_URL,
     reasons: ['WORKERS'],
-    justification: M('在独立线程中运行打包的本地 ONNX 领域分类模型','Run the bundled local ONNX domain classifier in a worker thread'),
+    justification: M('运行本地 ONNX 领域分类 Worker，并复用文档执行浏览器本机翻译','Run the local ONNX domain-classification worker and reuse the document for browser on-device translation'),
   }).finally(() => { creatingDocument = undefined; });
   await creatingDocument;
 }

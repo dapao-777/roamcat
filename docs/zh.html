@@ -356,6 +356,7 @@ tbody th{background:none;font-size:inherit;letter-spacing:0;font-weight:600;whit
     <div class="card"><h3>订阅连接器</h3><p>本机 Native Messaging 复用官方 CLI 权益——Codex CLI（ChatGPT 订阅）、Grok CLI（SuperGrok / X Premium+）、Antigravity <code>agy</code>（Google AI Pro / Ultra），免 API Key。</p></div>
     <div class="card"><h3>本地模型</h3><p>内置 Xenova/all-MiniLM-L6-v2 在离屏文档中做页面领域识别——全程离线，无需下载。</p></div>
   </div>
+  <p>下个版本另接入 <strong>14 种机器翻译服务</strong>，整页、字幕、聊天、阅读器、选段可分别选引擎，失败可回退到大模型；Chrome 本机翻译不上传原文。<a href="https://github.com/dapao-777/roamcat/blob/main/roamcat-0.0.1/MACHINE_TRANSLATION.md">接入说明</a>。</p>
   <details class="prov"><summary>全部 33 家服务商</summary><p>OpenAI、Anthropic、Gemini、DeepSeek、Grok（xAI）、OpenRouter、Requesty、OpenCode、Command Code、MiniMax、SiliconFlow、Azure OpenAI、Amazon Bedrock、Groq、DeepInfra、Mistral AI、Together.ai、Cohere、Fireworks AI、Cerebras、Ollama、火山引擎（豆包）、阿里云百炼、月之暗面 Kimi、阶跃星辰、商汤日日新、智谱 GLM、小米 MiMo、腾讯混元 TokenHub、百度千帆、Hugging Face，以及自定义 Chat Completions / Responses 接口，共 8 种协议。想在自己的机器上跑模型，选 Ollama——无需 API Key。</p></details>
 </section>
 
@@ -364,7 +365,7 @@ tbody th{background:none;font-size:inherit;letter-spacing:0;font-weight:600;whit
   <ul class="tight">
     <li>不经营服务器、不采集遥测；阅读记录默认关闭且按站授权；无痕页面不采集。</li>
     <li>API Key 只存 <code>chrome.storage.local</code>——不进内容脚本、诊断日志或连接器。</li>
-    <li>内容脚本仅可用 81 种消息中的 38 种白名单类型；模型输出全部经结构化校验才进入 UI。</li>
+    <li>内容脚本仅可用 82 种消息中的 38 种白名单类型；模型输出全部经结构化校验才进入 UI。</li>
     <li>自定义 API 地址强制 HTTPS（仅本机回环允许 HTTP）；无远端代码执行。</li>
   </ul>
 </section>

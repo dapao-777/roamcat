@@ -118,6 +118,10 @@ Failed passages retry on a graded backoff (2.5s → 6s → 14s, classified by er
 | **Subscription connector** | A local Native Messaging host reuses your official CLI entitlements — Codex CLI (ChatGPT), Grok CLI (SuperGrok / X Premium+), Antigravity `agy` (Google AI Pro / Ultra). No API key needed. |
 | **Local model** | Bundled `Xenova/all-MiniLM-L6-v2` classifies page domains in an offscreen document — fully offline, nothing to download. |
 
+### Machine translation (next release)
+
+**14 machine-translation services** are separate from the AI provider list: Chrome on-device translation, DeepL, Google Cloud, Azure, Tencent, Alibaba, Baidu, Volcengine, Youdao, NiuTrans, MyMemory, Google web, Microsoft Edge, and self-hosted DeepLX. Select an engine per scene for pages, captions, live chat, readers, and passages. Defaults follow the AI model; failed items can fall back to it. Lookups, sentence breakdowns, and summaries use AI models. Credentials stay in local extension storage; cloud translation sends text to the selected service. See [integration details](roamcat-0.0.1/MACHINE_TRANSLATION.md).
+
 ## 🚀 Quick start
 
 Requires **Chrome or Edge 125+**.
@@ -152,7 +156,7 @@ The extension and the service verify each other with a **pairing token**. Every 
 ## 🔒 Privacy by design
 
 - Reading history is off by default and opt-in per site; nothing is collected on incognito pages; API keys live only in `chrome.storage.local`.
-- Keys never reach content scripts, diagnostic logs or the connector; content scripts may send only **38 whitelisted message types** out of 81.
+- Keys never reach content scripts, diagnostic logs or the connector; content scripts may send only **38 whitelisted message types** out of 82.
 - All model output passes structured validation (`gloss.mjs`) before reaching the UI; custom API endpoints must be HTTPS (loopback excepted).
 - Page text leaves your device only when you invoke a model feature, and goes straight to the provider you configured. Full details in the [privacy policy](roamcat-0.0.1/PRIVACY.md).
 
@@ -251,7 +255,7 @@ Every visual decision lives in one set of `--rc-*` tokens in `src/styles/tokens.
 │   · floating-pet*.js companion cat · auto-start.js auto-enable         │
 ├────────────────────────────────────────────────────────────────────────┤
 │ Service Worker: background.js (ES module, stateless)                   │
-│   81 message routes · settings validation & migration ·                │
+│   82 message routes · settings validation & migration ·                │
 │   cache / concurrency / watchdog · subscription ports                  │
 ├────────────────────────────────────────────────────────────────────────┤
 │ Extension pages: popup / options / welcome / reader                    │
@@ -266,7 +270,7 @@ Every visual decision lives in one set of `--rc-*` tokens in `src/styles/tokens.
 </details>
 
 - **Trust boundary** — extension pages (trusted) → content scripts (38 whitelisted messages) → model output (validated before UI) → page DOM (enters prompts as data only).
-- **One source of truth for the protocol** — `extension/message-protocol.js` registers all 81 message types with payload parsers; contract tests keep the router in sync.
+- **One source of truth for the protocol** — `extension/message-protocol.js` registers all 82 message types with payload parsers; contract tests keep the router in sync.
 - **One bilingual runtime** — `extension/i18n.js` holds every UI string as an aligned zh/en pair, shared by pages and the service worker; content scripts load the generated `i18n-content.js`, the same runtime trimmed to the namespaces web pages actually use.
 - **Stateless service worker** — cross-call state lives in `chrome.storage` and IndexedDB; writes are serialized and long operations carry watchdogs.
 

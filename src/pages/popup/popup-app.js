@@ -300,7 +300,7 @@ class RoamcatPopup extends LitElement {
 
   async #emergencyStart(resume = false) {
     if (this.#busy || !this.#supported) return;
-    if (!this.#state?.providerConfigured) {
+    if (!(this.#state?.pageTranslationReady ?? this.#state?.providerConfigured)) {
       this.#emergencyResult = {text: t('pop.noProviderTranslate'), error: true};
       this.requestUpdate();
       await this.updateComplete;
@@ -383,7 +383,7 @@ class RoamcatPopup extends LitElement {
 
   #emergencyPhaseText() {
     if (!this.#supported) return t('pop.phase.unsupported');
-    if (!this.#state?.providerConfigured) return t('pop.phase.noProvider');
+    if (!(this.#state?.pageTranslationReady ?? this.#state?.providerConfigured)) return t('pop.phase.noProvider');
     const text = {
       translating: t('pop.phase.translating'),
       waiting: t('pop.phase.waiting'),

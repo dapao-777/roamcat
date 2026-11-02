@@ -150,7 +150,7 @@ test('validatePatch 校验术语表与伴读猫设置', () => {
 
 test('settingsPatchEffects 推导合并设置与四类变更信号', () => {
   const empty = settingsPatchEffects(currentSettings, {});
-  assert.deepEqual(empty, {nextSettings: currentSettings, rememberChanged: false, providerChanged: false, classificationChanged: false, genericChanged: false, petEnabledChanged: false});
+  assert.deepEqual(empty, {nextSettings: currentSettings, rememberChanged: false, providerChanged: false, classificationChanged: false, genericChanged: false, petEnabledChanged: false, translationChanged: false});
 
   const remember = settingsPatchEffects(currentSettings, {rememberSupport: !currentSettings.rememberSupport});
   assert.equal(remember.rememberChanged, true);

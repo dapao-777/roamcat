@@ -49,12 +49,13 @@ export function createDiagnostics({storage,session,sync,nativeStatus}) {
       try{const value=await operation();const outputLengths=Array.isArray(value?.items)?value.items.slice(0,8).map(item=>typeof item?.translation==='string'?item.translation.length:0):[];await event(trace,'request','ok',{code:trace.provider?'OK':'LOCAL_RESULT',durationMs:Date.now()-trace.at,outputLengths,outputIds:Array.isArray(value?.items)?value.items.slice(0,8).map(item=>message.items?.some(source=>source.id===item?.id)?item.id:null):undefined});return value;}
       catch(error){const detail=diagnosticError(error),status=['STALE','CANCELLED','NOT_READY'].includes(detail.code)?'cancelled':'error';await event(trace,'request',status,{...detail,durationMs:Date.now()-trace.at});throw error;}
     },
-    async provider(trace,kind,model,address,operation){
+    // softError：失败后还有回退（机器翻译改走大模型）时记为 cancelled，不把整条请求算成失败。
+    async provider(trace,kind,model,address,operation,{softError=false}={}){
       if(!trace)return operation();
       trace.provider=true;trace.metadata={...trace.metadata,provider:kind,modelRef:await fingerprint(model||''),providerRef:await fingerprint(address||kind)};
       const at=Date.now();await event(trace,'provider','start');
       try{const value=await operation();await event(trace,'provider','ok',{durationMs:Date.now()-at,...(typeof value==='string'?{outputChars:value.length}:{})});return value;}
-      catch(error){await event(trace,'provider','error',{...diagnosticError(error),durationMs:Date.now()-at});throw error;}
+      catch(error){await event(trace,'provider',softError?'cancelled':'error',{...diagnosticError(error),durationMs:Date.now()-at});throw error;}
     },
     async render(message,sender){
       if(!Number.isInteger(sender.tab?.id)||sender.frameId!==0||!validTraceId(message.traceId)||!['ok','cancelled','error'].includes(message.status))throw new Error(M('诊断回执无效。','Invalid diagnostic receipt.'));

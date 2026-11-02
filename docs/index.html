@@ -356,6 +356,7 @@ tbody th{background:none;font-size:inherit;letter-spacing:0;font-weight:600;whit
     <div class="card"><h3>Subscription connector</h3><p>A local Native Messaging host reuses your official CLI entitlements — Codex CLI (ChatGPT), Grok CLI (SuperGrok / X Premium+), Antigravity <code>agy</code> (Google AI Pro / Ultra). No API key needed.</p></div>
     <div class="card"><h3>Local model</h3><p>Bundled Xenova/all-MiniLM-L6-v2 runs page-domain classification in an offscreen document — fully offline, nothing to download.</p></div>
   </div>
+  <p>Next release: <strong>14 machine-translation services</strong>, with separate engines for pages, captions, live chat, readers and passages. Optional AI fallback; Chrome translation stays on device. <a href="https://github.com/dapao-777/roamcat/blob/main/roamcat-0.0.1/MACHINE_TRANSLATION.md">Integration details</a>.</p>
   <details class="prov"><summary>All 33 providers</summary><p>OpenAI, Anthropic, Gemini, DeepSeek, Grok (xAI), OpenRouter, Requesty, OpenCode, Command Code, MiniMax, SiliconFlow, Azure OpenAI, Amazon Bedrock, Groq, DeepInfra, Mistral AI, Together.ai, Cohere, Fireworks AI, Cerebras, Ollama, Volcengine (Doubao), Alibaba Cloud Model Studio, Moonshot AI (Kimi), StepFun, SenseNova, Zhipu GLM, Xiaomi MiMo, Tencent Hunyuan TokenHub, Baidu Qianfan and Hugging Face, plus custom Chat Completions and custom Responses endpoints. Together they speak 8 API protocols. To run a model on your own machine, choose Ollama — no API key needed.</p></details>
 </section>
 
@@ -364,7 +365,7 @@ tbody th{background:none;font-size:inherit;letter-spacing:0;font-weight:600;whit
   <ul class="tight">
     <li>No servers operated, no telemetry; reading history is off by default and opt-in per site; nothing collected on incognito pages.</li>
     <li>API keys live only in <code>chrome.storage.local</code> — never in content scripts, diagnostics or the connector.</li>
-    <li>Content scripts can only send 38 whitelisted message types out of 81; all model output passes structured validation before reaching the UI.</li>
+    <li>Content scripts can only send 38 whitelisted message types out of 82; all model output passes structured validation before reaching the UI.</li>
     <li>Custom API endpoints must be HTTPS (loopback excepted); no remote code execution.</li>
   </ul>
 </section>

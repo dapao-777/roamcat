@@ -48,6 +48,8 @@ const DOMAIN = Object.freeze([
   'shared.js',
   'api-providers.mjs',
   'api-transport.mjs',
+  'mt-providers.mjs',
+  'mt-transport.mjs',
   'thinking-levels.mjs',
   'usage-stats.mjs',
   'rate-window.mjs',

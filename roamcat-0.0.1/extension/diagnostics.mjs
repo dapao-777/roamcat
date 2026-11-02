@@ -15,7 +15,7 @@ const M=(zh,en)=>globalThis.RoamCatI18n?.lang?.()==='en'?en:zh;
 export const DIAGNOSTIC_LIMIT = 500;
 export const DIAGNOSTIC_TTL = 7 * 86400000;
 export const DIAGNOSTIC_OPERATIONS = new Set(['PAGE_SUMMARY','SENTENCE_GROUPS_BATCH','HISTORY_SUMMARY','PERSONALIZATION_ANALYZE','ASSIST_COMMIT','ASSIST','SUPPORT_BATCH','PASSAGE_TRANSLATE','EMERGENCY_TRANSLATE','RESOLVE_DOMAIN','PROVIDER_TEST','CONNECTION','ANALYZE','PREPARED_ASSIST','PREPARED_SUPPORT']);
-export const DIAGNOSTIC_CODES = new Set(['STARTUP_FAILED','CODEX_EXIT','RPC_TIMEOUT','TURN_FAILED','UNKNOWN','OK','LOCAL_RESULT','CACHE_HIT','TIMEOUT','NETWORK','AUTH','QUOTA','RATE_LIMIT','HTTP','JSON_INVALID','OUTPUT_INVALID','BATCH_SHAPE','BATCH_COUNT','ITEM_FIELDS','ITEM_ID','ITEM_DUPLICATE','TRANSLATION_TYPE','TRANSLATION_EMPTY','TRANSLATION_WHITESPACE','TRANSLATION_LENGTH','TRANSLATION_NO_HAN','STALE','CANCELLED','NOT_READY','DISCONNECTED','NATIVE_START','NATIVE_EXIT','NATIVE_RPC','NATIVE_STDERR','STDERR_AUTH','STDERR_RATE_LIMIT','STDERR_TIMEOUT','STDERR_UNKNOWN','STORAGE_ERROR','RENDER_INVALID','NOT_DISPLAYED','INTERRUPTED','SLOW_REQUEST','REPEATED_FAILURE','SERVICE_AUTH']);
+export const DIAGNOSTIC_CODES = new Set(['STARTUP_FAILED','CODEX_EXIT','RPC_TIMEOUT','TURN_FAILED','UNKNOWN','OK','LOCAL_RESULT','CACHE_HIT','TIMEOUT','NETWORK','AUTH','QUOTA','RATE_LIMIT','HTTP','JSON_INVALID','OUTPUT_INVALID','BATCH_SHAPE','BATCH_COUNT','ITEM_FIELDS','ITEM_ID','ITEM_DUPLICATE','TRANSLATION_TYPE','TRANSLATION_EMPTY','TRANSLATION_WHITESPACE','TRANSLATION_LENGTH','TRANSLATION_NO_HAN','STALE','CANCELLED','NOT_READY','DISCONNECTED','NATIVE_START','NATIVE_EXIT','NATIVE_RPC','NATIVE_STDERR','STDERR_AUTH','STDERR_RATE_LIMIT','STDERR_TIMEOUT','STDERR_UNKNOWN','STORAGE_ERROR','RENDER_INVALID','NOT_DISPLAYED','INTERRUPTED','SLOW_REQUEST','REPEATED_FAILURE','SERVICE_AUTH','MT_FALLBACK']);
 const STAGES = new Set(['request','provider','first_content','validation','render','connection','rpc','stderr']);
 const STATUSES = new Set(['start','ok','error','cancelled']);
 const COUNTS = ['durationMs','batchSize','inputChars','outputChars','itemIndex','expectedCount','actualCount','fieldCount','translationLength','httpStatus','stderrBytes','exitCode'];
@@ -34,7 +34,7 @@ export function sanitizeDiagnostic(value) {
   if(['word','phrase','passage'].includes(value.kind))record.kind=value.kind;
   if(['hint','rescue'].includes(value.level))record.level=value.level;
   for (const key of ['modelRef','providerRef']) if (typeof value[key] === 'string' && /^[a-f0-9]{64}$/.test(value[key])) record[key] = value[key];
-  if (['api','chatgpt','grok','antigravity'].includes(value.provider)) record.provider = value.provider;
+  if (['api','mt','chatgpt','grok','antigravity'].includes(value.provider)) record.provider = value.provider;
   if (typeof value.expectsRender === 'boolean') record.expectsRender = value.expectsRender;
   return record;
 }

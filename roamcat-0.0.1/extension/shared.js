@@ -12,12 +12,13 @@
  */
 import './reading-style.js';
 import {normalizeApiService} from './api-providers.mjs';
+import {normalizeMtServices,normalizeTranslationEngines} from './mt-providers.mjs';
 
 const M=(zh,en)=>globalThis.RoamCatI18n?.lang?.()==='en'?en:zh;
 
 export const DOMAINS = {auto:'自动识别',general:'通用阅读',tech:'软件与 AI',data:'数据工程',finance:'金融与商业',medical:'医学与生命科学',legal:'法律',design:'设计与产品'};
 export const API_TASKS = Object.freeze(['assist','support','groups','translate','summary']);
-export const DEFAULT_SETTINGS = {assistanceMode:'ambient',rememberSupport:true,helpLanguage:'zh',lookupKey:'D',lookupDisplay:'card',pageTranslationDisplay:'bilingual',readingStyle:globalThis.RoamCatReadingStyle.defaults,domain:'auto',providerKind:'chatgpt',subscriptionModel:'',apiServices:[],activeApiServiceId:'',apiRouting:{assist:'',support:'',groups:'',translate:'',summary:''},domainRules:[],domainDetection:{mode:'local',subscriptionModel:'',apiModel:'',useTranslationApi:true,api:{baseUrl:'https://api.openai.com/v1',apiKey:''},jevModel:'typesafe/jev-1.13.0',jevApiKey:'',jevBaseUrl:'https://router.requesty.ai/v1'},customTerms:[],automation:{allSites:false,sentenceGroupsAllSites:false,sites:[],videoSites:false},video:{fontSize:20,theme:'auto',bilingual:false,display:'bilingual',translationFirst:true,translationColor:'white',blur:false,offset:-1,karaoke:true,liveChat:false},complexSentenceAssist:true,formulaAssist:true,pdfReader:true,floatingPet:{enabled:true,position:{right:24,bottom:84},themeMode:'auto',scale:1,quotes:{enabled:true,intervalMin:15}}};
+export const DEFAULT_SETTINGS = {assistanceMode:'ambient',rememberSupport:true,helpLanguage:'zh',lookupKey:'D',lookupDisplay:'card',pageTranslationDisplay:'bilingual',readingStyle:globalThis.RoamCatReadingStyle.defaults,domain:'auto',providerKind:'chatgpt',subscriptionModel:'',apiServices:[],activeApiServiceId:'',apiRouting:{assist:'',support:'',groups:'',translate:'',summary:''},mtServices:[],translationEngines:{page:'',video:'',liveChat:'',reader:'',passage:''},mtFallback:true,domainRules:[],domainDetection:{mode:'local',subscriptionModel:'',apiModel:'',useTranslationApi:true,api:{baseUrl:'https://api.openai.com/v1',apiKey:''},jevModel:'typesafe/jev-1.13.0',jevApiKey:'',jevBaseUrl:'https://router.requesty.ai/v1'},customTerms:[],automation:{allSites:false,sentenceGroupsAllSites:false,sites:[],videoSites:false},video:{fontSize:20,theme:'auto',bilingual:false,display:'bilingual',translationFirst:true,translationColor:'white',blur:false,offset:-1,karaoke:true,liveChat:false},complexSentenceAssist:true,formulaAssist:true,pdfReader:true,floatingPet:{enabled:true,position:{right:24,bottom:84},themeMode:'auto',scale:1,quotes:{enabled:true,intervalMin:15}}};
 // Removed settings must not revive through a spread of an older configuration.
 export function normalizeSettings(value = {}) {
   const pick = (defaults, source) => Object.fromEntries(Object.entries(defaults).map(([key, fallback]) => [key, source?.[key] ?? fallback]));
@@ -56,6 +57,10 @@ export function normalizeSettings(value = {}) {
   // 任务路由：仅保留已知任务且指向现存服务的条目；失效引用静默回落到默认服务。
   const routingSource=value.apiRouting&&typeof value.apiRouting==='object'&&!Array.isArray(value.apiRouting)?value.apiRouting:{};
   settings.apiRouting=Object.fromEntries(API_TASKS.map(task=>[task,settings.apiServices.some(service=>service.id===routingSource[task])?routingSource[task]:'']));
+  // 机器翻译：每种服务至多一份凭据；场景引擎只能指向可用的机翻服务，失效引用回落为「跟随大模型」。
+  settings.mtServices=normalizeMtServices(value.mtServices);
+  settings.translationEngines=normalizeTranslationEngines(value.translationEngines,settings.mtServices);
+  settings.mtFallback=value.mtFallback!==false;
   settings.domainDetection = pick(DEFAULT_SETTINGS.domainDetection,value.domainDetection);
   settings.domainDetection.api = pick(DEFAULT_SETTINGS.domainDetection.api,value.domainDetection?.api);
   settings.automation = pick(DEFAULT_SETTINGS.automation,value.automation);

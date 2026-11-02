@@ -310,6 +310,34 @@ try {
   }
   await extPage.setViewportSize({width: 1440, height: 1000});
 
+  // 机翻凭据表单与五场景路由：全部服务、双主题和三档宽度一起体检。
+  for (const theme of THEMES) {
+    await setTheme(extPage, theme);
+    await extPage.goto(extUrl('ui/options.html#service'));
+    await extPage.waitForFunction(()=>Boolean(window.optionsState));
+    await extPage.evaluate(t=>document.documentElement.setAttribute('data-theme',t),theme);
+    const keys=await extPage.evaluate(()=>[...document.querySelectorAll('[data-service-key^="mt:"]')].map(el=>el.dataset.serviceKey));
+    check(`机器翻译服务目录[${theme}]`,keys.length===14,`count=${keys.length}`);
+    for (const width of [1440,1150,480]) {
+      await extPage.setViewportSize({width,height:1000});
+      const dirty=[];
+      for (const key of keys) {
+        await extPage.locator(`[data-service-key="${key}"]`).click();
+        await extPage.locator('#mt-panel').evaluate(el=>el.scrollIntoView({block:'start'}));
+        await settled(extPage);
+        const lint=await layoutLint(extPage,'.options-body');
+        if(!lintClean(lint))dirty.push({key,...lint});
+        if(key==='mt:deeplx'){
+          const heights=await extPage.evaluate(()=>[...document.querySelectorAll('#translation-engines .route-row')].map(el=>Math.round(el.getBoundingClientRect().height)));
+          check(`机翻场景行保持紧凑[${theme}/${width}px]`,heights.length===5&&Math.max(...heights)<=100,JSON.stringify(heights));
+          await shot(extPage,`options-mt-${theme}-${width}`);
+        }
+      }
+      check(`机器翻译全部表单版式[${theme}/${width}px]`,dirty.length===0,JSON.stringify(dirty).slice(0,800));
+    }
+  }
+  await extPage.setViewportSize({width:1440,height:1000});
+
   // ========== B. 页内挂件：fixture 文章页上真实 content script 环境 ==========
   const tab = await run.newPage();
   await tab.setViewportSize({width: 1440, height: 1000}, 1);

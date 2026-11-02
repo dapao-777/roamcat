@@ -66,6 +66,64 @@ function classify(text, title) {
   });
 }
 
+// Chrome 本机翻译（Translator API，Chrome 138+ 桌面版）：语言包必须先在设置页用用户手势下载，
+// 这里只在 availability 为 available 时创建翻译器，空闲 5 分钟后释放。
+const TRANSLATOR_OPTIONS = { sourceLanguage: 'en', targetLanguage: 'zh' };
+const MAX_TRANSLATE_ITEMS = 32;
+const MAX_TRANSLATE_LENGTH = 8000;
+let translatorPromise;
+let translatorTimer;
+let translatorPending=0;
+
+function notReady(message) {
+  return Object.assign(new Error(message), { code: 'NOT_READY' });
+}
+
+async function localTranslator() {
+  const api = globalThis.Translator;
+  if (typeof api?.availability !== 'function' || typeof api?.create !== 'function') throw notReady('当前浏览器没有 Translator API');
+  if (await api.availability(TRANSLATOR_OPTIONS) !== 'available') throw notReady('英译中语言包尚未准备好');
+  translatorPromise ??= api.create(TRANSLATOR_OPTIONS).catch((error) => { translatorPromise = undefined; throw error; });
+  return translatorPromise;
+}
+
+function releaseTranslatorWhenIdle() {
+  clearTimeout(translatorTimer);
+  translatorTimer = setTimeout(async () => {
+    const current = translatorPromise;
+    translatorPromise = undefined;
+    try { (await current)?.destroy?.(); } catch {}
+  }, IDLE_TIMEOUT_MS);
+}
+
+async function translateTexts(texts) {
+  if (!Array.isArray(texts) || !texts.length || texts.length > MAX_TRANSLATE_ITEMS
+    || texts.some((text) => typeof text !== 'string' || !text.trim() || text.length > MAX_TRANSLATE_LENGTH)) throw new Error('本机翻译请求无效');
+  clearTimeout(translatorTimer);
+  translatorPending++;
+  try {
+    const translator = await localTranslator();
+    const results = [];
+    for (const text of texts) results.push(await translator.translate(text));
+    return results;
+  } finally {
+    if (--translatorPending===0) releaseTranslatorWhenIdle();
+  }
+}
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message?.target !== 'local-translator' || message?.type !== 'TRANSLATE_LOCAL') return false;
+  if (sender.id !== chrome.runtime.id || sender.tab) {
+    sendResponse({ ok: false, error: '不允许网页直接调用本机翻译' });
+    return false;
+  }
+  translateTexts(message.texts).then(
+    (data) => sendResponse({ ok: true, data }),
+    (error) => sendResponse({ ok: false, code: error?.code === 'NOT_READY' ? 'NOT_READY' : 'OUTPUT_INVALID', error: error?.message || String(error) }),
+  );
+  return true;
+});
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.target !== 'local-classifier' || message?.type !== 'CLASSIFY_LOCAL') return false;
   if (sender.id !== chrome.runtime.id || sender.tab) {

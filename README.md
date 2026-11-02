@@ -118,6 +118,10 @@
 | **订阅连接器** | 本机 Native Messaging 复用官方 CLI 权益——Codex CLI（ChatGPT 订阅）、Grok CLI（SuperGrok / X Premium+）、Antigravity `agy`（Google AI Pro / Ultra），免 API Key。 |
 | **本地模型** | 内置 `Xenova/all-MiniLM-L6-v2` 在离屏文档中做页面领域识别，不联网、无需下载。 |
 
+### 机器翻译（下个版本）
+
+另有 **14 种机器翻译服务**：Chrome 本机翻译、DeepL、Google Cloud、Azure、腾讯云、阿里云、百度、火山、有道、小牛、MyMemory、Google 网页、微软 Edge、DeepLX 自建。设置 → 模型服务 → 机器翻译可按整页、字幕、聊天、阅读器、选段分别选择；默认跟随大模型，失败可回退。查词、解构、摘要继续用大模型。凭据只存本机，Chrome 翻译不上传原文；云端服务按各自规则处理文本。参见[接入说明](roamcat-0.0.1/MACHINE_TRANSLATION.md)。
+
 ## 🚀 快速开始
 
 需要 **Chrome 或 Edge 125+**。
@@ -152,7 +156,7 @@ node roamcat-0.0.1/connector/install.mjs --extension-id afpeggkplomdjjiemgajjgca
 ## 🔒 本地优先的边界
 
 - 阅读记录默认关闭且按站授权，无痕页面不采集；API Key 只存在 `chrome.storage.local`。
-- 密钥不进内容脚本、诊断日志或连接器；内容脚本只能使用 81 种消息中的 **38 种白名单类型**。
+- 密钥不进内容脚本、诊断日志或连接器；内容脚本只能使用 82 种消息中的 **38 种白名单类型**。
 - 模型输出全部经结构化校验（`gloss.mjs`）才进入界面；自定义 API 地址强制 HTTPS（仅本机回环允许 HTTP）。
 - 页面文本只在你主动调用模型功能时离开本机，直达你配置的服务商。完整说明见[隐私政策](roamcat-0.0.1/PRIVACY.md)。
 
@@ -251,7 +255,7 @@ node roamcat-0.0.1/connector/install.mjs --extension-id afpeggkplomdjjiemgajjgca
 │   · floating-pet*.js 伴读猫 · auto-start.js 自动开启                   │
 ├────────────────────────────────────────────────────────────────────────┤
 │ Service Worker：background.js（ES module，无状态）                       │
-│   81 种消息路由 · 设置校验与迁移 · 缓存 / 并发 / 看门狗 · 订阅端口          │
+│   82 种消息路由 · 设置校验与迁移 · 缓存 / 并发 / 看门狗 · 订阅端口          │
 ├────────────────────────────────────────────────────────────────────────┤
 │ 扩展页面：popup / options / welcome / reader                            │
 │   src/ 下的 Lit 应用，经 Vite 构建到 dist/extension/ui/                   │
@@ -265,7 +269,7 @@ node roamcat-0.0.1/connector/install.mjs --extension-id afpeggkplomdjjiemgajjgca
 </details>
 
 - **信任边界**——扩展页（可信）→ 内容脚本（38 种白名单消息）→ 模型输出（校验后才进界面）→ 网页 DOM（只以数据身份进入提示词）。
-- **消息协议唯一事实源**——`extension/message-protocol.js` 登记全部 81 种消息与载荷解析器，契约测试保证路由表同步。
+- **消息协议唯一事实源**——`extension/message-protocol.js` 登记全部 82 种消息与载荷解析器，契约测试保证路由表同步。
 - **唯一的双语运行时**——`extension/i18n.js` 收录全部中英对齐的界面文案，扩展页与 Service Worker 共用；内容脚本加载由它生成的 `i18n-content.js`，运行时相同，词典只留网页侧用到的命名空间。
 - **无状态 Service Worker**——跨调用状态落在 `chrome.storage` 与 IndexedDB；写操作串行化，长操作带看门狗。
 

@@ -72,8 +72,8 @@ test('createMessageRouter 暴露类型清单与 has 查询', () => {
 });
 
 test('MESSAGE_TYPES 是唯一且冻结的有序协议清单', () => {
-  assert.equal(MESSAGE_TYPES.length, 81);
-  assert.equal(new Set(MESSAGE_TYPES).size, 81);
+  assert.equal(MESSAGE_TYPES.length, 82);
+  assert.equal(new Set(MESSAGE_TYPES).size, 82);
   assert.ok(Object.isFrozen(MESSAGE_TYPES));
   for (const type of MESSAGE_TYPES) assert.match(type, /^[A-Z][A-Z0-9_]+$/u);
   // 关键消息必须存在：回归 switch 迁移时丢失任一类型都会被发现。
@@ -88,7 +88,7 @@ test('CONTENT_ALLOWED_TYPES 是协议清单的子集且不含凭据邻域消息'
   for (const type of CONTENT_ALLOWED_TYPES) {
     assert.ok(MESSAGE_TYPES.includes(type), '白名单包含未注册类型 ' + type);
   }
-  for (const type of ['API_MODELS_LIST', 'STATE_PATCH', 'DIAGNOSTICS_GET', 'HISTORY_EXPORT', 'SUBSCRIPTION_LOGIN']) {
+  for (const type of ['MT_TEST', 'API_MODELS_LIST', 'STATE_PATCH', 'DIAGNOSTICS_GET', 'HISTORY_EXPORT', 'SUBSCRIPTION_LOGIN']) {
     assert.ok(!CONTENT_ALLOWED_TYPES.includes(type), '白名单不应包含 ' + type);
   }
   // WORD_PREFERENCE_SET 由 handle 内按条件放行，不在静态白名单里。

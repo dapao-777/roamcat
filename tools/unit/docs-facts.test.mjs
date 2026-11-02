@@ -55,6 +55,13 @@ const ALLOWED_PATTERNS = [
   /白名单\s*(\d+)\s*种消息/g,
 ];
 
+test('机器翻译服务数与独立目录一致', async () => {
+  const {MT_PROVIDERS} = await extension('mt-providers.mjs');
+  for (const file of ['README.md','README.en.md','docs/index.html','docs/zh.html','docs/llms.txt','docs/llms-full.txt','roamcat-0.0.1/README.md','roamcat-0.0.1/MACHINE_TRANSLATION.md']) {
+    assert.ok(expectEvery(file,read(file),/(\d+)\s*(?:种机器翻译服务|machine-translation services)/g,MT_PROVIDERS.length,'机器翻译服务数')>0,file+' 应列出机翻服务数');
+  }
+});
+
 test('文档里的自备 API 服务商数与协议数和 API_PROVIDERS 一致', async () => {
   const {API_PROVIDERS} = await extension('api-providers.mjs');
   const providers = API_PROVIDERS.length;

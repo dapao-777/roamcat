@@ -20,6 +20,7 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {REPO, DIST, assertFreshDist, openBrowser, extUrl, gateArgs, noteScreenshots, previewPath, tabIdOf} from './lib/ego.mjs';
 import {printGateSummary} from './lib/gate-report.mjs';
+import {verifyMtRegressions} from './lib/mt-regressions.mjs';
 
 const {verifyModuleGraph}=createRequire(import.meta.url)('./lib/module-graph.cjs');
 const args=gateArgs(),FAST=args.includes('--fast'),CONTENT_ONLY=args.includes('--content-only');
@@ -42,7 +43,7 @@ console.log('PASS 模块图与加载契约（'+graph.stats.files+' 个文件，'
 // 测试副本：host 权限收窄为 127.0.0.1，确认审计全程不碰外网；扩展 ID 来自 manifest.key，与 dist 一致。
 assertFreshDist();
 const extension=fs.mkdtempSync(path.join(os.tmpdir(),'roamcat-audit-ext-'));fs.cpSync(DIST,extension,{recursive:true});
-const manifestPath=path.join(extension,'manifest.json'),manifest=JSON.parse(fs.readFileSync(manifestPath,'utf8'));manifest.host_permissions=['http://127.0.0.1/*'];fs.writeFileSync(manifestPath,JSON.stringify(manifest));
+const manifestPath=path.join(extension,'manifest.json'),manifest=JSON.parse(fs.readFileSync(manifestPath,'utf8'));manifest.host_permissions=['http://127.0.0.1/*','https://www.twitch.tv/*'];fs.writeFileSync(manifestPath,JSON.stringify(manifest));
 await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin=`http://127.0.0.1:${server.address().port}`;
 const run=await openBrowser({extension});
 try{
@@ -168,6 +169,7 @@ try{
    await request('STATE_PATCH',{patch:{floatingPet:{enabled:false}}});await tabPage.reload();await request('PAGE_UI_INJECT',{tabId});/* 观察窗口：断言的是关掉伴读猫后「不会」注入，只能留出注入生效的时间再看。 */await tabPage.waitForTimeout(300);assert.equal(await tabPage.locator('#roamcat-pet-host').count(),0);
    await request('STATE_PATCH',{patch:{floatingPet:{enabled:true}}});await tabPage.locator('#roamcat-pet-host').waitFor({state:'attached'});const [{result:visible}]=await page.evaluate(tabId=>chrome.scripting.executeScript({target:{tabId},func:()=>globalThis.RoamCatPet.avatarWrap.getBoundingClientRect().width>0}),tabId);assert.equal(visible,true);assert.deepEqual((await request('STATE_GET')).settings.floatingPet.position,after);
  });
+ await verifyMtRegressions({run,control:page,request,check});
  await check('Welcome page and interactive samples load',async()=>{await page.goto(base+'/ui/welcome.html');assert.ok(await until(()=>page.locator('#welcome-hero-title').isVisible().catch(()=>false),Boolean));await page.screenshot({path:path.join(out,'welcome.png')});});
  await page.pump();
 }catch(e){report.failures.push({name:'audit run',error:e.message});console.error(e);}

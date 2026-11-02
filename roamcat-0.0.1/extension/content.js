@@ -79,6 +79,8 @@ const LIMIT_ERROR = T('c.limit');
     videoAllowed: false,
     settings: { assistanceMode: 'ambient', rememberSupport: true, helpLanguage: 'zh', domain: 'auto' },
     providerConfigured: false,
+    // 整页翻译另看 pageTranslationReady：只配了机器翻译、没连大模型时也能开。
+    pageTranslationReady: false,
     domain: 'general',
     domainResolved: false,
     generation: 0,
@@ -3193,8 +3195,8 @@ const LIMIT_ERROR = T('c.limit');
   }
   async function startEmergency(token,resume) {
     if(typeof token!=='string'||!token||typeof resume!=='boolean')throw new Error(T('c.em.noAuth'));
-    const source=location.href,next=await request('STATE_GET');if(!sameArticle(source,location.href))throw new Error(T('c.em.pageChanged'));state.settings=next.settings;state.providerConfigured=Boolean(next.providerConfigured);
-    if(!state.providerConfigured){setPageStatus('emergency',T('c.em.noProviderPage'),{error:true,duration:5000});throw new Error(T('c.em.noProviderThrow'));}
+    const source=location.href,next=await request('STATE_GET');if(!sameArticle(source,location.href))throw new Error(T('c.em.pageChanged'));state.settings=next.settings;state.providerConfigured=Boolean(next.providerConfigured);state.pageTranslationReady=Boolean(next.pageTranslationReady??next.providerConfigured);
+    if(!state.pageTranslationReady){setPageStatus('emergency',T('c.em.noProviderPage'),{error:true,duration:5000});throw new Error(T('c.em.noProviderThrow'));}
     const saved = state.emergency;
     if (resume && saved && sameArticle(saved.source, location.href) && saved.root.isConnected) {
       saved.token = token;
@@ -3313,6 +3315,7 @@ const LIMIT_ERROR = T('c.limit');
     resetLookup();
     state.settings = next.settings;
     state.providerConfigured = Boolean(next.providerConfigured);
+    state.pageTranslationReady = Boolean(next.pageTranslationReady ?? next.providerConfigured);
     state.domainResolved = false;
     state.domain = next.settings.domain !== 'auto' ? next.settings.domain : 'general';
     state.enabled = true;
@@ -3352,6 +3355,7 @@ const LIMIT_ERROR = T('c.limit');
     state.settings = next.settings;
     applyTranslationDisplay();
     state.providerConfigured = Boolean(next.providerConfigured);
+    state.pageTranslationReady = Boolean(next.pageTranslationReady ?? next.providerConfigured);
     state.domainResolved = false;
     state.domain = next.settings.domain !== 'auto' ? next.settings.domain : 'general';
     if (!state.providerConfigured) {
@@ -3371,7 +3375,7 @@ const LIMIT_ERROR = T('c.limit');
     mountVideoTool();
     void startHistoryCapture();
     globalThis.RoamCatPet?.updateSettings?.(state.settings);
-    if (state.emergency?.active && state.providerConfigured && state.emergency.pauseForService) {
+    if (state.emergency?.active && state.pageTranslationReady && state.emergency.pauseForService) {
       state.emergency.pauseForService = false;
       state.emergency.error = '';
       void runEmergency(state.emergency);
@@ -3629,10 +3633,10 @@ const LIMIT_ERROR = T('c.limit');
       globalThis.RoamCatPet?.onEmergencyStatusChange?.(st);
       return st;
     } else {
-      if(!state.providerConfigured){
-        try{const snapshot=await request('STATE_GET');state.settings=snapshot.settings;state.providerConfigured=Boolean(snapshot.providerConfigured);}catch{}
+      if(!state.pageTranslationReady){
+        try{const snapshot=await request('STATE_GET');state.settings=snapshot.settings;state.providerConfigured=Boolean(snapshot.providerConfigured);state.pageTranslationReady=Boolean(snapshot.pageTranslationReady??snapshot.providerConfigured);}catch{}
       }
-      if(!state.providerConfigured){
+      if(!state.pageTranslationReady){
         setPageStatus('emergency',T('c.em.noProviderPage'),{error:true,duration:5000});
         throw new Error(T('c.em.noProviderThrow'));
       }
