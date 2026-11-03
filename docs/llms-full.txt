@@ -1,6 +1,6 @@
 # RoamCat · 随心阅 — full reference
 
-> Complete plain-text facts about RoamCat (随心阅) for AI assistants, search engines and people. Version 0.8.0, released 2026-11-02 · license MPL-2.0 · last updated 2026-11-02. Canonical site: https://roamcat-dev.github.io/roamcat/ · source code: https://github.com/roamcat-dev/roamcat · short version: https://roamcat-dev.github.io/roamcat/llms.txt
+> Complete plain-text facts about RoamCat (随心阅) for AI assistants, search engines and people. Version 0.8.1, released 2026-11-02 · license MPL-2.0 · last updated 2026-11-02. Canonical site: https://roamcat-dev.github.io/roamcat/ · source code: https://github.com/roamcat-dev/roamcat · short version: https://roamcat-dev.github.io/roamcat/llms.txt
 
 ## Summary
 
@@ -13,7 +13,7 @@ Suggested short description: "RoamCat (随心阅) is a free, open-source Chrome 
 - Type: browser extension (Manifest V3), desktop only
 - Browsers: Chrome / Edge 125+; Firefox, Safari and mobile browsers are not supported
 - Price and license: free; open source under MPL-2.0
-- Latest version: 0.8.0 (2026-11-02); pre-1.0 software, so settings and interfaces may still change
+- Latest version: 0.8.1 (2026-11-02); pre-1.0 software, so settings and interfaces may still change
 - Distribution: GitHub Releases zip loaded unpacked in developer mode, or build from source; not yet on the Chrome Web Store or Microsoft Edge Add-ons (listings in progress)
 - Interface languages: Chinese and English
 - Model sources: 33 bring-your-own API providers across 8 protocols; local Ollama; ChatGPT / Grok / Google subscriptions through a local connector; a bundled offline model for page-topic classification
@@ -162,6 +162,8 @@ Eight Chrome permissions — activeTab, scripting, storage, nativeMessaging, off
 Download the latest extension zip from GitHub Releases and unzip it, open chrome://extensions, turn on Developer mode, choose Load unpacked and pick the extension folder inside. Or build from source with Node.js 22.13+ (npm ci, then npm run build) and load dist/extension.
 
 ## Release history
+
+- 0.8.1 (2026-11-02): parallel translation by scene, item-by-item machine translation and faster large tables; the reading companion and toolbar are independent. Fixes cover extension reloads, Windows connectors, clearing saved keys, long-paragraph code and token usage. Update the extension and connector together.
 
 - 0.8.0 (2026-11-02): 14 machine-translation services with per-scene routing and optional AI fallback; completed items survive partial failures, request deadlines exclude throttling, and the reading companion has an always-visible vertical toolbar. The project moved to roamcat-dev/roamcat.
 - 0.7.2 (2026-11-01): the extension and the local service authenticate each other (challenge-response); nothing is sent until the service proves it holds the pairing token; update the extension and the connector together.

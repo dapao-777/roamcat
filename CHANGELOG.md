@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-11-02
+
 ### 改进
 - 伴读猫工具栏上的「旋旋翻」改名「双语翻译」，悬停提示写明点了会怎样（「点击翻译本页」「点击恢复原文」），伴读猫的开关播报和设置页的伴读猫介绍同步改；英文界面不再叫 Flip。
 - **右键「帮助理解选中内容」不用先开阅读辅助**：选中单个单词时直接打开查词卡（和按住 D 单击一样，按你的显示方式出卡片或顶部释义），以前会拒绝并让你改用快捷键；只解释选中的这一处，不再顺带开启整页提示；本页暂停了阅读辅助时也照样能用，暂停状态不变。
@@ -314,7 +316,8 @@ Twitch 直播聊天实时翻译；本机常驻连接服务改为配对令牌认�
 - `host_permissions` 仍为宽泛的 `http(s)://*/*`，计划改为 `optional_host_permissions` 按需申请。
 - 未上架商店；扩展仅支持开发者模式加载（直接加载 `roamcat-0.0.1/extension` 时 ID 与目录路径绑定；`npm run build` 产物 ID 固定）。
 
-[Unreleased]: https://github.com/roamcat-dev/roamcat/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/roamcat-dev/roamcat/compare/v0.8.1...HEAD
+[0.8.1]: https://github.com/roamcat-dev/roamcat/releases/tag/v0.8.1
 [0.8.0]: https://github.com/roamcat-dev/roamcat/releases/tag/v0.8.0
 [0.7.2]: https://github.com/roamcat-dev/roamcat/releases/tag/v0.7.2
 [0.7.1]: https://github.com/roamcat-dev/roamcat/releases/tag/v0.7.1

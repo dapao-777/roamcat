@@ -16,7 +16,7 @@
 <p align="center">
   <a href="LICENSE"><img alt="License: MPL-2.0" src="https://img.shields.io/badge/license-MPL--2.0-blue"></a>
   <a href="https://github.com/roamcat-dev/roamcat/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/roamcat-dev/roamcat/actions/workflows/ci.yml/badge.svg"></a>
-  <img alt="版本 0.8.0" src="https://img.shields.io/badge/version-0.8.0-blue">
+  <img alt="版本 0.8.1" src="https://img.shields.io/badge/version-0.8.1-blue">
   <img alt="Chrome / Edge 125+" src="https://img.shields.io/badge/Chrome%20%2F%20Edge-125%2B-green">
   <img alt="Manifest V3" src="https://img.shields.io/badge/manifest-V3-blueviolet">
 </p>
@@ -48,7 +48,7 @@
 **RoamCat（随心阅）**是免费开源的 **Chrome / Edge** 浏览器扩展，帮助中文读者阅读英文网站：把页面原位译成**中英双语对照**，或保留整页英文、只给随你进步而**渐退的稀疏提示**；还支持 **PDF / EPUB 文件**、**YouTube 双语字幕**和需手动开启的 **Twitch 直播聊天翻译**。**本地优先、无遥测**，AI 由你自己选：**33 家自备 API**、本地 Ollama 模型，或你已有的 **ChatGPT / Grok / Google 订阅**。更多见[官网](https://roamcat-dev.github.io/roamcat/zh.html)，给 AI 助手的摘要见 [llms.txt](https://roamcat-dev.github.io/roamcat/llms.txt)。
 
 > [!NOTE]
-> **0.8.0：接入 14 种机器翻译，整页、字幕、聊天、阅读器与选段可分别选择引擎，失败时可回退到大模型；伴读猫换上常驻竖排工具栏。** 从 [Releases](https://github.com/roamcat-dev/roamcat/releases/latest) 下载安装包或从源码构建，再以开发者模式加载（见[快速开始](#-快速开始)），尚未上架扩展商店。本项目是对开源项目 [RelyLess](https://github.com/rockythink/relyless) 的重构、优化与修复，详见[致谢](#-致谢)。
+> **0.8.1：翻译按场景并行，机翻逐条显示，减少大表格卡顿；伴读猫与快捷工具栏独立摆放，修复扩展重载、连接器、密钥清除与翻译稳定性问题。** 从 [Releases](https://github.com/roamcat-dev/roamcat/releases/latest) 下载安装包或从源码构建，再以开发者模式加载（见[快速开始](#-快速开始)），尚未上架扩展商店。本项目是对开源项目 [RelyLess](https://github.com/rockythink/relyless) 的重构、优化与修复，详见[致谢](#-致谢)。
 
 ## ✨ 亮点
 
@@ -126,7 +126,7 @@
 
 需要 **Chrome 或 Edge 125+**。
 
-**方式 A：Release 安装包。** 从 [Releases](https://github.com/roamcat-dev/roamcat/releases/latest) 下载 `roamcat-0.8.0-extension.zip` 并解压。打开 `chrome://extensions`（或 `edge://extensions`），开启**开发者模式**，点**加载已解压的扩展**，选择解压出的 **`roamcat-0.8.0/extension`** 文件夹。要用订阅连接器，在包含 `roamcat-0.8.0/` 的目录里运行 `node roamcat-0.8.0/connector/install.mjs`（需要 Node.js 20+）；它会按这个文件夹算出扩展 ID，移动文件夹后要重新运行。
+**方式 A：Release 安装包。** 从 [Releases](https://github.com/roamcat-dev/roamcat/releases/latest) 下载 `roamcat-0.8.1-extension.zip` 并解压。打开 `chrome://extensions`（或 `edge://extensions`），开启**开发者模式**，点**加载已解压的扩展**，选择解压出的 **`roamcat-0.8.1/extension`** 文件夹。要用订阅连接器，在包含 `roamcat-0.8.1/` 的目录里运行 `node roamcat-0.8.1/connector/install.mjs`（需要 Node.js 20+）；它会按这个文件夹算出扩展 ID，移动文件夹后要重新运行。
 
 **方式 B：从源码构建**（需要 Node.js 22.13+；Node 24 已验证）：
 
