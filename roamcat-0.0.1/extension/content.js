@@ -182,7 +182,9 @@ const LIMIT_ERROR = T('c.limit');
   const contentUI=globalThis.RoamCatContentUI;
   function createBrandLabel(context=''){return contentUI.brandLabel(brandIcon(),context);}
   const pageStatus={host:null,root:null,timer:0,lines:new Map(),dismissed:new Map(),selected:null};
-  const statusPriority={support:1,structure:2,emergency:3,passage:4,lookup:5,known:6};
+  const statusPriority={support:1,structure:2,emergency:3,passage:4,lookup:5,'context-help':5,known:6};
+  // 这些错误的原文本身就是下一步怎么做（如「选区跨了段落，请在同一段里选」），伴读猫照原话说，不换成笼统的「暂未完成」。
+  const verbatimStatus=new Set(['context-help']);
   const statusFailures={support:'c.fail.support',structure:'c.fail.structure',emergency:'c.fail.emergency',passage:'c.fail.passage',lookup:'c.fail.lookup',known:'c.fail.known'};
   function removePageStatus(){pageStatus.host?.remove();pageStatus.host=null;pageStatus.root=null;pageStatus.selected=null;}
   function createPageStatus(){
@@ -214,7 +216,7 @@ const LIMIT_ERROR = T('c.limit');
     if(petPresent){
       removePageStatus();
       if(!selected){globalThis.RoamCatPet.clearStatusSpeech();return;}
-      const copy=selected.error?(T(statusFailures[selected.key]||'c.fail.fallback')):selected.text;
+      const copy=selected.error&&!verbatimStatus.has(selected.key)?(T(statusFailures[selected.key]||'c.fail.fallback')):selected.text;
       globalThis.RoamCatPet.speakStatus(copy,{key:selected.key,busy:Boolean(selected.busy&&!selected.error),error:Boolean(selected.error),duration:selected.expiresAt?Math.max(0,selected.expiresAt-now):0});
       return;
     }
@@ -850,7 +852,8 @@ const LIMIT_ERROR = T('c.limit');
   }
   function helpTarget(range,selected,record=null) {
     const block = readingBlockFor(range.startContainer,true);
-    if (!block || readingBlockFor(range.endContainer,true) !== block || unsafe(nodeElement(range.startContainer),true) || unsafe(nodeElement(range.endContainer),true)) throw new Error(LIMIT_ERROR);
+    if (block && readingBlockFor(range.endContainer,true) !== block) throw new Error(T('c.selCrossBlock'));
+    if (!block || unsafe(nodeElement(range.startContainer),true) || unsafe(nodeElement(range.endContainer),true)) throw new Error(LIMIT_ERROR);
     const mapping = textMap(block);
     let start = boundaryOffset(mapping,range.startContainer,range.startOffset), end = boundaryOffset(mapping,range.endContainer,range.endOffset);
     if (!selected) {
@@ -1569,7 +1572,7 @@ const LIMIT_ERROR = T('c.limit');
     void refreshViewport();
   }
   function validTarget(target) {
-    if (!isAlive() || state.paused || target.generation!==state.generation || !sameArticle(state.page,location.href) || document.visibilityState!=='visible') return false;
+    if (!isAlive() || (state.paused && !target.explicit) || target.generation!==state.generation || !sameArticle(state.page,location.href) || document.visibilityState!=='visible') return false;
     if(target.sourceKey)return target.isValid?target.isValid():target.viewportGeneration===state.viewportGeneration&&Boolean(target.anchorRect);
     return target.block?.isConnected && target.anchor?.startContainer?.isConnected && target.anchor.toString()===target.text && blockText(target.block)===target.sourceText && visibleRange(target.anchor,target.block);
   }
@@ -2187,12 +2190,24 @@ const LIMIT_ERROR = T('c.limit');
   function onKey(event){if(event.key!=='Escape')return;removeStructureCard();if(state.card)closeCard();removeSelectionTool();}
   function onOutside(event){if(state.card&&!event.composedPath().includes(state.card.host))closeCard();}
   function onContextMenu(event){const selection=getSelection();contextRange=!unsafe(event.target) && selection?.rangeCount && !selection.isCollapsed?selection.getRangeAt(0).cloneRange():null;}
+  // 右键「帮助理解选中内容」：单词与按住查词键单击同一条路（按设置出卡片或顶部释义），句子和短段出解释卡。
+  // 只解释选中的这一处：没开阅读辅助时只取一份设置快照，不顺带开启整页提示；本页暂停时也照样解释（这是明确的请求），但不解除暂停；
+  // 做不了的原因直接在网页上提示——以前只在工具栏图标挂一个「!」，网页上看起来像点了没反应。
   async function contextHelp(selectionText) {
-    if(state.paused)throw new Error(T('c.paused'));
-    const selection=getSelection(),range=contextRange || (selection?.rangeCount&&!selection.isCollapsed?selection.getRangeAt(0).cloneRange():null);contextRange=null;
-    if(!range || !range.startContainer.isConnected)throw new Error(T('c.selStale'));
-    const target=helpTarget(range,true);if(normalizeText(selectionText)!==normalizeText(target.text))throw new Error(T('c.selChanged'));if(target.kind==='word')throw new Error(T('c.wordUseKey',{key:lookupLabel()}));
-    if(!state.enabled)await enable();assistTarget(target);return status();
+    try{
+      const selection=getSelection(),range=contextRange || (selection?.rangeCount&&!selection.isCollapsed?selection.getRangeAt(0).cloneRange():null);contextRange=null;
+      if(!range || !range.startContainer.isConnected)throw new Error(T('c.selStale'));
+      const target=helpTarget(range,true);if(normalizeText(selectionText)!==normalizeText(target.text))throw new Error(T('c.selChanged'));
+      if(!state.enabled)await loadHelpSettings();
+      if(!isAlive())return status();
+      target.explicit=true;removeSelectionTool();assistTarget(target);
+    }catch(error){setPageStatus('context-help',error.message,{error:true,duration:5000});}
+    return status();
+  }
+  async function loadHelpSettings(){
+    const next=await request('STATE_GET');if(!isAlive())return;
+    state.settings=next.settings;state.providerConfigured=Boolean(next.providerConfigured);state.pageTranslationReady=Boolean(next.pageTranslationReady??next.providerConfigured);
+    if(!state.domainResolved)state.domain=next.settings.domain!=='auto'?next.settings.domain:'general';
   }
   function removeSelectionTool(){state.selectionTool?.remove();state.selectionTool=null;}
   function passageTarget(range,wholeBlock=false){
