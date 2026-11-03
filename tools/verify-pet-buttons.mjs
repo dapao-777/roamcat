@@ -1,7 +1,7 @@
 /**
  * @file tools/verify-pet-buttons.mjs
  * 文件职责：伴读猫悬浮按钮专项门禁（npm run verify:pet）——在 ego lite 的真实 content script 环境里，对猫头 / 独立的竖排快捷工具栏（贴边、拖动吸附、位置记忆、悬停提示） /
- *   旋旋翻 / 缩放 / 贴边标签 / 气泡关闭 / 摘要窗做真实鼠标点击与键盘操作，断言状态变化与可及性。
+ *   双语翻译 / 缩放 / 贴边标签 / 气泡关闭 / 摘要窗做真实鼠标点击与键盘操作，断言状态变化与可及性。
  * 主要内容：本地 fixture 文章页（tools/fixtures/sites/devto-article.html）上挂载的伴读猫；伴读猫实例挂在隔离世界的宿主上，
  *   经扩展页 chrome.scripting 进入隔离世界读取与调用。截图尽力而为，判定只看状态断言。
  * 模块边界：普通 Node 运行，先 npm run build；无头 ego lite 用临时配置加载 dist/extension；报告与截图写 preview/pet-buttons/。
@@ -79,7 +79,7 @@ try {
     } : null;
   }`);
 
-  // 几何：独立的竖排快捷工具栏（自上而下设置 / 提炼 / 阅读 / 旋旋翻）与猫、气泡、缩放胶囊、摘要窗的视口矩形。
+  // 几何：独立的竖排快捷工具栏（自上而下设置 / 提炼 / 阅读 / 双语翻译）与猫、气泡、缩放胶囊、摘要窗的视口矩形。
   const layout = () => petCall(`() => {
     const host = document.querySelector('#roamcat-pet-host'), sr = host.shadowRoot;
     const r = el => { const b = el.getBoundingClientRect(); return {l: Math.round(b.left), t: Math.round(b.top), r: Math.round(b.right), b: Math.round(b.bottom)}; };
@@ -152,7 +152,7 @@ try {
   const home = await until(layout, l => onRightEdge(l) && oneColumn(l));
   const gaps = home ? home.btns.slice(1).map((b, i) => b.t - home.btns[i].b) : [];
   check('工具栏独立贴在屏幕右缘、上沿约在视口一半', onRightEdge(home) && Math.abs(home.bar.t - home.vh * 0.5) <= 2, JSON.stringify(home));
-  check('工具栏竖排一列、自上而下设置/提炼/阅读/旋旋翻', oneColumn(home) && gaps.length === 3 && gaps.every(g => g >= 0 && g <= 4)
+  check('工具栏竖排一列、自上而下设置/提炼/阅读/双语翻译', oneColumn(home) && gaps.length === 3 && gaps.every(g => g >= 0 && g <= 4)
     && home.btns.every((b, i) => i === 0 || b.t > home.btns[i - 1].t), JSON.stringify({btns: home?.btns, gaps}));
   check('工具栏不压猫', Boolean(home) && !overlaps(home.bar, home.host), JSON.stringify({bar: home?.bar, host: home?.host}));
   const toolbarRole = await petCall(`() => { const bar = document.querySelector('#roamcat-pet-host').shadowRoot.querySelector('.roamcat-toolbar'); return {role: bar.getAttribute('role'), label: bar.getAttribute('aria-label'), labels: [...bar.querySelectorAll('button')].map(b => b.getAttribute('aria-label'))}; }`);
@@ -231,7 +231,7 @@ try {
   await avatar.focus();
   const forwardTab = [];
   for (let i = 0; i < 4; i++) { await tab.keyboard.press('Tab'); forwardTab.push(await focusId()); }
-  check('从猫头 Tab 依次经过设置、提炼、阅读、旋旋翻', forwardTab.join() === 'quick-options,quick-summary,quick-reading,roamcat-flip-btn',
+  check('从猫头 Tab 依次经过设置、提炼、阅读、双语翻译', forwardTab.join() === 'quick-options,quick-summary,quick-reading,roamcat-flip-btn',
     JSON.stringify(forwardTab));
   const focusTip = await until(() => tipState('#roamcat-flip-btn'), s => s.opacity > 0.9 && s.vis === 'visible');
   check('键盘聚焦也显示按钮提示', focusTip.opacity > 0.9 && focusTip.vis === 'visible', JSON.stringify(focusTip));
@@ -275,17 +275,17 @@ try {
       && state?.tip === (enabled ? '阅读辅助进行中 · 点击暂停' : '阅读辅助已暂停 · 点击开启'), JSON.stringify(state));
   }
 
-  // ---------- 10. 旋旋翻：无服务时走错误播报 ----------
+  // ---------- 10. 双语翻译：无服务时走错误播报 ----------
   // 无服务时先播「还没连上 / 启动失败」，随后状态条的失败文案「整页翻译已停止」会接替它，两者都算错误反馈。
   await tab.locator('.roamcat-flip-btn').click();
-  st = await until(petState, s => s?.speechCls.includes('speaking') && /连上|失败|连接|开动|复原|停止/.test(s.speech || ''), 4000);
-  check('旋旋翻点击给出反馈气泡', st?.speechCls.includes('speaking') && /连上|失败|连接|开动|复原|停止/.test(st.speech || ''),
+  st = await until(petState, s => s?.speechCls.includes('speaking') && /连上|失败|连接|开始双语翻译|恢复原文|停止/.test(s.speech || ''), 4000);
+  check('双语翻译点击给出反馈气泡', st?.speechCls.includes('speaking') && /连上|失败|连接|开始双语翻译|恢复原文|停止/.test(st.speech || ''),
     `speech=${st?.speech}`);
   const flipErr = st?.speech || '';
   if (/辅助服务还没连上|启动失败|已停止/.test(flipErr)) {
-    check('无服务时旋旋翻报错误态', st.avatarCls.includes('state-error'), `avatarCls=${st.avatarCls}`);
+    check('无服务时双语翻译报错误态', st.avatarCls.includes('state-error'), `avatarCls=${st.avatarCls}`);
   } else {
-    warn('旋旋翻进入翻译态（测试环境意外配置了服务？）', flipErr);
+    warn('双语翻译进入翻译态（测试环境意外配置了服务？）', flipErr);
   }
   await shot('flip-error');
   // 等待错误气泡自动收回或手动关闭

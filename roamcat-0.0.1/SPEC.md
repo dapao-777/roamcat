@@ -140,7 +140,7 @@
 | 文件 | 职责 | 关键约束 |
 |---|---|---|
 | `content.js` | 阅读根识别、文本映射、自动标注、查词（按键+卡片+顶部词注）、选段翻译、阅读解构高亮、整页翻译引擎、历史采集、重载侦察（失效 toast） | 只拆文本节点不重建强调/链接；所有跨文档操作带 generation 校验；DOM 批量更新走 rAF；重载侦察用可见性门控的低频探测，不用常驻 port（不阻止 SW 空闲回收） |
-| `floating-pet.js` + `floating-pet-{helpers,styles,svg,quote-bubble,summary}.js` | 伴读猫（SVG/Shadow DOM/拖拽贴边/菜单/摘要/状态气泡）与独立的竖排快捷工具栏、全局快捷键 | window 级监听只注册一次（`bindGlobalEvents`）；快捷键在输入框/可编辑区不触发（`petShortcutBlocked`）；竖排快捷工具栏（设置/摘要/阅读开关/旋旋翻）是与猫分开的独立挂件：贴屏幕右缘（可拖到左缘吸附），位置单独记在 `floatingPet.toolbar`，按钮自带悬停提示（`data-tip`），有固定侧栏的站点按 keepOutRight 避让；猫只做气泡提示，点猫头只开合缩放胶囊 |
+| `floating-pet.js` + `floating-pet-{helpers,styles,svg,quote-bubble,summary}.js` | 伴读猫（SVG/Shadow DOM/拖拽贴边/菜单/摘要/状态气泡）与独立的竖排快捷工具栏、全局快捷键 | window 级监听只注册一次（`bindGlobalEvents`）；快捷键在输入框/可编辑区不触发（`petShortcutBlocked`）；竖排快捷工具栏（设置/摘要/阅读开关/双语翻译）是与猫分开的独立挂件：贴屏幕右缘（可拖到左缘吸附），位置单独记在 `floatingPet.toolbar`，按钮自带悬停提示（`data-tip`），有固定侧栏的站点按 keepOutRight 避让；猫只做气泡提示，点猫头只开合缩放胶囊 |
 | `live-chat.js` | Twitch 直播聊天实时翻译：聊天输入区「译」开关（存 `video.liveChat`）、新消息过滤（表情/单词梗/刷屏/中文不翻）、最新优先每批 ≤8 条经 `LIVE_CHAT_TRANSLATE` 发送、`SS_LIVE_CHAT_PROGRESS` 流式显示 | manifest 第二个 `content_scripts` 项（自带 `design.js` + `i18n-content.js` + `live-chat.js`），只匹配 `https://www.twitch.tv/*` 主框架；`injectPageUI` 对已打开的 Twitch 页补注入；不读历史聊天、不写阅读记录；后台返回 `throttled` 时把批次按先后插回队列并暂停到 `retryAfterMs` |
 | `design.js` | 设计 token（明暗双主题）唯一下发 | 仅当脚本带 `data-roamcat-page` 时才向页面根注入 |
 | `i18n.js` / `i18n-content.js` | 中英双语运行时 `RoamCatI18n`：`t()`/`lang()`/`pref()`/`setPref()`/`apply()`/`onChange()`，字典中英逐键对齐（`node tools/check-dict.cjs` 校验）；内容脚本加载生成的瘦身版（只含网页侧用到的命名空间，`i18n-content.test.mjs` 断言无漂移且网页侧引用的键齐全） | storage 受限上下文自动回退 `STATE_GET` 拉取偏好，监听 `SS_REFRESH` 同步变更 |
@@ -410,7 +410,7 @@
 | 真实扩展回归 | `npm run verify:audit`（`tools/audit-extension.mjs`：无头 ego lite 经 `tools/lib/ego.mjs` 自写 CDP 驱动，加载 host 权限收窄为 127.0.0.1 的扩展副本，本地 fixture 文章 + 模拟模型服务） | 覆盖：设置持久化、12 分区明暗/窄窗、术语/规则、API 模型列表、内容脚本开关、真实按键查词卡片、语言切换、已认识词撤销、历史导出清理、句子结构、整页翻译显示与清除（含双语 / 仅译文切换）、本地模型零请求分类、个性化空态、摘要防重与切换文章/模型过期、伴读猫拖拽持久化、欢迎页 |
 | 专项回归 | `npm run verify:options`（`tools/verify-options.mjs`，设置页控制器行为）、`npm run verify:sites`（`tools/verify-dev-sites.mjs`，站点档案）、`npm run verify:service`（`tools/verify-connector-service.mjs`，常驻服务与配对令牌）、`npm run verify:video`（`tools/verify-video-ui.mjs` 与 `tools/lib/video-regressions.mjs`，原文稿/直播状态、原生字幕身份、换片队列与设置保存竞态）、`npm run verify:livechat`（`tools/verify-live-chat.mjs`，Twitch 聊天开关/排队/提示/伴读猫避让）、`npm run verify:release`（`tools/verify-release.mjs`，生产构建静态检查与冒烟）、`npm run verify:dictation`（`tools/verify-video-dictation.mjs`，无字幕视频云端听写的采集/续录/停止/回看/播完取消连播）、`npm run verify:performance`（`tools/verify-performance.mjs`，长页面索引缓存与增量失效、阅读器分页、真实 EPUB worker、后台空闲回收）、`npm run verify:reader`（`tools/verify-reader.mjs`，阅读器翻译失败可见与重试、换书后旧请求丢弃、远程文件名与体积限制） | 设置页保存/回滚/思考等级、各站点阅读块与翻译单元分区、常驻服务握手与回退、长页面与阅读器的性能和重试 |
 | 全界面门禁 | `npm run verify:ui`（`tools/verify-ui-all.mjs`；每轮先清理旧截图；动作后按状态轮询，不用固定等待） | options 全 12 分区明暗/窄窗（六档宽度下页头对齐、主区高度、窄屏导航文字且分组全部可见）、快捷键页清单说明宽度与对齐、标签栏无滚动条、全部分区与弹窗/引导页窄屏的版式体检、别的扩展页切换语言后设置页整页换语言、网页明暗判断、welcome/reader/popup、页内挂件（词卡/任务条/解构卡及标签对比度/toast/选区条/伴读猫）、中英文档断言（含英文下拉框不截断）、横向溢出、控制台错误 |
-| 伴读猫门禁 | `npm run verify:pet`（`tools/verify-pet-buttons.mjs`） | 快捷坞/旋旋翻/缩放/贴边/气泡/摘要窗全部按钮的真实点击与键盘操作、文案键解析 |
+| 伴读猫门禁 | `npm run verify:pet`（`tools/verify-pet-buttons.mjs`） | 快捷坞/双语翻译/缩放/贴边/气泡/摘要窗全部按钮的真实点击与键盘操作、文案键解析 |
 | 连接器行为 | 临时脚本（假 spawn） | Grok 重试门控（AUTH/429 不重试、格式错误重试、过长不重试） |
 
 模块图规则 R1–R12（`tools/lib/module-graph.cjs`，零依赖，可由 `audit-extension.mjs` 在浏览器回归前自动执行，失败即中止；R1–R7 列在下表，R8–R12 见表后）：
