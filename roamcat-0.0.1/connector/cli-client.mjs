@@ -22,6 +22,7 @@ import { EventEmitter } from 'node:events';
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
+import { cliCommand } from './cli-command.mjs';
 import {
   SOURCE_DATA_INSTRUCTIONS,SUPPORT_INSTRUCTIONS,SUPPORT_CORRECTION_INSTRUCTIONS,SUPPORT_SCHEMA,normalizeSupportProviderItems,inspectSupportResponse,normalizeSupportCorrections,normalizePreparationContext,
   ASSISTANCE_INSTRUCTIONS,assistanceSchema,normalizeAssistanceRequest,normalizeAssistanceResult,
@@ -135,6 +136,7 @@ export class CliClient extends EventEmitter {
     this.authGeneration = 0;
     this.stderrReports = new Map();
     this.activeChildren = new Set();
+    this.childKillTimers = new WeakMap();
     this.probeRun = null;
     this.lastProbe = null;
   }
@@ -186,21 +188,47 @@ export class CliClient extends EventEmitter {
 
   env() { return this.hooks.env(this); }
 
+  trackChild(child) {
+    this.activeChildren.add(child);
+    const exited = () => {
+      this.activeChildren.delete(child);
+      clearTimeout(this.childKillTimers.get(child));
+      this.childKillTimers.delete(child);
+    };
+    child.once('exit', exited);
+    child.once('close', exited);
+    child.on('error', () => { if (!child.pid) exited(); });
+    return child;
+  }
+
+  stopChild(child) {
+    if (!this.activeChildren.has(child) || this.childKillTimers.has(child)) return;
+    // 请求结束与进程退出是两件事：拒绝请求后仍须跟踪进程，直到真的收到退出事件。
+    const timer = setTimeout(() => {
+      if (this.activeChildren.has(child)) try { child.kill('SIGKILL'); } catch { /* already gone */ }
+    }, 2000);
+    timer.unref?.();
+    this.childKillTimers.set(child, timer);
+    try { child.kill('SIGTERM'); } catch { /* SIGKILL 仍按原定期限兜底。 */ }
+  }
+
   spawnCli(args, { timeoutMs = this.timeoutMs, onOutput } = {}) {
     return new Promise((resolvePromise, rejectPromise) => {
       let child;
       try {
-        child = this.spawnImpl(this.cliPath, args, {
+        const invocation = cliCommand(this.cliPath, args);
+        child = this.spawnImpl(invocation.command, invocation.args, {
           cwd: this.workDir,
           env: this.env(),
           stdio: ['ignore', 'pipe', 'pipe'],
           windowsHide: true,
+          ...invocation.options,
         });
       } catch {
         rejectPromise(errorWithDiagnostic(`无法启动 ${this.hooks.label} CLI，请检查安装。`, 'STARTUP_FAILED'));
         return;
       }
-      this.activeChildren.add(child);
+      this.trackChild(child);
       let stdout = '';
       let stderr = '';
       let settled = false;
@@ -208,23 +236,22 @@ export class CliClient extends EventEmitter {
         if (settled) return;
         settled = true;
         clearTimeout(timer);
-        this.activeChildren.delete(child);
         if (error) rejectPromise(error);
         else resolvePromise({ stdout, stderr, code });
       };
       const timer = setTimeout(() => {
-        child.kill('SIGTERM');
-        setTimeout(() => { if (!settled) child.kill('SIGKILL'); }, 2000).unref?.();
+        this.stopChild(child);
         finish(errorWithDiagnostic(`${this.hooks.label} 服务响应超时，请刷新连接后重试。`, 'TIMEOUT', { durationMs: timeoutMs }));
       }, timeoutMs);
       timer.unref?.();
       const take = (chunk, stream) => {
+        if (settled) return;
         if (stream === 'stderr') this.onStderr(chunk);
         const text = Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk);
         if (stream === 'stdout') stdout += text;
         else stderr += text;
         if (Buffer.byteLength(stdout) + Buffer.byteLength(stderr) > OUTPUT_LIMIT) {
-          child.kill('SIGTERM');
+          this.stopChild(child);
           finish(errorWithDiagnostic(`${this.hooks.label} 返回的内容过长。`, 'OUTPUT_INVALID'));
           return;
         }
@@ -232,7 +259,7 @@ export class CliClient extends EventEmitter {
       };
       child.stdout.on('data', chunk => take(chunk, 'stdout'));
       child.stderr.on('data', chunk => take(chunk, 'stderr'));
-      child.on('error', () => finish(errorWithDiagnostic(`无法启动 ${this.hooks.label} CLI，请检查安装。`, 'STARTUP_FAILED')));
+      child.on('error', () => { this.stopChild(child); finish(errorWithDiagnostic(`无法启动 ${this.hooks.label} CLI，请检查安装。`, 'STARTUP_FAILED')); });
       child.on('exit', code => {
         if (settled) return;
         if (code === 0) finish(null, 0);
@@ -450,9 +477,8 @@ export class CliClient extends EventEmitter {
     this.authGeneration++;
     await this.hooks.beforeClose?.(this);
     for (const child of this.activeChildren) {
-      try { child.kill('SIGTERM'); } catch { /* ignore */ }
+      this.stopChild(child);
     }
-    this.activeChildren.clear();
     this.ready = false;
   }
 }

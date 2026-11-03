@@ -28,7 +28,7 @@ import {
 } from '../../roamcat-0.0.1/extension/message-protocol.js';
 import {normalizeSettings, apiProviderForTask} from '../../roamcat-0.0.1/extension/shared.js';
 import {SUBSCRIPTION_KINDS} from '../../roamcat-0.0.1/extension/subscription.js';
-import {apiServiceKeys, apiKeyPoolPick, apiKeyPoolCool} from '../../roamcat-0.0.1/extension/api-providers.mjs';
+import {apiServiceKeys, apiServiceReady, apiKeyPoolPick, apiKeyPoolCool} from '../../roamcat-0.0.1/extension/api-providers.mjs';
 
 const currentSettings = normalizeSettings();
 
@@ -102,6 +102,23 @@ test('validatePatch 校验 API 服务列表与当前服务引用', () => {
   assert.throws(() => validatePatch({apiServices: [service('two')]}, withActive), /移除当前 API 服务时必须同时选择替代服务/u);
   assert.deepEqual(validatePatch({apiServices: [service('one'), service('two')], activeApiServiceId: 'two'}, withActive).activeApiServiceId, 'two');
   assert.throws(() => validatePatch({apiServices: [], activeApiServiceId: 'one'}, currentSettings), /没有 API 服务时当前服务必须为空/u);
+});
+
+test('清除已保存服务的全部密钥保留路由、使服务未就绪，且不阻止后续保存', () => {
+  const before = normalizeSettings({providerKind: 'api', activeApiServiceId: 'one', apiServices: [
+    {id: 'one', name: 'One', providerId: 'openai-compatible', baseUrl: 'https://api.example.com/v1', model: 'm', apiKey: 'k1', apiKeys: ['k1', 'k2'], options: {}},
+  ], apiRouting: {translate: 'one'}});
+  const patch = validatePatch({apiServices: before.apiServices.map(service => ({...service, apiKey: '', apiKeys: []}))}, before);
+  const effects = settingsPatchEffects(before, patch);
+  const after = normalizeSettings(effects.nextSettings);
+  assert.equal(effects.providerChanged, true);
+  assert.equal(after.activeApiServiceId, 'one');
+  assert.equal(after.apiRouting.translate, 'one');
+  assert.equal(after.apiServices[0].apiKey, '');
+  assert.deepEqual(apiServiceKeys(after.apiServices[0]), []);
+  assert.equal(apiServiceReady(after.apiServices[0]), false);
+  assert.doesNotThrow(() => validatePatch({apiServices: after.apiServices}, after));
+  assert.doesNotThrow(() => validatePatch({lookupKey: 'F'}, after));
 });
 
 test('validatePatch 校验术语表与伴读猫设置', () => {

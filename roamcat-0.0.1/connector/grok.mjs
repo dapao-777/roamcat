@@ -15,6 +15,7 @@ import { randomUUID } from 'node:crypto';
 import { access, chmod, copyFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { delimiter, dirname, join, resolve } from 'node:path';
 import { homedir } from 'node:os';
+import { cliCommand } from './cli-command.mjs';
 import {
   CliClient,
   DEFAULT_TIMEOUT_MS,
@@ -410,16 +411,19 @@ export class GrokClient extends CliClient {
     this.loginError = null;
     let child;
     try {
-      child = this.spawnImpl(this.cliPath, ['login', '--device-auth'], {
+      const invocation = cliCommand(this.cliPath, ['login', '--device-auth']);
+      child = this.spawnImpl(invocation.command, invocation.args, {
         cwd: this.workDir,
         env: this.env(),
         stdio: ['ignore', 'pipe', 'pipe'],
         windowsHide: true,
+        ...invocation.options,
       });
     } catch {
       throw errorWithDiagnostic('无法启动 Grok 登录，请检查 Grok CLI 安装。', 'STARTUP_FAILED');
     }
     this.loginChild = child;
+    this.trackChild(child);
     this.emitStatus();
     let output = '';
     const take = (chunk, stream) => {
@@ -480,10 +484,7 @@ export class GrokClient extends CliClient {
     this.loginChild = null;
     this.loginAuthUrl = null;
     this.loginUserCode = null;
-    if (child && !child.killed) {
-      try { child.kill('SIGTERM'); } catch { /* already exited */ }
-      setTimeout(() => { try { child.kill('SIGKILL'); } catch { /* ignore */ } }, 2000).unref?.();
-    }
+    if (child) this.stopChild(child);
   }
 
   async cancelLogin() {

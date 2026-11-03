@@ -176,7 +176,8 @@
     for (const [selector,resolved] of [[mark,markStyle],[hint,hintStyle],[block,blockStyle]]) {
       if (resolved === 'quote' && selector !== block) rules.push(`${selector}::before{content:"“"!important}`,`${selector}::after{content:"”"!important}`);
     }
-    rules.push(block+' > span,'+block+' > p,'+block+' > div > p{font:inherit!important;color:inherit!important;background:none!important;-webkit-text-fill-color:currentColor!important;letter-spacing:inherit!important;margin:0 0 .35em!important;padding:0!important;white-space:inherit!important;overflow-wrap:inherit!important;word-break:inherit!important;max-width:100%!important;min-width:0!important}');
+    // 失败提示（data-roamcat-status）是界面文字，不跟随网页字体与外层标题字号。
+    rules.push(block+' > span:not([data-roamcat-status]),'+block+' > p,'+block+' > div > p{font:inherit!important;color:inherit!important;background:none!important;-webkit-text-fill-color:currentColor!important;letter-spacing:inherit!important;margin:0 0 .35em!important;padding:0!important;white-space:inherit!important;overflow-wrap:inherit!important;word-break:inherit!important;max-width:100%!important;min-width:0!important}');
     return rules.join('\n');
   }
 

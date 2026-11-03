@@ -219,7 +219,7 @@ function parseStructuredOutput(text, parse, raw = false) {
 }
 
 export class CodexClient extends EventEmitter {
-  constructor({ codexPath, dataDir, timeoutMs = DEFAULT_TIMEOUT_MS, spawnImpl = spawn, diagnostic = null }) {
+  constructor({ codexPath, dataDir, timeoutMs = DEFAULT_TIMEOUT_MS, spawnImpl = spawn, diagnostic = null, userAuthPath = join(homedir(), '.codex', 'auth.json') }) {
     super();
     if (!codexPath || !dataDir) throw new TypeError("codexPath 和 dataDir 为必填项");
     this.codexPath = resolve(codexPath);
@@ -229,6 +229,7 @@ export class CodexClient extends EventEmitter {
     this.tmpDir = join(this.dataDir, "tmp");
     this.timeoutMs = timeoutMs;
     this.spawnImpl = spawnImpl;
+    this.userAuthPath = userAuthPath;
     this.diagnostic = typeof diagnostic === 'function' ? diagnostic : null;
     this.child = null;
     this.started = null;
@@ -283,10 +284,10 @@ export class CodexClient extends EventEmitter {
     await chmod(temporary, 0o600).catch(() => {});
     await rename(temporary, configPath);
 
-    const userAuth = join(homedir(), ".codex", "auth.json");
+    const userAuth = this.userAuthPath;
     const targetAuth = join(this.codexHome, "auth.json");
     try {
-      if (await access(userAuth).then(() => true).catch(() => false)) {
+      if (userAuth && await access(userAuth).then(() => true).catch(() => false)) {
         if (!await access(targetAuth).then(() => true).catch(() => false)) {
           await copyFile(userAuth, targetAuth);
           await chmod(targetAuth, 0o600).catch(() => {});

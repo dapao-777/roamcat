@@ -8,15 +8,15 @@
  *   model/list 校验、thread/turn 任务流（item/completed + turn/completed 驱动解析）、
  *   未连接订阅时的 AUTH_REQUIRED；Antigravity 用 agy models 探测账户（与启动探测去重）、区分未登录与临时失败（authFailed），
  *   常驻 stream-json 进程复用、EOF 换进程重试、协议不认时退回逐次 -p。
- * 模块边界：只注入 spawnImpl 与临时 dataDir，不 mock 任何被测模块内部；真实文件写入限于
- *   系统临时目录；运行方式为在仓库根执行 node:test 自动发现本目录全部 .test.mjs。
+ * 模块边界：注入 spawnImpl、临时 dataDir 与假认证来源，不读取真实登录文件，不 mock 模块内部；
+ *   文件限于本轮临时目录，afterEach 关闭客户端并校验路径后清理（断言失败时也执行）。
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
  */
-import {test} from 'node:test';
+import {afterEach, test} from 'node:test';
 import assert from 'node:assert/strict';
 import {EventEmitter} from 'node:events';
 import {PassThrough} from 'node:stream';
@@ -27,9 +27,26 @@ import {GrokClient} from '../../roamcat-0.0.1/connector/grok.mjs';
 import {CodexClient} from '../../roamcat-0.0.1/connector/codex.mjs';
 import {AntigravityClient, dictationModel} from '../../roamcat-0.0.1/connector/antigravity.mjs';
 
+const testDirs = new Set();
+const testClients = new Set();
 function tempDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'roamcat-connector-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'roamcat-connector-'));
+  testDirs.add(dir);
+  return dir;
 }
+function trackClient(client) { testClients.add(client); return client; }
+afterEach(async () => {
+  const closed = await Promise.allSettled([...testClients].map(client => client.close()));
+  testClients.clear();
+  for (const dir of testDirs) {
+    const target = path.resolve(dir);
+    assert.equal(path.dirname(target), path.resolve(os.tmpdir()));
+    assert.ok(path.basename(target).startsWith('roamcat-connector-'));
+    fs.rmSync(target, {recursive: true, force: true});
+  }
+  testDirs.clear();
+  for (const result of closed) if (result.status === 'rejected') throw result.reason;
+});
 
 /** 按调用序脚本化响应的假 spawn：handler({args, callIndex}) → {stdout, stderr, code, error}。 */
 function createFakeSpawn(handler) {
@@ -58,7 +75,7 @@ function createFakeSpawn(handler) {
 }
 
 function grokClient(dataDir, spawnImpl) {
-  return new GrokClient({grokPath: 'grok', dataDir, timeoutMs: 4000, spawnImpl, diagnostic: null, userAuthPath: path.join(dataDir, 'no-user-grok-auth.json')});
+  return trackClient(new GrokClient({grokPath: 'grok', dataDir, timeoutMs: 4000, spawnImpl, diagnostic: null, userAuthPath: path.join(dataDir, 'no-user-grok-auth.json')}));
 }
 
 function writeGrokAuth(dataDir) {
@@ -236,12 +253,28 @@ function createCodexFake(script) {
   return {spawnImpl, calls, sent};
 }
 
-function codexClient(dataDir, spawnImpl) {
-  return new CodexClient({codexPath: 'codex', dataDir, timeoutMs: 4000, spawnImpl, diagnostic: null});
+function codexClient(dataDir, spawnImpl, userAuthPath = path.join(dataDir, 'no-user-codex-auth.json')) {
+  return trackClient(new CodexClient({codexPath: 'codex', dataDir, timeoutMs: 4000, spawnImpl, diagnostic: null, userAuthPath}));
 }
 
 const CODEX_ACCOUNT = {result: {account: {type: 'chatgpt', email: 'reader@example.com', plan: 'plus'}}};
 const CODEX_MODELS = {result: {data: [{id: 'gpt-5.6-luna', displayName: 'GPT 5.6 Luna', isDefault: true, supportedReasoningEfforts: [{reasoningEffort: 'none'}]}], nextCursor: null}};
+
+test('Codex 测试认证只取注入的假文件，缺失时不回退到真实主目录', async () => {
+  for (const present of [false, true]) {
+    const dataDir = tempDir();
+    const source = path.join(dataDir, 'fake-user-auth.json');
+    const auth = JSON.stringify({tokens: {access_token: 'test-only-token'}});
+    if (present) fs.writeFileSync(source, auth);
+    const {spawnImpl} = createCodexFake({initialize: {result: {}}, 'account/read': CODEX_ACCOUNT});
+    const client = codexClient(dataDir, spawnImpl, source);
+    await client.start();
+    const target = path.join(dataDir, 'codex', 'auth.json');
+    assert.equal(fs.existsSync(target), present);
+    if (present) assert.equal(fs.readFileSync(target, 'utf8'), auth);
+    await client.close();
+  }
+});
 
 test('Codex 握手后读取账户状态并可列出模型', async () => {
   const dataDir = tempDir();
@@ -382,7 +415,7 @@ test('Antigravity 听写快速失败的一般错误重试一次；限额错误�
   }
 });
 function agyClient(dataDir, spawnImpl) {
-  return new AntigravityClient({agyPath: 'agy', dataDir, timeoutMs: 4000, spawnImpl, diagnostic: null});
+  return trackClient(new AntigravityClient({agyPath: 'agy', dataDir, timeoutMs: 4000, spawnImpl, diagnostic: null}));
 }
 
 test('Antigravity 用 agy models 探测账户，不再发 -p /usage', async () => {
@@ -465,6 +498,27 @@ function createAgyFake({onTurn, oneShot}) {
 
 const pageItem = (text, index) => ({id: `p${index + 1}`, text, context: {title: 'Talk', heading: '', before: '', after: ''}});
 const translated = (prompt, text) => ({status: 'SUCCESS', structured_output: {items: [{id: JSON.parse(prompt.slice(prompt.lastIndexOf('\n\n') + 2)).items[0].id, translation: text}]}});
+
+test('Windows npm shim 同时用于 Grok 任务/登录与 Antigravity 常驻任务', {skip: process.platform !== 'win32' && '仅 Windows'}, async () => {
+  const dataDir=tempDir(),entry=path.join(dataDir,'fixture.cjs');
+  fs.writeFileSync(entry,'// Test-only CLI entry, spawn is injected.');
+  const shim=path.join(dataDir,'fixture.cmd');fs.writeFileSync(shim,'@echo off\r\nnode "%~dp0\\fixture.cjs" %*\r\n');
+  const adapt=fake=>(command,args,...rest)=>{
+    assert.equal(command,process.execPath);assert.equal(args[0],entry);
+    return fake.spawnImpl(command,args.slice(1),...rest);
+  };
+  writeGrokAuth(dataDir);
+  const grokFake=createFakeSpawn(({args})=>args[0]==='models'?{stdout:GROK_MODELS}:args[0]==='login'?{}:{stdout:'{"domain":"tech"}'});
+  const grok=grokClient(dataDir,adapt(grokFake));grok.cliPath=shim;
+  assert.equal((await grok.classify({text:'A database uses an index.',title:'Docs',model:'grok-4.20-0309-non-reasoning'})).domain,'tech');
+  assert.ok((await grok.login()).authUrl);
+  assert.ok(grokFake.calls.some(call=>call.args.includes('--json-schema')));
+  assert.ok(grokFake.calls.some(call=>call.args[0]==='login'&&call.args[1]==='--device-auth'));
+  const agyFake=createAgyFake({onTurn:({prompt})=>({result:translated(prompt,'译文')}),oneShot:()=>({stdout:AGY_MODELS})});
+  const agy=agyClient(dataDir,adapt(agyFake));agy.cliPath=shim;
+  assert.equal((await agy.emergencyTranslate({scope:'page',items:[pageItem('One line.',0)],model:'gemini-3.8-flash-low'})).items[0].translation,'译文');
+  assert.ok(agyFake.streamCalls()>0);
+});
 
 test('Antigravity 字幕翻译走常驻流式进程：连续两轮复用同一个进程', async () => {
   const dataDir = tempDir();
@@ -578,7 +632,7 @@ test('Grok 复用本机 grok CLI 已有的登录；在扩展里退出后不再�
   const userAuthPath = path.join(dataDir, 'user-grok-auth.json');
   fs.writeFileSync(userAuthPath, JSON.stringify({default: {email: 'reader@example.com', refresh_token: 'r', principal_type: 'User'}}));
   const {spawnImpl, calls} = createFakeSpawn(() => ({stdout: GROK_MODELS}));
-  const client = new GrokClient({grokPath: 'grok', dataDir, timeoutMs: 4000, spawnImpl, diagnostic: null, userAuthPath});
+  const client = trackClient(new GrokClient({grokPath: 'grok', dataDir, timeoutMs: 4000, spawnImpl, diagnostic: null, userAuthPath}));
   const status = await client.refreshStatus();
   assert.equal(status.authenticated, true);
   assert.equal(status.email, 'reader@example.com');
@@ -586,7 +640,7 @@ test('Grok 复用本机 grok CLI 已有的登录；在扩展里退出后不再�
   assert.equal(calls.filter(call => call.args[0] === 'logout').length, 0);
   assert.equal(fs.existsSync(userAuthPath), true);
   await client.close();
-  const again = new GrokClient({grokPath: 'grok', dataDir, timeoutMs: 4000, spawnImpl, diagnostic: null, userAuthPath});
+  const again = trackClient(new GrokClient({grokPath: 'grok', dataDir, timeoutMs: 4000, spawnImpl, diagnostic: null, userAuthPath}));
   assert.equal((await again.refreshStatus()).authenticated, false);
   await again.close();
 });

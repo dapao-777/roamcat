@@ -14,6 +14,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {REPO, openBrowser, extUrl, noteScreenshots, previewPath, staticServer, tabIdOf} from './lib/ego.mjs';
 import {printGateSummary} from './lib/gate-report.mjs';
+import {verifyPetReloads} from './lib/pet-reload-regressions.mjs';
 
 const out = previewPath('pet-buttons');
 fs.mkdirSync(out, {recursive: true});
@@ -276,13 +277,13 @@ try {
   }
 
   // ---------- 10. 双语翻译：无服务时走错误播报 ----------
-  // 无服务时先播「还没连上 / 启动失败」，随后状态条的失败文案「整页翻译已停止」会接替它，两者都算错误反馈。
+  // 无服务时先播「还没连上 / 启动失败」，随后整页翻译的状态行（照原话：「辅助服务尚未连接……」）会接替它，两者都算错误反馈。
   await tab.locator('.roamcat-flip-btn').click();
   st = await until(petState, s => s?.speechCls.includes('speaking') && /连上|失败|连接|开始双语翻译|恢复原文|停止/.test(s.speech || ''), 4000);
   check('双语翻译点击给出反馈气泡', st?.speechCls.includes('speaking') && /连上|失败|连接|开始双语翻译|恢复原文|停止/.test(st.speech || ''),
     `speech=${st?.speech}`);
   const flipErr = st?.speech || '';
-  if (/辅助服务还没连上|启动失败|已停止/.test(flipErr)) {
+  if (/辅助服务还没连上|辅助服务尚未连接|启动失败|已停止/.test(flipErr)) {
     check('无服务时双语翻译报错误态', st.avatarCls.includes('state-error'), `avatarCls=${st.avatarCls}`);
   } else {
     warn('双语翻译进入翻译态（测试环境意外配置了服务？）', flipErr);
@@ -561,6 +562,7 @@ try {
   st = await waitPet(s => s && !s.cls.includes('dock-open'));
   check('点设置后缩放胶囊已收起', st && !st.cls.includes('dock-open'), `cls=${st?.cls}`);
 
+  await verifyPetReloads({run,check,control:extPage});
   await tab.pump();
 } catch (error) {
   report.failures.push(`门禁运行出错: ${error.message}`);

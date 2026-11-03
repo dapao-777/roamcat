@@ -183,9 +183,12 @@ const LIMIT_ERROR = T('c.limit');
   function createBrandLabel(context=''){return contentUI.brandLabel(brandIcon(),context);}
   const pageStatus={host:null,root:null,timer:0,lines:new Map(),dismissed:new Map(),selected:null};
   const statusPriority={support:1,structure:2,emergency:3,passage:4,lookup:5,'context-help':5,known:6};
-  // 这些错误的原文本身就是下一步怎么做（如「选区跨了段落，请在同一段里选」），伴读猫照原话说，不换成笼统的「暂未完成」。
-  const verbatimStatus=new Set(['context-help']);
-  const statusFailures={support:'c.fail.support',structure:'c.fail.structure',emergency:'c.fail.emergency',passage:'c.fail.passage',lookup:'c.fail.lookup',known:'c.fail.known'};
+  // 这些错误照原话显示，不换成笼统的「暂未完成 / 已停止」：右键帮助的原因本身就是下一步怎么做（如「选区跨了段落，请在同一段里选」）；
+  // 整页翻译的状态行带着出错原因与「已译几段、失败几段」，以前伴读猫一律说「整页翻译已停止」，其实翻译常常还在继续。
+  const verbatimStatus=new Set(['context-help','emergency']);
+  // 伴读猫的气泡不带诊断编号（状态条与卡片里仍保留，便于排查）。
+  const withoutTraceTag=text=>String(text||'').replace(/\s*\[(?:诊断|diag) [^\]]*\]/gi,'').trim();
+  const statusFailures={support:'c.fail.support',structure:'c.fail.structure',passage:'c.fail.passage',lookup:'c.fail.lookup',known:'c.fail.known'};
   function removePageStatus(){pageStatus.host?.remove();pageStatus.host=null;pageStatus.root=null;pageStatus.selected=null;}
   function createPageStatus(){
     const host=document.createElement('div');host.setAttribute(OWN,'task-status');
@@ -216,7 +219,7 @@ const LIMIT_ERROR = T('c.limit');
     if(petPresent){
       removePageStatus();
       if(!selected){globalThis.RoamCatPet.clearStatusSpeech();return;}
-      const copy=selected.error&&!verbatimStatus.has(selected.key)?(T(statusFailures[selected.key]||'c.fail.fallback')):selected.text;
+      const copy=selected.error&&!verbatimStatus.has(selected.key)?(T(statusFailures[selected.key]||'c.fail.fallback')):selected.error?withoutTraceTag(selected.text):selected.text;
       globalThis.RoamCatPet.speakStatus(copy,{key:selected.key,busy:Boolean(selected.busy&&!selected.error),error:Boolean(selected.error),duration:selected.expiresAt?Math.max(0,selected.expiresAt-now):0});
       return;
     }
@@ -226,7 +229,7 @@ const LIMIT_ERROR = T('c.limit');
     const {indicator,label,count,more,detail,collapse,panel}=pageStatus.root;
     if(pageStatus.selected!==selected.key){collapse();pageStatus.selected=selected.key;}
     panel.classList.toggle('compact',selected.busy&&!selected.error);
-    const copy=selected.error?(T(statusFailures[selected.key]||'c.fail.fallback')):selected.text;
+    const copy=selected.error&&!verbatimStatus.has(selected.key)?(T(statusFailures[selected.key]||'c.fail.fallback')):selected.text;
     if(label.textContent!==copy)label.textContent=copy;label.title=copy;
     indicator.dataset.error=String(selected.error);pageStatus.root.panel.dataset.error=String(Boolean(selected.error));indicator.dataset.busy=String(selected.busy&&!selected.error);indicator.textContent=selected.error?'!':selected.busy?'':'·';
     count.textContent=active.length>1?'+'+(active.length-1):'';count.hidden=active.length<2;count.setAttribute('aria-label',T('c.moreStatus',{n:active.length-1}));
@@ -941,7 +944,15 @@ const LIMIT_ERROR = T('c.limit');
         block +
         '[data-zone="chrome"]::before{content:"·"!important;margin-inline-end:.25em!important;opacity:.55!important}' +
         block +
-        '[data-zone="chrome"]>span{display:inline!important;margin:0!important;padding:0!important}';
+        '[data-zone="chrome"]>span{display:inline!important;margin:0!important;padding:0!important}' +
+        block +
+        '>[data-roamcat-status]{display:block!important;margin:4px 0 0!important;padding:0!important;color:var(--danger,#b3261e)!important;-webkit-text-fill-color:currentColor!important;font:400 var(--fs-2,13px)/1.4 var(--ui,system-ui,sans-serif)!important;letter-spacing:normal!important;text-transform:none!important;text-shadow:none!important;white-space:normal!important}' +
+        block +
+        '>[data-roamcat-status="chrome"]{display:inline!important;margin:0 0 0 .3em!important}' +
+        block +
+        '>[data-roamcat-status] button{margin:0 0 0 8px!important;padding:1px 8px!important;border:1px solid var(--danger,#b3261e)!important;border-radius:6px!important;background:var(--danger-soft,transparent)!important;color:inherit!important;-webkit-text-fill-color:currentColor!important;font:inherit!important;line-height:1.4!important;cursor:pointer!important}' +
+        block +
+        '>[data-roamcat-status="chrome"] button{margin:0!important;padding:0 4px!important}';
       const complex = '.' + COMPLEX_CLASS,
         formula = '.' + FORMULA_CLASS;
       style.textContent +=
@@ -2531,6 +2542,8 @@ const LIMIT_ERROR = T('c.limit');
         if (cut < 2000) cut = 4000;
       }
       if (/[\uD800-\uDBFF]/.test(rest[cut - 1]) && /[\uDC00-\uDFFF]/.test(rest[cut])) cut--;
+      const marker = rest.slice(0, cut).match(/⟦\d*$/);
+      if (marker && /^⟦\d+⟧/.test(rest.slice(marker.index))) cut = marker.index;
       chunks.push(rest.slice(0, cut));
       rest = rest.slice(cut);
     }
@@ -2758,16 +2771,18 @@ const LIMIT_ERROR = T('c.limit');
       inheritPageTranslationStyle(unit.parent, container);
     }
     entry.error?.remove();
+    // 失败提示是界面文字，不是译文：带 data-roamcat-status，排除在「译文跟随网页字体」的规则之外，按固定小字号显示
+    // （以前跟着大标题继承成 70px，重试按钮也跟着撑开）。导航、侧栏这类 chrome 区域只留一个小重试图标，说明放在悬停提示里。
+    const chrome = unit.zone === 'chrome';
     const error = document.createElement('span');
-    error.style.cssText = `display:${unit.zone === 'chrome' ? 'inline' : 'block'};margin-top:4px;color:var(--danger,#b3261e);font-family:var(--ui,sans-serif);font-size:var(--fs-2, 13px);line-height:1.4`;
+    error.setAttribute('data-roamcat-status', chrome ? 'chrome' : 'block');
     error.setAttribute('role', 'status');
     error.setAttribute('aria-live', 'polite');
-    error.append(document.createTextNode(T('c.em.paraUndone')));
+    if (!chrome) error.append(document.createTextNode(T('c.em.paraUndone')));
     const button = document.createElement('button');
     button.type = 'button';
-    button.textContent = T('c.em.retryPara');
-    button.style.cssText =
-      'margin-inline-start:8px;color:var(--danger,#b3261e);font:inherit;background:var(--danger-soft,transparent);border:1px solid var(--danger,#b3261e);border-radius:6px;padding:1px 8px;cursor:pointer';
+    button.textContent = chrome ? '↻' : T('c.em.retryPara');
+    if (chrome) { button.title = T('c.em.paraUndone').trim() + ' · ' + T('c.em.retryPara'); button.setAttribute('aria-label', button.title); }
     button.addEventListener('click', event => {
       event.preventDefault();
       event.stopPropagation();
@@ -2788,25 +2803,36 @@ const LIMIT_ERROR = T('c.limit');
     return bare(translation)===bare(source);
   }
   // 把译文里的 ⟦n⟧ 换回原来的行内代码（克隆原元素，沿用网页给 code/kbd 的样式）；模型漏掉的代码补在句末，多出来的占位丢掉。
-  function emergencyTranslationNodes(translation,codes){
+  function emergencyTranslationNodes(translation,codes,source){
+    // 每个分片只恢复自己原文中的代码；模型漏标记时也不能把整段代码补进每一片。
+    const owned=new Set([...source.matchAll(CODE_MARKER)].map(match=>Number(match[1])-1));
     const nodes=[],used=new Set();let last=0;
     const codeNode=index=>{
-      const source=codes[index];if(!source)return null;
+      const source=codes[index];if(!owned.has(index)||!source)return null;
       const clone=source.isConnected?source.cloneNode(true):Object.assign(document.createElement('code'),{textContent:source.textContent});
       for(const element of [clone,...clone.querySelectorAll('*')])for(const {name}of [...element.attributes])if(name==='id'||name.startsWith('on'))element.removeAttribute(name);
       return clone;
     };
+    const text=value=>value.split(LINE_BREAK).forEach((line,index)=>{if(index)nodes.push(document.createElement('br'));if(line)nodes.push(document.createTextNode(line));});
     for(const match of translation.matchAll(CODE_MARKER)){
-      if(match.index>last)nodes.push(document.createTextNode(translation.slice(last,match.index)));
+      if(match.index>last)text(translation.slice(last,match.index));
       const index=Number(match[1])-1,node=used.has(index)?null:codeNode(index);if(node){used.add(index);nodes.push(node);}
       last=match.index+match[0].length;
     }
-    if(last<translation.length)nodes.push(document.createTextNode(translation.slice(last)));
-    codes.forEach((_,index)=>{if(used.has(index))return;const node=codeNode(index);if(node)nodes.push(document.createTextNode(' '),node);});
+    if(last<translation.length)text(translation.slice(last));
+    owned.forEach(index=>{if(used.has(index))return;const node=codeNode(index);if(node)nodes.push(document.createTextNode(' '),node);});
     return nodes;
   }
-  function renderEmergencyChunk(item,translation,session) {
-    const unit=item.unit;
+  // 原文里的 <br> 在送去翻译的文本里是换行符；模型有时把它写成字面的反斜杠加 n 两个字符，页面上就会露出「\n」。
+  // 原文有换行、本身又不含字面反斜杠加 n 时才换回真换行，讲转义字符这类正文真要写它的不受影响。
+  const LINE_BREAK=String.fromCharCode(10),LITERAL_BREAK=String.fromCharCode(92)+'n';
+  function emergencyLineBreaks(translation,source){
+    const value=String(translation||''),text=String(source||'');
+    if(!text.includes(LINE_BREAK)||text.includes(LITERAL_BREAK))return value;
+    return value.split(LITERAL_BREAK).join(LINE_BREAK).split(LINE_BREAK).map(line=>line.trim()).filter((line,index,lines)=>line||index&&index<lines.length-1).join(LINE_BREAK);
+  }
+  function renderEmergencyChunk(item,raw,session) {
+    const unit=item.unit,translation=emergencyLineBreaks(raw,unit.chunks[item.index]);
     // 流式快照每次都带着本批已有的全部译文：文字没变的片段已经在页面上，不再校验原文、不再重建节点。
     if(unit.version===item.version&&unit.translations?.get(item.index)===translation&&(session.containers.get(unit)?.parts.has(item.index)||sameAsSource(translation,unit.chunks[item.index]))){session.metrics.unchangedRenders++;return;}
     if(!validEmergencyUnit(unit,session)||unit.version!==item.version)return;
@@ -2834,7 +2860,7 @@ const LIMIT_ERROR = T('c.limit');
     (unit.translations??=new Map()).set(item.index,translation);
     const part = document.createElement('span');
     part.style.display = unit.zone === 'chrome' ? 'inline' : 'block';
-    part.replaceChildren(...emergencyTranslationNodes(translation, unit.codes || []));
+    part.replaceChildren(...emergencyTranslationNodes(translation, unit.codes || [], unit.chunks[item.index]));
     entry.parts.set(item.index, part);
     entry.container.replaceChildren(...[...entry.parts].sort((a, b) => a[0] - b[0]).map(([, node]) => node));
   }

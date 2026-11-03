@@ -188,7 +188,8 @@ export function validatePatch(patch, currentSettings) {
       const service = normalizeApiService(value);
       service.id = text(service.id, M('服务编号','Service ID'), 128); service.name = text(service.name, M('服务名称','Service name'), 60); service.baseUrl = text(service.baseUrl, M('API 地址','API URL'), 2048); service.model = text(service.model, M('模型','Model'), 150); service.apiKey = text(service.apiKey, 'API Key', 4096, false);
       if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(service.id) || ids.has(service.id)) throw new Error(M('API 服务编号必须安全且唯一。','The API service ID must be safe and unique.'));
-      if (!getApiProvider(service.providerId).keyOptional && !service.apiKey) throw new Error(M('API Key 不能为空。','The API key must not be empty.'));
+      // 已保存服务允许清空凭据并保留配置/路由；新建服务仍须完成必填凭据。
+      if (!getApiProvider(service.providerId).keyOptional && !service.apiKey && !currentSettings.apiServices.some(saved => saved.id === service.id)) throw new Error(M('API Key 不能为空。','The API key must not be empty.'));
       apiServiceOrigins(service); ids.add(service.id); return service;
     });
   }

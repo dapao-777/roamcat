@@ -18,6 +18,7 @@ import { randomUUID } from 'node:crypto';
 import { normalizeAudio, normalizeTranscription, TRANSCRIPTION_SCHEMA } from '../extension/audio-transcription.mjs';
 import { delimiter, dirname, join, resolve } from 'node:path';
 import { homedir } from 'node:os';
+import { cliCommand } from './cli-command.mjs';
 import {
   CliClient,
   DEFAULT_TIMEOUT_MS,
@@ -226,8 +227,9 @@ class AgyStreamWorker {
     // 与逐次调用相同的隔离：沙箱 + 不展开斜杠命令 + 批准策略压回默认，工作目录是连接器自己的目录。
     args.push(...AGY_ISOLATION_ARGS, '-p', '', '--input-format', 'stream-json', '--output-format', 'stream-json');
     if (schemaText) args.push('--json-schema', schemaText);
-    this.child = client.spawnImpl(client.cliPath, args, { cwd: client.workDir, env: client.env(), stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true });
-    client.activeChildren.add(this.child);
+    const invocation = cliCommand(client.cliPath, args);
+    this.child = client.spawnImpl(invocation.command, invocation.args, { cwd: client.workDir, env: client.env(), stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true, ...invocation.options });
+    client.trackChild(this.child);
     this.child.stdout.on('data', chunk => this.#read(chunk));
     this.child.stderr.on('data', chunk => { this.stderr = (this.stderr + chunk).slice(-4000); });
     this.child.stdin.on('error', () => {});
@@ -263,8 +265,7 @@ class AgyStreamWorker {
     if (this.dead) return;
     this.dead = true;
     clearTimeout(this.idleTimer);
-    this.client.activeChildren.delete(this.child);
-    try { this.child.kill('SIGTERM'); } catch { /* already gone */ }
+    this.client.stopChild(this.child);
     this.onExit(this);
     if (this.pending) {
       const pending = this.pending;

@@ -19,6 +19,10 @@
   // 伴读猫每标签页只挂一只：限定顶层主框架，避免每个可见 iframe 各挂一只相互重叠。
   if (window.top !== window) return;
 
+  // 重载会留下旧隔离世界的 DOM 监听；必须用捕获的 runtime 判断它是否仍属于当前扩展。
+  const runtime = chrome.runtime;
+  const contextAlive = () => { try { return Boolean(runtime.id); } catch { return false; } };
+
   // manifest content_scripts 与 background injectPageUI 可能叠注入。
   // 旧实例的 init() 在 await 之后仍会继续建 DOM；用代数令过期的异步初始化直接退出。
   const bootId = (globalThis.__ROAMCAT_PET_GENERATION__ = (globalThis.__ROAMCAT_PET_GENERATION__ || 0) + 1);
@@ -112,14 +116,14 @@
     }
 
     async init() {
-      if (bootId !== globalThis.__ROAMCAT_PET_GENERATION__ || this._disposed) return;
+      if (!contextAlive() || bootId !== globalThis.__ROAMCAT_PET_GENERATION__ || this._disposed) return;
       try {
         const response = await chrome.runtime.sendMessage({type:'STATE_GET'});
-        if (bootId !== globalThis.__ROAMCAT_PET_GENERATION__ || this._disposed) return;
+        if (!contextAlive() || bootId !== globalThis.__ROAMCAT_PET_GENERATION__ || this._disposed) return;
         if(!response?.ok)throw new Error(response?.error||T('fp.settingsFail'));
         currentSettings = response.data.settings || {};
       } catch {
-        if (bootId !== globalThis.__ROAMCAT_PET_GENERATION__ || this._disposed) return;
+        if (!contextAlive() || bootId !== globalThis.__ROAMCAT_PET_GENERATION__ || this._disposed) return;
         currentSettings = {};
       }
 
@@ -568,6 +572,7 @@
       this._watchdogWindow = 0;
       this._watchdogDelay = 1500;
       const remount = () => {
+        if (!contextAlive()) { this.dispose(); return; }
         if (this._disposed || this._mounting || currentSettings?.floatingPet?.enabled === false) return;
         if (!hostEl || hostEl.isConnected) return;
         const root = document.documentElement || document.body;
@@ -578,6 +583,7 @@
       };
       try {
         this._watchdog = new MutationObserver(() => {
+          if (!contextAlive()) { this.dispose(); return; }
           if (this._disposed || this._mounting || currentSettings?.floatingPet?.enabled === false) return;
           if (!hostEl || hostEl.isConnected) return;
           const now = Date.now();
@@ -1050,6 +1056,7 @@
       if (!this._sleepBound) {
         this._sleepBound = true;
         const onUserActivity = () => {
+          if (!contextAlive()) { this.dispose(); return; }
           this._lastActivityTime = Date.now();
           if (this._isSleeping) {
             this.wakeUp();
@@ -1066,6 +1073,7 @@
 
       clearInterval(this._sleepWatchdogInterval);
       this._sleepWatchdogInterval = setInterval(() => {
+        if (!contextAlive()) { this.dispose(); return; }
         if (this._disposed) return;
         const idleFor = Date.now() - this._lastActivityTime;
         if (idleFor > 35000 && !this._isSleeping && petState === 'idle' && !isDragging && !isDockOpen && !isSummaryOpen && !isDocked) {
@@ -1316,7 +1324,7 @@
     }
 
     isMounted() {
-      return Boolean(hostEl && hostEl.isConnected && this.container);
+      return contextAlive() && !this._disposed && Boolean(hostEl && hostEl.isConnected && this.container);
     }
 
     dispose() {
@@ -1347,7 +1355,8 @@
         if (this._onRuntimeMessage) chrome.runtime.onMessage.removeListener(this._onRuntimeMessage);
       } catch {}
       this._onRuntimeMessage = null;
-      document.querySelectorAll('#roamcat-pet-host').forEach(el => el.remove());
+      // 只移除自己持有的宿主：旧世界退役时，新世界可能已挂上替代实例。
+      hostEl?.remove();
       hostEl = null;
       shadowRoot = null;
       this.container = null;
@@ -1468,6 +1477,7 @@
 
   // Mount global instance
   const mountWidget = () => {
+    if (!contextAlive() || bootId !== globalThis.__ROAMCAT_PET_GENERATION__) return;
     const widget = new RoamCatPetWidget();
     widget.detectPageTheme = detectPageTheme;
     widget.shadowQuery = (selector) => shadowRoot?.querySelector(selector);
@@ -1488,7 +1498,7 @@
   } else {
     let tries = 0;
     const waitDeps = () => {
-      if (bootId !== globalThis.__ROAMCAT_PET_GENERATION__) return;
+      if (!contextAlive() || bootId !== globalThis.__ROAMCAT_PET_GENERATION__) return;
       if (depsReady()) mountWidget();
       else if (++tries < 100) setTimeout(waitDeps, 20);
       else globalThis.__ROAMCAT_PET_BOOTING__ = false;

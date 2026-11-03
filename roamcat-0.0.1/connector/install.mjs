@@ -52,7 +52,7 @@ function options(args) {
   return result;
 }
 
-async function findExecutable(name, explicit, extraDirs = []) {
+export async function findExecutable(name, explicit, extraDirs = []) {
   const isWin = process.platform === 'win32';
   const exe = isWin && !name.endsWith('.exe') ? `${name}.exe` : name;
   const candidates = [];
@@ -67,16 +67,10 @@ async function findExecutable(name, explicit, extraDirs = []) {
   for (const candidate of candidates) {
     if (!candidate || seenBase.has(candidate)) continue;
     seenBase.add(candidate);
-    expanded.push(candidate);
     if (isWin && !/\.(exe|cmd|bat|com|ps1)$/i.test(candidate)) {
-      expanded.push(`${candidate}.cmd`, `${candidate}.bat`);
-    }
-  }
-  if (explicit && isWin && !/\.(exe|cmd|bat|com|ps1)$/i.test(explicit)) {
-    for (const suffix of ['.exe', '.cmd', '.bat']) {
-      const withSuffix = `${explicit}${suffix}`;
-      if (!seenBase.has(withSuffix)) { seenBase.add(withSuffix); expanded.push(withSuffix); }
-    }
+      // npm 同时写无后缀 POSIX 脚本与 .cmd；Windows 只选可启动的候选。
+      expanded.push(`${candidate}.exe`, `${candidate}.com`, `${candidate}.cmd`, `${candidate}.bat`);
+    } else expanded.push(candidate);
   }
   const seen = new Set();
   for (const path of expanded) {

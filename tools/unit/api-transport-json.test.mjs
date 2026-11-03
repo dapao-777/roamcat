@@ -62,3 +62,38 @@ test('Anthropic 流式用量只更新输出量时保留输入量与缓存计数�
     ]);
   } finally { globalThis.fetch = original; }
 });
+
+test('Chat 正文 stop 后继续读取独立 usage 帧，[DONE] 与正常 EOF 都保留用量', async () => {
+  const original=globalThis.fetch;
+  try {
+    for(const end of ['done','eof']) {
+      const usage=[],content=[];
+      globalThis.fetch=async(_url,init)=>{
+        const body=JSON.parse(init.body),probe=body.response_format?.json_schema?.schema?.properties?.probe?.enum?.[0];
+        if(probe)return Response.json({choices:[{message:{content:JSON.stringify({probe})},finish_reason:'stop'}]});
+        assert.deepEqual(body.stream_options,{include_usage:true});
+        const events=[{choices:[{delta:{content:'{"items":[]}'},finish_reason:null}]},{choices:[{delta:{},finish_reason:'stop'}]},{choices:[],usage:{prompt_tokens:123,completion_tokens:45,total_tokens:168}}];
+        const bytes=new TextEncoder().encode(events.map(value=>'data: '+JSON.stringify(value)+'\r\n\r\n').join('')+(end==='done'?'data: [DONE]\r\n\r\n':''));
+        return new Response(new ReadableStream({start(controller){for(let i=0;i<bytes.length;i+=7)controller.enqueue(bytes.slice(i,i+7));controller.close();}}),{headers:{'content-type':'text/event-stream'}});
+      };
+      const value=await performProviderRequest({...service,providerId:'openai-compatible',baseUrl:'https://'+end+'.example/v1',model:'fixture',apiKey:'fake-key'}, {}, 'Reply.', {type:'object'}, {onContent:value=>content.push(value),onUsage:value=>usage.push(value)});
+      assert.deepEqual(value,{items:[]});assert.deepEqual(content,['{"items":[]}']);assert.deepEqual(usage,[{inputTokens:123,outputTokens:45}]);
+    }
+  } finally {globalThis.fetch=original;}
+});
+
+test('Chat 缺少结束帧的流仍报中断；stop 后的服务错误仍传播', async () => {
+  const original=globalThis.fetch;
+  try {
+    for(const withError of [false,true]) {
+      globalThis.fetch=async(_url,init)=>{
+        const body=JSON.parse(init.body),probe=body.response_format?.json_schema?.schema?.properties?.probe?.enum?.[0];
+        if(probe)return Response.json({choices:[{message:{content:JSON.stringify({probe})},finish_reason:'stop'}]});
+        const events=[{choices:[{delta:{content:'{"items":[]}'},finish_reason:withError?'stop':null}]}];
+        if(withError)events.push({error:{message:'fixture stream failed'}});
+        return new Response(events.map(value=>'data: '+JSON.stringify(value)+'\n\n').join(''),{headers:{'content-type':'text/event-stream'}});
+      };
+      await assert.rejects(performProviderRequest({...service,providerId:'openai-compatible',baseUrl:'https://error-'+withError+'.example/v1',model:'fixture',apiKey:'fake-key'}, {}, 'Reply.', {type:'object'}, {onContent(){}}),error=>error.code===(withError?'PROVIDER_ERROR':'INVALID_RESPONSE'));
+    }
+  } finally {globalThis.fetch=original;}
+});
